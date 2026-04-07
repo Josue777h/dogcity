@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Sistema de pedidos por WhatsApp para restaurantes." />
-  <title>Tienda | Pedidos por WhatsApp</title>
+  <title>Dog City | Pedidos por WhatsApp</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body data-page="store">
@@ -12,25 +12,26 @@
 
   <header class="topbar">
     <a class="brand" href="/">
-      <span class="brand-mark">R</span>
+      <span class="brand-mark">
+        <img src="images/uploads/DOGCITY.png" alt="Dog City" />
+      </span>
       <div>
-        <strong>Restaurante Express</strong>
-        <span>Pedidos por WhatsApp</span>
+        <strong>Dog City</strong>
+        <span>Perros calientes y pedidos por WhatsApp</span>
       </div>
     </a>
 
     <nav class="nav-links">
       <a href="/" class="is-active">Tienda</a>
-      <a href="/admin">Panel Admin</a>
     </nav>
   </header>
 
-  <main class="layout">
+  <main class="layout store-layout">
     <section class="hero-card">
       <div class="hero-copy">
-        <span class="eyebrow">Pedidos rápidos</span>
-        <h1>Pide tu comida favorita en pocos pasos</h1>
-        <p>Selecciona tus productos, revisa el total y genera un mensaje profesional listo para enviar por WhatsApp al restaurante.</p>
+        <span class="eyebrow">Dog City</span>
+        <h1>Perros calientes con sabor, actitud y entrega rápida</h1>
+        <p>Arma tu pedido en segundos, agrega detalles como salsas o ingredientes y envíalo directo por WhatsApp con tu ubicación.</p>
       </div>
 
       <aside class="summary-card">
@@ -40,73 +41,114 @@
       </aside>
     </section>
 
-    <section class="panel">
-      <div class="section-header">
-        <div>
-          <span class="section-kicker">Tienda</span>
-          <h2>Menú disponible</h2>
-          <p>Busca tus favoritos y ajusta las cantidades en tiempo real.</p>
+    <div class="store-dashboard">
+      <section class="panel products-panel">
+        <div class="section-header">
+          <div>
+            <span class="section-kicker">Tienda</span>
+            <h2>Menú disponible</h2>
+            <p>Busca tus favoritos y ajusta las cantidades en tiempo real.</p>
+          </div>
         </div>
-      </div>
 
-      <div class="toolbar">
-        <label class="toolbar-field">
-          Buscar producto
-          <input id="searchInput" type="search" placeholder="Hamburguesa, pizza, bebida..." />
-        </label>
+        <div class="toolbar">
+          <label class="toolbar-field">
+            Buscar producto
+            <input id="searchInput" type="search" placeholder="Hamburguesa, pizza, bebida..." />
+          </label>
 
-        <label class="toolbar-field">
-          Ordenar por
-          <select id="sortSelect">
-            <option value="featured">Destacados</option>
-            <option value="name-asc">Nombre A-Z</option>
-            <option value="price-asc">Precio menor a mayor</option>
-            <option value="price-desc">Precio mayor a menor</option>
-          </select>
-        </label>
-      </div>
-
-      <div id="productsList" class="product-grid" aria-live="polite"></div>
-      <p id="productsEmptyState" class="empty-state hidden">No encontramos productos con esa búsqueda.</p>
-    </section>
-
-    <section class="panel order-panel">
-      <div class="section-header">
-        <div>
-          <span class="section-kicker">Pedido</span>
-          <h2>Resumen y envío</h2>
-          <p>Genera el mensaje, cópialo o ábrelo directamente en WhatsApp.</p>
+          <label class="toolbar-field">
+            Ordenar por
+            <select id="sortSelect">
+              <option value="featured">Destacados</option>
+              <option value="name-asc">Nombre A-Z</option>
+              <option value="price-asc">Precio menor a mayor</option>
+              <option value="price-desc">Precio mayor a menor</option>
+            </select>
+          </label>
         </div>
-        <button id="generateBtn" class="btn btn-primary" type="button">Generar pedido</button>
-      </div>
 
-      <div class="customer-grid">
-        <label class="toolbar-field">
-          Nombre
-          <input id="customerName" type="text" placeholder="Tu nombre" />
+        <article class="promo-banner" aria-label="Promoción de servicio a domicilio">
+          <img src="images/uploads/foto.png" alt="Servicio a domicilio Dog City con número de contacto" loading="lazy" />
+        </article>
+
+        <div id="productsList" class="product-grid" aria-live="polite"></div>
+        <p id="productsEmptyState" class="empty-state hidden">No encontramos productos con esa búsqueda.</p>
+      </section>
+
+      <aside class="panel order-panel">
+        <div class="section-header">
+          <div>
+            <span class="section-kicker">Pedido</span>
+            <h2>Resumen y envío</h2>
+            <p>Genera el mensaje, cópialo o ábrelo directamente en WhatsApp.</p>
+          </div>
+          <button id="generateBtn" class="btn btn-primary" type="button">Generar pedido</button>
+        </div>
+
+        <div class="customer-grid">
+          <label class="toolbar-field">
+            Nombre
+            <input id="customerName" type="text" placeholder="Tu nombre" />
+          </label>
+          <label class="toolbar-field">
+            Dirección
+            <input id="customerAddress" type="text" placeholder="Tu dirección" />
+          </label>
+          <label class="toolbar-field">
+            Teléfono
+            <input id="customerPhone" type="text" placeholder="Tu teléfono" />
+          </label>
+        </div>
+
+        <div class="location-box">
+          <div>
+            <strong>Ubicación del pedido (obligatoria)</strong>
+            <p id="locationStatus">Debes agregar tu ubicación actual para poder enviar el pedido.</p>
+          </div>
+          <button id="locationBtn" class="btn btn-secondary" type="button">Usar mi ubicación actual</button>
+        </div>
+
+        <label class="toolbar-field order-comment-field">
+          Comentarios del pedido
+          <textarea id="orderComment" placeholder="Ej. sin cebolla, extra queso, timbrar al llegar"></textarea>
         </label>
-        <label class="toolbar-field">
-          Dirección
-          <input id="customerAddress" type="text" placeholder="Tu dirección" />
-        </label>
-        <label class="toolbar-field">
-          Teléfono
-          <input id="customerPhone" type="text" placeholder="Tu teléfono" />
-        </label>
-      </div>
 
-      <div class="order-preview">
-        <p id="orderSummary">No hay productos seleccionados.</p>
-      </div>
+        <div class="order-preview">
+          <p id="orderSummary">No hay productos seleccionados.</p>
+        </div>
 
-      <div class="actions">
-        <a id="whatsappLink" class="btn btn-success disabled" target="_blank" rel="noreferrer noopener">Abrir en WhatsApp</a>
-        <button id="copyBtn" class="btn btn-secondary" type="button">Copiar mensaje</button>
-      </div>
+        <div class="actions">
+          <a id="whatsappLink" class="btn btn-success disabled" target="_blank" rel="noreferrer noopener">Abrir en WhatsApp</a>
+          <button id="copyBtn" class="btn btn-secondary" type="button">Copiar mensaje</button>
+        </div>
 
-      <textarea id="generatedMessage" readonly placeholder="Aquí aparecerá el mensaje listo para WhatsApp."></textarea>
-    </section>
+        <textarea id="generatedMessage" readonly placeholder="Aquí aparecerá el mensaje listo para WhatsApp."></textarea>
+      </aside>
+    </div>
   </main>
+
+  <div class="mobile-sticky-checkout">
+    <div class="mobile-total">
+      <span class="summary-label">Total actual</span>
+      <strong id="mobileOrderTotal">$0</strong>
+      <span id="mobileSelectedCount" class="summary-meta">0 productos</span>
+    </div>
+    <button id="mobileGenerateBtn" class="btn btn-primary" type="button">Generar pedido</button>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-brand">
+      <strong>Dog City</strong>
+      <span class="footer-note">Hot dogs y comida rápida con pedidos por WhatsApp</span>
+    </div>
+    <div class="footer-links">
+      <a href="https://instagram.com" target="_blank" rel="noreferrer noopener">Instagram</a>
+      <a href="https://facebook.com" target="_blank" rel="noreferrer noopener">Facebook</a>
+      <a href="https://wa.me/573143243707" target="_blank" rel="noreferrer noopener">WhatsApp</a>
+    </div>
+    <span class="footer-note">Ubicación: Dog City, zona central de la ciudad.</span>
+  </footer>
 
   <script src="app.js"></script>
 </body>

@@ -4,17 +4,28 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Panel de administración de productos para restaurante." />
-  <title>Panel Admin | Pedidos por WhatsApp</title>
+  <title>Dog City | Panel Admin</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body data-page="admin">
   <div class="app-bg"></div>
+  <section id="adminAccessGate" class="admin-access-gate">
+    <div class="admin-access-card">
+      <h2>Acceso Admin</h2>
+      <p>Ingresa el PIN para gestionar el panel de Dog City.</p>
+      <input id="adminPinInput" type="password" placeholder="PIN de administrador" />
+      <button id="adminPinBtn" class="btn btn-primary" type="button">Entrar al panel</button>
+      <small id="adminPinStatus">Solo el administrador puede acceder.</small>
+    </div>
+  </section>
 
   <header class="topbar">
     <a class="brand" href="/">
-      <span class="brand-mark">R</span>
+      <span class="brand-mark">
+        <img src="images/uploads/DOGCITY.png" alt="Dog City" />
+      </span>
       <div>
-        <strong>Restaurante Express</strong>
+        <strong>Dog City</strong>
         <span>Gestión de productos</span>
       </div>
     </a>
@@ -29,8 +40,8 @@
     <section class="hero-card hero-card-compact">
       <div class="hero-copy">
         <span class="eyebrow">Panel Admin</span>
-        <h1>Administra el menú del restaurante</h1>
-        <p>Agrega, edita y elimina productos para mantener el catálogo siempre actualizado.</p>
+        <h1>Administra el menú de Dog City</h1>
+        <p>Agrega, edita y elimina productos para mantener el catálogo de perros calientes siempre actualizado.</p>
       </div>
     </section>
 
@@ -62,10 +73,6 @@
           Unidad
           <input name="unit" type="text" maxlength="20" value="unidad" required />
         </label>
-        <label>
-          URL de imagen
-          <input id="imageUrlInput" name="image" type="text" value="images/producto.svg" />
-        </label>
         <label class="full-width">
           Subir imagen
           <input id="imageFileInput" name="imageFile" type="file" accept="image/*" capture="environment" />
@@ -96,6 +103,19 @@
       <p id="adminEmptyState" class="empty-state hidden">Aún no hay productos registrados.</p>
     </section>
   </main>
+
+  <footer class="site-footer">
+    <div class="footer-brand">
+      <strong>Dog City</strong>
+      <span class="footer-note">Panel administrativo de productos</span>
+    </div>
+    <div class="footer-links">
+      <a href="https://instagram.com" target="_blank" rel="noreferrer noopener">Instagram</a>
+      <a href="https://facebook.com" target="_blank" rel="noreferrer noopener">Facebook</a>
+      <a href="https://wa.me/573143243707" target="_blank" rel="noreferrer noopener">WhatsApp</a>
+    </div>
+    <span class="footer-note">Ubicación del negocio: Dog City, zona central de la ciudad.</span>
+  </footer>
 
   <script src="app.js"></script>
 </body>

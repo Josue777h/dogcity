@@ -7,7 +7,6 @@ from werkzeug.utils import secure_filename
 
 BASE_DIR = Path(__file__).resolve().parent
 PRODUCTS_FILE = BASE_DIR / "productos.json"
-LEGACY_PRODUCTS_FILE = BASE_DIR / "products.json"
 DEFAULT_IMAGE = "images/producto.svg"
 UPLOADS_DIR = BASE_DIR / "images" / "uploads"
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
@@ -17,12 +16,10 @@ app = Flask(__name__, static_folder=str(BASE_DIR), static_url_path="")
 
 def load_products():
     """Lee los productos desde productos.json y devuelve siempre una lista."""
-    target = PRODUCTS_FILE if PRODUCTS_FILE.exists() else LEGACY_PRODUCTS_FILE
-
-    if not target.exists():
+    if not PRODUCTS_FILE.exists():
         return []
 
-    with target.open("r", encoding="utf-8") as file:
+    with PRODUCTS_FILE.open("r", encoding="utf-8") as file:
         data = json.load(file)
 
     if not isinstance(data, list):
@@ -32,11 +29,10 @@ def load_products():
 
 
 def save_products(products):
-    """Guarda los productos en ambos archivos JSON para mantener compatibilidad."""
-    for target in (PRODUCTS_FILE, LEGACY_PRODUCTS_FILE):
-        with target.open("w", encoding="utf-8") as file:
-            json.dump(products, file, indent=2, ensure_ascii=False)
-            file.write("\n")
+    """Guarda los productos en productos.json."""
+    with PRODUCTS_FILE.open("w", encoding="utf-8") as file:
+        json.dump(products, file, indent=2, ensure_ascii=False)
+        file.write("\n")
 
 
 def normalize_product(payload):
