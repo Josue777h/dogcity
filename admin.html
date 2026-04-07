@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Panel de administración de productos para restaurante." />
+  <title>Panel Admin | Pedidos por WhatsApp</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="admin">
+  <div class="app-bg"></div>
+
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-mark">R</span>
+      <div>
+        <strong>Restaurante Express</strong>
+        <span>Gestión de productos</span>
+      </div>
+    </a>
+
+    <nav class="nav-links">
+      <a href="/">Tienda</a>
+      <a href="/admin" class="is-active">Panel Admin</a>
+    </nav>
+  </header>
+
+  <main class="layout admin-layout">
+    <section class="hero-card hero-card-compact">
+      <div class="hero-copy">
+        <span class="eyebrow">Panel Admin</span>
+        <h1>Administra el menú del restaurante</h1>
+        <p>Agrega, edita y elimina productos para mantener el catálogo siempre actualizado.</p>
+      </div>
+    </section>
+
+    <section class="panel admin-form-panel">
+      <div class="section-header">
+        <div>
+          <span id="adminFormKicker" class="section-kicker">Nuevo producto</span>
+          <h2 id="adminFormTitle">Crear producto</h2>
+          <p id="adminFormDescription">Los cambios se guardan en JSON y se reflejan de inmediato en la tienda.</p>
+        </div>
+      </div>
+
+      <form id="newProductForm" class="form-grid">
+        <input id="editingProductId" name="editingProductId" type="hidden" value="" />
+
+        <label>
+          Nombre
+          <input name="name" type="text" maxlength="80" placeholder="Ej. Hamburguesa clásica" required />
+        </label>
+        <label>
+          Precio
+          <input name="price" type="number" min="100" step="100" placeholder="Ej. 15000" required />
+        </label>
+        <label class="full-width">
+          Descripción
+          <input name="description" type="text" maxlength="160" placeholder="Descripción breve del producto" required />
+        </label>
+        <label>
+          Unidad
+          <input name="unit" type="text" maxlength="20" value="unidad" required />
+        </label>
+        <label>
+          URL de imagen
+          <input id="imageUrlInput" name="image" type="text" value="images/producto.svg" />
+        </label>
+        <label class="full-width">
+          Subir imagen
+          <input id="imageFileInput" name="imageFile" type="file" accept="image/*" capture="environment" />
+        </label>
+        <div class="full-width image-preview-card">
+          <span class="image-preview-label">Vista previa</span>
+          <img id="imagePreview" src="images/producto.svg" alt="Vista previa del producto" />
+        </div>
+
+        <div class="full-width form-actions">
+          <button id="saveProductBtn" type="submit" class="btn btn-primary">Guardar producto</button>
+          <button id="cancelEditBtn" type="button" class="btn btn-secondary hidden">Cancelar edición</button>
+          <span id="saveStatus" class="form-note">Listo para guardar con Flask o localStorage.</span>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="section-header">
+        <div>
+          <span class="section-kicker">Inventario</span>
+          <h2>Productos actuales</h2>
+          <p>Edita o elimina productos con un clic y mantén el menú actualizado.</p>
+        </div>
+      </div>
+
+      <div id="adminProductsList" class="admin-product-list"></div>
+      <p id="adminEmptyState" class="empty-state hidden">Aún no hay productos registrados.</p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

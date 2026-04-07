@@ -1,0 +1,26 @@
+[
+  {
+    "id": 3,
+    "name": "Papas especiales",
+    "price": 9000,
+    "description": "Papas a la francesa con salsas de la casa.",
+    "unit": "porción",
+    "image": "images/uploads/WhatsApp_Image_2026-04-07_at_1.48.55_AM.jpeg"
+  },
+  {
+    "id": 2,
+    "name": "Pizza personal",
+    "price": 17000,
+    "description": "Base crocante con salsa de tomate y queso gratinado.",
+    "unit": "unidad",
+    "image": "images/camiseta.svg"
+  },
+  {
+    "id": 1,
+    "name": "Hamburguesa clásica",
+    "price": 18000,
+    "description": "Pan suave, carne artesanal, queso y vegetales frescos.",
+    "unit": "unidad",
+    "image": "images/taza.svg"
+  }
+]
