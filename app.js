@@ -6,6 +6,7 @@ const ORDER_COMMENT_STORAGE_KEY = 'restaurante-comentario-pedido';
 const WHATSAPP_PHONE = '573143243707';
 const SUPABASE_URL = window.SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
+const SUPABASE_PRODUCT_BUCKET = 'product-images';
 let supabaseClient = null;
 let productSchemaCache = null;
 
@@ -263,98 +264,64 @@ function resolveProductImage(product, seed = 0) {
   return pickPlaceholderImage(seed || product?.id || product?.name?.length || 0);
 }
 
-function arrayBufferToBase64(buffer) {
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 0x8000;
-  let binary = '';
+function sanitizeFileName(value) {
+  return String(value || 'producto')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48) || 'producto';
+}
 
-  for (let index = 0; index < bytes.length; index += chunkSize) {
-    const chunk = bytes.subarray(index, index + chunkSize);
-    binary += String.fromCharCode(...chunk);
+function getFileExtension(file) {
+  const fromName = String(file?.name || '').split('.').pop()?.toLowerCase();
+  if (fromName && fromName !== String(file?.name || '').toLowerCase()) {
+    return fromName;
   }
 
-  return window.btoa(binary);
-}
-
-function blobToDataUrl(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('No se pudo convertir la imagen seleccionada.'));
-    reader.readAsDataURL(blob);
-  });
-}
-
-function loadImageFromObjectUrl(objectUrl) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error('No se pudo procesar la imagen seleccionada.'));
-    image.src = objectUrl;
-  });
-}
-
-async function normalizeImageFile(file) {
-  const objectUrl = URL.createObjectURL(file);
-
-  try {
-    const image = await loadImageFromObjectUrl(objectUrl);
-    const maxSize = 1400;
-    const scale = Math.min(1, maxSize / Math.max(image.width || 1, image.height || 1));
-    const width = Math.max(1, Math.round((image.width || 1) * scale));
-    const height = Math.max(1, Math.round((image.height || 1) * scale));
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-
-    const context = canvas.getContext('2d', { alpha: false });
-    if (!context) {
-      throw new Error('No se pudo preparar la imagen.');
-    }
-
-    context.fillStyle = '#ffffff';
-    context.fillRect(0, 0, width, height);
-    context.drawImage(image, 0, 0, width, height);
-    const blob = await new Promise((resolve, reject) => {
-      canvas.toBlob(result => {
-        if (!result) {
-          reject(new Error('No se pudo convertir la imagen.'));
-          return;
-        }
-        resolve(result);
-      }, 'image/jpeg', 0.82);
-    });
-
-    return await blobToDataUrl(blob);
-  } finally {
-    URL.revokeObjectURL(objectUrl);
+  const mimeType = String(file?.type || '').toLowerCase();
+  if (mimeType.includes('png')) {
+    return 'png';
   }
+  if (mimeType.includes('webp')) {
+    return 'webp';
+  }
+  return 'jpg';
 }
 
-async function fileToDataUrl(file) {
+async function uploadProductImage(file, productName) {
   if (!file) {
     throw new Error('No se selecciono ninguna imagen.');
   }
 
-  try {
-    return await normalizeImageFile(file);
-  } catch (error) {
-    try {
-      return await blobToDataUrl(file);
-    } catch (fallbackError) {
-      try {
-        const mimeType = String(file.type || 'image/jpeg').trim() || 'image/jpeg';
-        const buffer = await file.arrayBuffer();
-        if (!buffer.byteLength) {
-          throw new Error('El archivo esta vacio.');
-        }
-        const base64 = arrayBufferToBase64(buffer);
-        return `data:${mimeType};base64,${base64}`;
-      } catch (lastError) {
-        throw new Error('No se pudo leer la imagen seleccionada desde este dispositivo.');
-      }
-    }
+  const supabase = getSupabaseClient();
+  const extension = getFileExtension(file);
+  const safeName = sanitizeFileName(productName);
+  const uniqueId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const filePath = `products/${safeName}-${uniqueId}.${extension}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(SUPABASE_PRODUCT_BUCKET)
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type || undefined
+    });
+
+  if (uploadError) {
+    throw new Error(`No se pudo subir la imagen a Supabase Storage: ${uploadError.message}`);
   }
+
+  const { data } = supabase.storage
+    .from(SUPABASE_PRODUCT_BUCKET)
+    .getPublicUrl(filePath);
+
+  if (!data?.publicUrl) {
+    throw new Error('La imagen se subio, pero no se pudo obtener la URL publica.');
+  }
+
+  return data.publicUrl;
 }
 function getSupabaseClient() {
   if (supabaseClient) {
@@ -1206,10 +1173,10 @@ function buildAdminApp() {
       return baseProduct;
     }
 
-    const imageAsDataUrl = await fileToDataUrl(file);
+    const uploadedImageUrl = await uploadProductImage(file, baseProduct.name);
     return {
       ...baseProduct,
-      image: imageAsDataUrl || baseProduct.image
+      image: uploadedImageUrl || baseProduct.image
     };
   }
 
@@ -1393,7 +1360,11 @@ function buildAdminApp() {
       handleSubmit(event).catch(error => {
         console.warn('No se pudo guardar el producto:', error);
         const message = error.message || 'No se pudo guardar el producto.';
-        setSaveStatus(message.includes('imagen') ? `${message} Prueba otra foto o selecciona una imagen desde la galeria.` : message, 'error');
+        if (message.includes('Storage')) {
+          setSaveStatus(`${message} Verifica que exista el bucket "${SUPABASE_PRODUCT_BUCKET}" y que permita subir archivos.`, 'error');
+          return;
+        }
+        setSaveStatus(message, 'error');
       });
     });
 
