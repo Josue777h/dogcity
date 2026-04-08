@@ -376,6 +376,35 @@ function subscribeToProductsRealtime(onChange) {
     .subscribe();
 }
 
+function initNavToggle() {
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinks = document.querySelector('.nav-links');
+
+  if (!navToggle || !navLinks) {
+    return;
+  }
+
+  const closeMenu = () => {
+    navLinks.classList.remove('is-open');
+    navToggle.setAttribute('aria-expanded', 'false');
+  };
+
+  navToggle.addEventListener('click', () => {
+    const isOpen = navLinks.classList.toggle('is-open');
+    navToggle.setAttribute('aria-expanded', String(isOpen));
+  });
+
+  navLinks.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', closeMenu);
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 780) {
+      closeMenu();
+    }
+  });
+}
+
 function normalizeProductRow(row) {
   return {
     id: Number(row.id),
@@ -1281,6 +1310,7 @@ function buildAdminApp() {
 
 function init() {
   applyBrandPaletteFromLogo();
+  initNavToggle();
   const page = getPage();
   const app = page === 'admin' ? buildAdminApp() : buildStoreApp();
   app.init().catch(error => {

@@ -21,7 +21,13 @@
       </div>
     </a>
 
-    <nav class="nav-links">
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="storeNav">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <nav id="storeNav" class="nav-links">
       <a href="index.html" class="is-active">Tienda</a>
     </nav>
   </header>
@@ -83,7 +89,6 @@
             <h2>Resumen y envío</h2>
             <p>Genera el mensaje, cópialo o ábrelo directamente en WhatsApp.</p>
           </div>
-          <button id="generateBtn" class="btn btn-primary" type="button">Generar pedido</button>
         </div>
 
         <div class="customer-grid">
@@ -124,6 +129,7 @@
         </div>
 
         <textarea id="generatedMessage" readonly placeholder="Aquí aparecerá el mensaje listo para WhatsApp."></textarea>
+        <button id="generateBtn" class="btn btn-primary order-submit-btn" type="button">Generar pedido</button>
       </aside>
     </div>
   </main>
