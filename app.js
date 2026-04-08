@@ -263,13 +263,41 @@ function resolveProductImage(product, seed = 0) {
   return pickPlaceholderImage(seed || product?.id || product?.name?.length || 0);
 }
 
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('No se pudo leer la imagen seleccionada.'));
-    reader.readAsDataURL(file);
-  });
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = '';
+
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    const chunk = bytes.subarray(index, index + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+
+  return window.btoa(binary);
+}
+
+async function fileToDataUrl(file) {
+  if (!file) {
+    throw new Error('No se selecciono ninguna imagen.');
+  }
+
+  const mimeType = String(file.type || 'image/jpeg').trim() || 'image/jpeg';
+
+  try {
+    const buffer = await file.arrayBuffer();
+    if (!buffer.byteLength) {
+      throw new Error('El archivo esta vacio.');
+    }
+    const base64 = arrayBufferToBase64(buffer);
+    return `data:${mimeType};base64,${base64}`;
+  } catch (error) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('No se pudo leer la imagen seleccionada desde este dispositivo.'));
+      reader.readAsDataURL(file);
+    });
+  }
 }
 function getSupabaseClient() {
   if (supabaseClient) {
@@ -1307,7 +1335,8 @@ function buildAdminApp() {
     newProductForm.addEventListener('submit', event => {
       handleSubmit(event).catch(error => {
         console.warn('No se pudo guardar el producto:', error);
-        setSaveStatus(error.message || 'No se pudo guardar el producto.', 'error');
+        const message = error.message || 'No se pudo guardar el producto.';
+        setSaveStatus(message.includes('imagen') ? `${message} Prueba otra foto o selecciona una imagen desde la galeria.` : message, 'error');
       });
     });
 
