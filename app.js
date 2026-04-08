@@ -1,16 +1,48 @@
-const DEFAULT_IMAGE = 'images/producto.svg';
-const FALLBACK_STORAGE_KEY = 'restaurante-productos-locales';
+const DEFAULT_IMAGE = 'images/taza.svg';
 const CART_STORAGE_KEY = 'restaurante-carrito';
 const CUSTOMER_STORAGE_KEY = 'restaurante-cliente';
 const PRODUCT_NOTES_STORAGE_KEY = 'restaurante-notas-productos';
 const ORDER_COMMENT_STORAGE_KEY = 'restaurante-comentario-pedido';
-const ADMIN_AUTH_STORAGE_KEY = 'dogcity-admin-auth';
-const ADMIN_ACCESS_PIN = '1234';
-const API_BASE_URL = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
-const PRODUCTS_API_URL = `${API_BASE_URL}/productos`;
 const WHATSAPP_PHONE = '573143243707';
-const IS_HTTP_MODE = window.location.protocol.startsWith('http');
-let backendAvailable = IS_HTTP_MODE;
+const SUPABASE_URL = window.SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
+let supabaseClient = null;
+let productSchemaCache = null;
+
+const PRODUCT_SCHEMA_VARIANTS = [
+  {
+    label: 'es-no-unit',
+    select: 'id, nombre, precio, descripcion, imagen',
+    fields: { name: 'nombre', price: 'precio', description: 'descripcion', image: 'imagen' }
+  },
+  {
+    label: 'es-full',
+    select: 'id, nombre, precio, descripcion, unidad, imagen',
+    fields: { name: 'nombre', price: 'precio', description: 'descripcion', unit: 'unidad', image: 'imagen' }
+  },
+  {
+    label: 'es-basic',
+    select: 'id, nombre, precio, descripcion',
+    fields: { name: 'nombre', price: 'precio', description: 'descripcion' }
+  },
+  {
+    label: 'en-full',
+    select: 'id, name, price, description, unit, image',
+    fields: { name: 'name', price: 'price', description: 'description', unit: 'unit', image: 'image' }
+  },
+  {
+    label: 'en-no-unit',
+    select: 'id, name, price, description, image',
+    fields: { name: 'name', price: 'price', description: 'description', image: 'image' }
+  },
+  {
+    label: 'en-basic',
+    select: 'id, name, price, description',
+    fields: { name: 'name', price: 'price', description: 'description' }
+  }
+];
+
+productSchemaCache = PRODUCT_SCHEMA_VARIANTS[0];
 
 function clampColor(value) {
   return Math.max(0, Math.min(255, Math.round(value)));
@@ -139,87 +171,57 @@ function applyBrandPaletteFromLogo() {
   }
 }
 
-const fallbackProducts = [
-  {
-    id: 4,
-    name: 'Perro Sencillo',
-    price: 6000,
-    description: 'Salchicha Delichi, papa ripio crocante, cebolla, queso y salsas de la casa.',
-    unit: 'unidad',
-    image: 'assets/c__Users_josue_AppData_Roaming_Cursor_User_workspaceStorage_06ad8a56d9bb091a52c0e4127295690d_images_WhatsApp_Image_2026-04-07_at_11.25.49_PM-d3551022-639a-4328-b8f5-0aa287dd40ce.png'
-  },
-  {
-    id: 5,
-    name: 'Perro Doble',
-    price: 7000,
-    description: 'Dos salchichas Delichi, papa ripio crocante, cebolla, queso y salsas de la casa.',
-    unit: 'unidad',
-    image: 'assets/c__Users_josue_AppData_Roaming_Cursor_User_workspaceStorage_06ad8a56d9bb091a52c0e4127295690d_images_WhatsApp_Image_2026-04-07_at_11.25.49_PM-d3551022-639a-4328-b8f5-0aa287dd40ce.png'
-  },
-  {
-    id: 6,
-    name: 'Perro Americano',
-    price: 10000,
-    description: 'Pan brioche de papa, salchicha zenu, papa ripio crocante, cebolla, queso y salsas de la casa.',
-    unit: 'unidad',
-    image: 'assets/c__Users_josue_AppData_Roaming_Cursor_User_workspaceStorage_06ad8a56d9bb091a52c0e4127295690d_images_WhatsApp_Image_2026-04-07_at_11.25.49_PM-d3551022-639a-4328-b8f5-0aa287dd40ce.png'
-  },
-  {
-    id: 7,
-    name: 'Perro Polaco',
-    price: 10000,
-    description: 'Pan brioche de papa, salchicha ranchera, papa ripio crocante, cebolla, queso y salsas de la casa.',
-    unit: 'unidad',
-    image: 'assets/c__Users_josue_AppData_Roaming_Cursor_User_workspaceStorage_06ad8a56d9bb091a52c0e4127295690d_images_WhatsApp_Image_2026-04-07_at_11.25.49_PM-d3551022-639a-4328-b8f5-0aa287dd40ce.png'
-  },
-  {
-    id: 8,
-    name: 'Perro Mexicano',
-    price: 10000,
-    description: 'Pan brioche de papa, salchicha picante, papa ripio crocante, cebolla, queso y salsas de la casa.',
-    unit: 'unidad',
-    image: 'assets/c__Users_josue_AppData_Roaming_Cursor_User_workspaceStorage_06ad8a56d9bb091a52c0e4127295690d_images_WhatsApp_Image_2026-04-07_at_11.25.49_PM-d3551022-639a-4328-b8f5-0aa287dd40ce.png'
-  },
-  {
-    id: 9,
-    name: 'Perro Alemán',
-    price: 10000,
-    description: 'Pan brioche de papa, salchicha de cerdo ahumada, papa ripio crocante, cebolla, queso y salsas de la casa.',
-    unit: 'unidad',
-    image: 'assets/c__Users_josue_AppData_Roaming_Cursor_User_workspaceStorage_06ad8a56d9bb091a52c0e4127295690d_images_WhatsApp_Image_2026-04-07_at_11.25.49_PM-d3551022-639a-4328-b8f5-0aa287dd40ce.png'
-  },
-  {
-    id: 1,
-    name: 'Hamburguesa clásica',
-    price: 18000,
-    description: 'Pan suave, carne artesanal, queso y vegetales frescos.',
-    unit: 'unidad',
-    image: 'images/taza.svg'
-  },
-  {
-    id: 2,
-    name: 'Pizza personal',
-    price: 17000,
-    description: 'Base crocante con salsa de tomate y queso gratinado.',
-    unit: 'unidad',
-    image: 'images/camiseta.svg'
-  },
-  {
-    id: 3,
-    name: 'Papas especiales',
-    price: 9000,
-    description: 'Papas a la francesa con salsas de la casa.',
-    unit: 'porción',
-    image: 'images/stickers.svg'
-  }
-];
-
 const PLACEHOLDER_IMAGES = [
   'images/taza.svg',
   'images/camiseta.svg',
   'images/stickers.svg',
   'images/hat.svg',
   'images/uploads/foto.png'
+];
+
+const DOGCITY_MENU_PRODUCTS = [
+  {
+    name: 'Perro Sencillo',
+    price: 6000,
+    description: 'Salchicha Delichi, papa ripio crocante, cebolla, queso y salsas de la casa',
+    unit: 'unidad',
+    image: 'images/uploads/foto.png'
+  },
+  {
+    name: 'Perro Doble',
+    price: 7000,
+    description: 'Dos salchichas Delichi, papa ripio crocante, cebolla, queso y salsas de la casa',
+    unit: 'unidad',
+    image: 'images/hat.svg'
+  },
+  {
+    name: 'Perro Americano',
+    price: 10000,
+    description: 'Pan brioche a base de papa, salchicha Zenu, papa ripio crocante, cebolla, queso y salsas',
+    unit: 'unidad',
+    image: 'images/camiseta.svg'
+  },
+  {
+    name: 'Perro Polaco',
+    price: 10000,
+    description: 'Pan brioche a base de papa, salchicha ranchera, papa ripio crocante, cebolla, queso y salsas',
+    unit: 'unidad',
+    image: 'images/stickers.svg'
+  },
+  {
+    name: 'Perro Mexicano',
+    price: 10000,
+    description: 'Pan brioche, salchicha picante, chipotle, papa ripio crocante, cebolla, queso y salsas',
+    unit: 'unidad',
+    image: 'images/taza.svg'
+  },
+  {
+    name: 'Perro Aleman',
+    price: 10000,
+    description: 'Pan brioche, salchicha de cerdo ahumada, papa ripio crocante, cebolla, queso y salsas',
+    unit: 'unidad',
+    image: 'images/uploads/DOGCITY.png'
+  }
 ];
 
 function $(id) {
@@ -261,186 +263,227 @@ function resolveProductImage(product, seed = 0) {
   return pickPlaceholderImage(seed || product?.id || product?.name?.length || 0);
 }
 
-function readLocalJsonProducts() {
-  try {
-    const raw = localStorage.getItem(FALLBACK_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : fallbackProducts;
-  } catch (error) {
-    console.warn('No se pudo leer productos desde localStorage:', error);
-    return fallbackProducts;
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('No se pudo leer la imagen seleccionada.'));
+    reader.readAsDataURL(file);
+  });
+}
+function getSupabaseClient() {
+  if (supabaseClient) {
+    return supabaseClient;
   }
+  if (!window.supabase?.createClient) {
+    throw new Error('No se cargo supabase-js. Verifica el script CDN.');
+  }
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('YOUR_PROJECT')) {
+    throw new Error('Configura SUPABASE_URL y SUPABASE_ANON_KEY en index.html y admin.html.');
+  }
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return supabaseClient;
 }
 
-function writeLocalJsonProducts(products) {
-  try {
-    localStorage.setItem(FALLBACK_STORAGE_KEY, JSON.stringify(products));
-  } catch (error) {
-    console.warn('No se pudo guardar productos en localStorage:', error);
-  }
-}
+async function detectProductSchema() {
+  const supabase = getSupabaseClient();
+  let lastError = null;
 
-async function apiRequest(url, options = {}) {
-  let response;
-  try {
-    const headers = { Accept: 'application/json', ...(options.headers || {}) };
-    if (options.body instanceof FormData) {
-      delete headers['Content-Type'];
+  for (const variant of PRODUCT_SCHEMA_VARIANTS) {
+    const { error } = await supabase
+      .from('productos')
+      .select(variant.select)
+      .limit(1);
+
+    if (!error) {
+      productSchemaCache = variant;
+      return variant;
     }
 
-    response = await fetch(url, {
-      headers,
-      ...options
-    });
-  } catch (error) {
-    error.isNetworkError = true;
-    throw error;
+    lastError = error;
   }
 
-  let body = null;
-  try {
-    body = await response.json();
-  } catch (error) {
-    body = null;
-  }
-
-  if (!response.ok) {
-    const message = body?.error || 'Ocurrió un error en la solicitud.';
-    const error = new Error(message);
-    error.status = response.status;
-    throw error;
-  }
-
-  return body;
+  throw new Error(`No se pudo detectar la estructura de la tabla productos: ${lastError?.message || 'error desconocido'}`);
 }
 
-function shouldUseLocalFallback(error) {
-  return Boolean(
-    !IS_HTTP_MODE ||
-    error?.isNetworkError ||
-    error?.status === 404 ||
-    error?.status === 405 ||
-    error?.status === 500
-  );
+async function getProductSchema(forceRefresh = false) {
+  if (!forceRefresh && productSchemaCache) {
+    return productSchemaCache;
+  }
+
+  return detectProductSchema();
+}
+
+function buildProductRecord(product, schema) {
+  const record = {};
+
+  if (schema.fields.name) {
+    record[schema.fields.name] = product.name;
+  }
+  if (schema.fields.price) {
+    record[schema.fields.price] = Number(product.price);
+  }
+  if (schema.fields.description) {
+    record[schema.fields.description] = product.description;
+  }
+  if (schema.fields.unit) {
+    record[schema.fields.unit] = product.unit || 'unidad';
+  }
+  if (schema.fields.image) {
+    record[schema.fields.image] = product.image || DEFAULT_IMAGE;
+  }
+
+  return record;
+}
+
+async function getSupabaseSession() {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
+    throw new Error(`No se pudo validar la sesión: ${error.message}`);
+  }
+  return data.session;
+}
+
+async function signInAdmin(email, password) {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    throw new Error(`No se pudo iniciar sesión: ${error.message}`);
+  }
+  return data.session;
+}
+
+async function signOutAdmin() {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    throw new Error(`No se pudo cerrar sesión: ${error.message}`);
+  }
+}
+
+function subscribeToProductsRealtime(onChange) {
+  const supabase = getSupabaseClient();
+  return supabase
+    .channel(`productos-realtime-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'productos' },
+      payload => {
+        onChange(payload);
+      }
+    )
+    .subscribe();
+}
+
+function normalizeProductRow(row) {
+  return {
+    id: Number(row.id),
+    name: row.nombre || row.name || 'Producto',
+    price: Number(row.precio ?? row.price ?? 0),
+    description: row.descripcion || row.description || '',
+    unit: row.unidad || row.unit || 'unidad',
+    image: row.imagen || row.image || DEFAULT_IMAGE
+  };
 }
 
 async function loadProducts() {
-  if (!IS_HTTP_MODE) {
-    backendAvailable = false;
-    return readLocalJsonProducts();
+  const supabase = getSupabaseClient();
+  const schema = await getProductSchema();
+  const { data, error } = await supabase
+    .from('productos')
+    .select(schema.select)
+    .order('id', { ascending: false });
+
+  if (error) {
+    throw new Error(`No se pudieron cargar productos: ${error.message}`);
   }
 
-  try {
-    const products = await apiRequest(PRODUCTS_API_URL);
-    backendAvailable = true;
-    return Array.isArray(products) ? products : [];
-  } catch (error) {
-    backendAvailable = false;
-    console.warn('Usando productos locales por falta de backend disponible:', error);
-    return readLocalJsonProducts();
+  const products = (data || []).map(normalizeProductRow);
+  if (products.length === 0) {
+    return DOGCITY_MENU_PRODUCTS.map((product, index) => ({
+      id: -(index + 1),
+      ...product
+    }));
   }
+  return products;
+}
+
+async function seedDefaultCatalogIfEmpty() {
+  const supabase = getSupabaseClient();
+  const schema = await getProductSchema();
+  const { count, error: countError } = await supabase
+    .from('productos')
+    .select('id', { count: 'exact', head: true });
+
+  if (countError) {
+    throw new Error(`No se pudo revisar el catálogo: ${countError.message}`);
+  }
+
+  if ((count || 0) > 0) {
+    return false;
+  }
+
+  const { error } = await supabase
+    .from('productos')
+    .insert(DOGCITY_MENU_PRODUCTS.map(product => buildProductRecord(product, schema)));
+
+  if (error) {
+    throw new Error(`No se pudo sembrar el menú inicial: ${error.message}`);
+  }
+
+  return true;
 }
 
 async function createProduct(product) {
-  const payload = product instanceof FormData ? product : product;
+  const supabase = getSupabaseClient();
+  const schema = await getProductSchema();
+  const { data, error } = await supabase
+    .from('productos')
+    .insert([buildProductRecord(product, schema)])
+    .select(schema.select)
+    .single();
 
-  if (!IS_HTTP_MODE || !backendAvailable) {
-    const products = readLocalJsonProducts();
-    const nextId = products.reduce((maxId, item) => Math.max(maxId, Number(item.id) || 0), 0) + 1;
-    const normalized = payload instanceof FormData
-      ? Object.fromEntries(Array.from(payload.entries()).filter(([key]) => key !== 'imageFile' && key !== 'editingProductId'))
-      : payload;
-    const saved = { id: nextId, ...normalized, price: Number(normalized.price) };
-    writeLocalJsonProducts([...products, saved]);
-    return saved;
+  if (error) {
+    throw new Error(`No se pudo crear producto: ${error.message}`);
   }
-
-  try {
-    return await apiRequest(PRODUCTS_API_URL, {
-      method: 'POST',
-      headers: payload instanceof FormData ? {} : { 'Content-Type': 'application/json' },
-      body: payload instanceof FormData ? payload : JSON.stringify(payload)
-    });
-  } catch (error) {
-    if (!shouldUseLocalFallback(error)) {
-      throw error;
-    }
-    backendAvailable = false;
-    const products = readLocalJsonProducts();
-    const nextId = products.reduce((maxId, item) => Math.max(maxId, Number(item.id) || 0), 0) + 1;
-    const normalized = payload instanceof FormData
-      ? Object.fromEntries(Array.from(payload.entries()).filter(([key]) => key !== 'imageFile' && key !== 'editingProductId'))
-      : payload;
-    const saved = { id: nextId, ...normalized, price: Number(normalized.price) };
-    writeLocalJsonProducts([...products, saved]);
-    return saved;
-  }
+  return normalizeProductRow(data);
 }
 
 async function deleteProduct(productId) {
-  if (!IS_HTTP_MODE || !backendAvailable) {
-    const products = readLocalJsonProducts().filter(product => Number(product.id) !== Number(productId));
-    writeLocalJsonProducts(products);
-    return;
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('productos')
+    .delete()
+    .eq('id', Number(productId))
+    .select('id');
+
+  if (error) {
+    throw new Error(`No se pudo eliminar producto: ${error.message}`);
   }
 
-  try {
-    await apiRequest(`${PRODUCTS_API_URL}/${productId}`, { method: 'DELETE' });
-  } catch (error) {
-    if (!shouldUseLocalFallback(error)) {
-      throw error;
-    }
-    backendAvailable = false;
-    const products = readLocalJsonProducts().filter(product => Number(product.id) !== Number(productId));
-    writeLocalJsonProducts(products);
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error('No se pudo eliminar producto: Supabase no confirmo la eliminacion. Revisa permisos de DELETE/RLS.');
   }
 }
 
 async function updateProduct(productId, productData) {
-  const payload = productData instanceof FormData ? productData : productData;
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('productos')
+    .update(buildProductRecord(productData, await getProductSchema()))
+    .eq('id', Number(productId))
+    .select('id');
 
-  if (!IS_HTTP_MODE || !backendAvailable) {
-    const products = readLocalJsonProducts().map(product => (
-      Number(product.id) === Number(productId)
-        ? {
-          ...product,
-          ...(payload instanceof FormData
-            ? Object.fromEntries(Array.from(payload.entries()).filter(([key]) => key !== 'imageFile' && key !== 'editingProductId'))
-            : payload),
-          id: Number(productId),
-          price: Number(payload instanceof FormData ? payload.get('price') : payload.price)
-        }
-        : product
-    ));
-    writeLocalJsonProducts(products);
-    return products.find(product => Number(product.id) === Number(productId));
+  if (error) {
+    throw new Error(`No se pudo actualizar producto: ${error.message}`);
   }
 
-  try {
-    return await apiRequest(`${PRODUCTS_API_URL}/${productId}`, {
-      method: 'PUT',
-      headers: payload instanceof FormData ? {} : { 'Content-Type': 'application/json' },
-      body: payload instanceof FormData ? payload : JSON.stringify(payload)
-    });
-  } catch (error) {
-    if (!shouldUseLocalFallback(error)) {
-      throw error;
-    }
-    backendAvailable = false;
-    const products = readLocalJsonProducts().map(product => (
-      Number(product.id) === Number(productId)
-        ? {
-          ...product,
-          ...(payload instanceof FormData
-            ? Object.fromEntries(Array.from(payload.entries()).filter(([key]) => key !== 'imageFile' && key !== 'editingProductId'))
-            : payload),
-          id: Number(productId),
-          price: Number(payload instanceof FormData ? payload.get('price') : payload.price)
-        }
-        : product
-    ));
-    writeLocalJsonProducts(products);
-    return products.find(product => Number(product.id) === Number(productId));
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error('No se pudo actualizar producto: Supabase no confirmo cambios. Revisa permisos de UPDATE/RLS.');
   }
+
+  return true;
 }
 
 function buildStoreApp() {
@@ -575,6 +618,29 @@ function buildStoreApp() {
     generatedMessage.value = '';
     whatsappLink.href = '#';
     whatsappLink.classList.add('disabled');
+  }
+
+  function applyProducts(nextProducts) {
+    const nextQuantities = {};
+    const nextNotes = {};
+
+    nextProducts.forEach(product => {
+      nextQuantities[product.id] = Number(state.quantities[product.id] || 0);
+      nextNotes[product.id] = typeof state.notes[product.id] === 'string' ? state.notes[product.id] : '';
+    });
+
+    state.products = nextProducts;
+    state.quantities = nextQuantities;
+    state.notes = nextNotes;
+    saveCart();
+    saveProductNotes();
+  }
+
+  async function refreshProducts() {
+    const nextProducts = await loadProducts();
+    applyProducts(nextProducts);
+    renderProducts();
+    updateOrderDisplay();
   }
 
   function renderProducts() {
@@ -863,6 +929,12 @@ function buildStoreApp() {
         console.warn('No se pudo copiar el mensaje:', error);
       });
     });
+
+    subscribeToProductsRealtime(() => {
+      refreshProducts().catch(error => {
+        console.warn('No se pudo refrescar la tienda en tiempo real:', error);
+      });
+    });
   }
 
   return { init };
@@ -887,13 +959,34 @@ function buildAdminApp() {
   const imageFileInput = $('imageFileInput');
   const imagePreview = $('imagePreview');
   const adminAccessGate = $('adminAccessGate');
-  const adminPinInput = $('adminPinInput');
-  const adminPinBtn = $('adminPinBtn');
+  const adminEmailInput = $('adminEmailInput');
+  const adminPasswordInput = $('adminPasswordInput');
+  const adminLoginBtn = $('adminLoginBtn');
   const adminPinStatus = $('adminPinStatus');
+  const adminLogoutBtn = $('adminLogoutBtn');
 
   function setSaveStatus(message, tone = 'neutral') {
     saveStatus.textContent = message;
     saveStatus.dataset.tone = tone;
+  }
+
+  function setAdminAuthenticated(session) {
+    const isAuthenticated = Boolean(session);
+    adminAccessGate?.classList.toggle('hidden', isAuthenticated);
+    adminLogoutBtn?.classList.toggle('hidden', !isAuthenticated);
+    newProductForm?.classList.toggle('is-locked', !isAuthenticated);
+
+    if (isAuthenticated) {
+      adminPinStatus.textContent = `Sesión activa como ${session.user.email}.`;
+      adminPinStatus.style.color = '#16a34a';
+      setSaveStatus('Conectado con Supabase: catálogo online activo.', 'success');
+      return;
+    }
+
+    adminPinStatus.textContent = 'Solo usuarios autenticados pueden crear, editar o eliminar productos.';
+    adminPinStatus.style.color = '';
+    state.products = [];
+    renderProducts();
   }
 
   function validateProduct(product) {
@@ -910,11 +1003,12 @@ function buildAdminApp() {
   }
 
   function buildProductFromForm(formData) {
+    const currentProduct = state.products.find(item => Number(item.id) === Number(state.editingProductId));
     return {
       name: formData.get('name').trim(),
       price: Number(formData.get('price')),
       description: formData.get('description').trim(),
-      image: pickPlaceholderImage(formData.get('name')?.length || 0),
+      image: currentProduct?.image || pickPlaceholderImage(formData.get('name')?.length || 0),
       unit: formData.get('unit').trim() || 'unidad'
     };
   }
@@ -923,16 +1017,20 @@ function buildAdminApp() {
     imagePreview.src = source || pickPlaceholderImage(1);
   }
 
-  function buildProductPayload() {
+  async function buildProductPayload() {
     const formData = new FormData(newProductForm);
     const file = imageFileInput.files?.[0];
+    const baseProduct = buildProductFromForm(formData);
 
     if (!file) {
-      return buildProductFromForm(formData);
+      return baseProduct;
     }
 
-    formData.set('image', pickPlaceholderImage(formData.get('name')?.length || 0));
-    return formData;
+    const imageAsDataUrl = await fileToDataUrl(file);
+    return {
+      ...baseProduct,
+      image: imageAsDataUrl || baseProduct.image
+    };
   }
 
   function resetForm() {
@@ -944,7 +1042,7 @@ function buildAdminApp() {
     updateImagePreview(pickPlaceholderImage(2));
     adminFormKicker.textContent = 'Nuevo producto';
     adminFormTitle.textContent = 'Crear producto';
-    adminFormDescription.textContent = 'Los cambios se guardan en JSON y se reflejan de inmediato en la tienda.';
+    adminFormDescription.textContent = 'Los cambios se guardan en Supabase y se reflejan de inmediato en la tienda.';
     saveProductBtn.textContent = 'Guardar producto';
     cancelEditBtn.classList.add('hidden');
   }
@@ -999,13 +1097,16 @@ function buildAdminApp() {
     renderProducts();
   }
 
+  async function refreshAdminAuthState() {
+    const session = await getSupabaseSession();
+    setAdminAuthenticated(session);
+    return session;
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
-    const product = buildProductPayload();
-    const dataForValidation = product instanceof FormData
-      ? buildProductFromForm(product)
-      : product;
-    const validationError = validateProduct(dataForValidation);
+    const product = await buildProductPayload();
+    const validationError = validateProduct(product);
 
     if (validationError) {
       setSaveStatus(validationError, 'error');
@@ -1048,39 +1149,65 @@ function buildAdminApp() {
     }
   }
 
-  function ensureAdminAccess() {
-    const hasAccess = localStorage.getItem(ADMIN_AUTH_STORAGE_KEY) === '1';
-    if (hasAccess) {
-      adminAccessGate?.classList.add('hidden');
-      return true;
+  async function handleAdminLogin() {
+    const email = (adminEmailInput?.value || '').trim();
+    const password = (adminPasswordInput?.value || '').trim();
+
+    if (!email || !password) {
+      adminPinStatus.textContent = 'Ingresa correo y contraseña.';
+      adminPinStatus.style.color = '#e10613';
+      return;
     }
 
-    adminAccessGate?.classList.remove('hidden');
-    adminPinBtn?.addEventListener('click', () => {
-      const pin = (adminPinInput?.value || '').trim();
-      if (pin === ADMIN_ACCESS_PIN) {
-        localStorage.setItem(ADMIN_AUTH_STORAGE_KEY, '1');
-        adminAccessGate?.classList.add('hidden');
-        adminPinStatus.textContent = 'Acceso concedido.';
-        adminPinStatus.style.color = '#16a34a';
-      } else {
-        adminPinStatus.textContent = 'PIN incorrecto. No tienes acceso al panel admin.';
-        adminPinStatus.style.color = '#e10613';
-      }
-    });
-    return false;
+    adminLoginBtn.disabled = true;
+    adminLoginBtn.textContent = 'Entrando...';
+
+    try {
+      const session = await signInAdmin(email, password);
+      setAdminAuthenticated(session);
+      adminPasswordInput.value = '';
+      await refreshProducts();
+    } catch (error) {
+      adminPinStatus.textContent = error.message || 'No se pudo iniciar sesión.';
+      adminPinStatus.style.color = '#e10613';
+    } finally {
+      adminLoginBtn.disabled = false;
+      adminLoginBtn.textContent = 'Entrar al panel';
+    }
   }
 
   async function init() {
-    ensureAdminAccess();
-    await refreshProducts();
+    const supabase = getSupabaseClient();
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setAdminAuthenticated(session);
+      if (session) {
+        seedDefaultCatalogIfEmpty()
+          .catch(error => {
+            console.warn('No se pudo sembrar el menú inicial:', error);
+          })
+          .finally(() => {
+            refreshProducts().catch(error => {
+              console.warn('No se pudieron refrescar productos tras autenticar:', error);
+              setSaveStatus(error.message || 'No se pudieron cargar productos.', 'error');
+            });
+          });
+      }
+    });
+
     resetForm();
-    if (!IS_HTTP_MODE) {
-      setSaveStatus('Modo local activo: los productos se guardan en localStorage. Ejecuta Flask para sincronizar con productos.json.', 'warning');
-    } else if (!backendAvailable) {
-      setSaveStatus('Backend no disponible: se está usando localStorage temporalmente. Inicia Flask para guardar en productos.json.', 'warning');
+    const session = await refreshAdminAuthState();
+    if (session) {
+      try {
+        const seeded = await seedDefaultCatalogIfEmpty();
+        if (seeded) {
+          setSaveStatus('Se cargó el menú inicial de DogCity en Supabase.', 'success');
+        }
+      } catch (error) {
+        console.warn('No se pudo sembrar el menú inicial:', error);
+      }
+      await refreshProducts();
     } else {
-      setSaveStatus('Conectado con Flask: los productos se guardan en productos.json.', 'success');
+      setSaveStatus('Inicia sesión para administrar el catálogo.', 'warning');
     }
     newProductForm.addEventListener('submit', event => {
       handleSubmit(event).catch(error => {
@@ -1110,6 +1237,42 @@ function buildAdminApp() {
 
       const localUrl = URL.createObjectURL(file);
       updateImagePreview(localUrl);
+    });
+
+    adminLoginBtn?.addEventListener('click', () => {
+      handleAdminLogin().catch(error => {
+        adminPinStatus.textContent = error.message || 'No se pudo iniciar sesión.';
+        adminPinStatus.style.color = '#e10613';
+      });
+    });
+
+    adminPasswordInput?.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        handleAdminLogin().catch(error => {
+          adminPinStatus.textContent = error.message || 'No se pudo iniciar sesión.';
+          adminPinStatus.style.color = '#e10613';
+        });
+      }
+    });
+
+    adminLogoutBtn?.addEventListener('click', () => {
+      signOutAdmin().catch(error => {
+        setSaveStatus(error.message || 'No se pudo cerrar sesión.', 'error');
+      });
+    });
+
+    subscribeToProductsRealtime(() => {
+      getSupabaseSession()
+        .then(session => {
+          if (!session) {
+            return;
+          }
+          return refreshProducts();
+        })
+        .catch(error => {
+          console.warn('No se pudo refrescar el panel admin en tiempo real:', error);
+        });
     });
   }
 

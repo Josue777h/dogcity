@@ -1,13 +1,12 @@
 # Sistema de Pedidos para Restaurante
 
-Proyecto full-stack simple para tomar pedidos por WhatsApp.
+Aplicación web de pedidos por WhatsApp para restaurante, conectada 100% con Supabase.
 
 ## Tecnologías
 
 - Frontend: HTML, CSS y JavaScript puro
-- Backend: Python + Flask
-- Base de datos local: `productos.json`
-- Comunicación: API REST
+- Base de datos online: Supabase (tabla `productos`)
+- Cliente de datos: `@supabase/supabase-js` desde CDN
 
 ## Archivos principales
 
@@ -15,66 +14,87 @@ Proyecto full-stack simple para tomar pedidos por WhatsApp.
 - `admin.html`: panel para el dueño del restaurante
 - `app.js`: lógica de frontend para tienda y admin
 - `styles.css`: estilos de la aplicación
-- `app.py`: backend Flask con API REST
-- `productos.json`: base de datos local de productos
 
-## API disponible
+## Configuración Supabase
 
-- `GET /productos`
-- `POST /productos`
-- `DELETE /productos/<id>`
+En `index.html` y `admin.html` define:
+
+```html
+<script>
+  window.SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
+  window.SUPABASE_ANON_KEY = "TU_ANON_KEY";
+</script>
+```
+
+La tabla `productos` debe tener al menos estas columnas:
+
+- `id` (integer o bigint, PK)
+- `name` (text)
+- `price` (numeric/int)
+- `description` (text)
+- `unit` (text)
+- `image` (text)
+
+## Autenticación Admin
+
+El panel `admin.html` ahora usa `Supabase Auth` con correo y contraseña.
+
+Recomendado:
+
+1. Crea un usuario administrador en `Authentication > Users`
+2. Inicia sesión en `admin.html` con ese correo y contraseña
+3. Protege la tabla `productos` con RLS
+
+SQL sugerido en Supabase:
+
+```sql
+alter table public.productos enable row level security;
+
+create policy "Productos visibles para todos"
+on public.productos
+for select
+to anon, authenticated
+using (true);
+
+create policy "Solo admin autenticado puede insertar"
+on public.productos
+for insert
+to authenticated
+with check (true);
+
+create policy "Solo admin autenticado puede actualizar"
+on public.productos
+for update
+to authenticated
+using (true)
+with check (true);
+
+create policy "Solo admin autenticado puede eliminar"
+on public.productos
+for delete
+to authenticated
+using (true);
+```
+
+Si quieres seguridad más fuerte, el siguiente paso es restringir por email o por rol, no solo por `authenticated`.
 
 ## Cómo ejecutar
 
-### 1. Activar el entorno virtual
+No necesitas Flask ni backend local.
 
-PowerShell:
+1. Abre `index.html` para la tienda
+2. Abre `admin.html` para el panel admin
+3. Inicia sesión con tu usuario admin de Supabase
+4. Verifica que puedes crear/editar/eliminar productos en Supabase
 
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
+## Funcionalidades
 
-### 2. Instalar Flask
-
-```powershell
-pip install Flask
-```
-
-### 3. Iniciar el backend
-
-```powershell
-python app.py
-```
-
-El servidor quedará en:
-
-```text
-http://127.0.0.1:5000
-```
-
-### 4. Abrir la aplicación
-
-Opciones:
-
-- Tienda: `http://127.0.0.1:5000/`
-- Panel admin: `http://127.0.0.1:5000/admin`
-
-También puedes abrir el frontend con Live Server. En ese caso, `app.js` intentará conectarse a `http://127.0.0.1:5000/productos` y, si Flask no está iniciado, usará `localStorage` como respaldo local.
-
-## Flujo recomendado
-
-1. Inicia Flask con `python app.py`
-2. Abre `http://127.0.0.1:5000/admin`
-3. Crea o elimina productos
-4. Abre `http://127.0.0.1:5000/`
-5. Verifica que la tienda muestre el catálogo actualizado
-
-## Escalabilidad futura
-
-Este proyecto está preparado para evolucionar a:
-
-- autenticación para admin
-- edición de productos
-- categorías
-- pedidos guardados en base de datos SQL
-- despliegue en hosting para restaurantes
+- Cliente:
+  - consulta productos desde Supabase
+  - selecciona cantidades y genera pedido por WhatsApp
+  - incluye comentarios y ubicación en el mensaje
+- Admin:
+  - crear productos
+  - actualizar productos
+  - eliminar productos
+  - sembrar automáticamente el menú base de DogCity si la tabla `productos` está vacía
