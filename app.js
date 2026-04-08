@@ -612,15 +612,9 @@ function buildStoreApp() {
     }
 
     orderModal.classList.toggle('hidden', !isOpen);
+    orderModal.classList.toggle('is-open', isOpen);
     document.body.classList.toggle('modal-open', isOpen);
     orderModal.setAttribute('aria-hidden', String(!isOpen));
-
-    if (isOpen) {
-      window.setTimeout(() => {
-        const targetInput = customerName?.value ? customerAddress : customerName;
-        targetInput?.focus();
-      }, 60);
-    }
   }
 
   function openOrderModal() {
