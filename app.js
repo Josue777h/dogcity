@@ -276,27 +276,73 @@ function arrayBufferToBase64(buffer) {
   return window.btoa(binary);
 }
 
+function loadImageFromObjectUrl(objectUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('No se pudo procesar la imagen seleccionada.'));
+    image.src = objectUrl;
+  });
+}
+
+async function normalizeImageFile(file) {
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    const image = await loadImageFromObjectUrl(objectUrl);
+    const maxSize = 1400;
+    const scale = Math.min(1, maxSize / Math.max(image.width || 1, image.height || 1));
+    const width = Math.max(1, Math.round((image.width || 1) * scale));
+    const height = Math.max(1, Math.round((image.height || 1) * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d', { alpha: false });
+    if (!context) {
+      throw new Error('No se pudo preparar la imagen.');
+    }
+
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    if (!dataUrl || dataUrl === 'data:,') {
+      throw new Error('No se pudo convertir la imagen.');
+    }
+
+    return dataUrl;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 async function fileToDataUrl(file) {
   if (!file) {
     throw new Error('No se selecciono ninguna imagen.');
   }
 
-  const mimeType = String(file.type || 'image/jpeg').trim() || 'image/jpeg';
-
   try {
-    const buffer = await file.arrayBuffer();
-    if (!buffer.byteLength) {
-      throw new Error('El archivo esta vacio.');
-    }
-    const base64 = arrayBufferToBase64(buffer);
-    return `data:${mimeType};base64,${base64}`;
+    return await normalizeImageFile(file);
   } catch (error) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || ''));
-      reader.onerror = () => reject(new Error('No se pudo leer la imagen seleccionada desde este dispositivo.'));
-      reader.readAsDataURL(file);
-    });
+    const mimeType = String(file.type || 'image/jpeg').trim() || 'image/jpeg';
+
+    try {
+      const buffer = await file.arrayBuffer();
+      if (!buffer.byteLength) {
+        throw new Error('El archivo esta vacio.');
+      }
+      const base64 = arrayBufferToBase64(buffer);
+      return `data:${mimeType};base64,${base64}`;
+    } catch (fallbackError) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(new Error('No se pudo leer la imagen seleccionada desde este dispositivo.'));
+        reader.readAsDataURL(file);
+      });
+    }
   }
 }
 function getSupabaseClient() {
