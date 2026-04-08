@@ -536,6 +536,10 @@ function buildStoreApp() {
   const whatsappLink = $('whatsappLink');
   const generateBtn = $('generateBtn');
   const mobileGenerateBtn = $('mobileGenerateBtn');
+  const openOrderModalBtn = $('openOrderModalBtn');
+  const closeOrderModalBtn = $('closeOrderModalBtn');
+  const orderModal = $('orderModal');
+  const orderModalBackdrop = $('orderModalBackdrop');
   const copyBtn = $('copyBtn');
   const searchInput = $('searchInput');
   const sortSelect = $('sortSelect');
@@ -547,6 +551,33 @@ function buildStoreApp() {
   const orderComment = $('orderComment');
   const mobileOrderTotal = $('mobileOrderTotal');
   const mobileSelectedCount = $('mobileSelectedCount');
+  const floatingOrderTotal = $('floatingOrderTotal');
+  const floatingSelectedCount = $('floatingSelectedCount');
+
+  function setOrderModalOpen(isOpen) {
+    if (!orderModal) {
+      return;
+    }
+
+    orderModal.classList.toggle('hidden', !isOpen);
+    document.body.classList.toggle('modal-open', isOpen);
+    orderModal.setAttribute('aria-hidden', String(!isOpen));
+
+    if (isOpen) {
+      window.setTimeout(() => {
+        const targetInput = customerName?.value ? customerAddress : customerName;
+        targetInput?.focus();
+      }, 60);
+    }
+  }
+
+  function openOrderModal() {
+    setOrderModalOpen(true);
+  }
+
+  function closeOrderModal() {
+    setOrderModalOpen(false);
+  }
 
   function saveCart() {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.quantities));
@@ -733,6 +764,12 @@ function buildStoreApp() {
     if (mobileSelectedCount) {
       mobileSelectedCount.textContent = `${units} ${units === 1 ? 'producto' : 'productos'}`;
     }
+    if (floatingOrderTotal) {
+      floatingOrderTotal.textContent = formatMoney(total);
+    }
+    if (floatingSelectedCount) {
+      floatingSelectedCount.textContent = `${units} ${units === 1 ? 'producto' : 'productos'}`;
+    }
 
     if (selectedItems.length === 0) {
       orderSummary.textContent = 'No hay productos seleccionados.';
@@ -749,32 +786,36 @@ function buildStoreApp() {
     const lineItems = items.map(item => {
       const note = (state.notes[item.id] || '').trim();
       return note
-        ? `- ${item.quantity} ${item.name} (${note})`
-        : `- ${item.quantity} ${item.name}`;
+        ? `• ${item.quantity} x ${item.name}\n  - Nota: ${note}`
+        : `• ${item.quantity} x ${item.name}`;
     }).join('\n');
     const total = formatMoney(items.reduce((sum, item) => sum + item.quantity * item.price, 0));
-    const name = customerName.value.trim();
-    const address = customerAddress.value.trim();
-    const phone = customerPhone.value.trim();
+    const name = customerName.value.trim() || 'Por confirmar';
+    const address = customerAddress.value.trim() || 'Por confirmar';
+    const phone = customerPhone.value.trim() || 'Por confirmar';
     const comment = orderComment?.value.trim() || 'Sin comentarios adicionales.';
-    const locationLine = `Ubicacion en mapa: ${state.locationLink}`;
+    const locationLine = state.locationLink || 'No compartida';
 
     return [
-      'Hola, quiero realizar el siguiente pedido:',
+      'Hola Dog City, quiero hacer un pedido.',
       '',
-      'Detalle del pedido:',
+      '🌭 Pedido:',
       lineItems,
       '',
-      `Total: ${total}`,
+      `💰 Total: ${total}`,
       '',
-      `Comentarios: ${comment}`,
+      '👤 Datos del cliente:',
+      `• Nombre: ${name}`,
+      `• Direccion: ${address}`,
+      `• Telefono: ${phone}`,
       '',
-      `Nombre: ${name}`,
-      `Direccion: ${address}`,
-      `Telefono: ${phone}`,
+      '📝 Comentarios:',
+      comment,
+      '',
+      '📍 Ubicacion:',
       locationLine,
       '',
-      'Gracias'
+      'Gracias 🙌'
     ].join('\n');
   }
 
@@ -786,34 +827,49 @@ function buildStoreApp() {
 
   function updateLocation() {
     if (!navigator.geolocation) {
-      locationStatus.textContent = 'Tu navegador no soporta geolocalización.';
+      locationStatus.textContent = 'Tu navegador no soporta geolocalizacion.';
+      return;
+    }
+
+    const isSecureContextAvailable = window.isSecureContext || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!isSecureContextAvailable) {
+      locationStatus.textContent = 'La ubicacion en iPhone necesita abrir la web en HTTPS. Si estas en HTTP, Safari no la permitira.';
       return;
     }
 
     locationBtn.disabled = true;
     locationBtn.textContent = 'Ubicando...';
-    locationStatus.textContent = 'Solicitando tu ubicación actual...';
+    locationStatus.textContent = 'Solicitando tu ubicacion actual...';
 
     navigator.geolocation.getCurrentPosition(position => {
       const { latitude, longitude } = position.coords;
       state.locationLink = `https://maps.google.com/?q=${latitude},${longitude}`;
-      state.locationLabel = 'Ubicación actual agregada correctamente.';
+      state.locationLabel = 'Ubicacion actual agregada correctamente.';
       locationStatus.textContent = state.locationLabel;
       locationBtn.disabled = false;
-      locationBtn.textContent = 'Actualizar ubicación';
+      locationBtn.textContent = 'Actualizar ubicacion';
       saveCustomerInfo();
       refreshLocationRequiredState();
-    }, () => {
-      locationStatus.textContent = 'No fue posible obtener tu ubicación. Es obligatoria para enviar el pedido.';
+    }, error => {
+      if (error?.code === 1) {
+        locationStatus.textContent = 'Safari no tiene permiso de ubicacion. En iPhone revisa Ajustes > Safari > Ubicacion o permite el acceso al sitio.';
+      } else if (error?.code === 2) {
+        locationStatus.textContent = 'No se pudo detectar tu ubicacion actual. Revisa señal, GPS o intenta de nuevo al aire libre.';
+      } else if (error?.code === 3) {
+        locationStatus.textContent = 'La ubicacion tardo demasiado. Intenta nuevamente con mejor señal.';
+      } else {
+        locationStatus.textContent = 'No fue posible obtener tu ubicacion. En iPhone suele requerir HTTPS y permisos de Safari.';
+      }
       state.locationLink = '';
       state.locationLabel = '';
       locationBtn.disabled = false;
-      locationBtn.textContent = 'Usar mi ubicación actual';
+      locationBtn.textContent = 'Usar mi ubicacion actual';
       saveCustomerInfo();
       refreshLocationRequiredState();
     }, {
       enableHighAccuracy: true,
-      timeout: 10000
+      timeout: 12000,
+      maximumAge: 0
     });
   }
 
@@ -841,6 +897,7 @@ function buildStoreApp() {
     generatedMessage.value = message;
     whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
     whatsappLink.classList.remove('disabled');
+    openOrderModal();
   }
 
   async function copyMessage() {
@@ -951,7 +1008,10 @@ function buildStoreApp() {
     productsList.addEventListener('click', handleProductControls);
     productsList.addEventListener('input', handleProductControls);
     generateBtn.addEventListener('click', generateMessage);
-    mobileGenerateBtn?.addEventListener('click', generateMessage);
+    mobileGenerateBtn?.addEventListener('click', openOrderModal);
+    openOrderModalBtn?.addEventListener('click', openOrderModal);
+    closeOrderModalBtn?.addEventListener('click', closeOrderModal);
+    orderModalBackdrop?.addEventListener('click', closeOrderModal);
     locationBtn.addEventListener('click', updateLocation);
     copyBtn.addEventListener('click', () => {
       copyMessage().catch(error => {
@@ -963,6 +1023,12 @@ function buildStoreApp() {
       refreshProducts().catch(error => {
         console.warn('No se pudo refrescar la tienda en tiempo real:', error);
       });
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && orderModal && !orderModal.classList.contains('hidden')) {
+        closeOrderModal();
+      }
     });
   }
 
