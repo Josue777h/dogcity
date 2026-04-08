@@ -276,6 +276,15 @@ function arrayBufferToBase64(buffer) {
   return window.btoa(binary);
 }
 
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('No se pudo convertir la imagen seleccionada.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 function loadImageFromObjectUrl(objectUrl) {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -306,13 +315,17 @@ async function normalizeImageFile(file) {
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, width, height);
     context.drawImage(image, 0, 0, width, height);
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(result => {
+        if (!result) {
+          reject(new Error('No se pudo convertir la imagen.'));
+          return;
+        }
+        resolve(result);
+      }, 'image/jpeg', 0.82);
+    });
 
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-    if (!dataUrl || dataUrl === 'data:,') {
-      throw new Error('No se pudo convertir la imagen.');
-    }
-
-    return dataUrl;
+    return await blobToDataUrl(blob);
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
@@ -326,22 +339,20 @@ async function fileToDataUrl(file) {
   try {
     return await normalizeImageFile(file);
   } catch (error) {
-    const mimeType = String(file.type || 'image/jpeg').trim() || 'image/jpeg';
-
     try {
-      const buffer = await file.arrayBuffer();
-      if (!buffer.byteLength) {
-        throw new Error('El archivo esta vacio.');
-      }
-      const base64 = arrayBufferToBase64(buffer);
-      return `data:${mimeType};base64,${base64}`;
+      return await blobToDataUrl(file);
     } catch (fallbackError) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ''));
-        reader.onerror = () => reject(new Error('No se pudo leer la imagen seleccionada desde este dispositivo.'));
-        reader.readAsDataURL(file);
-      });
+      try {
+        const mimeType = String(file.type || 'image/jpeg').trim() || 'image/jpeg';
+        const buffer = await file.arrayBuffer();
+        if (!buffer.byteLength) {
+          throw new Error('El archivo esta vacio.');
+        }
+        const base64 = arrayBufferToBase64(buffer);
+        return `data:${mimeType};base64,${base64}`;
+      } catch (lastError) {
+        throw new Error('No se pudo leer la imagen seleccionada desde este dispositivo.');
+      }
     }
   }
 }
