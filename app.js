@@ -3,7 +3,6 @@ const CART_STORAGE_KEY = 'restaurante-carrito';
 const CUSTOMER_STORAGE_KEY = 'restaurante-cliente';
 const PRODUCT_NOTES_STORAGE_KEY = 'restaurante-notas-productos';
 const ORDER_COMMENT_STORAGE_KEY = 'restaurante-comentario-pedido';
-const ORDER_COUNTER_STORAGE_KEY = 'restaurante-contador-pedidos';
 const WHATSAPP_PHONE = '573143243707';
 const SUPABASE_URL = window.SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
