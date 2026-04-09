@@ -3,7 +3,6 @@ const CART_STORAGE_KEY = 'restaurante-carrito';
 const CUSTOMER_STORAGE_KEY = 'restaurante-cliente';
 const PRODUCT_NOTES_STORAGE_KEY = 'restaurante-notas-productos';
 const ORDER_COMMENT_STORAGE_KEY = 'restaurante-comentario-pedido';
-const ORDER_COUNTER_STORAGE_KEY = 'restaurante-contador-pedidos';
 const WHATSAPP_PHONE = '573143243707';
 const SUPABASE_URL = window.SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
@@ -577,8 +576,7 @@ function buildStoreApp() {
     sort: 'featured',
     locationLink: '',
     locationLabel: '',
-    lastChangedProductId: null,
-    currentOrderNumber: null
+    lastChangedProductId: null
   };
 
   const productsList = $('productsList');
@@ -637,17 +635,6 @@ function buildStoreApp() {
     } catch (error) {
       return {};
     }
-  }
-
-  function loadOrderCounter() {
-    const rawValue = Number(localStorage.getItem(ORDER_COUNTER_STORAGE_KEY) || '0');
-    return Number.isFinite(rawValue) && rawValue >= 0 ? rawValue : 0;
-  }
-
-  function getNextOrderNumber() {
-    const nextOrderNumber = loadOrderCounter() + 1;
-    localStorage.setItem(ORDER_COUNTER_STORAGE_KEY, String(nextOrderNumber));
-    return nextOrderNumber;
   }
 
   function saveCustomerInfo() {
@@ -734,10 +721,10 @@ function buildStoreApp() {
   }
 
   function resetGeneratedMessage() {
-    state.currentOrderNumber = null;
     generatedMessage.value = '';
     whatsappLink.href = '#';
     whatsappLink.classList.add('disabled');
+    whatsappLink.textContent = 'Enviar a WhatsApp';
   }
 
   function applyProducts(nextProducts) {
@@ -842,9 +829,55 @@ function buildStoreApp() {
       .join('<br>');
   }
 
-  function buildWhatsAppMessage(items) {
-    const orderNumber = state.currentOrderNumber ?? getNextOrderNumber();
-    state.currentOrderNumber = orderNumber;
+  function generateToken() {
+    // Generar token aleatorio de 16 caracteres
+    return Array.from(crypto.getRandomValues(new Uint8Array(12)))
+      .map(b => b.toString(36).padStart(2, '0'))
+      .join('')
+      .substring(0, 16);
+  }
+
+  async function saveOrderToSupabase(items) {
+    const supabase = getSupabaseClient();
+    const total = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
+    const name = customerName.value.trim() || 'Por confirmar';
+    const address = customerAddress.value.trim() || 'Por confirmar';
+
+    // Crear texto de productos para la columna productos
+    const textoProductos = items.map(item => {
+      const note = state.notes[item.id] ? ` (${state.notes[item.id]})` : '';
+      return `• ${item.quantity} x ${item.name}${note}`;
+    }).join('\n');
+
+    // Generar token único
+    const token = generateToken();
+
+    // Adaptado a las columnas existentes en tu tabla
+    const orderData = {
+      nombre: name,
+      direccion: address,
+      productos: textoProductos,
+      total: total,
+      token: token,
+      created_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('pedidos')
+      .insert([orderData])
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Error Supabase:', error);
+      throw new Error(`No se pudo guardar el pedido: ${error.message}`);
+    }
+
+    return { id: data.id, token: token };
+  }
+
+  function buildWhatsAppMessage(items, orderNumber, token) {
+    const displayNumber = orderNumber || 'PENDIENTE';
     const lineItems = items.map(item => {
       const note = (state.notes[item.id] || '').trim();
       return note
@@ -856,28 +889,33 @@ function buildStoreApp() {
     const address = customerAddress.value.trim() || 'Por confirmar';
     const phone = customerPhone.value.trim() || 'Por confirmar';
     const comment = orderComment?.value.trim() || 'Sin comentarios adicionales.';
-    const locationLine = state.locationLink || 'No compartida';
+
+    if (!state.locationLink) {
+      return '⚠️ Se requiere ubicación para enviar el pedido.';
+    }
+
+    // Generar link de seguimiento si tenemos token
+    let trackingInfo = '';
+    if (token && orderNumber) {
+      const trackingUrl = `${window.location.origin}/pedido.html?id=${orderNumber}&token=${token}`;
+      trackingInfo = `\n\n🔗 Seguimiento: ${trackingUrl}`;
+    }
 
     return [
       'Hola Dog City 👋, quiero hacer un pedido.',
       '',
-      `🧾 Pedido #${orderNumber}`,
+      `🧾 Pedido #${displayNumber}`,
+      `🙋 Nombre: ${name}`,
+      `📍 Dirección: ${address}`,
+      `📞 Teléfono: ${phone}`,
+      `💬 Comentarios: ${comment}`,
+      `📍 Ubicación: ${state.locationLink}`,
       '',
-      '🌭 Productos:',
+      '📦 Productos:',
       lineItems,
       '',
       `💰 Total: ${total}`,
-      '',
-      '👤 Datos del cliente:',
-      `• Nombre: ${name}`,
-      `• Dirección: ${address}`,
-      `• Teléfono: ${phone}`,
-      '',
-      '📝 Comentarios:',
-      comment,
-      '',
-      '📍 Ubicación:',
-      locationLine,
+      trackingInfo,
       '',
       'Gracias 🙌'
     ].join('\n');
@@ -958,10 +996,12 @@ function buildStoreApp() {
     saveCustomerInfo();
     saveOrderComment();
     refreshLocationRequiredState();
-    const message = buildWhatsAppMessage(selectedItems);
+    // Solo generar mensaje preview, SIN guardar en Supabase todavía
+    const message = buildWhatsAppMessage(selectedItems, null);
     generatedMessage.value = message;
-    whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+    // Activar botón WhatsApp (visualmente) pero aún no guarda en BD
     whatsappLink.classList.remove('disabled');
+    whatsappLink.textContent = 'Enviar a WhatsApp';
   }
 
   async function copyMessage() {
@@ -1071,17 +1111,18 @@ function buildStoreApp() {
 
     productsList.addEventListener('click', handleProductControls);
     productsList.addEventListener('input', handleProductControls);
+    // Botón "Generar pedido" dentro del modal - genera mensaje y activa WhatsApp
     generateBtn.addEventListener('click', () => {
-      openOrderModal();
-      setTimeout(generateMessage, 50);
+      generateMessage();
     });
+    // Botones flotantes solo abren el modal limpio (sin generar mensaje)
     mobileGenerateBtn?.addEventListener('click', () => {
+      resetGeneratedMessage();
       openOrderModal();
-      setTimeout(generateMessage, 50);
     });
     openOrderModalBtn?.addEventListener('click', () => {
+      resetGeneratedMessage();
       openOrderModal();
-      setTimeout(generateMessage, 50);
     });
     closeOrderModalBtn?.addEventListener('click', closeOrderModal);
     orderModalBackdrop?.addEventListener('click', closeOrderModal);
@@ -1089,6 +1130,74 @@ function buildStoreApp() {
     copyBtn.addEventListener('click', () => {
       copyMessage().catch(error => {
         console.warn('No se pudo copiar el mensaje:', error);
+      });
+    });
+
+    async function handleWhatsAppSend(event) {
+      event.preventDefault();
+      const selectedItems = getSelectedItems();
+
+      if (selectedItems.length === 0) {
+        generatedMessage.value = 'Selecciona al menos un producto antes de enviar.';
+        return;
+      }
+
+      if (!state.locationLink) {
+        generatedMessage.value = 'La ubicación es obligatoria. Presiona "Usar mi ubicación actual" para continuar.';
+        locationStatus.textContent = 'La ubicación es obligatoria para enviar el pedido.';
+        refreshLocationRequiredState();
+        return;
+      }
+
+      // Deshabilitar botón durante el proceso
+      whatsappLink.classList.add('disabled');
+      whatsappLink.textContent = 'Guardando pedido...';
+
+      try {
+        // 1. Guardar pedido en Supabase (solo aquí se genera el ID real + token)
+        const { id: orderId, token } = await saveOrderToSupabase(selectedItems);
+
+        // 2. Generar mensaje con el número de orden real y token
+        const message = buildWhatsAppMessage(selectedItems, orderId, token);
+        generatedMessage.value = message;
+
+        // 3. Abrir WhatsApp con el mensaje
+        const whatsappUrl = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+
+        // 4. Limpiar carrito después de enviar
+        state.quantities = {};
+        state.notes = {};
+        saveCart();
+        saveProductNotes();
+        renderProducts();
+        updateOrderDisplay();
+
+        // 5. Cerrar modal y mostrar éxito
+        whatsappLink.textContent = '¡Pedido enviado!';
+        setTimeout(() => {
+          closeOrderModal();
+          whatsappLink.textContent = 'Enviar a WhatsApp';
+        }, 1500);
+
+      } catch (error) {
+        console.error('Error al guardar pedido:', error);
+        generatedMessage.value = `Error al guardar el pedido: ${error.message}`;
+        whatsappLink.textContent = 'Error - intenta de nuevo';
+        setTimeout(() => {
+          whatsappLink.classList.remove('disabled');
+          whatsappLink.textContent = 'Enviar a WhatsApp';
+        }, 2000);
+      }
+    }
+
+    whatsappLink.addEventListener('click', (event) => {
+      if (whatsappLink.classList.contains('disabled')) {
+        event.preventDefault();
+        return;
+      }
+      handleWhatsAppSend(event).catch(error => {
+        console.error('Error en envío WhatsApp:', error);
       });
     });
 
@@ -1265,6 +1374,175 @@ function buildAdminApp() {
     renderProducts();
   }
 
+  // Funciones para gestionar pedidos
+  async function loadOrders() {
+    const supabase = getSupabaseClient();
+    if (!supabase) return [];
+    try {
+      const { data, error } = await supabase
+        .from('pedidos')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error cargando pedidos:', error);
+      return [];
+    }
+  }
+
+  async function updateOrderStatus(orderId, newStatus) {
+    const supabase = getSupabaseClient();
+    if (!supabase) throw new Error('No hay conexión con Supabase');
+    const { error } = await supabase
+      .from('pedidos')
+      .update({ status: newStatus })
+      .eq('id', orderId);
+    if (error) throw error;
+  }
+
+  async function deleteOrder(orderId) {
+    const supabase = getSupabaseClient();
+    if (!supabase) throw new Error('No hay conexión con Supabase');
+    const { error } = await supabase
+      .from('pedidos')
+      .delete()
+      .eq('id', orderId);
+    if (error) throw error;
+  }
+
+  function getStatusClass(status) {
+    const statusMap = {
+      'nuevo': 'status-nuevo',
+      'preparando': 'status-preparando',
+      'listo': 'status-listo',
+      'entregado': 'status-entregado',
+      'cancelado': 'status-cancelado'
+    };
+    return statusMap[status] || 'status-nuevo';
+  }
+
+  function getStatusText(status) {
+    const statusMap = {
+      'nuevo': '🆕 Nuevo',
+      'preparando': '👨‍🍳 Preparando',
+      'listo': '✅ Listo',
+      'entregado': '🚚 Entregado',
+      'cancelado': '❌ Cancelado'
+    };
+    return statusMap[status] || status;
+  }
+
+  function renderOrders(orders) {
+    const adminOrdersList = $('adminOrdersList');
+    const adminOrdersEmptyState = $('adminOrdersEmptyState');
+    if (!adminOrdersList || !adminOrdersEmptyState) return;
+
+    adminOrdersEmptyState.classList.toggle('hidden', orders.length > 0);
+
+    adminOrdersList.innerHTML = orders.map(order => `
+      <article class="admin-order-card">
+        <div class="admin-order-header">
+          <span class="admin-order-number">Pedido #${order.id}</span>
+          <span class="admin-order-status ${getStatusClass(order.status)}">${getStatusText(order.status)}</span>
+        </div>
+        <div class="admin-order-info">
+          <div><strong>Cliente:</strong> ${escapeHtml(order.nombre || 'Por confirmar')}</div>
+          <div><strong>Dirección:</strong> ${escapeHtml(order.direccion || 'Por confirmar')}</div>
+          <div><strong>Total:</strong> ${formatMoney(order.total)}</div>
+          <div><strong>Fecha:</strong> ${new Date(order.created_at).toLocaleString('es-CO')}</div>
+        </div>
+        <div class="admin-order-products">${escapeHtml(order.productos || 'Sin productos')}</div>
+        <div class="admin-order-actions">
+          <select class="order-status-select" data-order-id="${order.id}">
+            <option value="nuevo" ${order.status === 'nuevo' ? 'selected' : ''}>🆕 Nuevo</option>
+            <option value="preparando" ${order.status === 'preparando' ? 'selected' : ''}>👨‍🍳 Preparando</option>
+            <option value="listo" ${order.status === 'listo' ? 'selected' : ''}>✅ Listo</option>
+            <option value="entregado" ${order.status === 'entregado' ? 'selected' : ''}>🚚 Entregado</option>
+            <option value="cancelado" ${order.status === 'cancelado' ? 'selected' : ''}>❌ Cancelado</option>
+          </select>
+          <button class="btn btn-primary update-status-btn" type="button" data-order-id="${order.id}">💾 Guardar</button>
+          <a href="pedido.html?id=${order.id}&token=${order.token}" target="_blank" class="btn btn-secondary">👁️ Ver</a>
+          <button class="btn btn-danger delete-order-btn" type="button" data-order-id="${order.id}">🗑️ Eliminar</button>
+        </div>
+      </article>
+    `).join('');
+  }
+
+  async function refreshOrders() {
+    const orders = await loadOrders();
+    renderOrders(orders);
+  }
+
+  async function handleOrderStatusUpdate(event) {
+    const button = event.target.closest('.update-status-btn');
+    if (!button) return;
+
+    const orderId = button.dataset.orderId;
+    const card = button.closest('.admin-order-card');
+    const select = card?.querySelector('.order-status-select');
+    if (!select) return;
+
+    const newStatus = select.value;
+    const originalText = button.textContent;
+
+    try {
+      button.textContent = 'Guardando...';
+      button.disabled = true;
+      await updateOrderStatus(orderId, newStatus);
+      button.textContent = '¡Guardado!';
+      setSaveStatus(`Pedido #${orderId} → ${getStatusText(newStatus)}`, 'success');
+      setTimeout(() => {
+        refreshOrders();
+      }, 800);
+    } catch (error) {
+      console.error('Error actualizando pedido:', error);
+      button.textContent = 'Error';
+      setSaveStatus('Error al actualizar', 'error');
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.disabled = false;
+      }, 1500);
+    }
+  }
+
+  async function handleOrderDelete(event) {
+    const button = event.target.closest('.delete-order-btn');
+    if (!button) return;
+
+    const orderId = button.dataset.orderId;
+    const card = button.closest('.admin-order-card');
+    
+    // Mostrar confirmación
+    if (!confirm(`¿Estás seguro de eliminar el Pedido #${orderId}?\n\nEsta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    const originalText = button.textContent;
+
+    try {
+      button.textContent = 'Eliminando...';
+      button.disabled = true;
+      await deleteOrder(orderId);
+      setSaveStatus(`Pedido #${orderId} eliminado`, 'warning');
+      
+      // Animar salida
+      card.style.opacity = '0.5';
+      card.style.transform = 'translateX(-20px)';
+      setTimeout(() => {
+        refreshOrders();
+      }, 400);
+    } catch (error) {
+      console.error('Error eliminando pedido:', error);
+      button.textContent = 'Error';
+      setSaveStatus('Error al eliminar pedido', 'error');
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.disabled = false;
+      }, 1500);
+    }
+  }
+
   async function refreshAdminAuthState() {
     const session = await getSupabaseSession();
     setAdminAuthenticated(session);
@@ -1434,6 +1712,60 @@ function buildAdminApp() {
         setSaveStatus(error.message || 'No se pudo cerrar sesión.', 'error');
       });
     });
+
+    // Event listeners para tabs del admin
+    document.querySelectorAll('.admin-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const targetTab = tab.dataset.tab;
+        
+        // Actualizar tabs activos
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Mostrar panel correspondiente
+        document.querySelectorAll('.admin-panel').forEach(panel => {
+          panel.classList.toggle('active', panel.id === `${targetTab}Panel`);
+        });
+      });
+    });
+
+    // Event listeners para gestión de pedidos
+    const adminOrdersList = $('adminOrdersList');
+    const refreshOrdersBtn = $('refreshOrdersBtn');
+
+    refreshOrdersBtn?.addEventListener('click', () => {
+      refreshOrders().catch(error => {
+        console.warn('No se pudieron cargar los pedidos:', error);
+        setSaveStatus('Error al cargar pedidos', 'error');
+      });
+    });
+
+    adminOrdersList?.addEventListener('click', event => {
+      // Handler para actualizar estado
+      if (event.target.closest('.update-status-btn')) {
+        Promise.resolve(handleOrderStatusUpdate(event)).catch(error => {
+          console.warn('No se pudo actualizar el pedido:', error);
+          setSaveStatus(error.message || 'No se pudo actualizar el estado.', 'error');
+        });
+        return;
+      }
+      
+      // Handler para eliminar pedido
+      if (event.target.closest('.delete-order-btn')) {
+        Promise.resolve(handleOrderDelete(event)).catch(error => {
+          console.warn('No se pudo eliminar el pedido:', error);
+          setSaveStatus(error.message || 'No se pudo eliminar el pedido.', 'error');
+        });
+        return;
+      }
+    });
+
+    // Cargar pedidos al iniciar si hay sesión
+    if (session) {
+      refreshOrders().catch(error => {
+        console.warn('No se pudieron cargar pedidos iniciales:', error);
+      });
+    }
 
     subscribeToProductsRealtime(() => {
       getSupabaseSession()

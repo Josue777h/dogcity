@@ -48,74 +48,104 @@
     <section class="hero-card hero-card-compact">
       <div class="hero-copy">
         <span class="eyebrow">Panel Admin</span>
-        <h1>Administra el menu de Dog City</h1>
-        <p>Agrega, edita y elimina productos para mantener el catalogo de perros calientes siempre actualizado.</p>
+        <h1>Administra Dog City</h1>
+        <p>Gestiona productos y pedidos desde un solo lugar.</p>
       </div>
     </section>
 
-    <section class="panel admin-form-panel">
-      <div class="section-header">
-        <div>
-          <span id="adminFormKicker" class="section-kicker">Nuevo producto</span>
-          <h2 id="adminFormTitle">Crear producto</h2>
-          <p id="adminFormDescription">Los cambios se guardan en Supabase y se reflejan de inmediato en la tienda.</p>
-        </div>
-      </div>
+    <!-- Tabs para móvil -->
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="products" type="button">
+        <span>📦</span> Productos
+      </button>
+      <button class="admin-tab" data-tab="orders" type="button">
+        <span>🛒</span> Pedidos
+      </button>
+    </div>
 
-      <form id="newProductForm" class="form-grid">
-        <input id="editingProductId" name="editingProductId" type="hidden" value="" />
-
-        <label>
-          Nombre
-          <input name="name" type="text" maxlength="80" placeholder="Ej. Hamburguesa clasica" required />
-        </label>
-        <label>
-          Precio
-          <input name="price" type="number" min="100" step="100" placeholder="Ej. 15000" required />
-        </label>
-        <label class="full-width">
-          Descripcion
-          <input name="description" type="text" maxlength="160" placeholder="Descripcion breve del producto" required />
-        </label>
-        <label>
-          Unidad
-          <input name="unit" type="text" maxlength="20" value="unidad" required />
-        </label>
-        <label class="full-width">
-          Subir imagen
-          <input id="imageFileInput" name="imageFile" type="file" accept="image/*" />
-        </label>
-        <div class="full-width image-preview-card">
-          <span class="image-preview-label">Vista previa</span>
-          <img id="imagePreview" src="images/taza.svg" alt="Vista previa del producto" />
+    <!-- Panel de Productos -->
+    <div id="productsPanel" class="admin-panel active">
+      <section class="panel admin-form-panel">
+        <div class="section-header">
+          <div>
+            <span id="adminFormKicker" class="section-kicker">Nuevo producto</span>
+            <h2 id="adminFormTitle">Crear producto</h2>
+            <p id="adminFormDescription">Los cambios se guardan en Supabase y se reflejan de inmediato en la tienda.</p>
+          </div>
         </div>
 
-        <div class="full-width form-actions">
-          <button id="saveProductBtn" type="submit" class="btn btn-primary">Guardar producto</button>
-          <button id="cancelEditBtn" type="button" class="btn btn-secondary hidden">Cancelar edicion</button>
-          <span id="saveStatus" class="form-note">Listo para guardar con Supabase.</span>
-        </div>
-      </form>
-    </section>
+        <form id="newProductForm" class="form-grid">
+          <input id="editingProductId" name="editingProductId" type="hidden" value="" />
 
-    <section class="panel admin-inventory-panel">
-      <div class="section-header">
-        <div>
-          <span class="section-kicker">Inventario</span>
-          <h2>Productos actuales</h2>
-          <p>Edita o elimina productos con un clic y manten el menu actualizado.</p>
-        </div>
-      </div>
+          <label>
+            Nombre
+            <input name="name" type="text" maxlength="80" placeholder="Ej. Hamburguesa clasica" required />
+          </label>
+          <label>
+            Precio
+            <input name="price" type="number" min="100" step="100" placeholder="Ej. 15000" required />
+          </label>
+          <label class="full-width">
+            Descripcion
+            <input name="description" type="text" maxlength="160" placeholder="Descripcion breve del producto" required />
+          </label>
+          <label>
+            Unidad
+            <input name="unit" type="text" maxlength="20" value="unidad" required />
+          </label>
+          <label class="full-width">
+            Subir imagen
+            <input id="imageFileInput" name="imageFile" type="file" accept="image/*" />
+          </label>
+          <div class="full-width image-preview-card">
+            <span class="image-preview-label">Vista previa</span>
+            <img id="imagePreview" src="images/taza.svg" alt="Vista previa del producto" />
+          </div>
 
-      <div id="adminProductsList" class="admin-product-list"></div>
-      <p id="adminEmptyState" class="empty-state hidden">Aun no hay productos registrados.</p>
-    </section>
+          <div class="full-width form-actions">
+            <button id="saveProductBtn" type="submit" class="btn btn-primary">Guardar producto</button>
+            <button id="cancelEditBtn" type="button" class="btn btn-secondary hidden">Cancelar edicion</button>
+            <span id="saveStatus" class="form-note">Listo para guardar con Supabase.</span>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel admin-inventory-panel">
+        <div class="section-header">
+          <div>
+            <span class="section-kicker">Inventario</span>
+            <h2>Productos actuales</h2>
+            <p>Edita o elimina productos con un clic.</p>
+          </div>
+        </div>
+
+        <div id="adminProductsList" class="admin-product-list"></div>
+        <p id="adminEmptyState" class="empty-state hidden">Aun no hay productos registrados.</p>
+      </section>
+    </div>
+
+    <!-- Panel de Pedidos -->
+    <div id="ordersPanel" class="admin-panel">
+      <section class="panel admin-orders-panel">
+        <div class="section-header">
+          <div>
+            <span class="section-kicker">Pedidos</span>
+            <h2>Gestionar pedidos</h2>
+            <p>Ver y actualizar el estado de los pedidos.</p>
+          </div>
+          <button id="refreshOrdersBtn" class="btn btn-secondary" type="button">🔄 Actualizar</button>
+        </div>
+
+        <div id="adminOrdersList" class="admin-orders-list"></div>
+        <p id="adminOrdersEmptyState" class="empty-state hidden">No hay pedidos registrados.</p>
+      </section>
+    </div>
   </main>
 
   <footer class="site-footer">
     <div class="footer-brand">
       <strong>Dog City</strong>
-      <span class="footer-note">Panel administrativo de productos</span>
+      <span class="footer-note">Panel administrativo de productos y pedidos</span>
     </div>
     <div class="footer-links">
       <a class="social-link social-instagram" href="https://www.instagram.com/thedogcityoficial?igsh=MXR5dXJqb3Y2a2VlNQ==" target="_blank" rel="noreferrer noopener">
@@ -137,7 +167,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = "https://diaphikeanfkapoeynae.supabase.co";
-    window.SUPABASE_ANON_KEY = "sb_publishable_ac-QwfZjDQAgQlbNwAoxug_pxg2FQoz";
+    window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpYXBoaWtlYW5ma2Fwb2V5bmFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTc1NDEsImV4cCI6MjA5MTE3MzU0MX0.eVAPQ7py4bfu3mTtzqv1dng5Czd2S_oGUxSOm3UOC58";
   </script>
   <script src="app.js"></script>
 </body>

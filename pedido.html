@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seguimiento de Pedido - Dog City</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .tracking-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .tracking-header {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: white;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .tracking-header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    .tracking-container {
+      max-width: 600px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      width: 100%;
+    }
+    .tracking-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      padding: 2rem;
+      margin-bottom: 1rem;
+    }
+    .tracking-card h2 {
+      margin: 0 0 1.5rem 0;
+      color: #1f2937;
+      font-size: 1.25rem;
+    }
+    .order-info {
+      display: grid;
+      gap: 1rem;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .info-label {
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+    .info-value {
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    .status-nuevo { background: #dbeafe; color: #1e40af; }
+    .status-preparando { background: #fef3c7; color: #92400e; }
+    .status-listo { background: #d1fae5; color: #065f46; }
+    .status-entregado { background: #e5e7eb; color: #374151; }
+    .products-list {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+    }
+    .error-message {
+      text-align: center;
+      padding: 3rem 2rem;
+    }
+    .error-message svg {
+      width: 64px;
+      height: 64px;
+      color: #ef4444;
+      margin-bottom: 1rem;
+    }
+    .error-message h2 {
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+    .error-message p {
+      color: #6b7280;
+    }
+    .loading {
+      text-align: center;
+      padding: 3rem;
+    }
+    .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #e5e7eb;
+      border-top-color: #4f46e5;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #4f46e5;
+      text-decoration: none;
+      margin-top: 1rem;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="tracking-page">
+    <header class="tracking-header">
+      <h1>🐕 Dog City - Seguimiento de Pedido</h1>
+    </header>
+
+    <main class="tracking-container">
+      <div id="loadingState" class="loading">
+        <div class="loading-spinner"></div>
+        <p>Cargando información del pedido...</p>
+      </div>
+
+      <div id="errorState" class="tracking-card error-message" style="display: none;">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <h2>Pedido no encontrado</h2>
+        <p>El enlace de seguimiento es inválido o ha expirado.</p>
+        <a href="index.html" class="back-link">← Volver a la tienda</a>
+      </div>
+
+      <div id="orderState" style="display: none;">
+        <div class="tracking-card">
+          <h2>📋 Información del Pedido</h2>
+          <div class="order-info">
+            <div class="info-row">
+              <span class="info-label">Número de Pedido</span>
+              <span class="info-value" id="orderNumber">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Estado</span>
+              <span class="status-badge" id="orderStatus">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Cliente</span>
+              <span class="info-value" id="customerName">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Dirección</span>
+              <span class="info-value" id="customerAddress">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Fecha</span>
+              <span class="info-value" id="orderDate">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Total</span>
+              <span class="info-value" id="orderTotal">-</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tracking-card">
+          <h2>📦 Productos</h2>
+          <div class="products-list" id="orderProducts">-</div>
+        </div>
+
+        <a href="index.html" class="back-link">← Volver a la tienda</a>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.SUPABASE_URL = "https://diaphikeanfkapoeynae.supabase.co";
+    window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpYXBoaWtlYW5ma2Fwb2V5bmFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTc1NDEsImV4cCI6MjA5MTE3MzU0MX0.eVAPQ7py4bfu3mTtzqv1dng5Czd2S_oGUxSOm3UOC58";
+
+    const SUPABASE_URL = window.SUPABASE_URL || '';
+    const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
+
+    function getSupabaseClient() {
+      if (!window.supabase) return null;
+      if (!window.supabaseClient) {
+        window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+      return window.supabaseClient;
+    }
+
+    // Obtener parámetros de URL
+    function getUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        id: params.get('id'),
+        token: params.get('token')
+      };
+    }
+
+    // Formatear dinero
+    function formatMoney(amount) {
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0
+      }).format(amount);
+    }
+
+    // Formatear fecha
+    function formatDate(dateString) {
+      if (!dateString) return '-';
+      const date = new Date(dateString);
+      return date.toLocaleString('es-CO', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    // Mapear estado a clase CSS y texto
+    function getStatusInfo(status) {
+      const statusMap = {
+        'nuevo': { class: 'status-nuevo', text: '🆕 Nuevo' },
+        'preparando': { class: 'status-preparando', text: '👨‍🍳 Preparando' },
+        'listo': { class: 'status-listo', text: '✅ Listo para entregar' },
+        'entregado': { class: 'status-entregado', text: '🚚 Entregado' }
+      };
+      return statusMap[status] || { class: 'status-nuevo', text: status || 'Nuevo' };
+    }
+
+    // Cargar pedido
+    async function loadOrder() {
+      const { id, token } = getUrlParams();
+
+      if (!id || !token) {
+        showError();
+        return;
+      }
+
+      try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+          throw new Error('No se pudo conectar con Supabase');
+        }
+
+        // Consultar pedido con ID y token (seguridad)
+        const { data, error } = await supabase
+          .from('pedidos')
+          .select('*')
+          .eq('id', id)
+          .eq('token', token)
+          .single();
+
+        if (error || !data) {
+          throw new Error('Pedido no encontrado');
+        }
+
+        showOrder(data);
+      } catch (error) {
+        console.error('Error cargando pedido:', error);
+        showError();
+      }
+    }
+
+    // Mostrar estado de carga
+    function showLoading() {
+      document.getElementById('loadingState').style.display = 'block';
+      document.getElementById('errorState').style.display = 'none';
+      document.getElementById('orderState').style.display = 'none';
+    }
+
+    // Mostrar error
+    function showError() {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('errorState').style.display = 'block';
+      document.getElementById('orderState').style.display = 'none';
+    }
+
+    // Mostrar pedido
+    function showOrder(order) {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('errorState').style.display = 'none';
+      document.getElementById('orderState').style.display = 'block';
+
+      // Llenar datos
+      document.getElementById('orderNumber').textContent = `#${order.id}`;
+      document.getElementById('customerName').textContent = order.nombre || 'Por confirmar';
+      document.getElementById('customerAddress').textContent = order.direccion || 'Por confirmar';
+      document.getElementById('orderDate').textContent = formatDate(order.created_at);
+      document.getElementById('orderTotal').textContent = formatMoney(order.total);
+      document.getElementById('orderProducts').textContent = order.productos || 'Sin productos';
+
+      // Estado con estilo
+      const statusInfo = getStatusInfo(order.status);
+      const statusEl = document.getElementById('orderStatus');
+      statusEl.className = `status-badge ${statusInfo.class}`;
+      statusEl.textContent = statusInfo.text;
+    }
+
+    // Iniciar al cargar
+    document.addEventListener('DOMContentLoaded', loadOrder);
+  </script>
+</body>
+</html>
