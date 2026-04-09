@@ -3,6 +3,7 @@ const CART_STORAGE_KEY = 'restaurante-carrito';
 const CUSTOMER_STORAGE_KEY = 'restaurante-cliente';
 const PRODUCT_NOTES_STORAGE_KEY = 'restaurante-notas-productos';
 const ORDER_COMMENT_STORAGE_KEY = 'restaurante-comentario-pedido';
+const ORDER_COUNTER_STORAGE_KEY = 'restaurante-contador-pedidos';
 const WHATSAPP_PHONE = '573143243707';
 const SUPABASE_URL = window.SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
@@ -576,7 +577,8 @@ function buildStoreApp() {
     sort: 'featured',
     locationLink: '',
     locationLabel: '',
-    lastChangedProductId: null
+    lastChangedProductId: null,
+    currentOrderNumber: null
   };
 
   const productsList = $('productsList');
@@ -635,6 +637,17 @@ function buildStoreApp() {
     } catch (error) {
       return {};
     }
+  }
+
+  function loadOrderCounter() {
+    const rawValue = Number(localStorage.getItem(ORDER_COUNTER_STORAGE_KEY) || '0');
+    return Number.isFinite(rawValue) && rawValue >= 0 ? rawValue : 0;
+  }
+
+  function getNextOrderNumber() {
+    const nextOrderNumber = loadOrderCounter() + 1;
+    localStorage.setItem(ORDER_COUNTER_STORAGE_KEY, String(nextOrderNumber));
+    return nextOrderNumber;
   }
 
   function saveCustomerInfo() {
@@ -721,6 +734,7 @@ function buildStoreApp() {
   }
 
   function resetGeneratedMessage() {
+    state.currentOrderNumber = null;
     generatedMessage.value = '';
     whatsappLink.href = '#';
     whatsappLink.classList.add('disabled');
@@ -829,6 +843,8 @@ function buildStoreApp() {
   }
 
   function buildWhatsAppMessage(items) {
+    const orderNumber = state.currentOrderNumber ?? getNextOrderNumber();
+    state.currentOrderNumber = orderNumber;
     const lineItems = items.map(item => {
       const note = (state.notes[item.id] || '').trim();
       return note
@@ -843,22 +859,24 @@ function buildStoreApp() {
     const locationLine = state.locationLink || 'No compartida';
 
     return [
-      'Hola Dog City, quiero hacer un pedido.',
+      'Hola Dog City 👋, quiero hacer un pedido.',
       '',
-      '🌭 Pedido:',
+      `🧾 Pedido #${orderNumber}`,
+      '',
+      '🌭 Productos:',
       lineItems,
       '',
       `💰 Total: ${total}`,
       '',
       '👤 Datos del cliente:',
       `• Nombre: ${name}`,
-      `• Direccion: ${address}`,
-      `• Telefono: ${phone}`,
+      `• Dirección: ${address}`,
+      `• Teléfono: ${phone}`,
       '',
       '📝 Comentarios:',
       comment,
       '',
-      '📍 Ubicacion:',
+      '📍 Ubicación:',
       locationLine,
       '',
       'Gracias 🙌'
