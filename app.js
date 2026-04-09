@@ -198,28 +198,28 @@ const DOGCITY_MENU_PRODUCTS = [
   {
     name: 'Perro Americano',
     price: 10000,
-    description: 'Pan brioche a base de papa, salchicha Zenu, papa ripio crocante, cebolla, queso y salsas',
+    description: 'Pan brioche a base de papa, salchicha Zenú, papa ripio crocante, cebolla, queso y salsas de la casa',
     unit: 'unidad',
     image: 'images/camiseta.svg'
   },
   {
     name: 'Perro Polaco',
     price: 10000,
-    description: 'Pan brioche a base de papa, salchicha ranchera, papa ripio crocante, cebolla, queso y salsas',
+    description: 'Pan brioche a base de papa, salchicha ranchera, papa ripio crocante, cebolla, queso y salsas de la casa',
     unit: 'unidad',
     image: 'images/stickers.svg'
   },
   {
     name: 'Perro Mexicano',
     price: 10000,
-    description: 'Pan brioche, salchicha picante, chipotle, papa ripio crocante, cebolla, queso y salsas',
+    description: 'Pan brioche a base de papa, salchicha picante, chipotle, papa ripio crocante, cebolla, queso y salsas de la casa',
     unit: 'unidad',
     image: 'images/taza.svg'
   },
   {
-    name: 'Perro Aleman',
+    name: 'Perro Alemán',
     price: 10000,
-    description: 'Pan brioche, salchicha de cerdo ahumada, papa ripio crocante, cebolla, queso y salsas',
+    description: 'Pan brioche a base de papa, salchicha de cerdo ahumada, papa ripio crocante, cebolla, queso y salsas de la casa',
     unit: 'unidad',
     image: 'images/uploads/DOGCITY.png'
   }
