@@ -3,6 +3,7 @@ const CART_STORAGE_KEY = 'restaurante-carrito';
 const CUSTOMER_STORAGE_KEY = 'restaurante-cliente';
 const PRODUCT_NOTES_STORAGE_KEY = 'restaurante-notas-productos';
 const ORDER_COMMENT_STORAGE_KEY = 'restaurante-comentario-pedido';
+const ORDER_COUNTER_STORAGE_KEY = 'restaurante-contador-pedidos';
 const WHATSAPP_PHONE = '573143243707';
 const SUPABASE_URL = window.SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
@@ -941,6 +942,7 @@ function buildStoreApp() {
     if (selectedItems.length === 0) {
       resetGeneratedMessage();
       generatedMessage.value = 'Selecciona al menos un producto antes de generar el pedido.';
+      whatsappLink.classList.add('disabled');
       return;
     }
 
@@ -949,7 +951,7 @@ function buildStoreApp() {
       generatedMessage.value = 'La ubicación es obligatoria. Presiona "Usar mi ubicación actual" para continuar.';
       locationStatus.textContent = 'La ubicación es obligatoria para enviar el pedido.';
       refreshLocationRequiredState();
-      locationBtn.focus();
+      whatsappLink.classList.add('disabled');
       return;
     }
 
@@ -960,7 +962,6 @@ function buildStoreApp() {
     generatedMessage.value = message;
     whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
     whatsappLink.classList.remove('disabled');
-    openOrderModal();
   }
 
   async function copyMessage() {
@@ -1070,9 +1071,18 @@ function buildStoreApp() {
 
     productsList.addEventListener('click', handleProductControls);
     productsList.addEventListener('input', handleProductControls);
-    generateBtn.addEventListener('click', generateMessage);
-    mobileGenerateBtn?.addEventListener('click', openOrderModal);
-    openOrderModalBtn?.addEventListener('click', openOrderModal);
+    generateBtn.addEventListener('click', () => {
+      openOrderModal();
+      setTimeout(generateMessage, 50);
+    });
+    mobileGenerateBtn?.addEventListener('click', () => {
+      openOrderModal();
+      setTimeout(generateMessage, 50);
+    });
+    openOrderModalBtn?.addEventListener('click', () => {
+      openOrderModal();
+      setTimeout(generateMessage, 50);
+    });
     closeOrderModalBtn?.addEventListener('click', closeOrderModal);
     orderModalBackdrop?.addEventListener('click', closeOrderModal);
     locationBtn.addEventListener('click', updateLocation);
