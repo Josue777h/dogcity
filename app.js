@@ -665,14 +665,11 @@ function buildStoreApp() {
   }
 
   function loadOrderCounter() {
-    const rawValue = Number(localStorage.getItem(ORDER_COUNTER_STORAGE_KEY_LOCAL) || '0');
-    return Number.isFinite(rawValue) && rawValue >= 0 ? rawValue : 0;
+    return 0; // No usar contador local, siempre usar ID de Supabase
   }
 
   function getNextOrderNumber() {
-    const nextOrderNumber = loadOrderCounter() + 1;
-    localStorage.setItem(ORDER_COUNTER_STORAGE_KEY_LOCAL, String(nextOrderNumber));
-    return nextOrderNumber;
+    return null; // No generar número local
   }
 
   function saveCustomerInfo() {
@@ -867,8 +864,7 @@ function buildStoreApp() {
   }
 
   function buildWhatsAppMessage(items) {
-    const orderNumber = state.currentOrderNumber ?? getNextOrderNumber();
-    state.currentOrderNumber = orderNumber;
+    // NO incluir número de pedido aquí - se agregará después con el ID de Supabase
     const lineItems = items.map(item => {
       const note = (state.notes[item.id] || '').trim();
       return note
@@ -884,8 +880,6 @@ function buildStoreApp() {
 
     return [
       'Hola Dog City 👋, quiero hacer un pedido.',
-      '',
-      `🧾 Pedido #${orderNumber}`,
       '',
       '🌭 Productos:',
       lineItems,
@@ -961,10 +955,9 @@ function buildStoreApp() {
     });
   }
 
-  async function saveOrderToSupabase(orderNumber, message, selectedItems) {
+  async function saveOrderToSupabase(message, selectedItems) {
     try {
       console.log("🔥 ENVIANDO PEDIDO A SUPABASE");
-      console.log("🔍 SUPABASE URL:", window.SUPABASE_URL);
       
       const supabase = getSupabaseClient();
       const total = selectedItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
@@ -1010,21 +1003,16 @@ function buildStoreApp() {
 
       if (error) {
         console.error('ERROR GUARDANDO PEDIDO:', error.message);
+        return null;
       } else if (data && data.length > 0) {
         const pedidoId = data[0].id;
         console.log('✔️ Pedido guardado con ID:', pedidoId);
-        
-        // Actualizar el número de pedido en el mensaje con el ID real
-        const mensajeActualizado = message.replace(
-          /🧾 Pedido #\d+/,
-          `🧾 Pedido #${pedidoId}`
-        );
-        generatedMessage.value = mensajeActualizado;
-        whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeActualizado)}`;
+        return pedidoId; // Retornar el ID para usarlo en el mensaje
       }
     } catch (error) {
       console.error('❌ EXCEPCIÓN guardando pedido:', error.message);
     }
+    return null;
   }
 
   async function generateMessage() {
@@ -1047,13 +1035,23 @@ function buildStoreApp() {
     saveCustomerInfo();
     saveOrderComment();
     refreshLocationRequiredState();
-    const message = buildWhatsAppMessage(selectedItems);
-    generatedMessage.value = message;
-    whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
-    whatsappLink.classList.remove('disabled');
     
-    // Guardar en Supabase (asincrónico, no espera)
-    await saveOrderToSupabase(state.currentOrderNumber, message, selectedItems);
+    // Generar mensaje sin número de pedido por ahora
+    const message = buildWhatsAppMessage(selectedItems);
+    generatedMessage.value = 'Guardando pedido...\n\n(Espera a que se asigne el número)';
+    whatsappLink.href = '#';
+    whatsappLink.classList.add('disabled');
+    
+    // Guardar en Supabase y obtener el ID real
+    const pedidoId = await saveOrderToSupabase(message, selectedItems);
+    
+    if (pedidoId) {
+      // Agregar número de pedido con el ID real de Supabase
+      const mensajeFinal = `🧾 Pedido #${pedidoId}\n\n${message}`;
+      generatedMessage.value = mensajeFinal;
+      whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeFinal)}`;
+      whatsappLink.classList.remove('disabled');
+    }
   }
 
   async function copyMessage() {
