@@ -1038,20 +1038,26 @@ function buildStoreApp() {
     
     // Generar mensaje sin número de pedido por ahora
     const message = buildWhatsAppMessage(selectedItems);
-    generatedMessage.value = 'Guardando pedido...\n\n(Espera a que se asigne el número)';
-    whatsappLink.href = '#';
-    whatsappLink.classList.add('disabled');
     
-    // Guardar en Supabase y obtener el ID real
-    const pedidoId = await saveOrderToSupabase(message, selectedItems);
+    // Mostrar mensaje INMEDIATAMENTE sin esperar a Supabase
+    generatedMessage.value = message;
+    whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+    whatsappLink.classList.remove('disabled');
     
-    if (pedidoId) {
-      // Agregar número de pedido con el ID real de Supabase
-      const mensajeFinal = `🧾 Pedido #${pedidoId}\n\n${message}`;
-      generatedMessage.value = mensajeFinal;
-      whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeFinal)}`;
-      whatsappLink.classList.remove('disabled');
-    }
+    // Guardar a Supabase en BACKGROUND (sin esperar)
+    saveOrderToSupabase(message, selectedItems)
+      .then(pedidoId => {
+        if (pedidoId) {
+          // Actualizar con el número de pedido si llegó
+          const mensajeFinal = `🧾 Pedido #${pedidoId}\n\n${message}`;
+          generatedMessage.value = mensajeFinal;
+          whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeFinal)}`;
+          console.log('✅ Mensaje actualizado con Pedido #' + pedidoId);
+        }
+      })
+      .catch(error => {
+        console.warn('Error guardando en Supabase (pero el mensaje ya se mostró):', error);
+      });
   }
 
   async function copyMessage() {
