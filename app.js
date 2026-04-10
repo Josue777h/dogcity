@@ -1015,6 +1015,12 @@ function buildStoreApp() {
     return null;
   }
 
+  function getTemporaryOrderNumber() {
+    // Generar número temporal MUY rápido basado en timestamp
+    // Este será reemplazado por el ID real de Supabase cuando llegue
+    return Math.floor(Date.now() / 1000) % 100000;
+  }
+
   async function generateMessage() {
     const selectedItems = getSelectedItems();
     if (selectedItems.length === 0) {
@@ -1036,23 +1042,26 @@ function buildStoreApp() {
     saveOrderComment();
     refreshLocationRequiredState();
     
-    // Generar mensaje sin número de pedido por ahora
+    // Generar mensaje con número TEMPORAL al instante
+    const tempOrderNumber = getTemporaryOrderNumber();
     const message = buildWhatsAppMessage(selectedItems);
+    const messageWithTempNumber = `🧾 Pedido #${tempOrderNumber}\n\n${message}`;
     
-    // Mostrar mensaje INMEDIATAMENTE sin esperar a Supabase
-    generatedMessage.value = message;
-    whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+    // Mostrar INMEDIATAMENTE
+    generatedMessage.value = messageWithTempNumber;
+    whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(messageWithTempNumber)}`;
     whatsappLink.classList.remove('disabled');
     
-    // Guardar a Supabase en BACKGROUND (sin esperar)
+    // Guardar a Supabase en BACKGROUND y actualizar con el ID real cuando llegue
     saveOrderToSupabase(message, selectedItems)
       .then(pedidoId => {
         if (pedidoId) {
-          // Actualizar con el número de pedido si llegó
-          const mensajeFinal = `🧾 Pedido #${pedidoId}\n\n${message}`;
-          generatedMessage.value = mensajeFinal;
-          whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeFinal)}`;
-          console.log('✅ Mensaje actualizado con Pedido #' + pedidoId);
+          // Solo actualizar si el ID es diferente al temporal
+          if (pedidoId !== tempOrderNumber) {
+            const mensajeFinal = `🧾 Pedido #${pedidoId}\n\n${message}`;
+            generatedMessage.value = mensajeFinal;
+            whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeFinal)}`;
+          }
         }
       })
       .catch(error => {
