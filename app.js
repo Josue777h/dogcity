@@ -472,23 +472,45 @@ function normalizeProductRow(row) {
 async function loadProducts() {
   const supabase = getSupabaseClient();
   const schema = await getProductSchema();
-  const { data, error } = await supabase
-    .from('productos')
-    .select(schema.select)
-    .order('id', { ascending: false });
+  
+  try {
+    const { data, error } = await supabase
+      .from('productos')
+      .select(schema.select)
+      .order('id', { ascending: false });
 
-  if (error) {
-    throw new Error(`No se pudieron cargar productos: ${error.message}`);
+    if (error) throw error;
+    
+    const products = (data || []).map(normalizeProductRow);
+    if (products.length > 0) {
+      // Cachear en localStorage para carga más rápida
+      try {
+        localStorage.setItem('dogcity_products_cache', JSON.stringify(products));
+        localStorage.setItem('dogcity_cache_time', Date.now().toString());
+      } catch (e) {
+        console.warn('No se pudo guardar caché de productos');
+      }
+      return products;
+    }
+  } catch (error) {
+    console.warn('Error cargando desde Supabase:', error);
+    // Intentar usar caché si hay error
+    try {
+      const cached = localStorage.getItem('dogcity_products_cache');
+      if (cached) {
+        console.log('Usando caché de productos');
+        return JSON.parse(cached);
+      }
+    } catch (e) {
+      console.warn('No se pudo leer caché');
+    }
   }
-
-  const products = (data || []).map(normalizeProductRow);
-  if (products.length === 0) {
-    return DOGCITY_MENU_PRODUCTS.map((product, index) => ({
-      id: -(index + 1),
-      ...product
-    }));
-  }
-  return products;
+  
+  // Fallback a menú por defecto
+  return DOGCITY_MENU_PRODUCTS.map((product, index) => ({
+    id: -(index + 1),
+    ...product
+  }));
 }
 
 async function seedDefaultCatalogIfEmpty() {
@@ -1104,7 +1126,23 @@ function buildStoreApp() {
   }
 
   async function init() {
-    state.products = await loadProducts();
+    // Cargar productos instantáneamente desde caché o por defecto
+    let cachedProducts = null;
+    try {
+      const cached = localStorage.getItem('dogcity_products_cache');
+      if (cached) {
+        cachedProducts = JSON.parse(cached);
+      }
+    } catch (e) {
+      console.warn('No se pudo leer caché de productos');
+    }
+    
+    // Usar caché si existe, sino usar por defecto
+    state.products = cachedProducts || DOGCITY_MENU_PRODUCTS.map((product, index) => ({
+      id: -(index + 1),
+      ...product
+    }));
+
     const savedCart = loadCart();
     state.notes = loadProductNotes();
     state.quantities = state.products.reduce((accumulator, product) => {
@@ -1121,6 +1159,21 @@ function buildStoreApp() {
     resetGeneratedMessage();
     renderProducts();
     updateOrderDisplay();
+
+    // Cargar desde Supabase en background (sin bloquear)
+    loadProducts()
+      .then(freshProducts => {
+        state.products = freshProducts;
+        state.quantities = state.products.reduce((accumulator, product) => {
+          accumulator[product.id] = Number(savedCart[product.id] || 0);
+          return accumulator;
+        }, {});
+        renderProducts();
+        updateOrderDisplay();
+      })
+      .catch(error => {
+        console.warn('Error cargando productos desde Supabase:', error);
+      });
 
     searchInput.addEventListener('input', event => {
       state.search = event.target.value;
