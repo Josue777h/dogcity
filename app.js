@@ -789,7 +789,6 @@ function buildStoreApp() {
 
             <div class="product-card-footer">
               <span class="product-unit">Venta por ${escapeHtml(product.unit || 'unidad')}</span>
-              <span class="product-subtotal">${quantity > 0 ? `Subtotal: ${formatMoney(subtotal)}` : 'Sin seleccionar'}</span>
             </div>
 
             <div class="quantity-group" data-product-id="${product.id}">
@@ -1509,6 +1508,30 @@ function buildAdminApp() {
         .catch(error => {
           console.warn('No se pudo refrescar el panel admin en tiempo real:', error);
         });
+    });
+
+    // Manejar cambio de tabs (Productos / Pedidos)
+    const adminTabs = document.querySelectorAll('.admin-tab');
+    const productsPanel = $('productsPanel');
+    const ordersPanel = $('ordersPanel');
+
+    adminTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const targetTab = tab.dataset.tab;
+        
+        // Actualizar tabs activos
+        adminTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Actualizar paneles visibles
+        if (targetTab === 'products') {
+          productsPanel.classList.add('active');
+          ordersPanel.classList.remove('active');
+        } else if (targetTab === 'orders') {
+          ordersPanel.classList.add('active');
+          productsPanel.classList.remove('active');
+        }
+      });
     });
   }
 
