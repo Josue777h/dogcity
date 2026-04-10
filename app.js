@@ -1087,7 +1087,13 @@ function buildStoreApp() {
       const message = generatedMessage.value.trim();
       if (message) {
         const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
-        window.location.href = url;
+
+        // Máxima compatibilidad: iOS usa location.href, otros usan window.open
+        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+          window.location.href = url;
+        } else {
+          window.open(url, "_blank");
+        }
       }
     });
 
