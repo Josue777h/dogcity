@@ -3,6 +3,7 @@ const CART_STORAGE_KEY = 'restaurante-carrito';
 const CUSTOMER_STORAGE_KEY = 'restaurante-cliente';
 const PRODUCT_NOTES_STORAGE_KEY = 'restaurante-notas-productos';
 const ORDER_COMMENT_STORAGE_KEY = 'restaurante-comentario-pedido';
+const ORDER_COUNTER_STORAGE_KEY = 'restaurante-contador-pedidos';
 const WHATSAPP_PHONE = '573143243707';
 const SUPABASE_URL = window.SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
@@ -941,6 +942,7 @@ function buildStoreApp() {
     if (selectedItems.length === 0) {
       resetGeneratedMessage();
       generatedMessage.value = 'Selecciona al menos un producto antes de generar el pedido.';
+      closeOrderModal();
       return;
     }
 
@@ -950,6 +952,7 @@ function buildStoreApp() {
       locationStatus.textContent = 'La ubicación es obligatoria para enviar el pedido.';
       refreshLocationRequiredState();
       locationBtn.focus();
+      closeOrderModal();
       return;
     }
 
@@ -1070,9 +1073,15 @@ function buildStoreApp() {
 
     productsList.addEventListener('click', handleProductControls);
     productsList.addEventListener('input', handleProductControls);
-    generateBtn.addEventListener('click', generateMessage);
-    mobileGenerateBtn?.addEventListener('click', openOrderModal);
-    openOrderModalBtn?.addEventListener('click', openOrderModal);
+    generateBtn.addEventListener('click', () => {
+      generateMessage();
+    });
+    mobileGenerateBtn?.addEventListener('click', () => {
+      generateMessage();
+    });
+    openOrderModalBtn?.addEventListener('click', () => {
+      generateMessage();
+    });
     closeOrderModalBtn?.addEventListener('click', closeOrderModal);
     orderModalBackdrop?.addEventListener('click', closeOrderModal);
     locationBtn.addEventListener('click', updateLocation);
@@ -1080,21 +1089,6 @@ function buildStoreApp() {
       copyMessage().catch(error => {
         console.warn('No se pudo copiar el mensaje:', error);
       });
-    });
-
-    whatsappLink.addEventListener('click', (event) => {
-      event.preventDefault();
-      const message = generatedMessage.value.trim();
-      if (message) {
-        const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
-
-        // Máxima compatibilidad: iOS usa location.href, otros usan window.open
-        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-          window.location.href = url;
-        } else {
-          window.open(url, "_blank");
-        }
-      }
     });
 
     subscribeToProductsRealtime(() => {
