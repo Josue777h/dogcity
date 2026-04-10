@@ -581,6 +581,9 @@ function buildStoreApp() {
     currentOrderNumber: null
   };
 
+  // Constantes locales
+  const ORDER_COUNTER_STORAGE_KEY_LOCAL = 'restaurante-contador-pedidos';
+
   const productsList = $('productsList');
   const productsEmptyState = $('productsEmptyState');
   const orderSummary = $('orderSummary');
@@ -640,13 +643,13 @@ function buildStoreApp() {
   }
 
   function loadOrderCounter() {
-    const rawValue = Number(localStorage.getItem(ORDER_COUNTER_STORAGE_KEY) || '0');
+    const rawValue = Number(localStorage.getItem(ORDER_COUNTER_STORAGE_KEY_LOCAL) || '0');
     return Number.isFinite(rawValue) && rawValue >= 0 ? rawValue : 0;
   }
 
   function getNextOrderNumber() {
     const nextOrderNumber = loadOrderCounter() + 1;
-    localStorage.setItem(ORDER_COUNTER_STORAGE_KEY, String(nextOrderNumber));
+    localStorage.setItem(ORDER_COUNTER_STORAGE_KEY_LOCAL, String(nextOrderNumber));
     return nextOrderNumber;
   }
 
@@ -937,12 +940,77 @@ function buildStoreApp() {
     });
   }
 
-  function generateMessage() {
+  async function saveOrderToSupabase(orderNumber, message, selectedItems) {
+    try {
+      console.log("🔥 ENVIANDO PEDIDO A SUPABASE");
+      console.log("🔍 SUPABASE URL:", window.SUPABASE_URL);
+      
+      const supabase = getSupabaseClient();
+      const total = selectedItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
+      
+      // Preparar items como JSON
+      const itemsJson = selectedItems.map(item => ({
+        nombre: item.name,
+        cantidad: item.quantity,
+        precio: item.price,
+        nota: state.notes[item.id] || ''
+      }));
+
+      const pedidoData = {
+        nombre: customerName.value.trim(),
+        telefono: customerPhone.value.trim(),
+        direccion: customerAddress.value.trim(),
+        ubicacion: state.locationLink,
+        comentarios: orderComment?.value.trim() || '',
+        total: total,
+        estado: 'nuevo',
+        productos: message,
+        items: itemsJson,
+        customer_name: customerName.value.trim(),
+        customer_phone: customerPhone.value.trim(),
+        customer_address: customerAddress.value.trim(),
+        location_url: state.locationLink,
+        comment: orderComment?.value.trim() || '',
+        status: 'nuevo',
+        cliente_telefono: customerPhone.value.trim(),
+        ubicacion_link: state.locationLink,
+        created_at: new Date().toISOString()
+      };
+
+      console.log("📦 DATOS A GUARDAR:", pedidoData);
+
+      const { data, error } = await supabase
+        .from('pedidos')
+        .insert([pedidoData])
+        .select('id');
+
+      console.log("✅ DATA:", data);
+      console.log("❌ ERROR:", error);
+
+      if (error) {
+        console.error('ERROR GUARDANDO PEDIDO:', error.message);
+      } else if (data && data.length > 0) {
+        const pedidoId = data[0].id;
+        console.log('✔️ Pedido guardado con ID:', pedidoId);
+        
+        // Actualizar el número de pedido en el mensaje con el ID real
+        const mensajeActualizado = message.replace(
+          /🧾 Pedido #\d+/,
+          `🧾 Pedido #${pedidoId}`
+        );
+        generatedMessage.value = mensajeActualizado;
+        whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeActualizado)}`;
+      }
+    } catch (error) {
+      console.error('❌ EXCEPCIÓN guardando pedido:', error.message);
+    }
+  }
+
+  async function generateMessage() {
     const selectedItems = getSelectedItems();
     if (selectedItems.length === 0) {
       resetGeneratedMessage();
       generatedMessage.value = 'Selecciona al menos un producto antes de generar el pedido.';
-      closeOrderModal();
       return;
     }
 
@@ -952,7 +1020,6 @@ function buildStoreApp() {
       locationStatus.textContent = 'La ubicación es obligatoria para enviar el pedido.';
       refreshLocationRequiredState();
       locationBtn.focus();
-      closeOrderModal();
       return;
     }
 
@@ -963,7 +1030,9 @@ function buildStoreApp() {
     generatedMessage.value = message;
     whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
     whatsappLink.classList.remove('disabled');
-    openOrderModal();
+    
+    // Guardar en Supabase (asincrónico, no espera)
+    await saveOrderToSupabase(state.currentOrderNumber, message, selectedItems);
   }
 
   async function copyMessage() {
@@ -1050,6 +1119,7 @@ function buildStoreApp() {
     loadCustomerInfo();
     loadOrderComment();
     refreshLocationRequiredState();
+    resetGeneratedMessage();
     renderProducts();
     updateOrderDisplay();
 
@@ -1073,15 +1143,9 @@ function buildStoreApp() {
 
     productsList.addEventListener('click', handleProductControls);
     productsList.addEventListener('input', handleProductControls);
-    generateBtn.addEventListener('click', () => {
-      generateMessage();
-    });
-    mobileGenerateBtn?.addEventListener('click', () => {
-      generateMessage();
-    });
-    openOrderModalBtn?.addEventListener('click', () => {
-      generateMessage();
-    });
+    generateBtn.addEventListener('click', generateMessage);
+    mobileGenerateBtn?.addEventListener('click', openOrderModal);
+    openOrderModalBtn?.addEventListener('click', openOrderModal);
     closeOrderModalBtn?.addEventListener('click', closeOrderModal);
     orderModalBackdrop?.addEventListener('click', closeOrderModal);
     locationBtn.addEventListener('click', updateLocation);
