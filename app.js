@@ -519,6 +519,40 @@ async function changeOrderStatus(orderId, newStatus) {
   }
 }
 
+function getDeliveryManNumber() {
+  return localStorage.getItem('dog-city-delivery-number') || '';
+}
+
+function setDeliveryManNumber(number) {
+  localStorage.setItem('dog-city-delivery-number', number);
+}
+
+async function sendOrderToDeliveryMan(order) {
+  const deliveryNumber = getDeliveryManNumber();
+  
+  if (!deliveryNumber) {
+    alert('⚠️ Primero configura el número del domiciliario en los ajustes del admin.');
+    return;
+  }
+  
+  if (!order.ubicacion_link) {
+    alert('⚠️ Este pedido no tiene ubicación registrada. El cliente no compartió su ubicación.');
+    return;
+  }
+  
+  const mensaje = `🚚 *Entrega Dog City*
+
+📍 *Ubicación:*
+${order.ubicacion_link}
+
+👤 *Cliente:* ${escapeHtml(order.nombre || 'Cliente')}
+📞 *Teléfono:* ${escapeHtml(order.telefono || 'N/A')}
+💰 *Total:* ${formatMoney(order.total || 0)}`;
+
+  const whatsappUrl = `https://wa.me/${deliveryNumber}?text=${encodeURIComponent(mensaje)}`;
+  window.open(whatsappUrl, '_blank');
+}
+
 function initNavToggle() {
   const navToggle = document.querySelector('.nav-toggle');
   const navLinks = document.querySelector('.nav-links');
@@ -1001,6 +1035,12 @@ function buildStoreApp() {
     ].join('\n');
   }
 
+  function buildTrackingLink(pedidoId) {
+    // Crear URL de tracking - funciona en localhost, puede ser reemplazada por dominio real
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/tracking.html?pedido=${pedidoId}`;
+  }
+
   function refreshLocationRequiredState() {
     const locationBox = locationStatus.closest('.location-box');
     const hasLocation = Boolean(state.locationLink);
@@ -1145,7 +1185,8 @@ function buildStoreApp() {
     // Generar mensaje con número TEMPORAL al instante
     const tempOrderNumber = getTemporaryOrderNumber();
     const message = buildWhatsAppMessage(selectedItems);
-    const messageWithTempNumber = `🧾 Pedido #${tempOrderNumber}\n\n${message}`;
+    const trackingLinkTemp = buildTrackingLink(tempOrderNumber);
+    const messageWithTempNumber = `🧾 Pedido #${tempOrderNumber}\n\n${message}\n\n🔗 Seguimiento:\n${trackingLinkTemp}`;
     
     // Mostrar INMEDIATAMENTE
     generatedMessage.value = messageWithTempNumber;
@@ -1158,7 +1199,8 @@ function buildStoreApp() {
         if (pedidoId) {
           // Solo actualizar si el ID es diferente al temporal
           if (pedidoId !== tempOrderNumber) {
-            const mensajeFinal = `🧾 Pedido #${pedidoId}\n\n${message}`;
+            const trackingLinkFinal = buildTrackingLink(pedidoId);
+            const mensajeFinal = `🧾 Pedido #${pedidoId}\n\n${message}\n\n🔗 Seguimiento:\n${trackingLinkFinal}`;
             generatedMessage.value = mensajeFinal;
             whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeFinal)}`;
           }
@@ -1601,9 +1643,7 @@ function buildAdminApp() {
       .map(order => {
         const statusColors = {
           'nuevo': '#e10613',
-          'preparando': '#f59e0b',
-          'listo': '#16a34a',
-          'entregado': '#6b7280'
+          'listo': '#16a34a'
         };
         const status = (order.estado || 'nuevo').toLowerCase();
         const statusColor = statusColors[status] || '#6b7280';
@@ -1627,30 +1667,58 @@ function buildAdminApp() {
               </p>
             </div>
             <div class="order-actions">
-              ${['nuevo', 'preparando', 'listo'].includes(status) ? `
-                <select class="order-status-select" data-order-id="${order.id}" style="padding: 0.5rem 0.75rem;">
-                  <option value="">Cambiar estado...</option>
-                  ${status !== 'nuevo' ? '<option value="nuevo">← Nuevo</option>' : ''}
-                  ${status !== 'preparando' ? '<option value="preparando">Preparando</option>' : ''}
-                  ${status !== 'listo' ? '<option value="listo">Listo ✓</option>' : ''}
-                  ${status !== 'entregado' ? '<option value="entregado">Entregado</option>' : ''}
-                </select>
-              ` : '<span style="color: #6b7280;">Completado</span>'}
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
+                ${status === 'nuevo' ? `
+                  <button class="order-status-btn" data-order-id="${order.id}" data-status="listo" style="padding: 0.5rem 0.75rem; background: #16a34a; color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-weight: bold; flex: 1;">✓ Marcar Listo</button>
+                ` : status === 'listo' ? `
+                  <button class="order-status-btn" data-order-id="${order.id}" data-status="nuevo" style="padding: 0.5rem 0.75rem; background: #f59e0b; color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-weight: bold; flex: 1;">← Volver a Nuevo</button>
+                ` : ''}
+                ${status === 'listo' && order.ubicacion_link ? `
+                  <button class="btn-delivery" data-order-id="${order.id}" style="padding: 0.5rem 0.75rem; background: #25d366; color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-weight: bold; flex: 0 0 auto; white-space: nowrap;">🚚 Enviar</button>
+                ` : ''}
+              </div>
             </div>
           </div>
         `;
       }).join('');
     
-    // Agregar event listeners a los selects
-    const statusSelects = ordersList.querySelectorAll('.order-status-select');
-    statusSelects.forEach(select => {
-      select.addEventListener('change', async () => {
-        const orderId = Number(select.dataset.orderId);
-        const newStatus = select.value;
+    // Agregar event listeners a los botones de estado
+    const statusButtons = ordersList.querySelectorAll('.order-status-btn');
+    statusButtons.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const orderId = Number(btn.dataset.orderId);
+        const newStatus = btn.dataset.status;
+        
         if (newStatus) {
-          await changeOrderStatus(orderId, newStatus);
-          const option = select.options[0];
-          if (option) option.selected = true;
+          // Actualizar localmente PRIMERO (para que se vea al instante)
+          const orderIndex = state.orders.findIndex(o => o.id === orderId);
+          if (orderIndex >= 0) {
+            state.orders[orderIndex].estado = newStatus;
+            renderOrders(); // Re-renderizar al instante
+            playNewOrderSound(); // Sonido de confirmación
+          }
+          
+          // Guardar en Supabase en background (sin esperar)
+          changeOrderStatus(orderId, newStatus).catch(error => {
+            console.error('Error sincronizando con Supabase:', error);
+            // Si falla, volver al estado anterior
+            if (orderIndex >= 0) {
+              state.orders[orderIndex].estado = btn.dataset.status === 'listo' ? 'nuevo' : 'listo';
+              renderOrders();
+            }
+          });
+        }
+      });
+    });
+
+    // Event listeners para botones de envío a domiciliario
+    const deliveryButtons = ordersList.querySelectorAll('.btn-delivery');
+    deliveryButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const orderId = Number(btn.dataset.orderId);
+        const order = state.orders.find(o => o.id === orderId);
+        if (order) {
+          sendOrderToDeliveryMan(order);
         }
       });
     });
@@ -1766,6 +1834,21 @@ function buildAdminApp() {
 
     refreshOrdersBtn?.addEventListener('click', () => {
       loadOrders();
+    });
+
+    // Botón para configurar número del domiciliario
+    const deliveryManConfigBtn = $('deliveryManConfigBtn');
+    deliveryManConfigBtn?.addEventListener('click', () => {
+      const currentNumber = getDeliveryManNumber();
+      const newNumber = prompt('📱 Ingresa el número del domiciliario (ej: 573143243707):', currentNumber);
+      if (newNumber !== null) {
+        if (newNumber.trim() === '') {
+          alert('⚠️ Por favor ingresa un número válido');
+          return;
+        }
+        setDeliveryManNumber(newNumber.trim());
+        alert('✅ Número guardado: ' + newNumber.trim());
+      }
     });
 
     subscribeToProductsRealtime(() => {

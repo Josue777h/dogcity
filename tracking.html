@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Seguimiento de tu pedido Dog City" />
+  <title>Dog City | Seguimiento de Pedido</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body[data-page="tracking"] {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tracking-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .tracking-hero {
+      text-align: center;
+    }
+
+    .tracking-hero h1 {
+      margin: 0 0 8px;
+      font-size: 1.8rem;
+    }
+
+    .tracking-hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .tracking-input-group {
+      display: flex;
+      gap: 8px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .tracking-input-group input {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+    }
+
+    .tracking-input-group button {
+      padding: 12px 24px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .tracking-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      max-width: 500px;
+      margin: 0 auto;
+      width: 100%;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .tracking-status {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .order-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--primary);
+      text-align: center;
+    }
+
+    .status-timeline {
+      position: relative;
+      padding: 0;
+    }
+
+    .status-item {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .status-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 20px;
+      top: 40px;
+      width: 2px;
+      height: 30px;
+      background: var(--border);
+    }
+
+    .status-item.active:not(:last-child)::after {
+      background: var(--primary);
+    }
+
+    .status-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      background: var(--border);
+      color: #fff;
+      flex: 0 0 40px;
+    }
+
+    .status-item.active .status-icon {
+      background: var(--primary);
+    }
+
+    .status-item.completed .status-icon {
+      background: var(--primary);
+    }
+
+    .status-content {
+      flex: 1;
+      padding-top: 4px;
+    }
+
+    .status-content h3 {
+      margin: 0 0 4px;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .status-content p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--border);
+      border-top: 3px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error-message {
+      background: #fee;
+      border: 1px solid #fcc;
+      color: #c33;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      text-align: center;
+    }
+
+    .success-message {
+      background: #efe;
+      border: 1px solid #cfc;
+      color: #3c3;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      text-align: center;
+    }
+
+    .order-details {
+      background: var(--surface-soft);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+    }
+
+    .order-details p {
+      margin: 8px 0;
+    }
+
+    .back-link {
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    .back-link a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body data-page="tracking">
+  <div class="app-bg"></div>
+
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <span class="brand-mark">
+        <img src="images/uploads/DOGCITY.png" alt="Dog City" />
+      </span>
+      <div>
+        <strong>Dog City</strong>
+        <span>Seguimiento de pedido</span>
+      </div>
+    </a>
+  </header>
+
+  <main class="layout tracking-container">
+    <section class="tracking-hero">
+      <h1>🔍 Seguimiento de Pedido</h1>
+      <p>Ingresa el número de tu pedido para ver su estado</p>
+    </section>
+
+    <div class="tracking-input-group">
+      <input 
+        id="orderNumberInput" 
+        type="text" 
+        placeholder="Ej: 12345" 
+        inputmode="numeric"
+      />
+      <button id="searchBtn" type="button">Buscar</button>
+    </div>
+
+    <div id="trackingContent"></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-brand">
+      <strong>Dog City</strong>
+      <span class="footer-note">Seguimiento en tiempo real de tu pedido</span>
+    </div>
+  </footer>
+
+  <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.SUPABASE_URL = "https://diaphikeanfkapoeynae.supabase.co";
+    window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpYXBoaWtlYW5ma2Fwb2V5bmFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTc1NDEsImV4cCI6MjA5MTE3MzU0MX0.eVAPQ7py4bfu3mTtzqv1dng5Czd2S_oGUxSOm3UOC58";
+  </script>
+  <script defer src="app.js"></script>
+  <script defer>
+    const orderNumberInput = document.getElementById('orderNumberInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const trackingContent = document.getElementById('trackingContent');
+
+    function getSupabaseClient() {
+      if (!window.supabase?.createClient) {
+        throw new Error('Supabase no cargó correctamente');
+      }
+      return window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    }
+
+    async function searchOrder() {
+      const orderNumber = orderNumberInput.value.trim();
+      if (!orderNumber) {
+        trackingContent.innerHTML = '<div class="error-message">Por favor ingresa un número de pedido</div>';
+        return;
+      }
+
+      trackingContent.innerHTML = '<div class="tracking-card"><div style="text-align: center; padding: 24px;"><div class="loading-spinner"></div><p style="margin-top: 12px;">Buscando tu pedido...</p></div></div>';
+
+      try {
+        const supabase = getSupabaseClient();
+        const { data, error } = await supabase
+          .from('pedidos')
+          .select('*')
+          .eq('id', Number(orderNumber))
+          .single();
+
+        if (error || !data) {
+          trackingContent.innerHTML = '<div class="tracking-card"><div class="error-message">❌ Pedido no encontrado. Verifica el número e intenta de nuevo.</div><div class="back-link"><a href="index.html">Volver a la tienda</a></div></div>';
+          return;
+        }
+
+        displayOrderTracking(data);
+        setupRealtimeListener(data.id);
+      } catch (error) {
+        console.error('Error:', error);
+        trackingContent.innerHTML = '<div class="tracking-card"><div class="error-message">❌ Error al buscar el pedido. Intenta de nuevo.</div></div>';
+      }
+    }
+
+    function displayOrderTracking(order) {
+      const status = (order.estado || 'nuevo').toLowerCase();
+      const states = ['nuevo', 'listo'];
+      const stateTexts = {
+        'nuevo': { icon: '📋', text: 'Pedido Recibido', desc: 'Tu pedido ha sido recibido' },
+        'listo': { icon: '✅', text: 'Listo para Entrega', desc: 'Tu pedido está listo' }
+      };
+
+      const html = `
+        <div class="tracking-card">
+          <div class="order-number">Pedido #${order.id}</div>
+          
+          <div class="status-timeline">
+            ${states.map((state, index) => {
+              const isActive = states.indexOf(status) >= index;
+              const isCompleted = states.indexOf(status) > index;
+              const stateInfo = stateTexts[state];
+              return `
+                <div class="status-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}">
+                  <div class="status-icon">${stateInfo.icon}</div>
+                  <div class="status-content">
+                    <h3>${stateInfo.text}</h3>
+                    <p>${stateInfo.desc}</p>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <div class="order-details">
+            <p><strong>👤 Cliente:</strong> ${order.nombre}</p>
+            <p><strong>📞 Teléfono:</strong> ${order.telefono}</p>
+            <p><strong>📍 Dirección:</strong> ${order.direccion}</p>
+            <p><strong>💰 Total:</strong> $${order.total.toLocaleString()}</p>
+            <p><strong>⏰ Pedido:</strong> ${new Date(order.created_at).toLocaleString()}</p>
+          </div>
+
+          ${order.estado === 'listo' ? '<div class="success-message" style="margin-top: 16px;">✅ ¡Tu pedido está listo! El domiciliario está en camino.</div>' : ''}
+
+          <div class="back-link"><a href="index.html">← Volver a la tienda</a></div>
+        </div>
+      `;
+      trackingContent.innerHTML = html;
+    }
+
+    function setupRealtimeListener(orderId) {
+      try {
+        const supabase = getSupabaseClient();
+        const channel = supabase
+          .channel(`pedido-${orderId}`)
+          .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'pedidos', filter: `id=eq.${orderId}` },
+            payload => {
+              displayOrderTracking(payload.new);
+            }
+          )
+          .subscribe();
+      } catch (error) {
+        console.warn('No se pudo establecer listener en tiempo real:', error);
+      }
+    }
+
+    searchBtn.addEventListener('click', searchOrder);
+    orderNumberInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        searchOrder();
+      }
+    });
+
+    // Auto-search si hay número en URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('pedido')) {
+      orderNumberInput.value = params.get('pedido');
+      searchOrder();
+    }
+  </script>
+</body>
+</html>
