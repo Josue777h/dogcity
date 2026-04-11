@@ -474,31 +474,40 @@ async function loadProducts() {
   const schema = await getProductSchema();
   
   try {
+    console.log('🔄 Cargando productos desde Supabase...');
     const { data, error } = await supabase
       .from('productos')
       .select(schema.select)
       .order('id', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.warn('❌ Error Supabase:', error.message);
+      throw error;
+    }
     
     const products = (data || []).map(normalizeProductRow);
+    
     if (products.length > 0) {
-      // Cachear en localStorage para carga más rápida
+      console.log('✅ ' + products.length + ' productos cargados desde Supabase');
+      // Cachear para próxima carga
       try {
         localStorage.setItem('dogcity_products_cache', JSON.stringify(products));
         localStorage.setItem('dogcity_cache_time', Date.now().toString());
       } catch (e) {
-        console.warn('No se pudo guardar caché de productos');
+        console.warn('No se pudo guardar caché');
       }
       return products;
+    } else {
+      console.warn('⚠️ Supabase vacío, intentando caché/fallback');
     }
   } catch (error) {
-    console.warn('Error cargando desde Supabase:', error);
-    // Intentar usar caché si hay error
+    console.warn('🚨 Error cargando desde Supabase:', error.message);
+    // Intentar usar caché como fallback
     try {
       const cached = localStorage.getItem('dogcity_products_cache');
+      const cacheTime = localStorage.getItem('dogcity_cache_time');
       if (cached) {
-        console.log('Usando caché de productos');
+        console.log('📦 Usando caché local de productos');
         return JSON.parse(cached);
       }
     } catch (e) {
@@ -506,10 +515,13 @@ async function loadProducts() {
     }
   }
   
-  // Fallback a menú por defecto
+  // Fallback FINAL solo si Supabase falla Y no hay caché
+  console.log('⚠️ Usando menú por defecto (sin conexión a Supabase)');
   return DOGCITY_MENU_PRODUCTS.map((product, index) => ({
     id: -(index + 1),
     ...product
+  }));
+}
   }));
 }
 
@@ -1139,12 +1151,13 @@ function buildStoreApp() {
   }
 
   async function init() {
-    // Cargar productos instantáneamente desde caché o por defecto
+    // Cargar productos instantáneamente desde caché O por defecto
     let cachedProducts = null;
     try {
       const cached = localStorage.getItem('dogcity_products_cache');
       if (cached) {
         cachedProducts = JSON.parse(cached);
+        console.log('✅ Usando caché local de productos');
       }
     } catch (e) {
       console.warn('No se pudo leer caché de productos');
@@ -1173,19 +1186,28 @@ function buildStoreApp() {
     renderProducts();
     updateOrderDisplay();
 
-    // Cargar desde Supabase en background (sin bloquear)
+    // ⚡ CRÍTICO: Cargar desde Supabase INMEDIATAMENTE (no esperar)
+    // Esto asegura que SIEMPRE ve datos actualizados
     loadProducts()
       .then(freshProducts => {
-        state.products = freshProducts;
-        state.quantities = state.products.reduce((accumulator, product) => {
-          accumulator[product.id] = Number(savedCart[product.id] || 0);
-          return accumulator;
-        }, {});
-        renderProducts();
-        updateOrderDisplay();
+        // Verificar si hay cambios respecto al caché
+        const hasCacheChanged = JSON.stringify(freshProducts) !== JSON.stringify(state.products);
+        
+        if (hasCacheChanged) {
+          console.log('🔄 Productos actualizados desde Supabase');
+          state.products = freshProducts;
+          state.quantities = state.products.reduce((accumulator, product) => {
+            accumulator[product.id] = Number(savedCart[product.id] || 0);
+            return accumulator;
+          }, {});
+          renderProducts();
+          updateOrderDisplay();
+        } else {
+          console.log('✅ Productos ya están actualizados');
+        }
       })
       .catch(error => {
-        console.warn('Error cargando productos desde Supabase:', error);
+        console.warn('❌ Error cargando productos desde Supabase (usando caché):', error.message);
       });
 
     searchInput.addEventListener('input', event => {
