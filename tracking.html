@@ -36,31 +36,6 @@
       font-size: 0.95rem;
     }
 
-    .tracking-input-group {
-      display: flex;
-      gap: 8px;
-      max-width: 400px;
-      margin: 0 auto;
-    }
-
-    .tracking-input-group input {
-      flex: 1;
-      padding: 12px;
-      border: 2px solid var(--border);
-      border-radius: var(--radius-md);
-      font-size: 1rem;
-    }
-
-    .tracking-input-group button {
-      padding: 12px 24px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: var(--radius-md);
-      font-weight: bold;
-      cursor: pointer;
-    }
-
     .tracking-card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -222,18 +197,8 @@
   <main class="layout tracking-container">
     <section class="tracking-hero">
       <h1>🔍 Seguimiento de Pedido</h1>
-      <p>Ingresa el número de tu pedido para ver su estado</p>
+      <p>Estado en tiempo real de tu pedido</p>
     </section>
-
-    <div class="tracking-input-group">
-      <input 
-        id="orderNumberInput" 
-        type="text" 
-        placeholder="Ej: 12345" 
-        inputmode="numeric"
-      />
-      <button id="searchBtn" type="button">Buscar</button>
-    </div>
 
     <div id="trackingContent"></div>
   </main>
@@ -252,9 +217,8 @@
   </script>
   <script defer src="app.js"></script>
   <script defer>
-    const orderNumberInput = document.getElementById('orderNumberInput');
-    const searchBtn = document.getElementById('searchBtn');
     const trackingContent = document.getElementById('trackingContent');
+    let realtimeChannel = null;
 
     function getSupabaseClient() {
       if (!window.supabase?.createClient) {
@@ -263,14 +227,8 @@
       return window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
     }
 
-    async function searchOrder() {
-      const orderNumber = orderNumberInput.value.trim();
-      if (!orderNumber) {
-        trackingContent.innerHTML = '<div class="error-message">Por favor ingresa un número de pedido</div>';
-        return;
-      }
-
-      trackingContent.innerHTML = '<div class="tracking-card"><div style="text-align: center; padding: 24px;"><div class="loading-spinner"></div><p style="margin-top: 12px;">Buscando tu pedido...</p></div></div>';
+    async function loadOrder(orderNumber) {
+      trackingContent.innerHTML = '<div class="tracking-card"><div style="text-align: center; padding: 24px;"><div class="loading-spinner"></div><p style="margin-top: 12px;">Cargando tu pedido...</p></div></div>';
 
       try {
         const supabase = getSupabaseClient();
@@ -281,7 +239,16 @@
           .single();
 
         if (error || !data) {
-          trackingContent.innerHTML = '<div class="tracking-card"><div class="error-message">❌ Pedido no encontrado. Verifica el número e intenta de nuevo.</div><div class="back-link"><a href="index.html">Volver a la tienda</a></div></div>';
+          trackingContent.innerHTML = `
+            <div class="tracking-card">
+              <div class="error-message">
+                ❌ Pedido no encontrado. 
+              </div>
+              <div class="back-link">
+                <a href="index.html">← Volver a la tienda</a>
+              </div>
+            </div>
+          `;
           return;
         }
 
@@ -289,7 +256,16 @@
         setupRealtimeListener(data.id);
       } catch (error) {
         console.error('Error:', error);
-        trackingContent.innerHTML = '<div class="tracking-card"><div class="error-message">❌ Error al buscar el pedido. Intenta de nuevo.</div></div>';
+        trackingContent.innerHTML = `
+          <div class="tracking-card">
+            <div class="error-message">
+              ❌ Error al cargar el pedido. Intenta de nuevo.
+            </div>
+            <div class="back-link">
+              <a href="index.html">← Volver a la tienda</a>
+            </div>
+          </div>
+        `;
       }
     }
 
@@ -340,34 +316,49 @@
 
     function setupRealtimeListener(orderId) {
       try {
+        // Limpiar listener anterior si existe
+        if (realtimeChannel) {
+          realtimeChannel.unsubscribe();
+        }
+
         const supabase = getSupabaseClient();
-        const channel = supabase
-          .channel(`pedido-${orderId}`)
+        realtimeChannel = supabase
+          .channel(`pedido-${orderId}-${Date.now()}`)
           .on(
             'postgres_changes',
             { event: 'UPDATE', schema: 'public', table: 'pedidos', filter: `id=eq.${orderId}` },
-            payload => {
+            (payload) => {
+              console.log('🔄 Cambio detectado:', payload);
               displayOrderTracking(payload.new);
             }
           )
-          .subscribe();
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              console.log('✅ Escuchando cambios del pedido #' + orderId);
+            }
+          });
       } catch (error) {
         console.warn('No se pudo establecer listener en tiempo real:', error);
       }
     }
 
-    searchBtn.addEventListener('click', searchOrder);
-    orderNumberInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        searchOrder();
-      }
-    });
-
-    // Auto-search si hay número en URL
+    // Buscar el pedido de la URL automáticamente
     const params = new URLSearchParams(window.location.search);
-    if (params.get('pedido')) {
-      orderNumberInput.value = params.get('pedido');
-      searchOrder();
+    const pedidoId = params.get('pedido');
+
+    if (pedidoId) {
+      loadOrder(pedidoId);
+    } else {
+      trackingContent.innerHTML = `
+        <div class="tracking-card">
+          <div class="error-message">
+            ❌ No se especificó un número de pedido en la URL.
+          </div>
+          <div class="back-link">
+            <a href="index.html">← Volver a la tienda</a>
+          </div>
+        </div>
+      `;
     }
   </script>
 </body>
