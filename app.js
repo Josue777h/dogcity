@@ -522,8 +522,6 @@ async function loadProducts() {
     ...product
   }));
 }
-  }));
-}
 
 async function seedDefaultCatalogIfEmpty() {
   const supabase = getSupabaseClient();
@@ -1157,13 +1155,11 @@ function buildStoreApp() {
       const cached = localStorage.getItem('dogcity_products_cache');
       if (cached) {
         cachedProducts = JSON.parse(cached);
-        console.log('✅ Usando caché local de productos');
       }
     } catch (e) {
       console.warn('No se pudo leer caché de productos');
     }
     
-    // Usar caché si existe, sino usar por defecto
     state.products = cachedProducts || DOGCITY_MENU_PRODUCTS.map((product, index) => ({
       id: -(index + 1),
       ...product
@@ -1186,29 +1182,17 @@ function buildStoreApp() {
     renderProducts();
     updateOrderDisplay();
 
-    // ⚡ CRÍTICO: Cargar desde Supabase INMEDIATAMENTE (no esperar)
-    // Esto asegura que SIEMPRE ve datos actualizados
-    loadProducts()
-      .then(freshProducts => {
-        // Verificar si hay cambios respecto al caché
-        const hasCacheChanged = JSON.stringify(freshProducts) !== JSON.stringify(state.products);
-        
-        if (hasCacheChanged) {
-          console.log('🔄 Productos actualizados desde Supabase');
-          state.products = freshProducts;
-          state.quantities = state.products.reduce((accumulator, product) => {
-            accumulator[product.id] = Number(savedCart[product.id] || 0);
-            return accumulator;
-          }, {});
-          renderProducts();
-          updateOrderDisplay();
-        } else {
-          console.log('✅ Productos ya están actualizados');
-        }
-      })
-      .catch(error => {
-        console.warn('❌ Error cargando productos desde Supabase (usando caché):', error.message);
-      });
+    loadProducts().then(freshProducts => {
+      state.products = freshProducts;
+      state.quantities = state.products.reduce((acc, product) => {
+        acc[product.id] = Number(savedCart[product.id] || 0);
+        return acc;
+      }, {});
+      renderProducts();
+      updateOrderDisplay();
+    }).catch(error => {
+      console.warn('Error cargando productos:', error);
+    });
 
     searchInput.addEventListener('input', event => {
       state.search = event.target.value;
