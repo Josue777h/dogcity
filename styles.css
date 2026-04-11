@@ -800,6 +800,101 @@ textarea {
   align-self: start;
 }
 
+.admin-orders-list {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+}
+
+.order-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.order-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.order-number {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.order-status {
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.order-body {
+  display: grid;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+
+.order-body p {
+  margin: 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.order-body strong {
+  color: var(--primary-dark);
+}
+
+.order-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.order-actions select,
+.order-actions .btn {
+  flex: 1;
+  min-width: 120px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.order-actions select:hover {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+.order-actions select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.btn-small {
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.875rem !important;
+}
+
 .admin-product-list {
   display: grid;
   gap: 14px;

@@ -429,6 +429,96 @@ function subscribeToProductsRealtime(onChange) {
     .subscribe();
 }
 
+function subscribeToOrdersRealtime(onChange) {
+  const supabase = getSupabaseClient();
+  return supabase
+    .channel(`pedidos-realtime-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'pedidos' },
+      payload => {
+        onChange(payload);
+      }
+    )
+    .subscribe();
+}
+
+function playNewOrderSound() {
+  // Crear sonido simple con Web Audio API
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Secuencia de 3 beeps
+    const now = audioContext.currentTime;
+    oscillator.frequency.setValueAtTime(800, now);
+    gainNode.gain.setValueAtTime(0.3, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    
+    oscillator.start(now);
+    oscillator.stop(now + 0.1);
+    
+    // Segundo beep
+    const osc2 = audioContext.createOscillator();
+    osc2.connect(gainNode);
+    osc2.frequency.setValueAtTime(1000, now + 0.15);
+    gainNode.gain.setValueAtTime(0.3, now + 0.15);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+    osc2.start(now + 0.15);
+    osc2.stop(now + 0.25);
+  } catch (error) {
+    console.warn('No se pudo reproducir sonido:', error);
+  }
+}
+
+function showOrderNotification(orderData) {
+  if (!('Notification' in window)) return;
+  
+  if (Notification.permission === 'granted') {
+    const notification = new Notification('🧾 Nuevo Pedido!', {
+      body: `Pedido #${orderData.id}\n💰 Total: $${orderData.total}`,
+      icon: 'images/uploads/DOGCITY.png',
+      tag: 'new-order-' + orderData.id,
+      requireInteraction: true
+    });
+    
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
+  }
+}
+
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+async function changeOrderStatus(orderId, newStatus) {
+  if (!newStatus) return;
+  
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('pedidos')
+      .update({ estado: newStatus })
+      .eq('id', orderId)
+      .select();
+    
+    if (error) throw error;
+    console.log('✅ Pedido actualizado:', data);
+    playNewOrderSound(); // Sonido de confirmación
+  } catch (error) {
+    console.error('❌ Error al actualizar pedido:', error);
+    alert('No se pudo actualizar el estado del pedido.');
+  }
+}
+
 function initNavToggle() {
   const navToggle = document.querySelector('.nav-toggle');
   const navLinks = document.querySelector('.nav-links');
@@ -1151,10 +1241,23 @@ function buildStoreApp() {
   async function init() {
     // Cargar productos instantáneamente desde caché O por defecto
     let cachedProducts = null;
+    let cacheIsStale = false;
+    
     try {
       const cached = localStorage.getItem('dogcity_products_cache');
-      if (cached) {
-        cachedProducts = JSON.parse(cached);
+      const lastUpdate = localStorage.getItem('dogcity_cache_time');
+      
+      if (cached && lastUpdate) {
+        const cacheAgeMs = Date.now() - parseInt(lastUpdate);
+        const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+        
+        if (cacheAgeMs < CACHE_TTL) {
+          cachedProducts = JSON.parse(cached);
+          console.log('✅ Caché válido (' + Math.round(cacheAgeMs / 1000) + 's)');
+        } else {
+          console.log('⚠️ Caché expirado (' + Math.round(cacheAgeMs / 1000) + 's) - forzar actualización');
+          cacheIsStale = true;
+        }
       }
     } catch (e) {
       console.warn('No se pudo leer caché de productos');
@@ -1182,6 +1285,9 @@ function buildStoreApp() {
     renderProducts();
     updateOrderDisplay();
 
+    // Cargar desde Supabase:
+    // - Si caché está expirado: FORZAR actualización
+    // - Si caché es válido: cargar en background
     loadProducts().then(freshProducts => {
       state.products = freshProducts;
       state.quantities = state.products.reduce((acc, product) => {
@@ -1190,6 +1296,9 @@ function buildStoreApp() {
       }, {});
       renderProducts();
       updateOrderDisplay();
+      if (cacheIsStale) {
+        console.log('🔄 Caché actualizado desde Supabase');
+      }
     }).catch(error => {
       console.warn('Error cargando productos:', error);
     });
@@ -1245,6 +1354,7 @@ function buildStoreApp() {
 function buildAdminApp() {
   const state = {
     products: [],
+    orders: [],
     editingProductId: null
   };
 
@@ -1266,6 +1376,9 @@ function buildAdminApp() {
   const adminLoginBtn = $('adminLoginBtn');
   const adminPinStatus = $('adminPinStatus');
   const adminLogoutBtn = $('adminLogoutBtn');
+  const ordersList = $('adminOrdersList');
+  const noOrdersMessage = $('adminOrdersEmptyState');
+  const refreshOrdersBtn = $('refreshOrdersBtn');
 
   function setSaveStatus(message, tone = 'neutral') {
     saveStatus.textContent = message;
@@ -1478,6 +1591,88 @@ function buildAdminApp() {
     }
   }
 
+  function renderOrders() {
+    if (!ordersList) return;
+    
+    noOrdersMessage?.classList.toggle('hidden', state.orders.length > 0);
+    
+    ordersList.innerHTML = state.orders
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .map(order => {
+        const statusColors = {
+          'nuevo': '#e10613',
+          'preparando': '#f59e0b',
+          'listo': '#16a34a',
+          'entregado': '#6b7280'
+        };
+        const status = (order.estado || 'nuevo').toLowerCase();
+        const statusColor = statusColors[status] || '#6b7280';
+        
+        return `
+          <div class="order-card" data-order-id="${order.id}">
+            <div class="order-header">
+              <span class="order-number">Pedido #${order.id}</span>
+              <span class="order-status" style="background-color: ${statusColor}; color: white; padding: 0.25rem 0.75rem; border-radius: 0.375rem; font-weight: bold; text-transform: capitalize;">
+                ${status}
+              </span>
+            </div>
+            <div class="order-body">
+              <p><strong>Cliente:</strong> ${escapeHtml(order.nombre || 'Sin nombre')}</p>
+              <p><strong>Teléfono:</strong> ${escapeHtml(order.telefono || 'N/A')}</p>
+              <p><strong>Dirección:</strong> ${escapeHtml(order.direccion || 'N/A')}</p>
+              <p><strong>Total:</strong> ${formatMoney(order.total || 0)}</p>
+              ${order.comentarios ? `<p><strong>Comentarios:</strong> ${escapeHtml(order.comentarios)}</p>` : ''}
+              <p style="font-size: 0.875rem; color: #6b7280;">
+                ${new Date(order.created_at).toLocaleString()}
+              </p>
+            </div>
+            <div class="order-actions">
+              ${['nuevo', 'preparando', 'listo'].includes(status) ? `
+                <select class="order-status-select" data-order-id="${order.id}" style="padding: 0.5rem 0.75rem;">
+                  <option value="">Cambiar estado...</option>
+                  ${status !== 'nuevo' ? '<option value="nuevo">← Nuevo</option>' : ''}
+                  ${status !== 'preparando' ? '<option value="preparando">Preparando</option>' : ''}
+                  ${status !== 'listo' ? '<option value="listo">Listo ✓</option>' : ''}
+                  ${status !== 'entregado' ? '<option value="entregado">Entregado</option>' : ''}
+                </select>
+              ` : '<span style="color: #6b7280;">Completado</span>'}
+            </div>
+          </div>
+        `;
+      }).join('');
+    
+    // Agregar event listeners a los selects
+    const statusSelects = ordersList.querySelectorAll('.order-status-select');
+    statusSelects.forEach(select => {
+      select.addEventListener('change', async () => {
+        const orderId = Number(select.dataset.orderId);
+        const newStatus = select.value;
+        if (newStatus) {
+          await changeOrderStatus(orderId, newStatus);
+          const option = select.options[0];
+          if (option) option.selected = true;
+        }
+      });
+    });
+  }
+
+  async function loadOrders() {
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from('pedidos')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (error) throw error;
+      state.orders = data || [];
+      renderOrders();
+    } catch (error) {
+      console.warn('No se pudieron cargar los pedidos:', error);
+    }
+  }
+
   async function init() {
     const supabase = getSupabaseClient();
     supabase.auth.onAuthStateChange((_event, session) => {
@@ -1569,6 +1764,10 @@ function buildAdminApp() {
       });
     });
 
+    refreshOrdersBtn?.addEventListener('click', () => {
+      loadOrders();
+    });
+
     subscribeToProductsRealtime(() => {
       getSupabaseSession()
         .then(session => {
@@ -1581,6 +1780,38 @@ function buildAdminApp() {
           console.warn('No se pudo refrescar el panel admin en tiempo real:', error);
         });
     });
+
+    // Real-time listener para nuevos pedidos
+    let orderSubscription = null;
+    subscribeToOrdersRealtime((payload) => {
+      console.log('🎯 Nuevo evento de pedido:', payload);
+      if (payload.eventType === 'INSERT') {
+        // Reproducir sonido de alerta
+        playNewOrderSound();
+        
+        // Mostrar notificación del navegador
+        showOrderNotification(payload.new);
+        
+        // Actualizar la lista de pedidos
+        state.orders.unshift(payload.new);
+        renderOrders();
+      } else if (payload.eventType === 'UPDATE') {
+        // Actualizar pedido existente
+        const index = state.orders.findIndex(o => Number(o.id) === Number(payload.new.id));
+        if (index >= 0) {
+          state.orders[index] = payload.new;
+          renderOrders();
+        }
+      } else if (payload.eventType === 'DELETE') {
+        // Eliminar pedido
+        state.orders = state.orders.filter(o => Number(o.id) !== Number(payload.old.id));
+        renderOrders();
+      }
+    });
+
+    // Cargar pedidos iniciales
+    await loadOrders();
+    requestNotificationPermission();
 
     // Manejar cambio de tabs (Productos / Pedidos)
     const adminTabs = document.querySelectorAll('.admin-tab');
