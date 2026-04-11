@@ -326,20 +326,50 @@
           .channel(`pedido-${orderId}-${Date.now()}`)
           .on(
             'postgres_changes',
-            { event: 'UPDATE', schema: 'public', table: 'pedidos', filter: `id=eq.${orderId}` },
+            { event: 'UPDATE', schema: 'public', table: 'pedidos' },
             (payload) => {
-              console.log('🔄 Cambio detectado:', payload);
-              displayOrderTracking(payload.new);
+              console.log('🔄 Real-time update detectado:', payload);
+              if (payload.new.id === orderId) {
+                displayOrderTracking(payload.new);
+              }
             }
           )
           .subscribe((status) => {
             if (status === 'SUBSCRIBED') {
-              console.log('✅ Escuchando cambios del pedido #' + orderId);
+              console.log('✅ Listening real-time para pedido #' + orderId);
+            } else {
+              console.warn('⚠️ Real-time status:', status);
             }
           });
       } catch (error) {
-        console.warn('No se pudo establecer listener en tiempo real:', error);
+        console.warn('Aviso: No se pudo establecer listener real-time:', error);
       }
+
+      // POLLING DE RESPALDO: Actualizar cada 3 segundos
+      // Esto garantiza que funcione incluso si real-time falla
+      const pollInterval = setInterval(async () => {
+        try {
+          const supabase = getSupabaseClient();
+          const { data, error } = await supabase
+            .from('pedidos')
+            .select('*')
+            .eq('id', orderId)
+            .single();
+
+          if (!error && data) {
+            console.log('🔄 Poll: Pedido actualizado');
+            displayOrderTracking(data);
+          }
+        } catch (error) {
+          console.warn('Error en polling:', error);
+        }
+      }, 2000); // Cada 2 segundos (más rápido)
+
+      // Limpiar polling cuando se desmonte la página
+      window.addEventListener('beforeunload', () => {
+        clearInterval(pollInterval);
+        if (realtimeChannel) realtimeChannel.unsubscribe();
+      });
     }
 
     // Buscar el pedido de la URL automáticamente

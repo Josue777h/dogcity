@@ -1896,6 +1896,26 @@ function buildAdminApp() {
     await loadOrders();
     requestNotificationPermission();
 
+    // AUTO-REFRESH: Actualizar pedidos cada 5 segundos cuando estés en la tab de pedidos
+    let autoRefreshInterval = null;
+    const startAutoRefresh = () => {
+      if (autoRefreshInterval) return; // Ya está corriendo
+      console.log('🔄 Iniciando auto-refresh de pedidos cada 5 segundos');
+      autoRefreshInterval = setInterval(() => {
+        loadOrders().catch(error => {
+          console.warn('Error en auto-refresh de pedidos:', error);
+        });
+      }, 5000); // Cada 5 segundos
+    };
+
+    const stopAutoRefresh = () => {
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+        console.log('⏸️ Auto-refresh de pedidos detenido');
+      }
+    };
+
     // Manejar cambio de tabs (Productos / Pedidos)
     const adminTabs = document.querySelectorAll('.admin-tab');
     const productsPanel = $('productsPanel');
@@ -1913,9 +1933,11 @@ function buildAdminApp() {
         if (targetTab === 'products') {
           productsPanel.classList.add('active');
           ordersPanel.classList.remove('active');
+          stopAutoRefresh(); // Parar cuando cambies a productos
         } else if (targetTab === 'orders') {
           ordersPanel.classList.add('active');
           productsPanel.classList.remove('active');
+          startAutoRefresh(); // Iniciar cuando entres a pedidos
         }
       });
     });
