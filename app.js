@@ -766,6 +766,10 @@ function buildStoreApp() {
   const mobileSelectedCount = $('mobileSelectedCount');
   const floatingOrderTotal = $('floatingOrderTotal');
   const floatingSelectedCount = $('floatingSelectedCount');
+  let isGeneratingOrder = false;
+  let lastOrderSignature = '';
+  let lastOrderId = null;
+  let lastOrderCreatedAt = 0;
 
   function setOrderModalOpen(isOpen) {
     if (!orderModal) {
@@ -784,6 +788,32 @@ function buildStoreApp() {
 
   function closeOrderModal() {
     setOrderModalOpen(false);
+  }
+
+  function markOrderDirty() {
+    lastOrderSignature = '';
+    lastOrderId = null;
+    lastOrderCreatedAt = 0;
+  }
+
+  function buildOrderSignature(items) {
+    const payload = {
+      items: items.map(item => ({
+        id: item.id,
+        name: item.name,
+        qty: item.quantity,
+        price: item.price,
+        note: (state.notes[item.id] || '').trim()
+      })),
+      customer: {
+        name: customerName.value.trim(),
+        address: customerAddress.value.trim(),
+        phone: customerPhone.value.trim()
+      },
+      comment: orderComment?.value.trim() || '',
+      location: state.locationLink || ''
+    };
+    return JSON.stringify(payload);
   }
 
   function saveCart() {
@@ -998,12 +1028,12 @@ function buildStoreApp() {
   }
 
   function buildWhatsAppMessage(items) {
-    // NO incluir número de pedido aquí - se agregará después con el ID de Supabase
+    // NO incluir numero de pedido aqui - se agregara despues con el ID de Supabase
     const lineItems = items.map(item => {
       const note = (state.notes[item.id] || '').trim();
       return note
-        ? `• ${item.quantity} x ${item.name}\n  - Nota: ${note}`
-        : `• ${item.quantity} x ${item.name}`;
+        ? `* ${item.quantity} x ${item.name}\n  - Nota: ${note}`
+        : `* ${item.quantity} x ${item.name}`;
     }).join('\n');
     const total = formatMoney(items.reduce((sum, item) => sum + item.quantity * item.price, 0));
     const name = customerName.value.trim() || 'Por confirmar';
@@ -1013,25 +1043,25 @@ function buildStoreApp() {
     const locationLine = state.locationLink || 'No compartida';
 
     return [
-      'Hola Dog City 👋, quiero hacer un pedido.',
+      `Hola Dog City \u{1F44B}, quiero hacer un pedido.`,
       '',
-      '🌭 Productos:',
+      `\u{1F32D} Productos:`,
       lineItems,
       '',
-      `💰 Total: ${total}`,
+      `\u{1F4B0} Total: ${total}`,
       '',
-      '👤 Datos del cliente:',
-      `• Nombre: ${name}`,
-      `• Dirección: ${address}`,
-      `• Teléfono: ${phone}`,
+      `\u{1F464} Datos del cliente:`,
+      `* Nombre: ${name}`,
+      `* Direccion: ${address}`,
+      `* Telefono: ${phone}`,
       '',
-      '📝 Comentarios:',
+      `\u{1F4DD} Comentarios:`,
       comment,
       '',
-      '📍 Ubicación:',
+      `\u{1F4CD} Ubicacion:`,
       locationLine,
       '',
-      'Gracias 🙌'
+      `Gracias \u{1F64C}`
     ].join('\n');
   }
 
@@ -1072,6 +1102,7 @@ function buildStoreApp() {
       locationBtn.textContent = 'Actualizar ubicacion';
       saveCustomerInfo();
       refreshLocationRequiredState();
+      markOrderDirty();
     }, error => {
       if (error?.code === 1) {
         locationStatus.textContent = 'Safari no tiene permiso de ubicacion. En iPhone revisa Ajustes > Safari > Ubicacion o permite el acceso al sitio.';
@@ -1088,6 +1119,7 @@ function buildStoreApp() {
       locationBtn.textContent = 'Usar mi ubicacion actual';
       saveCustomerInfo();
       refreshLocationRequiredState();
+      markOrderDirty();
     }, {
       enableHighAccuracy: true,
       timeout: 12000,
@@ -1162,6 +1194,9 @@ function buildStoreApp() {
   }
 
   async function generateMessage() {
+    if (isGeneratingOrder) {
+      return;
+    }
     const selectedItems = getSelectedItems();
     if (selectedItems.length === 0) {
       resetGeneratedMessage();
@@ -1181,39 +1216,52 @@ function buildStoreApp() {
     saveCustomerInfo();
     saveOrderComment();
     refreshLocationRequiredState();
-    
-    // Generar mensaje con número TEMPORAL al instante
-    const tempOrderNumber = getTemporaryOrderNumber();
+
     const message = buildWhatsAppMessage(selectedItems);
-    const trackingLinkTemp = buildTrackingLink(tempOrderNumber);
-    const messageWithTempNumber = `🧾 Pedido #${tempOrderNumber}\n\n${message}\n\n🔗 Seguimiento:\n${trackingLinkTemp}`;
-    
-    // Mostrar INMEDIATAMENTE
-    generatedMessage.value = messageWithTempNumber;
-    whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(messageWithTempNumber)}`;
-    whatsappLink.classList.remove('disabled');
-    
-    // Guardar a Supabase en BACKGROUND y actualizar con el ID real cuando llegue
-    saveOrderToSupabase(message, selectedItems)
-      .then(pedidoId => {
-        if (pedidoId) {
-          // Solo actualizar si el ID es diferente al temporal
-          if (pedidoId !== tempOrderNumber) {
-            const trackingLinkFinal = buildTrackingLink(pedidoId);
-            const mensajeFinal = `🧾 Pedido #${pedidoId}\n\n${message}\n\n🔗 Seguimiento:\n${trackingLinkFinal}`;
-            generatedMessage.value = mensajeFinal;
-            whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeFinal)}`;
-          }
-        }
-      })
-      .catch(error => {
-        console.warn('Error guardando en Supabase (pero el mensaje ya se mostró):', error);
-      });
+    const signature = buildOrderSignature(selectedItems);
+    const now = Date.now();
+    if (signature && signature === lastOrderSignature && lastOrderId && (now - lastOrderCreatedAt) < 60000) {
+      const trackingLinkFinal = buildTrackingLink(lastOrderId);
+      const mensajeFinal = `\u{1F9FE} Pedido #${lastOrderId}\n\n${message}\n\n\u{1F517} Seguimiento:\n${trackingLinkFinal}`;
+      generatedMessage.value = mensajeFinal;
+      whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeFinal)}`;
+      whatsappLink.classList.remove('disabled');
+      return;
+    }
+    generatedMessage.value = 'Generando pedido...';
+    whatsappLink.href = '#';
+    whatsappLink.classList.add('disabled');
+    isGeneratingOrder = true;
+    generateBtn.disabled = true;
+    mobileGenerateBtn?.setAttribute('disabled', 'true');
+    openOrderModalBtn?.setAttribute('disabled', 'true');
+
+    try {
+      const pedidoId = await saveOrderToSupabase(message, selectedItems);
+      if (!pedidoId) {
+        generatedMessage.value = 'No se pudo generar el pedido. Intenta nuevamente.';
+        return;
+      }
+
+      const trackingLinkFinal = buildTrackingLink(pedidoId);
+      const mensajeFinal = `\u{1F9FE} Pedido #${pedidoId}\n\n${message}\n\n\u{1F517} Seguimiento:\n${trackingLinkFinal}`;
+      generatedMessage.value = mensajeFinal;
+      whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeFinal)}`;
+      whatsappLink.classList.remove('disabled');
+      lastOrderSignature = signature;
+      lastOrderId = pedidoId;
+      lastOrderCreatedAt = Date.now();
+    } finally {
+      isGeneratingOrder = false;
+      generateBtn.disabled = false;
+      mobileGenerateBtn?.removeAttribute('disabled');
+      openOrderModalBtn?.removeAttribute('disabled');
+    }
   }
 
   async function copyMessage() {
     if (!generatedMessage.value.trim()) {
-      generateMessage();
+      await generateMessage();
     }
 
     if (!generatedMessage.value.trim()) {
@@ -1239,6 +1287,7 @@ function buildStoreApp() {
     updateOrderDisplay();
     resetGeneratedMessage();
     saveCart();
+    markOrderDirty();
     window.setTimeout(() => {
       state.lastChangedProductId = null;
       renderProducts();
@@ -1277,6 +1326,7 @@ function buildStoreApp() {
       saveProductNotes();
       updateOrderDisplay();
       resetGeneratedMessage();
+      markOrderDirty();
     }
   }
 
@@ -1356,11 +1406,15 @@ function buildStoreApp() {
     });
 
     [customerName, customerAddress, customerPhone].forEach(input => {
-      input.addEventListener('input', saveCustomerInfo);
+      input.addEventListener('input', () => {
+        saveCustomerInfo();
+        markOrderDirty();
+      });
     });
     orderComment?.addEventListener('input', () => {
       saveOrderComment();
       resetGeneratedMessage();
+      markOrderDirty();
     });
 
     productsList.addEventListener('click', handleProductControls);
@@ -1957,3 +2011,6 @@ function init() {
 }
 
 init();
+
+
+

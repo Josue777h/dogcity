@@ -210,7 +210,7 @@
     </div>
   </footer>
 
-  <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = "https://diaphikeanfkapoeynae.supabase.co";
     window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpYXBoaWtlYW5ma2Fwb2V5bmFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTc1NDEsImV4cCI6MjA5MTE3MzU0MX0.eVAPQ7py4bfu3mTtzqv1dng5Czd2S_oGUxSOm3UOC58";
@@ -225,6 +225,16 @@
         throw new Error('Supabase no cargó correctamente');
       }
       return window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    }
+
+    async function waitForSupabase(timeoutMs = 6000) {
+      const start = Date.now();
+      while (!window.supabase?.createClient) {
+        if (Date.now() - start > timeoutMs) {
+          throw new Error('Supabase no cargÃ³ correctamente');
+        }
+        await new Promise(resolve => setTimeout(resolve, 120));
+      }
     }
 
     async function loadOrder(orderNumber) {
@@ -374,10 +384,25 @@
 
     // Buscar el pedido de la URL automáticamente
     const params = new URLSearchParams(window.location.search);
-    const pedidoId = params.get('pedido');
+    const pedidoIdRaw = params.get('pedido');
+    const pedidoId = Number(String(pedidoIdRaw || '').trim());
 
-    if (pedidoId) {
-      loadOrder(pedidoId);
+    if (Number.isFinite(pedidoId) && pedidoId > 0) {
+      waitForSupabase()
+        .then(() => loadOrder(pedidoId))
+        .catch(error => {
+          console.error('Error:', error);
+          trackingContent.innerHTML = `
+            <div class="tracking-card">
+              <div class="error-message">
+                âŒ Error al cargar el pedido. Intenta de nuevo.
+              </div>
+              <div class="back-link">
+                <a href="index.html">â† Volver a la tienda</a>
+              </div>
+            </div>
+          `;
+        });
     } else {
       trackingContent.innerHTML = `
         <div class="tracking-card">
