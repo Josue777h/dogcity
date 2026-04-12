@@ -435,6 +435,9 @@ textarea:focus,
   color: var(--muted);
   line-height: 1.45;
   font-size: 0.95rem;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: initial;
 }
 
 .product-card-head strong {
