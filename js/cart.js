@@ -61,11 +61,3 @@ export function saveDeliveryDrivers(drivers) {
   localStorage.setItem('dog-city-drivers', JSON.stringify(drivers));
 }
 
-// Deprecated: used for single driver number
-export function getDeliveryManNumber() {
-  return localStorage.getItem('dog-city-delivery-number') || '';
-}
-
-export function setDeliveryManNumber(number) {
-  localStorage.setItem('dog-city-delivery-number', number);
-}
