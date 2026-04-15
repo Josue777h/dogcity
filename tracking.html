@@ -382,9 +382,9 @@
       });
     }
 
-    // Buscar el pedido de la URL automáticamente
+    // Buscar el pedido de la URL automáticamente (?id=123 o ?pedido=123)
     const params = new URLSearchParams(window.location.search);
-    const pedidoIdRaw = params.get('pedido');
+    const pedidoIdRaw = params.get('id') || params.get('pedido');
     const pedidoId = Number(String(pedidoIdRaw || '').trim());
 
     if (Number.isFinite(pedidoId) && pedidoId > 0) {
