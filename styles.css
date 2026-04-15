@@ -3,15 +3,15 @@
   --surface: #ffffff;
   --surface-soft: #fffde8;
   --text: #1b1b1b;
-  --muted: #7a1c24;
-  --primary: #e10613;
-  --primary-dark: #d30917;
-  --primary-soft: #ffd7db;
-  --secondary: #ffd400;
-  --secondary-dark: #ffc400;
-  --accent: #ffd400;
+  --muted: #b94e16;
+  --primary: #E53935;
+  --primary-dark: #c62828;
+  --primary-soft: #ffcdd2;
+  --secondary: #FFD700;
+  --secondary-dark: #fbc02d;
+  --accent: #FFD700;
   --border: #ffe36e;
-  --ring: rgba(172, 7, 24, 0.932);
+  --ring: rgba(229, 57, 53, 0.2);
   --shadow-sm: 0 6px 18px rgba(225, 6, 19, 0.12);
   --shadow-md: 0 14px 34px rgba(225, 6, 19, 0.18);
   --radius-xl: 24px;
@@ -2349,7 +2349,7 @@ textarea {
   align-items: center;
 }
 
-.footer-brand > div {
+.footer-brand>div {
   display: flex;
   flex-direction: column;
 }
@@ -2361,11 +2361,11 @@ textarea {
     text-align: center;
     padding: 24px 20px;
   }
-  
+
   .store-hero-content {
     align-items: center;
   }
-  
+
   .hero-stats {
     justify-content: center;
   }
@@ -2375,9 +2375,10 @@ textarea {
   .store-toolbar {
     grid-template-columns: 1fr;
   }
-  
+
   .hero-total-card {
-    display: none; /* Hidden on mobile, replaced by bottom bar */
+    display: none;
+    /* Hidden on mobile, replaced by bottom bar */
   }
 
   .mobile-bar {
@@ -2413,18 +2414,19 @@ textarea {
     font-weight: 900;
     color: var(--text);
   }
-  
+
   .products-section {
-    padding-bottom: 80px; /* Space for mobile bar */
+    padding-bottom: 80px;
+    /* Space for mobile bar */
   }
-  
+
   .footer-brand {
     justify-content: center;
     text-align: center;
     width: 100%;
     margin-bottom: 8px;
   }
-  
+
   .footer-links {
     justify-content: center;
     width: 100%;
@@ -2432,6 +2434,7 @@ textarea {
 }
 
 @media (min-width: 641px) {
+
   /* Show floating launcher on desktop when scrolled past hero */
   .floating-order-launcher.visible-launcher {
     display: flex;
@@ -2441,6 +2444,13 @@ textarea {
 }
 
 @keyframes slideUpLauncher {
-  from { opacity: 0; transform: translateY(100px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(100px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
