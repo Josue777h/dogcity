@@ -135,6 +135,28 @@ export async function uploadProductImage(file, productName) {
   return data.publicUrl;
 }
 
+export async function uploadOrderReceipt(file) {
+  if (!file) return null;
+
+  const supabase = getSupabaseClient();
+  const extension = getFileExtension(file);
+  const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const filePath = `receipts/vouchers-${uniqueId}.${extension}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(SUPABASE_PRODUCT_BUCKET)
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type || undefined
+    });
+
+  if (uploadError) throw new Error(`Error al subir comprobante: ${uploadError.message}`);
+
+  const { data } = supabase.storage.from(SUPABASE_PRODUCT_BUCKET).getPublicUrl(filePath);
+  return data?.publicUrl || null;
+}
+
 export async function getSupabaseSession() {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.auth.getSession();
@@ -158,7 +180,7 @@ export async function signOutAdmin() {
 export function subscribeToProductsRealtime(onChange) {
   const supabase = getSupabaseClient();
   return supabase
-    .channel(`productos-realtime-${Date.now()}`)
+    .channel('public:productos')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'productos' }, payload => onChange(payload))
     .subscribe();
 }
@@ -166,7 +188,7 @@ export function subscribeToProductsRealtime(onChange) {
 export function subscribeToOrdersRealtime(onChange) {
   const supabase = getSupabaseClient();
   return supabase
-    .channel(`pedidos-realtime-${Date.now()}`)
+    .channel('public:pedidos')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, payload => onChange(payload))
     .subscribe();
 }

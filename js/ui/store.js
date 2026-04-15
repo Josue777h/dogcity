@@ -7,8 +7,10 @@ import {
 } from '../utils.js';
 import { 
   loadProducts, 
-  getSupabaseClient, 
-  saveOrderToSupabase, 
+  saveOrderToSupabase,
+  seedDefaultCatalogIfEmpty, 
+  uploadProductImage, 
+  uploadOrderReceipt,
   subscribeToProductsRealtime 
 } from '../supabase.js';
 import { 
@@ -64,12 +66,18 @@ export function buildStoreApp() {
   const customerAddress = $('customerAddress');
   const customerPhone = $('customerPhone');
   const locationBtn = $('locationBtn');
+  const deliveryMethodSelect = $('deliveryMethodSelect');
+  const paymentMethodSelect = $('paymentMethodSelect');
+  const nequiInfoBlock = $('nequiInfoBlock');
+  const paymentReceiptInput = $('paymentReceiptInput');
   const locationStatus = $('locationStatus');
   const orderComment = $('orderComment');
   const mobileOrderTotal = $('mobileOrderTotal');
   const mobileSelectedCount = $('mobileSelectedCount');
   const floatingOrderTotal = $('floatingOrderTotal');
   const floatingSelectedCount = $('floatingSelectedCount');
+  const openOrderModalBtn2 = $('openOrderModalBtn2');
+  const locationBox = $('locationBox');
   
   let isGeneratingOrder = false;
   let lastOrderSignature = '';
@@ -364,10 +372,13 @@ export function buildStoreApp() {
       return;
     }
 
-    if (!state.locationLink) {
-      showToast('La ubicación es obligatoria.', 'error');
+    const deliveryMethod = deliveryMethodSelect?.value || 'envio';
+    const paymentMethod = paymentMethodSelect?.value || 'efectivo';
+
+    if (deliveryMethod === 'envio' && !state.locationLink) {
+      showToast('La ubicación es obligatoria para pedidos a domicilio.', 'error');
       refreshLocationRequiredState();
-      locationBtn.focus();
+      locationBtn?.focus();
       return;
     }
 
@@ -400,6 +411,18 @@ export function buildStoreApp() {
     if (mobileGenerateBtn) mobileGenerateBtn.disabled = true;
 
     try {
+      let receiptUrl = null;
+      if (paymentMethod === 'transferencia' && paymentReceiptInput?.files?.[0]) {
+        try {
+          showToast('Subiendo comprobante...', 'info');
+          receiptUrl = await uploadOrderReceipt(paymentReceiptInput.files[0]);
+          console.log('✅ Comprobante subido:', receiptUrl);
+        } catch (e) {
+          console.error('❌ Error en uploadOrderReceipt:', e);
+          showToast('Error subiendo imagen, el pedido se guardará sin ella.', 'warning');
+        }
+      }
+
       const itemsJson = selectedItems.map(item => ({
         nombre: item.name,
         cantidad: item.quantity,
@@ -407,7 +430,7 @@ export function buildStoreApp() {
         nota: state.notes[item.id] || ''
       }));
 
-      const pedidoId = await saveOrderToSupabase({
+      const payload = {
         nombre: customerName.value.trim(),
         telefono: customerPhone.value.trim(),
         direccion: customerAddress.value.trim(),
@@ -418,13 +441,29 @@ export function buildStoreApp() {
         estado: 'nuevo',
         items: itemsJson,
         productos: message,
-        token: `T-${Date.now()}` // Token temporal para tracking
-      });
+        entrega_metodo: deliveryMethod,
+        pago_metodo: paymentMethod,
+        comprobante_url: receiptUrl,
+        token: `T-${Date.now()}`
+      };
 
-      if (!pedidoId) throw new Error('No se recibió ID del pedido.');
+      console.log('📦 Intentando guardar pedido:', payload);
+
+      const pedidoId = await saveOrderToSupabase(payload);
+
+      if (!pedidoId) {
+        console.error('❌ Supabase no devolvió ID del pedido.');
+        throw new Error('No se recibió ID del pedido.');
+      }
+
+      console.log('🚀 Pedido guardado con ID:', pedidoId);
 
       const trackingLinkFinal = buildTrackingLink(pedidoId);
-      const mensajeFinal = `\u{1F9FE} Pedido #${pedidoId}\n\n${message}\n\n\u{1F517} Seguimiento:\n${trackingLinkFinal}`;
+      const deliveryEmoji = deliveryMethod === 'envio' ? '🛵 Domicilio' : '🏠 Recoger en local';
+      const paymentEmoji = paymentMethod === 'efectivo' ? '💵 Efectivo' : '📱 Transferencia Nequi';
+      
+      const extraInfo = `\n📍 *Entrega:* ${deliveryEmoji}\n💳 *Pago:* ${paymentEmoji}${receiptUrl ? '\n✅ Comprobante adjunto' : ''}`;
+      const mensajeFinal = `\u{1F9FE} Pedido #${pedidoId}\n\n${message}${extraInfo}\n\n\u{1F517} Seguimiento:\n${trackingLinkFinal}`;
       
       if (generatedMessage) {
         generatedMessage.value = mensajeFinal;
@@ -437,7 +476,8 @@ export function buildStoreApp() {
       lastOrderCreatedAt = Date.now();
       showToast('¡Pedido listo para enviar!', 'success');
     } catch (error) {
-      showToast('Error al procesar el pedido.', 'error');
+      console.error('❌ Error crítico al procesar el pedido:', error);
+      showToast(`Error: ${error.message || 'Error desconocido'}`, 'error');
     } finally {
       isGeneratingOrder = false;
       generateBtn.disabled = false;
@@ -548,9 +588,27 @@ export function buildStoreApp() {
     generateBtn?.addEventListener('click', generateMessage);
     mobileGenerateBtn?.addEventListener('click', openOrderModal);
     openOrderModalBtn?.addEventListener('click', openOrderModal);
+    openOrderModalBtn2?.addEventListener('click', openOrderModal);
     closeOrderModalBtn?.addEventListener('click', closeOrderModal);
     orderModalBackdrop?.addEventListener('click', closeOrderModal);
     locationBtn?.addEventListener('click', updateLocation);
+
+    paymentMethodSelect?.addEventListener('change', () => {
+      if (paymentMethodSelect.value === 'transferencia') {
+        nequiInfoBlock?.classList.remove('hidden');
+      } else {
+        nequiInfoBlock?.classList.add('hidden');
+      }
+    });
+
+    deliveryMethodSelect?.addEventListener('change', () => {
+      const locationRow = locationBtn?.closest('.location-box');
+      if (deliveryMethodSelect.value === 'envio') {
+        locationRow?.classList.remove('hidden');
+      } else {
+        locationRow?.classList.add('hidden');
+      }
+    });
     
     copyBtn?.addEventListener('click', async () => {
       if (!generatedMessage?.value.trim()) await generateMessage();

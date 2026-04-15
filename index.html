@@ -3,13 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Sistema de pedidos por WhatsApp para restaurantes." />
-  <title>Dog City | Pedidos por WhatsApp</title>
+  <meta name="description" content="Dog City — Los mejores perros calientes y comida rápida. Arma tu pedido y envíalo directo por WhatsApp con tu ubicación." />
+  <title>Dog City | Perros Calientes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="images/uploads/DOGCITY.png" />
 </head>
 <body data-page="store">
   <div class="app-bg"></div>
 
+  <!-- ─── HEADER ─────────────────────────────── -->
   <header class="topbar">
     <a class="brand" href="index.html">
       <span class="brand-mark">
@@ -17,146 +22,204 @@
       </span>
       <div>
         <strong>Dog City</strong>
-        <span>Perros calientes y pedidos por WhatsApp</span>
+        <span>Pide por WhatsApp 🌭</span>
       </div>
     </a>
 
-    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="storeNav">
-      <span></span>
-      <span></span>
-      <span></span>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="storeNav" aria-label="Menú">
+      <span></span><span></span><span></span>
     </button>
 
     <nav id="storeNav" class="nav-links">
-      <a href="index.html" class="is-active">Tienda</a>
+      <a href="index.html" class="is-active">🛒 Tienda</a>
     </nav>
   </header>
 
+  <!-- ─── MAIN ──────────────────────────────── -->
   <main class="layout store-layout">
-    <section class="hero-card">
-      <div class="hero-copy">
-        <span class="eyebrow">Dog City</span>
-        <h1>Perros calientes con sabor, actitud y entrega rapida</h1>
-        <p>Arma tu pedido en segundos, agrega detalles como salsas o ingredientes y envialo directo por WhatsApp con tu ubicacion.</p>
-      </div>
 
-      <aside class="summary-card">
-        <span class="summary-label">Total actual</span>
-        <strong id="orderTotal">$0</strong>
-        <span id="selectedCount" class="summary-meta">0 productos seleccionados</span>
+    <!-- Hero -->
+    <section class="store-hero">
+      <div class="store-hero-content">
+        <span class="hero-badge">🔥 Pedidos por WhatsApp</span>
+        <h1>Perros calientes<br><span class="hero-accent">con actitud</span></h1>
+        <p>Arma tu combo en segundos, agrega salsas y notas especiales, y envíanos el pedido directo desde aquí.</p>
+        <div class="hero-stats">
+          <div class="hero-stat"><strong>🚀</strong><span>Entrega rápida</span></div>
+          <div class="hero-stat"><strong>📍</strong><span>Ubicación GPS</span></div>
+          <div class="hero-stat"><strong>💳</strong><span>Efectivo o Nequi</span></div>
+        </div>
+      </div>
+      <aside class="hero-total-card">
+        <div class="hero-total-inner">
+          <span class="hero-total-label">Tu pedido</span>
+          <strong id="orderTotal">$0</strong>
+          <span id="selectedCount" class="hero-total-meta">0 productos</span>
+          <button id="openOrderModalBtn" class="btn btn-primary hero-cta" type="button">
+            Revisar pedido →
+          </button>
+        </div>
       </aside>
     </section>
 
-    <div class="store-dashboard">
-      <section class="panel products-panel">
-        <div class="section-header">
-          <div>
-            <span class="section-kicker">Tienda</span>
-            <h2>Menu disponible</h2>
-            <p>Busca tus favoritos y ajusta las cantidades en tiempo real.</p>
-          </div>
-        </div>
-
-        <div class="toolbar">
-          <label class="toolbar-field">
-            Buscar producto
-            <input id="searchInput" type="search" placeholder="Perro, hamburguesa, bebida..." />
-          </label>
-
-          <label class="toolbar-field">
-            Ordenar por
-            <select id="sortSelect">
-              <option value="featured">Destacados</option>
-              <option value="name-asc">Nombre A-Z</option>
-              <option value="price-asc">Precio menor a mayor</option>
-              <option value="price-desc">Precio mayor a menor</option>
-            </select>
-          </label>
-        </div>
-
-        <!-- Navegacion por categorias -->
-        <nav id="categoryNav" class="category-nav"></nav>
-
-        <div id="productsList" class="product-grid" aria-live="polite"></div>
-        <p id="productsEmptyState" class="empty-state hidden">No encontramos productos con esa busqueda.</p>
-      </section>
-    </div>
-  </main>
-
-  <aside class="floating-order-launcher">
-    <span class="section-kicker">Pedido rapido</span>
-    <strong id="floatingOrderTotal">$0</strong>
-    <span id="floatingSelectedCount" class="summary-meta">0 productos</span>
-    <button id="openOrderModalBtn" class="btn btn-primary" type="button">Revisar pedido</button>
-  </aside>
-
-  <div id="orderModal" class="order-modal hidden" aria-hidden="true">
-    <div id="orderModalBackdrop" class="order-modal-backdrop"></div>
-    <aside class="panel order-panel order-panel-modal" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
-      <div class="section-header order-modal-header">
+    <!-- Productos -->
+    <section class="products-section panel">
+      <div class="section-header">
         <div>
-          <span class="section-kicker">Pedido</span>
-          <h2 id="orderModalTitle">Resumen y envio</h2>
-          <p>Completa tus datos y genera el mensaje sin salir del menu.</p>
+          <span class="section-kicker">Menú</span>
+          <h2>Lo que tenemos hoy</h2>
+          <p>Busca tu favorito y ajusta la cantidad en tiempo real.</p>
         </div>
-        <button id="closeOrderModalBtn" class="modal-close-btn" type="button" aria-label="Cerrar pedido">×</button>
       </div>
 
+      <!-- Buscador + Orden -->
+      <div class="store-toolbar">
+        <label class="toolbar-field">
+          <span>🔍 Buscar</span>
+          <input id="searchInput" type="search" placeholder="Perro, hamburguesa, bebida..." />
+        </label>
+        <label class="toolbar-field">
+          <span>↕ Ordenar</span>
+          <select id="sortSelect">
+            <option value="featured">Destacados</option>
+            <option value="name-asc">Nombre A-Z</option>
+            <option value="price-asc">Menor precio</option>
+            <option value="price-desc">Mayor precio</option>
+          </select>
+        </label>
+      </div>
+
+      <!-- Categorías -->
+      <nav id="categoryNav" class="category-nav" aria-label="Categorías"></nav>
+
+      <!-- Grid de productos -->
+      <div id="productsList" class="product-grid" aria-live="polite"></div>
+      <p id="productsEmptyState" class="empty-state hidden">No encontramos productos con esa búsqueda.</p>
+    </section>
+  </main>
+
+  <!-- ─── BARRA MÓVIL INFERIOR ──────────────── -->
+  <div class="mobile-bar">
+    <div class="mobile-bar-info">
+      <span id="mobileSelectedCount" class="mobile-bar-count">0 items</span>
+      <strong id="mobileOrderTotal" class="mobile-bar-total">$0</strong>
+    </div>
+    <button id="mobileGenerateBtn" class="btn btn-primary" type="button">Ver pedido →</button>
+  </div>
+
+  <!-- ─── LANZADOR FLOTANTE (ESCRITORIO) ──────── -->
+  <aside class="floating-order-launcher">
+    <span class="section-kicker">Pedido actual</span>
+    <strong id="floatingOrderTotal">$0</strong>
+    <span id="floatingSelectedCount" class="summary-meta">0 productos</span>
+    <button id="openOrderModalBtn2" class="btn btn-primary" type="button">Revisar pedido →</button>
+  </aside>
+
+  <!-- ─── MODAL DE PEDIDO ───────────────────── -->
+  <div id="orderModal" class="order-modal hidden" aria-hidden="true">
+    <div id="orderModalBackdrop" class="order-modal-backdrop"></div>
+    <aside class="panel order-panel-modal" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
+
+      <div class="order-modal-header">
+        <div>
+          <span class="section-kicker">Tu pedido</span>
+          <h2 id="orderModalTitle">Resumen y envío</h2>
+          <p>Completa tus datos y genera el mensaje.</p>
+        </div>
+        <button id="closeOrderModalBtn" class="modal-close-btn" type="button" aria-label="Cerrar">×</button>
+      </div>
+
+      <!-- Datos del cliente -->
       <div class="customer-grid">
         <label class="toolbar-field">
           Nombre
-          <input id="customerName" type="text" placeholder="Tu nombre" />
+          <input id="customerName" type="text" placeholder="Tu nombre completo" />
         </label>
         <label class="toolbar-field">
-          Direccion
-          <input id="customerAddress" type="text" placeholder="Tu direccion" />
+          Dirección
+          <input id="customerAddress" type="text" placeholder="Tu dirección de entrega" />
         </label>
         <label class="toolbar-field">
-          Telefono
-          <input id="customerPhone" type="text" placeholder="Tu telefono" />
+          Teléfono
+          <input id="customerPhone" type="tel" placeholder="Tu número de celular" />
         </label>
       </div>
 
-      <div class="location-box">
+      <!-- Ubicación -->
+      <div class="location-box" id="locationBox">
         <div>
-          <strong>Ubicacion del pedido (obligatoria)</strong>
-          <p id="locationStatus">Debes agregar tu ubicacion actual para poder enviar el pedido.</p>
+          <strong>📍 Ubicación (obligatoria para domicilio)</strong>
+          <p id="locationStatus">Agrega tu ubicación para que el domiciliario te encuentre fácilmente.</p>
         </div>
-        <button id="locationBtn" class="btn btn-secondary" type="button">Usar mi ubicacion actual</button>
+        <button id="locationBtn" class="btn btn-secondary" type="button">Usar GPS</button>
       </div>
 
+      <!-- Opciones de entrega y pago -->
+      <div class="checkout-options-grid">
+        <label class="toolbar-field">
+          🛵 Entrega
+          <select id="deliveryMethodSelect">
+            <option value="envio">Domicilio / Envío</option>
+            <option value="recogida">Recoger en local</option>
+          </select>
+        </label>
+        <label class="toolbar-field">
+          💳 Pago
+          <select id="paymentMethodSelect">
+            <option value="efectivo">💵 Efectivo</option>
+            <option value="transferencia">📱 Nequi</option>
+          </select>
+        </label>
+      </div>
+
+      <!-- Info Nequi (oculta por defecto) -->
+      <div id="nequiInfoBlock" class="nequi-info-card hidden">
+        <div class="nequi-details">
+          <strong>📱 Paga a Nequi:</strong>
+          <p>Número: <span class="nequi-number">3143243707</span></p>
+          <p>Titular: <span class="nequi-name">Josue Sepulveda</span></p>
+          <p class="small-note">Sube la captura del pago para procesar tu pedido más rápido.</p>
+        </div>
+        <label class="toolbar-field">
+          Comprobante de pago
+          <input id="paymentReceiptInput" type="file" accept="image/*" />
+        </label>
+      </div>
+
+      <!-- Comentarios -->
       <label class="toolbar-field order-comment-field">
-        Comentarios del pedido
-        <textarea id="orderComment" placeholder="Ej. sin cebolla, extra queso, timbrar al llegar"></textarea>
+        💬 Comentarios del pedido
+        <textarea id="orderComment" placeholder="Ej. sin cebolla, extra queso, timbrar al llegar..."></textarea>
       </label>
 
+      <!-- Resumen -->
       <div class="order-preview">
         <p id="orderSummary">No hay productos seleccionados.</p>
       </div>
 
-      <button id="generateBtn" class="btn btn-primary order-submit-btn" type="button">Paso 1: Generar pedido</button>
+      <!-- Acciones -->
+      <button id="generateBtn" class="btn btn-primary order-submit-btn" type="button">
+        Paso 1: Generar pedido
+      </button>
       <div class="actions">
-        <a id="whatsappLink" class="btn btn-success disabled" target="_blank" rel="noreferrer noopener" href="#">Paso 2: Enviar a WhatsApp</a>
+        <a id="whatsappLink" class="btn btn-success disabled" target="_blank" rel="noreferrer noopener" href="#">
+          Paso 2: Enviar por WhatsApp 💬
+        </a>
         <button id="copyBtn" class="btn btn-secondary" type="button">Copiar mensaje</button>
       </div>
 
-      <textarea id="generatedMessage" readonly placeholder="Aqui aparecera el mensaje listo para WhatsApp."></textarea>
+      <textarea id="generatedMessage" readonly placeholder="Aquí aparecerá el mensaje listo para WhatsApp."></textarea>
     </aside>
   </div>
 
-  <div class="mobile-sticky-checkout">
-    <div class="mobile-total">
-      <span class="summary-label">Total actual</span>
-      <strong id="mobileOrderTotal">$0</strong>
-      <span id="mobileSelectedCount" class="summary-meta">0 productos</span>
-    </div>
-    <button id="mobileGenerateBtn" class="btn btn-primary" type="button">Revisar pedido</button>
-  </div>
-
+  <!-- ─── FOOTER ────────────────────────────── -->
   <footer class="site-footer">
     <div class="footer-brand">
-      <strong>Dog City</strong>
-      <span class="footer-note">Hot dogs y comida rapida con pedidos por WhatsApp</span>
+      <img src="images/uploads/DOGCITY.png" alt="Dog City" class="footer-logo" />
+      <div>
+        <strong>Dog City</strong>
+        <span class="footer-note">Hot dogs y comida rápida con pedidos por WhatsApp</span>
+      </div>
     </div>
     <div class="footer-links">
       <a class="social-link social-instagram" href="https://www.instagram.com/thedogcityoficial?igsh=MXR5dXJqb3Y2a2VlNQ==" target="_blank" rel="noreferrer noopener">
@@ -172,7 +235,7 @@
         <span>WhatsApp</span>
       </a>
     </div>
-    <span class="footer-note">Ubicacion: Dog City, zona central de la ciudad.</span>
+    <span class="footer-note">📍 Dog City — Zona central de la ciudad</span>
   </footer>
 
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
