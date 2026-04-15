@@ -70,6 +70,7 @@ export function buildStoreApp() {
   const paymentMethodSelect = $('paymentMethodSelect');
   const nequiInfoBlock = $('nequiInfoBlock');
   const paymentReceiptInput = $('paymentReceiptInput');
+  const receiptImagePreview = $('receiptImagePreview');
   const locationStatus = $('locationStatus');
   const orderComment = $('orderComment');
   const mobileOrderTotal = $('mobileOrderTotal');
@@ -598,6 +599,21 @@ export function buildStoreApp() {
         nequiInfoBlock?.classList.remove('hidden');
       } else {
         nequiInfoBlock?.classList.add('hidden');
+      }
+    });
+
+    paymentReceiptInput?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file && receiptImagePreview) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          receiptImagePreview.src = e.target.result;
+          receiptImagePreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else if (receiptImagePreview) {
+        receiptImagePreview.src = 'images/taza.svg';
+        receiptImagePreview.style.display = 'none';
       }
     });
 

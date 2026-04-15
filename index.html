@@ -180,11 +180,18 @@
           <p>Titular: <span class="nequi-name">Josue Sepulveda</span></p>
           <p class="small-note">Sube la captura del pago para procesar tu pedido más rápido.</p>
         </div>
-        <label class="toolbar-field">
-          Comprobante de pago
+        
+        <label class="toolbar-field" style="margin-top: 12px; margin-bottom: 8px;">
+          <strong>📸 Subir comprobante</strong>
           <input id="paymentReceiptInput" type="file" accept="image/*" />
         </label>
+        
+        <div class="image-preview-card" style="margin-bottom: 0;">
+          <span class="image-preview-label">Vista previa del comprobante</span>
+          <img id="receiptImagePreview" src="images/taza.svg" alt="Vista previa del comprobante" style="max-height: 140px; display: none;" />
+        </div>
       </div>
+
 
       <!-- Comentarios -->
       <label class="toolbar-field order-comment-field">
