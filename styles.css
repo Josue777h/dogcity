@@ -1679,6 +1679,7 @@ textarea {
   .stats-grid {
     grid-template-columns: 1fr;
   }
+}
 
 /* ══════════════════════════════════════════
    STORE PAGE DESIGN (INDEX)
