@@ -6,6 +6,7 @@
   <meta name="description" content="Panel de administración de productos para restaurante." />
   <title>Dog City | Panel Admin</title>
   <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 </head>
 <body data-page="admin">
   <div class="app-bg"></div>
@@ -61,6 +62,12 @@
       <button class="admin-tab" data-tab="orders" type="button">
         <span>🛒</span> Pedidos
       </button>
+      <button class="admin-tab" data-tab="stats" type="button">
+        <span>📊</span> Estadísticas
+      </button>
+      <button class="admin-tab" data-tab="drivers" type="button">
+        <span>🚚</span> Repartidores
+      </button>
     </div>
 
     <!-- Panel de Productos -->
@@ -92,6 +99,14 @@
           <label>
             Unidad
             <input name="unit" type="text" maxlength="20" value="unidad" required />
+          </label>
+          <label>
+            Categoria
+            <input name="category" type="text" maxlength="50" placeholder="Ej. Perros, Bebidas" />
+          </label>
+          <label class="stock-switch-label" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 0;">
+            <input name="disponible" type="checkbox" checked style="width: auto;" />
+            <strong>Producto Disponible (en stock)</strong>
           </label>
           <label class="full-width">
             Subir imagen
@@ -142,6 +157,47 @@
         <div id="adminOrdersList" class="admin-orders-list"></div>
         <p id="adminOrdersEmptyState" class="empty-state hidden">No hay pedidos registrados.</p>
       </section>
+    <!-- Panel de Estadisticas -->
+    <div id="statsPanel" class="admin-panel">
+      <section class="panel stats-container">
+        <div class="section-header">
+           <div>
+              <span class="section-kicker">Resumen de ventas</span>
+              <h2>Estadísticas de Dog City</h2>
+              <p>Análisis de pedidos y productos más populares.</p>
+           </div>
+        </div>
+        
+        <div class="stats-grid">
+           <div class="chart-wrapper">
+              <h3>Productos más vendidos</h3>
+              <canvas id="bestSellersChart"></canvas>
+           </div>
+           <div class="chart-wrapper">
+              <h3>Ventas últimos 7 días</h3>
+              <canvas id="salesTrendsChart"></canvas>
+           </div>
+           <div class="chart-wrapper full-width">
+              <h3>Horas pico de pedidos</h3>
+              <canvas id="peakHoursChart"></canvas>
+           </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Panel de Repartidores -->
+    <div id="driversPanel" class="admin-panel">
+       <section class="panel drivers-manage-panel">
+          <div class="section-header">
+             <div>
+                <span class="section-kicker">Gestión</span>
+                <h2>Repartidores</h2>
+                <p>Configura la lista de repartidores disponibles.</p>
+             </div>
+             <button id="addDriverBtn" class="btn btn-primary" type="button">+ Agregar</button>
+          </div>
+          <div id="driversList" class="drivers-grid"></div>
+       </section>
     </div>
   </main>
 
@@ -168,10 +224,6 @@
   </footer>
 
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    window.SUPABASE_URL = "https://diaphikeanfkapoeynae.supabase.co";
-    window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpYXBoaWtlYW5ma2Fwb2V5bmFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTc1NDEsImV4cCI6MjA5MTE3MzU0MX0.eVAPQ7py4bfu3mTtzqv1dng5Czd2S_oGUxSOm3UOC58";
-  </script>
-  <script defer src="app.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

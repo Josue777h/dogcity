@@ -74,6 +74,9 @@
           </label>
         </div>
 
+        <!-- Navegacion por categorias -->
+        <nav id="categoryNav" class="category-nav"></nav>
+
         <div id="productsList" class="product-grid" aria-live="polite"></div>
         <p id="productsEmptyState" class="empty-state hidden">No encontramos productos con esa busqueda.</p>
       </section>
@@ -173,10 +176,6 @@
   </footer>
 
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    window.SUPABASE_URL = "https://diaphikeanfkapoeynae.supabase.co";
-    window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpYXBoaWtlYW5ma2Fwb2V5bmFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTc1NDEsImV4cCI6MjA5MTE3MzU0MX0.eVAPQ7py4bfu3mTtzqv1dng5Czd2S_oGUxSOm3UOC58";
-  </script>
-  <script defer src="app.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
