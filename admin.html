@@ -2,15 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Panel de administración de Dog City." />
+  <meta name="theme-color" content="#1A1A1A" />
   <title>Dog City | Panel Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="styles-v3.css" />
-  <link rel="stylesheet" href="styles-fix.css" />
   <link rel="icon" href="images/uploads/DOGCITY.png" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 </head>
@@ -22,7 +22,7 @@
       <div class="admin-access-card-v3">
         <img src="images/uploads/DOGCITY.png" alt="Dog City" class="access-logo-v3" />
         <h2>Panel Administrativo</h2>
-        <p>Inicia sesión con tu cuenta para gestionar Dog City.</p>
+        <p>Inicia sesión para gestionar Dog City.</p>
         <div class="access-form-v3">
           <input id="adminEmailInput" type="email" placeholder="Correo del administrador" autocomplete="email" class="form-input-v3" />
           <input id="adminPasswordInput" type="password" placeholder="Contraseña" autocomplete="current-password" class="form-input-v3" />
@@ -32,10 +32,9 @@
       </div>
     </section>
 
-    <!-- ── MAIN APP CARD ────────────────────────── -->
+    <!-- ── MAIN APP CARD ───────────────────────── -->
     <main class="app-card admin-app-card">
 
-      <!-- App Header -->
       <header class="app-card-header">
         <a href="index.html" class="brand-v3">
           <img src="images/uploads/DOGCITY.png" alt="Dog City" />
@@ -50,27 +49,24 @@
         </nav>
       </header>
 
-      <!-- App Body -->
-      <div class="app-card-body col-layout" style="display:block;">
+      <div class="admin-body-wrap">
 
-        <!-- ── TABS NAV ── -->
+        <!-- ── TABS ─────────────────────────────── -->
         <nav class="admin-tabs" role="tablist">
-          <!-- JS hooks .admin-tab class -->
           <button class="admin-tab active" data-tab="products" role="tab" type="button">📦 Productos</button>
-          <button class="admin-tab" data-tab="orders" role="tab" type="button">🛒 Pedidos</button>
-          <button class="admin-tab" data-tab="stats" role="tab" type="button">📊 Estadísticas</button>
-          <button class="admin-tab" data-tab="drivers" role="tab" type="button">🚚 Repartidores</button>
+          <button class="admin-tab" data-tab="orders"   role="tab" type="button">🛒 Pedidos</button>
+          <button class="admin-tab" data-tab="stats"    role="tab" type="button">📊 Estadísticas</button>
+          <button class="admin-tab" data-tab="drivers"  role="tab" type="button">🚚 Repartidores</button>
         </nav>
 
-        <!-- ══════ PANEL PRODUCTOS ══════ -->
+        <!-- ══ PRODUCTOS ════════════════════════════ -->
         <div id="productsPanel" class="admin-panel active">
           <div class="admin-grid-v3">
 
-            <!-- Form: crear/editar -->
+            <!-- Crear/editar producto -->
             <div class="admin-card-v3">
               <h3 id="adminFormTitle">Crear producto</h3>
-              <p class="subtitle-v3">Los cambios se sincronizan con la tienda.</p>
-
+              <p class="subtitle-v3">Sincroniza al instante con la tienda.</p>
               <form id="newProductForm" class="customer-form-v3">
                 <input id="editingProductId" name="editingProductId" type="hidden" value="" />
 
@@ -78,22 +74,18 @@
                   <span class="icon">🏷️</span>
                   <input name="name" type="text" maxlength="80" placeholder="Nombre del producto" required />
                 </label>
-
                 <label class="input-wrap-v3">
                   <span class="icon">💲</span>
                   <input name="price" type="number" min="100" step="100" placeholder="Precio (Ej. 10000)" required />
                 </label>
-
                 <label class="input-wrap-v3">
                   <span class="icon">📝</span>
                   <input name="description" type="text" maxlength="200" placeholder="Descripción / ingredientes" required />
                 </label>
-
                 <label class="input-wrap-v3">
                   <span class="icon">📂</span>
                   <input name="category" type="text" maxlength="50" placeholder="Categoría (Ej. Perros, Bebidas)" />
                 </label>
-
                 <label class="input-wrap-v3">
                   <span class="icon">📦</span>
                   <input name="unit" type="text" maxlength="20" value="unidad" placeholder="Unidad" required />
@@ -109,17 +101,16 @@
                   🖼️ Imagen del producto
                   <input id="imageFileInput" name="imageFile" type="file" accept="image/*" />
                 </label>
-
                 <div class="image-preview-admin">
                   <img id="imagePreview" src="images/taza.svg" alt="Vista previa" />
                 </div>
 
-                <button id="saveProductBtn" type="submit" class="btn-wapp-massive">💾 Guardar producto</button>
-                <button id="cancelEditBtn" type="button" class="btn-danger-v3 hidden" style="width:100%; margin-top:6px;">✕ Cancelar edición</button>
+                <button id="saveProductBtn" type="submit" class="btn-wapp-massive" style="margin-top:12px;">💾 Guardar producto</button>
+                <button id="cancelEditBtn" type="button" class="btn-cancel-edit hidden">✕ Cancelar edición</button>
               </form>
             </div>
 
-            <!-- List: productos actuales -->
+            <!-- Lista de productos -->
             <div class="admin-card-v3">
               <h3>Productos actuales</h3>
               <p class="subtitle-v3">Edita disponibilidad o elimina con un clic.</p>
@@ -129,7 +120,7 @@
           </div>
         </div>
 
-        <!-- ══════ PANEL PEDIDOS ══════ -->
+        <!-- ══ PEDIDOS ════════════════════════════════ -->
         <div id="ordersPanel" class="admin-panel">
           <div class="admin-card-v3 full-width-card">
             <div class="admin-header-row">
@@ -137,36 +128,36 @@
                 <h3>Gestionar pedidos</h3>
                 <p class="subtitle-v3">Actualiza el estado y envíalos al domiciliario.</p>
               </div>
-              <button id="refreshOrdersBtn" class="btn-block-green-light" style="width:auto; padding:9px 18px;">🔄 Actualizar</button>
+              <button id="refreshOrdersBtn" class="btn-refresh" type="button">🔄 Actualizar</button>
             </div>
             <div id="adminOrdersList" class="admin-orders-list-v3"></div>
             <p id="adminOrdersEmptyState" class="empty-state hidden">No hay pedidos registrados aún.</p>
           </div>
         </div>
 
-        <!-- ══════ PANEL ESTADÍSTICAS ══════ -->
+        <!-- ══ ESTADÍSTICAS ══════════════════════════ -->
         <div id="statsPanel" class="admin-panel">
           <div class="admin-card-v3 full-width-card">
             <h3>Estadísticas de ventas</h3>
-            <p class="subtitle-v3">Visualiza tus productos más vendidos y horas pico.</p>
+            <p class="subtitle-v3">Productos más vendidos y horas pico.</p>
             <div class="stats-grid-v3" style="margin-top:16px;">
               <div class="chart-wrapper-v3">
                 <h4>🏆 Más vendidos</h4>
                 <div class="chart-container-v3"><canvas id="bestSellersChart"></canvas></div>
               </div>
               <div class="chart-wrapper-v3">
-                <h4>📈 Ventas últimos 7 días</h4>
+                <h4>📈 Ventas 7 días</h4>
                 <div class="chart-container-v3"><canvas id="salesTrendsChart"></canvas></div>
               </div>
               <div class="chart-wrapper-v3 chart-full-v3">
-                <h4>⏰ Horas pico de pedidos</h4>
+                <h4>⏰ Horas pico</h4>
                 <div class="chart-container-v3"><canvas id="peakHoursChart"></canvas></div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- ══════ PANEL REPARTIDORES ══════ -->
+        <!-- ══ REPARTIDORES ══════════════════════════ -->
         <div id="driversPanel" class="admin-panel">
           <div class="admin-card-v3 full-width-card">
             <div class="admin-header-row">
@@ -174,16 +165,16 @@
                 <h3>Repartidores</h3>
                 <p class="subtitle-v3">Administra los domiciliarios disponibles.</p>
               </div>
-              <button id="addDriverBtn" class="btn-block-green-light" style="width:auto; padding:9px 18px;">+ Agregar</button>
+              <button id="addDriverBtn" class="btn-refresh" type="button">+ Agregar</button>
             </div>
             <div id="driversList" class="drivers-grid-v3" style="margin-top:14px;"></div>
           </div>
         </div>
 
-      </div><!-- /.app-card-body -->
-    </main><!-- /.app-card -->
+      </div><!-- /.admin-body-wrap -->
+    </main>
 
-  </div><!-- /.global-bg-wrapper -->
+  </div>
 
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module" src="js/main.js"></script>

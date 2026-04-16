@@ -2,26 +2,58 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Dog City — Pide tus perros calientes favoritos y recíbelos a domicilio. Pedido directo por WhatsApp." />
+  <meta name="theme-color" content="#1A1A1A" />
   <title>Dog City | Pide en Línea</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="styles-v3.css" />
-  <link rel="stylesheet" href="styles-fix.css" />
   <link rel="icon" href="images/uploads/DOGCITY.png" />
 </head>
 <body data-page="store" class="theme-dark-global">
 
+  <!-- ══ HAMBURGER MENU OVERLAY (mobile) ══════════════════ -->
+  <div id="mobileMenu" class="mobile-menu-overlay" aria-hidden="true">
+    <div class="mobile-menu-panel">
+      <div class="mobile-menu-header">
+        <img src="images/uploads/DOGCITY.png" alt="Dog City" />
+        <strong>DOG CITY</strong>
+        <button id="closeMobileMenu" class="close-mobile-btn" aria-label="Cerrar menú">×</button>
+      </div>
+      <nav class="mobile-menu-nav">
+        <a href="index.html" class="mmenu-item active">
+          <span class="mmenu-icon">🏠</span> Inicio
+        </a>
+        <a href="admin.html" class="mmenu-item">
+          <span class="mmenu-icon">⚙️</span> Panel Admin
+        </a>
+        <a href="tracking.html" class="mmenu-item">
+          <span class="mmenu-icon">📦</span> Rastrear pedido
+        </a>
+      </nav>
+      <div class="mobile-menu-footer">
+        <p>Dog City © 2025</p>
+      </div>
+    </div>
+    <div class="mobile-menu-backdrop" id="closeMobileMenuBackdrop"></div>
+  </div>
+
   <div class="global-bg-wrapper">
 
-    <!-- ── MAIN APP CARD ─────────────────────── -->
+    <!-- ══ MAIN APP CARD ════════════════════════════════════ -->
     <main class="app-card" id="appCard">
 
-      <!-- ── HEADER ─────────────────────────── -->
+      <!-- ── HEADER ──────────────────────────────────────── -->
       <header class="app-card-header">
+
+        <!-- Hamburger (mobile only) -->
+        <button id="openMobileMenu" class="hamburger-btn" aria-label="Abrir menú">
+          <span></span><span></span><span></span>
+        </button>
+
         <a href="index.html" class="brand-v3">
           <img src="images/uploads/DOGCITY.png" alt="Dog City" />
           <div class="brand-text-v3">
@@ -30,7 +62,7 @@
           </div>
         </a>
 
-        <!-- PC: shows delivery badge and admin link -->
+        <!-- PC right side -->
         <div class="header-right-pc">
           <span class="header-badge">
             <span class="pulse-dot"></span>
@@ -39,23 +71,20 @@
           <a href="admin.html" class="header-admin-link">⚙️ Admin</a>
         </div>
 
-        <!-- Mobile: cart count badge (hidden, updated by JS) -->
+        <!-- Hidden span kept for JS -->
         <span id="floatingSelectedCount" class="hidden"></span>
       </header>
 
-      <!-- ── APP BODY ────────────────────────── -->
+      <!-- ── APP BODY ────────────────────────────────────── -->
       <div class="app-card-body">
 
-        <!-- LEFT: Menu ─────────────────────── -->
+        <!-- Menu column -->
         <section class="menu-col">
-
-          <!-- Category filters -->
           <div class="menu-filters-row">
             <h2 class="menu-title-v3">NUESTRO MENÚ</h2>
             <nav id="categoryNav" class="cats-v3"></nav>
           </div>
 
-          <!-- Hidden but kept for JS compatibility -->
           <div class="hidden">
             <input id="searchInput" />
             <select id="sortSelect">
@@ -65,21 +94,16 @@
             </select>
           </div>
 
-          <!-- Products grid -->
           <div id="productsList" class="product-grid-v3" aria-live="polite"></div>
           <p id="productsEmptyState" class="hidden empty-state">No encontramos productos disponibles.</p>
         </section>
 
-        <!-- RIGHT: Order Sidebar ───────────── -->
+        <!-- Order Sidebar / Mobile Sheet -->
         <aside id="orderModal" class="sidebar-col">
           <div id="orderModalBackdrop" class="modal-backdrop-v3"></div>
-
           <div class="sidebar-inner-v3">
             <button id="closeOrderModalBtn" class="close-mobile-btn" aria-label="Cerrar">×</button>
-
             <div class="sidebar-scrollable-v3">
-
-              <!-- Order summary -->
               <p class="sidebar-title-v3">👜 TU PEDIDO</p>
               <div class="order-items-wrapper">
                 <div id="orderSummary" class="order-summary-v3">No hay productos seleccionados.</div>
@@ -89,10 +113,6 @@
                 </div>
               </div>
 
-              <!-- Selected count -->
-              <p id="selectedCount" class="selected-count-v3"></p>
-
-              <!-- Customer data -->
               <p class="sidebar-title-v3 mt-lg">📋 TUS DATOS</p>
               <div class="customer-form-v3">
                 <label class="input-wrap-v3">
@@ -109,14 +129,12 @@
                 </label>
               </div>
 
-              <!-- Location -->
               <div class="btn-location-wrapper">
                 <button id="locationBtn" class="btn-block-green-light">📡 Compartir mi ubicación GPS</button>
                 <p id="locationStatus" class="small-text-centered">Te ayuda a que el domiciliario llegue exacto.</p>
                 <div id="locationBox" class="hidden"></div>
               </div>
 
-              <!-- Delivery & Payment -->
               <div class="options-grid-v3">
                 <select id="deliveryMethodSelect" class="form-select-v3">
                   <option value="envio">🛵 Domicilio</option>
@@ -128,27 +146,24 @@
                 </select>
               </div>
 
-              <!-- Nequi block -->
               <div id="nequiInfoBlock" class="nequi-card-v3 hidden">
                 <div class="nequi-header">
                   <strong>Nequi: 3143243707</strong>
                   <span>Josue Sepulveda</span>
                 </div>
                 <div class="nequi-upload" style="margin-top:8px;">
-                  <label style="font-size:0.82rem; font-weight:700; cursor:pointer;">
+                  <label style="font-size:0.82rem;font-weight:700;cursor:pointer;">
                     📎 Subir comprobante de pago
-                    <input id="paymentReceiptInput" type="file" accept="image/*" style="display:block; margin-top:5px; font-size:0.78rem;" />
+                    <input id="paymentReceiptInput" type="file" accept="image/*" style="display:block;margin-top:5px;font-size:0.78rem;" />
                   </label>
-                  <img id="receiptImagePreview" src="" style="display:none; max-height:70px; margin-top:6px; border-radius:8px;" />
+                  <img id="receiptImagePreview" src="" style="display:none;max-height:70px;margin-top:6px;border-radius:8px;" />
                 </div>
               </div>
 
-              <!-- Comment -->
               <label class="block mt-sm">
                 <textarea id="orderComment" class="form-textarea-v3" placeholder="¿Algún comentario? (sin cebolla, extra salsa…)"></textarea>
               </label>
 
-              <!-- WhatsApp button -->
               <button id="generateBtn" class="btn-wapp-massive">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" width="26" />
                 <div class="btn-text-content">
@@ -157,7 +172,7 @@
                 </div>
               </button>
 
-              <!-- Hidden elements required by JS -->
+              <!-- Hidden elements for JS -->
               <div class="hidden">
                 <button id="openOrderModalBtn"></button>
                 <a id="whatsappLink"></a>
@@ -165,17 +180,16 @@
                 <textarea id="generatedMessage"></textarea>
                 <span id="floatingOrderTotal"></span>
               </div>
-
-            </div><!-- /.sidebar-scrollable-v3 -->
-          </div><!-- /.sidebar-inner-v3 -->
+            </div>
+          </div>
         </aside>
 
       </div><!-- /.app-card-body -->
-    </main><!-- /.app-card -->
+    </main>
 
   </div><!-- /.global-bg-wrapper -->
 
-  <!-- ── FLOATING MOBILE BAR ─────────────────── -->
+  <!-- ══ FLOATING MOBILE BAR ══════════════════════════════ -->
   <div class="floating-mobile-bar-v3" id="mobileBarV3">
     <div class="mbar-left">
       <span id="mobileSelectedCount" class="mbar-badge">0</span>
@@ -184,12 +198,35 @@
         <strong id="mobileOrderTotal">$0</strong>
       </div>
     </div>
-    <button id="mobileGenerateBtn" class="btn-open-cart">
-      Ver pedido ›
-    </button>
+    <button id="mobileGenerateBtn" class="btn-open-cart">Ver pedido ›</button>
   </div>
 
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module" src="js/main.js"></script>
+
+  <!-- Hamburger menu logic -->
+  <script>
+    (function() {
+      const openBtn   = document.getElementById('openMobileMenu');
+      const closeBtn  = document.getElementById('closeMobileMenu');
+      const backdrop  = document.getElementById('closeMobileMenuBackdrop');
+      const menu      = document.getElementById('mobileMenu');
+
+      function openMenu() {
+        menu.classList.add('is-open');
+        menu.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeMenu() {
+        menu.classList.remove('is-open');
+        menu.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+      }
+
+      openBtn.addEventListener('click', openMenu);
+      closeBtn.addEventListener('click', closeMenu);
+      backdrop.addEventListener('click', closeMenu);
+    })();
+  </script>
 </body>
 </html>
