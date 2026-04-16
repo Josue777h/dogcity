@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Panel de administración de Dog City. Gestiona productos, pedidos, estadísticas y repartidores." />
+  <meta name="description" content="Panel de administración de Dog City." />
   <title>Dog City | Panel Admin</title>
-  
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -15,10 +14,9 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 </head>
 <body data-page="admin" class="theme-dark-global">
-
   <div class="global-bg-wrapper admin-bg-wrapper">
-    
-    <!-- Pantalla de Login -->
+
+    <!-- ── LOGIN GATE ──────────────────────────── -->
     <section id="adminAccessGate" class="admin-access-gate-v3">
       <div class="admin-access-card-v3">
         <img src="images/uploads/DOGCITY.png" alt="Dog City" class="access-logo-v3" />
@@ -29,22 +27,22 @@
           <input id="adminPasswordInput" type="password" placeholder="Contraseña" autocomplete="current-password" class="form-input-v3" />
           <button id="adminLoginBtn" class="btn-wapp-massive" type="button">Entrar al panel</button>
         </div>
-        <small id="adminPinStatus">Solo usuarios autenticados pueden crear, editar o eliminar productos.</small>
+        <small id="adminPinStatus">Solo usuarios autenticados pueden gestionar el menú.</small>
       </div>
     </section>
 
-    <!-- TOP HEADER -->
-    <div class="global-header admin-global-header">
+    <!-- ── PAGE HEADER ─────────────────────────── -->
+    <div class="global-header admin-global-header" style="padding-top:0; margin-bottom: 4px;">
       <div class="global-header-title">
         <h1>Centro de <span class="text-green">Control</span></h1>
         <p>Pedidos, menú y domiciliarios en tiempo real.</p>
       </div>
     </div>
 
-    <!-- MAIN APP WINDOW -->
+    <!-- ── MAIN APP CARD ────────────────────────── -->
     <main class="app-card admin-app-card">
-      
-      <!-- Inside App Header -->
+
+      <!-- App Header -->
       <header class="app-card-header">
         <a href="index.html" class="brand-v3">
           <img src="images/uploads/DOGCITY.png" alt="Dog City" />
@@ -53,150 +51,146 @@
             <span>PANEL ADMIN</span>
           </div>
         </a>
-        
         <nav class="desktop-nav-v3">
-          <a href="index.html">🛒 TIENDA REDISEÑADA</a>
-          <button id="adminLogoutBtn" class="nav-logout-v3 btn-danger-v3 hidden" type="button">Cerrar sesión</button>
+          <a href="index.html">🛒 VER TIENDA</a>
+          <button id="adminLogoutBtn" class="btn-danger-v3 hidden" type="button">Cerrar sesión</button>
         </nav>
       </header>
 
-      <!-- Grid Content -->
-      <div class="app-card-body col-layout">
-        
-        <!-- Pestañas -->
+      <!-- App Body -->
+      <div class="app-card-body col-layout" style="display:block;">
+
+        <!-- ── TABS NAV ── -->
         <nav class="admin-tabs" role="tablist">
-          <button class="admin-tab active" data-tab="products" role="tab">📦 Productos</button>
-          <button class="admin-tab" data-tab="orders" role="tab">🛒 Pedidos</button>
-          <button class="admin-tab" data-tab="stats" role="tab">📊 Estadísticas</button>
-          <button class="admin-tab" data-tab="drivers" role="tab">🚚 Repartidores</button>
+          <!-- JS hooks .admin-tab class -->
+          <button class="admin-tab active" data-tab="products" role="tab" type="button">📦 Productos</button>
+          <button class="admin-tab" data-tab="orders" role="tab" type="button">🛒 Pedidos</button>
+          <button class="admin-tab" data-tab="stats" role="tab" type="button">📊 Estadísticas</button>
+          <button class="admin-tab" data-tab="drivers" role="tab" type="button">🚚 Repartidores</button>
         </nav>
-        
-        <div class="admin-content-area">
-          
-          <!-- PANEL PRODUCTOS -->
-          <div id="productsPanel" class="admin-panel active">
-            <div class="admin-grid-v3">
-              <!-- Creador de productos -->
-              <div class="admin-card-v3 form-side">
-                <h3 id="adminFormTitle">Crear producto</h3>
-                <p class="subtitle-v3">Sincroniza al instante con la tienda.</p>
-                
-                <form id="newProductForm" class="customer-form-v3 mt-sm">
-                  <input id="editingProductId" name="editingProductId" type="hidden" value="" />
 
-                  <label class="input-wrap-v3">
-                    <span class="icon">🏷️</span>
-                    <input name="name" type="text" maxlength="80" placeholder="Nombre (Ej. Perro Americano)" required />
-                  </label>
-                  <label class="input-wrap-v3">
-                    <span class="icon">💲</span>
-                    <input name="price" type="number" min="100" step="100" placeholder="Precio (Ej. 10000)" required />
-                  </label>
-                  <label class="input-wrap-v3">
-                    <span class="icon">📝</span>
-                    <input name="description" type="text" maxlength="200" placeholder="Ingredientes o descripción breve" required />
-                  </label>
-                  
-                  <div class="options-grid-v3 mt-none" style="grid-template-columns: 1fr;">
-                    <label class="input-wrap-v3">
-                      <input name="unit" type="text" maxlength="20" value="unidad" required placeholder="Unidad" />
-                    </label>
-                  </div>
-                  <label class="input-wrap-v3" style="margin-top: 10px;">
-                    <span class="icon">📂</span>
-                    <input name="category" type="text" maxlength="50" placeholder="Categoría (Ej. Perros)" />
-                  </label>
+        <!-- ══════ PANEL PRODUCTOS ══════ -->
+        <div id="productsPanel" class="admin-panel active">
+          <div class="admin-grid-v3">
 
-                  <label class="stock-switch-v3">
-                    <input name="disponible" type="checkbox" checked />
-                    <span class="stock-slider"></span>
-                    <span class="stock-text">Producto disponible en stock</span>
-                  </label>
+            <!-- Form: crear/editar -->
+            <div class="admin-card-v3">
+              <h3 id="adminFormTitle">Crear producto</h3>
+              <p class="subtitle-v3">Los cambios se sincronizan con la tienda.</p>
 
-                  <label class="form-select-v3 upload-label">
-                    <span>🖼️ Imagen del producto</span>
-                    <input id="imageFileInput" name="imageFile" type="file" accept="image/*" />
-                  </label>
-                  
-                  <div class="image-preview-admin">
-                    <img id="imagePreview" src="images/taza.svg" alt="Vista previa" />
-                  </div>
+              <form id="newProductForm" class="customer-form-v3">
+                <input id="editingProductId" name="editingProductId" type="hidden" value="" />
 
-                  <div class="action-buttons-row">
-                    <button id="saveProductBtn" type="submit" class="btn-wapp-massive" style="margin-top: 10px;">💾 Guardar producto</button>
-                    <button id="cancelEditBtn" type="button" class="btn-danger-v3 hidden" style="width: 100%; margin-top:10px;">✕ Cancelar edición</button>
-                  </div>
-                </form>
-              </div>
+                <label class="input-wrap-v3">
+                  <span class="icon">🏷️</span>
+                  <input name="name" type="text" maxlength="80" placeholder="Nombre del producto" required />
+                </label>
 
-              <!-- Lista de productos -->
-              <div class="admin-card-v3 list-side">
-                <h3>Productos actuales</h3>
-                <p class="subtitle-v3">Edita disponibilidad o elimina.</p>
-                
-                <div id="adminProductsList" class="admin-product-list mt-sm"></div>
-                <p id="adminEmptyState" class="empty-state hidden">Aún no hay productos registrados.</p>
-              </div>
+                <label class="input-wrap-v3">
+                  <span class="icon">💲</span>
+                  <input name="price" type="number" min="100" step="100" placeholder="Precio (Ej. 10000)" required />
+                </label>
+
+                <label class="input-wrap-v3">
+                  <span class="icon">📝</span>
+                  <input name="description" type="text" maxlength="200" placeholder="Descripción / ingredientes" required />
+                </label>
+
+                <label class="input-wrap-v3">
+                  <span class="icon">📂</span>
+                  <input name="category" type="text" maxlength="50" placeholder="Categoría (Ej. Perros, Bebidas)" />
+                </label>
+
+                <label class="input-wrap-v3">
+                  <span class="icon">📦</span>
+                  <input name="unit" type="text" maxlength="20" value="unidad" placeholder="Unidad" required />
+                </label>
+
+                <label class="stock-switch-v3">
+                  <input name="disponible" type="checkbox" checked />
+                  <span class="stock-slider"></span>
+                  <span class="stock-text">Disponible en stock</span>
+                </label>
+
+                <label class="upload-label">
+                  🖼️ Imagen del producto
+                  <input id="imageFileInput" name="imageFile" type="file" accept="image/*" />
+                </label>
+
+                <div class="image-preview-admin">
+                  <img id="imagePreview" src="images/taza.svg" alt="Vista previa" />
+                </div>
+
+                <button id="saveProductBtn" type="submit" class="btn-wapp-massive">💾 Guardar producto</button>
+                <button id="cancelEditBtn" type="button" class="btn-danger-v3 hidden" style="width:100%; margin-top:6px;">✕ Cancelar edición</button>
+              </form>
+            </div>
+
+            <!-- List: productos actuales -->
+            <div class="admin-card-v3">
+              <h3>Productos actuales</h3>
+              <p class="subtitle-v3">Edita disponibilidad o elimina con un clic.</p>
+              <div id="adminProductsList" class="admin-product-list"></div>
+              <p id="adminEmptyState" class="empty-state hidden">Aún no hay productos registrados.</p>
             </div>
           </div>
-
-          <!-- PANEL PEDIDOS -->
-          <div id="ordersPanel" class="admin-panel">
-            <div class="admin-card-v3 full-width-card">
-              <div class="admin-header-row">
-                <div>
-                  <h3>Gestionar pedidos</h3>
-                  <p class="subtitle-v3">Actualiza el estado y envíalos.</p>
-                </div>
-                <button id="refreshOrdersBtn" class="btn-block-green-light" style="width: auto;">🔄 Actualizar lista</button>
-              </div>
-              <div id="adminOrdersList" class="admin-orders-list-v3 mt-sm"></div>
-              <p id="adminOrdersEmptyState" class="empty-state hidden">No hay pedidos registrados aún.</p>
-            </div>
-          </div>
-
-          <!-- PANEL ESTADÍSTICAS -->
-          <div id="statsPanel" class="admin-panel">
-            <div class="admin-card-v3 full-width-card">
-              <h3>Estadísticas de ventas</h3>
-              <p class="subtitle-v3">Visualiza tus productos más vendidos y horas pico.</p>
-              
-              <div class="stats-grid-v3 mt-sm">
-                <div class="chart-wrapper-v3">
-                  <h4>🏆 Más vendidos</h4>
-                  <div class="chart-container-v3"><canvas id="bestSellersChart"></canvas></div>
-                </div>
-                <div class="chart-wrapper-v3">
-                  <h4>📈 Ventas (7 días)</h4>
-                  <div class="chart-container-v3"><canvas id="salesTrendsChart"></canvas></div>
-                </div>
-                <div class="chart-wrapper-v3 chart-full-v3">
-                  <h4>⏰ Horas pico</h4>
-                  <div class="chart-container-v3"><canvas id="peakHoursChart"></canvas></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- PANEL REPARTIDORES -->
-          <div id="driversPanel" class="admin-panel">
-            <div class="admin-card-v3 full-width-card">
-              <div class="admin-header-row">
-                <div>
-                  <h3>Repartidores</h3>
-                  <p class="subtitle-v3">Administra los domiciliarios activos.</p>
-                </div>
-                <button id="addDriverBtn" class="btn-block-green-light" style="width:auto; padding: 10px 20px;">+ Agregar</button>
-              </div>
-              <div id="driversList" class="drivers-grid-v3 mt-sm"></div>
-            </div>
-          </div>
-          
         </div>
-      </div>
-    </main>
 
-  </div>
+        <!-- ══════ PANEL PEDIDOS ══════ -->
+        <div id="ordersPanel" class="admin-panel">
+          <div class="admin-card-v3 full-width-card">
+            <div class="admin-header-row">
+              <div>
+                <h3>Gestionar pedidos</h3>
+                <p class="subtitle-v3">Actualiza el estado y envíalos al domiciliario.</p>
+              </div>
+              <button id="refreshOrdersBtn" class="btn-block-green-light" style="width:auto; padding:9px 18px;">🔄 Actualizar</button>
+            </div>
+            <div id="adminOrdersList" class="admin-orders-list-v3"></div>
+            <p id="adminOrdersEmptyState" class="empty-state hidden">No hay pedidos registrados aún.</p>
+          </div>
+        </div>
+
+        <!-- ══════ PANEL ESTADÍSTICAS ══════ -->
+        <div id="statsPanel" class="admin-panel">
+          <div class="admin-card-v3 full-width-card">
+            <h3>Estadísticas de ventas</h3>
+            <p class="subtitle-v3">Visualiza tus productos más vendidos y horas pico.</p>
+            <div class="stats-grid-v3" style="margin-top:16px;">
+              <div class="chart-wrapper-v3">
+                <h4>🏆 Más vendidos</h4>
+                <div class="chart-container-v3"><canvas id="bestSellersChart"></canvas></div>
+              </div>
+              <div class="chart-wrapper-v3">
+                <h4>📈 Ventas últimos 7 días</h4>
+                <div class="chart-container-v3"><canvas id="salesTrendsChart"></canvas></div>
+              </div>
+              <div class="chart-wrapper-v3 chart-full-v3">
+                <h4>⏰ Horas pico de pedidos</h4>
+                <div class="chart-container-v3"><canvas id="peakHoursChart"></canvas></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════ PANEL REPARTIDORES ══════ -->
+        <div id="driversPanel" class="admin-panel">
+          <div class="admin-card-v3 full-width-card">
+            <div class="admin-header-row">
+              <div>
+                <h3>Repartidores</h3>
+                <p class="subtitle-v3">Administra los domiciliarios disponibles.</p>
+              </div>
+              <button id="addDriverBtn" class="btn-block-green-light" style="width:auto; padding:9px 18px;">+ Agregar</button>
+            </div>
+            <div id="driversList" class="drivers-grid-v3" style="margin-top:14px;"></div>
+          </div>
+        </div>
+
+      </div><!-- /.app-card-body -->
+    </main><!-- /.app-card -->
+
+  </div><!-- /.global-bg-wrapper -->
 
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module" src="js/main.js"></script>

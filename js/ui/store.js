@@ -87,9 +87,18 @@ export function buildStoreApp() {
 
   function setOrderModalOpen(isOpen) {
     if (!orderModal) return;
-    orderModal.classList.toggle('hidden', !isOpen);
-    orderModal.classList.toggle('is-open', isOpen);
-    document.body.classList.toggle('modal-open', isOpen);
+    const mobileBar = document.getElementById('mobileBarV3');
+    if (isOpen) {
+      orderModal.classList.add('is-open');
+      if (window.innerWidth <= 900) {
+        document.body.style.overflow = 'hidden';
+        if (mobileBar) mobileBar.style.display = 'none';
+      }
+    } else {
+      orderModal.classList.remove('is-open');
+      document.body.style.overflow = '';
+      if (mobileBar) mobileBar.style.display = '';
+    }
     orderModal.setAttribute('aria-hidden', String(!isOpen));
   }
 

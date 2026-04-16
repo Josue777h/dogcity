@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Dog City — Los mejores perros calientes y comida rápida. Arma tu pedido y envíalo directo por WhatsApp con tu ubicación." />
-  <title>Dog City | Sistema de Pedidos por WhatsApp</title>
-  
+  <meta name="description" content="Dog City — Pide tus perros calientes favoritos y recíbelos a domicilio. Pedido directo por WhatsApp." />
+  <title>Dog City | Pide en Línea</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -14,121 +13,116 @@
   <link rel="icon" href="images/uploads/DOGCITY.png" />
 </head>
 <body data-page="store" class="theme-dark-global">
-  
-  <!-- Global background gradient/dark theme -->
-  <div class="global-bg-wrapper">
-    
-    <!-- TOP PAGE HEADER -->
-    <div class="global-header">
-      <div class="mobile-version-tag">VERSIÓN MÓVIL</div>
-      <div class="global-header-title">
-        <h1>Sistema de Pedidos por <span class="text-green">WhatsApp</span></h1>
-        <p>Más pedidos, menos llamadas, sin complicaciones.</p>
-      </div>
-      <div class="pc-version-tag">VERSIÓN PC</div>
-    </div>
 
-    <!-- MAIN APP WINDOW -->
+  <div class="global-bg-wrapper">
+
+    <!-- ── MAIN APP CARD ─────────────────────── -->
     <main class="app-card" id="appCard">
-      
-      <!-- Inside App Header -->
+
+      <!-- ── HEADER ─────────────────────────── -->
       <header class="app-card-header">
         <a href="index.html" class="brand-v3">
           <img src="images/uploads/DOGCITY.png" alt="Dog City" />
           <div class="brand-text-v3">
             <strong>DOG CITY</strong>
-            <span>LOS MEJORES PERROS</span>
+            <span>LOS MEJORES PERROS 🌭</span>
           </div>
         </a>
-        
-        <nav class="desktop-nav-v3">
-          <a href="#" class="active">INICIO</a>
-          <a href="#">MENÚ</a>
-          <a href="#">NOSOTROS</a>
-          <a href="#">CONTACTO</a>
-        </nav>
-        
-        <!-- PC cart button in header -->
-        <button type="button" class="btn-pc-cart" id="openOrderModalBtn2">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg> 
-          <span class="cart-btn-texts">VER PEDIDO <br/><strong id="floatingOrderTotal">$0</strong></span>
-          <span id="floatingSelectedCount" class="cart-badge-v3">0</span>
+
+        <!-- PC: shows delivery badge and admin link -->
+        <div class="header-right-pc">
+          <span class="header-badge">
+            <span class="pulse-dot"></span>
+            Pedidos abiertos
+          </span>
+          <a href="admin.html" class="header-admin-link">⚙️ Admin</a>
+        </div>
+
+        <!-- Mobile: cart icon with count -->
+        <button id="openOrderModalBtn2" class="mobile-cart-icon" type="button" aria-label="Ver pedido">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+          <span id="floatingSelectedCount" class="mobile-cart-badge">0</span>
         </button>
       </header>
 
-      <!-- Grid Content -->
+      <!-- ── APP BODY ────────────────────────── -->
       <div class="app-card-body">
-        
-        <!-- Left Column: Menu -->
+
+        <!-- LEFT: Menu ─────────────────────── -->
         <section class="menu-col">
+
+          <!-- Category filters -->
           <div class="menu-filters-row">
             <h2 class="menu-title-v3">NUESTRO MENÚ</h2>
             <nav id="categoryNav" class="cats-v3"></nav>
           </div>
 
-          <div class="search-sort-v3 hidden">
-            <!-- Hidden temporarily to match mockup directly, can be unhidden later -->
-            <input id="searchInput" placeholder="Buscar..." />
+          <!-- Hidden but kept for JS compatibility -->
+          <div class="hidden">
+            <input id="searchInput" />
             <select id="sortSelect">
               <option value="featured">Destacados</option>
               <option value="name-asc">Nombre A-Z</option>
-              <option value="price-asc">Menor/Mayor</option>
+              <option value="price-asc">Menor precio</option>
             </select>
           </div>
 
+          <!-- Products grid -->
           <div id="productsList" class="product-grid-v3" aria-live="polite"></div>
-          <p id="productsEmptyState" class="hidden" style="color:#666; margin-top:20px;">No encontramos productos.</p>
+          <p id="productsEmptyState" class="hidden empty-state">No encontramos productos disponibles.</p>
         </section>
 
-        <!-- Right Column: Tu Pedido (Sidebar / Modal on Mobile) -->
-        <aside id="orderModal" class="sidebar-col order-modal-mobile hidden">
+        <!-- RIGHT: Order Sidebar ───────────── -->
+        <aside id="orderModal" class="sidebar-col">
           <div id="orderModalBackdrop" class="modal-backdrop-v3"></div>
-          
+
           <div class="sidebar-inner-v3">
-            <button id="closeOrderModalBtn" class="close-mobile-btn">&times;</button>
+            <button id="closeOrderModalBtn" class="close-mobile-btn" aria-label="Cerrar">×</button>
+
             <div class="sidebar-scrollable-v3">
-              
-              <h3 class="sidebar-title-v3">TU PEDIDO</h3>
-              
+
+              <!-- Order summary -->
+              <p class="sidebar-title-v3">👜 TU PEDIDO</p>
               <div class="order-items-wrapper">
-                <div id="orderSummary" class="order-summary-v3">
-                  <!-- items injected here -->
-                  No hay productos seleccionados.
-                </div>
-                
+                <div id="orderSummary" class="order-summary-v3">No hay productos seleccionados.</div>
                 <div class="order-total-v3">
                   <span>TOTAL</span>
                   <strong id="orderTotal" class="total-big">$0</strong>
                 </div>
               </div>
 
-              <h3 class="sidebar-title-v3 mt-lg">TUS DATOS</h3>
-              
+              <!-- Selected count -->
+              <p id="selectedCount" class="selected-count-v3"></p>
+
+              <!-- Customer data -->
+              <p class="sidebar-title-v3 mt-lg">📋 TUS DATOS</p>
               <div class="customer-form-v3">
                 <label class="input-wrap-v3">
                   <span class="icon">👤</span>
-                  <input id="customerName" type="text" placeholder="Nombre completo" />
+                  <input id="customerName" type="text" placeholder="Nombre completo" autocomplete="name" />
                 </label>
                 <label class="input-wrap-v3">
                   <span class="icon">📞</span>
-                  <input id="customerPhone" type="tel" placeholder="Teléfono" />
+                  <input id="customerPhone" type="tel" placeholder="Teléfono" autocomplete="tel" />
                 </label>
                 <label class="input-wrap-v3">
                   <span class="icon">📍</span>
-                  <input id="customerAddress" type="text" placeholder="Dirección" />
+                  <input id="customerAddress" type="text" placeholder="Dirección de entrega" autocomplete="street-address" />
                 </label>
               </div>
 
+              <!-- Location -->
               <div class="btn-location-wrapper">
-                <button id="locationBtn" class="btn-block-green-light">📍 Usar mi ubicación actual</button>
-                <p id="locationStatus" class="small-text-centered">Obligatorio para que el domiciliario llegue.</p>
+                <button id="locationBtn" class="btn-block-green-light">📡 Compartir mi ubicación GPS</button>
+                <p id="locationStatus" class="small-text-centered">Te ayuda a que el domiciliario llegue exacto.</p>
                 <div id="locationBox" class="hidden"></div>
               </div>
 
+              <!-- Delivery & Payment -->
               <div class="options-grid-v3">
                 <select id="deliveryMethodSelect" class="form-select-v3">
                   <option value="envio">🛵 Domicilio</option>
-                  <option value="recogida">🏠 Recoger en local</option>
+                  <option value="recogida">🏠 Recojo en local</option>
                 </select>
                 <select id="paymentMethodSelect" class="form-select-v3">
                   <option value="efectivo">💵 Efectivo</option>
@@ -136,96 +130,65 @@
                 </select>
               </div>
 
+              <!-- Nequi block -->
               <div id="nequiInfoBlock" class="nequi-card-v3 hidden">
                 <div class="nequi-header">
-                  <strong>Paga a Nequi: 3143243707</strong>
+                  <strong>Nequi: 3143243707</strong>
                   <span>Josue Sepulveda</span>
                 </div>
-                <div class="nequi-upload">
-                  <label>
-                    <span>Subir comprobante</span>
-                    <input id="paymentReceiptInput" type="file" accept="image/*" />
+                <div class="nequi-upload" style="margin-top:8px;">
+                  <label style="font-size:0.82rem; font-weight:700; cursor:pointer;">
+                    📎 Subir comprobante de pago
+                    <input id="paymentReceiptInput" type="file" accept="image/*" style="display:block; margin-top:5px; font-size:0.78rem;" />
                   </label>
-                  <img id="receiptImagePreview" src="" style="display:none; height:60px;" />
+                  <img id="receiptImagePreview" src="" style="display:none; max-height:70px; margin-top:6px; border-radius:8px;" />
                 </div>
               </div>
 
-              <label class="mt-sm block">
-                <textarea id="orderComment" class="form-textarea-v3" placeholder="Comentarios del pedido (sin cebolla, etc.)"></textarea>
+              <!-- Comment -->
+              <label class="block mt-sm">
+                <textarea id="orderComment" class="form-textarea-v3" placeholder="¿Algún comentario? (sin cebolla, extra salsa…)"></textarea>
               </label>
 
+              <!-- WhatsApp button -->
               <button id="generateBtn" class="btn-wapp-massive">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA" width="24"/>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" width="26" />
                 <div class="btn-text-content">
                   <strong>ENVIAR PEDIDO POR WHATSAPP</strong>
-                  <span>Te llegará la confirmación</span>
+                  <span>Recibirás confirmación inmediata</span>
                 </div>
               </button>
 
-              <!-- Hidden defaults used by scripting -->
+              <!-- Hidden elements required by JS -->
               <div class="hidden">
-                 <button id="openOrderModalBtn"></button>
-                 <a id="whatsappLink"></a>
-                 <button id="copyBtn"></button>
-                 <textarea id="generatedMessage"></textarea>
+                <button id="openOrderModalBtn"></button>
+                <a id="whatsappLink"></a>
+                <button id="copyBtn"></button>
+                <textarea id="generatedMessage"></textarea>
+                <span id="floatingOrderTotal"></span>
               </div>
-            </div>
-          </div>
+
+            </div><!-- /.sidebar-scrollable-v3 -->
+          </div><!-- /.sidebar-inner-v3 -->
         </aside>
 
-      </div>
-    </main>
+      </div><!-- /.app-card-body -->
+    </main><!-- /.app-card -->
 
-    <!-- BOTTOM INFO BAR -->
-    <div class="bottom-features-v3">
-      <div class="feature-col">
-        <span class="icon">🚀</span>
-        <div class="text">
-          <strong>PEDIDOS AUTOMÁTICOS</strong>
-          <p>El pedido llega directo<br/>a tu WhatsApp</p>
-        </div>
-      </div>
-      <div class="feature-col">
-        <span class="icon">📍</span>
-        <div class="text">
-          <strong>UBICACIÓN DEL CLIENTE</strong>
-          <p>Recibe la dirección en<br/>Google Maps</p>
-        </div>
-      </div>
-      <div class="feature-col">
-        <span class="icon">🕘</span>
-        <div class="text">
-          <strong>RÁPIDO Y FÁCIL</strong>
-          <p>Tus clientes piden en<br/>segundos</p>
-        </div>
-      </div>
-      <div class="feature-col">
-        <span class="icon">📈</span>
-        <div class="text">
-          <strong>MÁS VENTAS</strong>
-          <p>Mejora la experiencia y<br/>aumenta tus pedidos</p>
-        </div>
-      </div>
-    </div>
+  </div><!-- /.global-bg-wrapper -->
 
-    <!-- BOTTOM TRUST BAR -->
-    <div class="bottom-trust-v3">
-      <div class="trust-item">🛡️ SEGURO Y CONFIABLE</div>
-      <div class="trust-item">📞 SOPORTE POR WHATSAPP</div>
-      <div class="trust-item">⚡ SIN LLAMADAS, SIN CONFUSIONES</div>
-    </div>
-  </div>
-
-  <!-- FLOATING MOBILE BAR (ONLY MOBILE) -->
+  <!-- ── FLOATING MOBILE BAR ─────────────────── -->
   <div class="floating-mobile-bar-v3" id="mobileBarV3">
     <div class="mbar-left">
-      <span id="mobileSelectedCount" class="badge">0</span>
-      <div class="mbar-tot">
-        <small>Total:</small>
+      <span id="mobileSelectedCount" class="mbar-badge">0</span>
+      <div class="mbar-info">
+        <small>Total del pedido</small>
         <strong id="mobileOrderTotal">$0</strong>
       </div>
     </div>
-    <button id="mobileGenerateBtn" class="btn-wapp-small-v3">VER PEDIDO &rsaquo;</button>
+    <button id="mobileGenerateBtn" class="btn-open-cart">
+      Ver pedido ›
+    </button>
   </div>
 
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
