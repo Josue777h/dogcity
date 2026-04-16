@@ -29,6 +29,16 @@
   --shadow-lg: 0 16px 48px rgba(0,0,0,0.18);
 }
 
+/* ── Override old styles.css variables that bleed in ── */
+body.theme-dark-global {
+  /* Override old --muted color (#b94e16 is orange in old CSS) */
+  --muted: #808080 !important;
+  --border: #E8E8E8 !important;
+  --surface: #F5F5F5 !important;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06) !important;
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.10) !important;
+}
+
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 img, svg { display: block; }

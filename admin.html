@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="styles-v3.css" />
+  <link rel="stylesheet" href="styles-fix.css" />
   <link rel="icon" href="images/uploads/DOGCITY.png" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 </head>
@@ -31,14 +32,6 @@
       </div>
     </section>
 
-    <!-- ── PAGE HEADER ─────────────────────────── -->
-    <div class="global-header admin-global-header" style="padding-top:0; margin-bottom: 4px;">
-      <div class="global-header-title">
-        <h1>Centro de <span class="text-green">Control</span></h1>
-        <p>Pedidos, menú y domiciliarios en tiempo real.</p>
-      </div>
-    </div>
-
     <!-- ── MAIN APP CARD ────────────────────────── -->
     <main class="app-card admin-app-card">
 
@@ -48,12 +41,12 @@
           <img src="images/uploads/DOGCITY.png" alt="Dog City" />
           <div class="brand-text-v3">
             <strong>DOG CITY</strong>
-            <span>PANEL ADMIN</span>
+            <span>PANEL ADMIN ⚙️</span>
           </div>
         </a>
-        <nav class="desktop-nav-v3">
-          <a href="index.html">🛒 VER TIENDA</a>
-          <button id="adminLogoutBtn" class="btn-danger-v3 hidden" type="button">Cerrar sesión</button>
+        <nav class="admin-header-nav">
+          <a href="index.html" class="admin-nav-link">🛒 Ver tienda</a>
+          <button id="adminLogoutBtn" class="admin-nav-logout hidden" type="button">Salir</button>
         </nav>
       </header>
 
