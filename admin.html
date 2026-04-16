@@ -5,228 +5,198 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Panel de administración de Dog City. Gestiona productos, pedidos, estadísticas y repartidores." />
   <title>Dog City | Panel Admin</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles-v3.css" />
   <link rel="icon" href="images/uploads/DOGCITY.png" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 </head>
-<body data-page="admin">
-  <div class="app-bg"></div>
+<body data-page="admin" class="theme-dark-global">
 
-  <!-- Pantalla de Login -->
-  <section id="adminAccessGate" class="admin-access-gate">
-    <div class="admin-access-card">
-      <img src="images/uploads/DOGCITY.png" alt="Dog City" class="access-logo" />
-      <h2>Panel Administrativo</h2>
-      <p>Inicia sesión con tu cuenta para gestionar Dog City.</p>
-      <div class="access-form">
-        <input id="adminEmailInput" type="email" placeholder="Correo del administrador" autocomplete="email" />
-        <input id="adminPasswordInput" type="password" placeholder="Contraseña" autocomplete="current-password" />
-        <button id="adminLoginBtn" class="btn btn-primary" type="button">Entrar al panel</button>
-      </div>
-      <small id="adminPinStatus">Solo usuarios autenticados pueden crear, editar o eliminar productos.</small>
-    </div>
-  </section>
-
-  <header class="topbar">
-    <a class="brand" href="index.html">
-      <span class="brand-mark">
-        <img src="images/uploads/DOGCITY.png" alt="Dog City" />
-      </span>
-      <div>
-        <strong>Dog City</strong>
-        <span>Panel Admin</span>
-      </div>
-    </a>
-
-    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="adminNav">
-      <span></span><span></span><span></span>
-    </button>
-
-    <nav id="adminNav" class="nav-links">
-      <a href="index.html">🛒 Tienda</a>
-      <a href="admin.html" class="is-active">⚙️ Admin</a>
-      <button id="adminLogoutBtn" class="nav-logout btn btn-secondary hidden" type="button">Cerrar sesión</button>
-    </nav>
-  </header>
-
-  <main class="layout admin-layout">
-
-    <!-- Hero compacto -->
-    <section class="hero-card hero-card-compact">
-      <div class="hero-copy">
-        <span class="eyebrow">Panel Admin</span>
-        <h1>Administra Dog City</h1>
-        <p>Gestiona productos, pedidos, estadísticas y domiciliarios desde un solo lugar.</p>
+  <div class="global-bg-wrapper admin-bg-wrapper">
+    
+    <!-- Pantalla de Login -->
+    <section id="adminAccessGate" class="admin-access-gate-v3">
+      <div class="admin-access-card-v3">
+        <img src="images/uploads/DOGCITY.png" alt="Dog City" class="access-logo-v3" />
+        <h2>Panel Administrativo</h2>
+        <p>Inicia sesión con tu cuenta para gestionar Dog City.</p>
+        <div class="access-form-v3">
+          <input id="adminEmailInput" type="email" placeholder="Correo del administrador" autocomplete="email" class="form-input-v3" />
+          <input id="adminPasswordInput" type="password" placeholder="Contraseña" autocomplete="current-password" class="form-input-v3" />
+          <button id="adminLoginBtn" class="btn-wapp-massive" type="button">Entrar al panel</button>
+        </div>
+        <small id="adminPinStatus">Solo usuarios autenticados pueden crear, editar o eliminar productos.</small>
       </div>
     </section>
 
-    <!-- Tabs de Navegación -->
-    <nav class="admin-tabs" role="tablist">
-      <button class="admin-tab active" data-tab="products" role="tab" type="button">
-        <span>📦</span> Productos
-      </button>
-      <button class="admin-tab" data-tab="orders" role="tab" type="button">
-        <span>🛒</span> Pedidos
-      </button>
-      <button class="admin-tab" data-tab="stats" role="tab" type="button">
-        <span>📊</span> Estadísticas
-      </button>
-      <button class="admin-tab" data-tab="drivers" role="tab" type="button">
-        <span>🚚</span> Repartidores
-      </button>
-    </nav>
-
-    <!-- ══════════════ PANEL PRODUCTOS ══════════════ -->
-    <div id="productsPanel" class="admin-panel active">
-
-      <!-- Formulario Crear / Editar -->
-      <section class="panel admin-form-panel">
-        <div class="section-header">
-          <div>
-            <span class="section-kicker">Gestión</span>
-            <h2 id="adminFormTitle">Crear producto</h2>
-            <p>Los cambios se sincronizan al instante con la tienda.</p>
-          </div>
-        </div>
-
-        <form id="newProductForm" class="form-grid">
-          <input id="editingProductId" name="editingProductId" type="hidden" value="" />
-
-          <label>
-            Nombre del producto
-            <input name="name" type="text" maxlength="80" placeholder="Ej. Perro Americano" required />
-          </label>
-          <label>
-            Precio (COP)
-            <input name="price" type="number" min="100" step="100" placeholder="Ej. 10000" required />
-          </label>
-          <label class="full-width">
-            Descripción
-            <input name="description" type="text" maxlength="200" placeholder="Ingredientes o descripción breve" required />
-          </label>
-          <label>
-            Unidad
-            <input name="unit" type="text" maxlength="20" value="unidad" required />
-          </label>
-          <label>
-            Categoría
-            <input name="category" type="text" maxlength="50" placeholder="Ej. Perros, Bebidas, Combos" />
-          </label>
-
-          <label class="full-width stock-switch-label">
-            <input name="disponible" type="checkbox" checked />
-            <span class="stock-switch-track"></span>
-            <strong>Producto disponible en stock</strong>
-          </label>
-
-          <label class="full-width">
-            Imagen del producto
-            <input id="imageFileInput" name="imageFile" type="file" accept="image/*" />
-          </label>
-          <div class="full-width image-preview-card">
-            <span class="image-preview-label">Vista previa</span>
-            <img id="imagePreview" src="images/taza.svg" alt="Vista previa del producto" />
-          </div>
-
-          <div class="full-width form-actions">
-            <button id="saveProductBtn" type="submit" class="btn btn-primary">💾 Guardar producto</button>
-            <button id="cancelEditBtn" type="button" class="btn btn-secondary hidden">✕ Cancelar edición</button>
-          </div>
-        </form>
-      </section>
-
-      <!-- Inventario actual -->
-      <section class="panel admin-inventory-panel">
-        <div class="section-header">
-          <div>
-            <span class="section-kicker">Inventario</span>
-            <h2>Productos actuales</h2>
-            <p>Edita disponibilidad o elimina con un clic.</p>
-          </div>
-        </div>
-        <div id="adminProductsList" class="admin-product-list"></div>
-        <p id="adminEmptyState" class="empty-state hidden">Aún no hay productos registrados.</p>
-      </section>
-
-    </div><!-- /productsPanel -->
-
-    <!-- ══════════════ PANEL PEDIDOS ══════════════ -->
-    <div id="ordersPanel" class="admin-panel">
-      <section class="panel admin-orders-panel">
-        <div class="section-header">
-          <div>
-            <span class="section-kicker">Pedidos</span>
-            <h2>Gestionar pedidos</h2>
-            <p>Actualiza el estado y envíalos al domiciliario.</p>
-          </div>
-          <button id="refreshOrdersBtn" class="btn btn-secondary" type="button">🔄 Actualizar</button>
-        </div>
-        <div id="adminOrdersList" class="admin-orders-list"></div>
-        <p id="adminOrdersEmptyState" class="empty-state hidden">No hay pedidos registrados aún.</p>
-      </section>
-    </div><!-- /ordersPanel -->
-
-    <!-- ══════════════ PANEL ESTADÍSTICAS ══════════════ -->
-    <div id="statsPanel" class="admin-panel">
-      <section class="panel">
-        <div class="section-header">
-          <div>
-            <span class="section-kicker">Análisis</span>
-            <h2>Estadísticas de ventas</h2>
-            <p>Visualiza tus productos más vendidos y horas pico.</p>
-          </div>
-        </div>
-        <div class="stats-grid">
-          <div class="chart-wrapper">
-            <h3>🏆 Productos más vendidos</h3>
-            <div class="chart-container"><canvas id="bestSellersChart"></canvas></div>
-          </div>
-          <div class="chart-wrapper">
-            <h3>📈 Ventas últimos 7 días</h3>
-            <div class="chart-container"><canvas id="salesTrendsChart"></canvas></div>
-          </div>
-          <div class="chart-wrapper chart-full">
-            <h3>⏰ Horas pico de pedidos</h3>
-            <div class="chart-container"><canvas id="peakHoursChart"></canvas></div>
-          </div>
-        </div>
-      </section>
-    </div><!-- /statsPanel -->
-
-    <!-- ══════════════ PANEL REPARTIDORES ══════════════ -->
-    <div id="driversPanel" class="admin-panel">
-      <section class="panel">
-        <div class="section-header">
-          <div>
-            <span class="section-kicker">Logística</span>
-            <h2>Repartidores</h2>
-            <p>Administra los domiciliarios disponibles para enviar pedidos.</p>
-          </div>
-          <button id="addDriverBtn" class="btn btn-primary" type="button">+ Agregar</button>
-        </div>
-        <div id="driversList" class="drivers-grid"></div>
-      </section>
-    </div><!-- /driversPanel -->
-
-  </main>
-
-  <footer class="site-footer">
-    <div class="footer-brand">
-      <strong>Dog City</strong>
-      <span class="footer-note">Panel administrativo</span>
+    <!-- TOP HEADER -->
+    <div class="global-header admin-global-header">
+      <div class="global-header-title">
+        <h1>Centro de <span class="text-green">Control</span></h1>
+        <p>Pedidos, menú y domiciliarios en tiempo real.</p>
+      </div>
     </div>
-    <div class="footer-links">
-      <a class="social-link social-instagram" href="https://www.instagram.com/thedogcityoficial?igsh=MXR5dXJqb3Y2a2VlNQ==" target="_blank" rel="noreferrer noopener">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2Zm0 1.8A3.95 3.95 0 0 0 3.8 7.75v8.5a3.95 3.95 0 0 0 3.95 3.95h8.5a3.95 3.95 0 0 0 3.95-3.95v-8.5a3.95 3.95 0 0 0-3.95-3.95Zm8.95 1.35a1.15 1.15 0 1 1 0 2.3 1.15 1.15 0 0 1 0-2.3ZM12 6.86A5.14 5.14 0 1 1 6.86 12 5.15 5.15 0 0 1 12 6.86Zm0 1.8A3.34 3.34 0 1 0 15.34 12 3.34 3.34 0 0 0 12 8.66Z"/></svg>
-        <span>Instagram</span>
-      </a>
-      <a class="social-link social-whatsapp" href="https://wa.me/573143243707" target="_blank" rel="noreferrer noopener">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.52 3.48A11.84 11.84 0 0 0 12.08 0 11.94 11.94 0 0 0 1.83 17.9L0 24l6.29-1.76a11.92 11.92 0 0 0 5.79 1.48h.01A11.94 11.94 0 0 0 24 11.86a11.83 11.83 0 0 0-3.48-8.38Zm-8.44 18.2h-.01a9.9 9.9 0 0 1-5.04-1.38l-.36-.21-3.73 1.04 1-3.63-.23-.37a9.9 9.9 0 1 1 8.37 4.55Zm5.43-7.43c-.3-.15-1.75-.86-2.02-.96s-.47-.15-.67.15-.77.96-.94 1.16-.35.22-.65.07a8.1 8.1 0 0 1-2.38-1.47 8.95 8.95 0 0 1-1.65-2.06c-.17-.3 0-.46.13-.61s.3-.35.45-.52a1.9 1.9 0 0 0 .3-.5.56.56 0 0 0-.03-.52c-.08-.15-.67-1.62-.92-2.21-.24-.58-.48-.5-.67-.5h-.57a1.09 1.09 0 0 0-.79.37 3.3 3.3 0 0 0-1.02 2.45 5.74 5.74 0 0 0 1.2 3.06 13.11 13.11 0 0 0 5.04 4.46 17.1 17.1 0 0 0 1.68.62 4.04 4.04 0 0 0 1.85.12 3.02 3.02 0 0 0 1.98-1.4 2.46 2.46 0 0 0 .17-1.4c-.07-.12-.27-.2-.57-.35Z"/></svg>
-        <span>WhatsApp</span>
-      </a>
-    </div>
-    <span class="footer-note">Dog City — Zona central de la ciudad</span>
-  </footer>
+
+    <!-- MAIN APP WINDOW -->
+    <main class="app-card admin-app-card">
+      
+      <!-- Inside App Header -->
+      <header class="app-card-header">
+        <a href="index.html" class="brand-v3">
+          <img src="images/uploads/DOGCITY.png" alt="Dog City" />
+          <div class="brand-text-v3">
+            <strong>DOG CITY</strong>
+            <span>PANEL ADMIN</span>
+          </div>
+        </a>
+        
+        <nav class="desktop-nav-v3">
+          <a href="index.html">🛒 TIENDA REDISEÑADA</a>
+          <button id="adminLogoutBtn" class="nav-logout-v3 btn-danger-v3 hidden" type="button">Cerrar sesión</button>
+        </nav>
+      </header>
+
+      <!-- Grid Content -->
+      <div class="app-card-body col-layout">
+        
+        <!-- Pestañas -->
+        <nav class="admin-tabs" role="tablist">
+          <button class="admin-tab active" data-tab="products" role="tab">📦 Productos</button>
+          <button class="admin-tab" data-tab="orders" role="tab">🛒 Pedidos</button>
+          <button class="admin-tab" data-tab="stats" role="tab">📊 Estadísticas</button>
+          <button class="admin-tab" data-tab="drivers" role="tab">🚚 Repartidores</button>
+        </nav>
+        
+        <div class="admin-content-area">
+          
+          <!-- PANEL PRODUCTOS -->
+          <div id="productsPanel" class="admin-panel active">
+            <div class="admin-grid-v3">
+              <!-- Creador de productos -->
+              <div class="admin-card-v3 form-side">
+                <h3 id="adminFormTitle">Crear producto</h3>
+                <p class="subtitle-v3">Sincroniza al instante con la tienda.</p>
+                
+                <form id="newProductForm" class="customer-form-v3 mt-sm">
+                  <input id="editingProductId" name="editingProductId" type="hidden" value="" />
+
+                  <label class="input-wrap-v3">
+                    <span class="icon">🏷️</span>
+                    <input name="name" type="text" maxlength="80" placeholder="Nombre (Ej. Perro Americano)" required />
+                  </label>
+                  <label class="input-wrap-v3">
+                    <span class="icon">💲</span>
+                    <input name="price" type="number" min="100" step="100" placeholder="Precio (Ej. 10000)" required />
+                  </label>
+                  <label class="input-wrap-v3">
+                    <span class="icon">📝</span>
+                    <input name="description" type="text" maxlength="200" placeholder="Ingredientes o descripción breve" required />
+                  </label>
+                  
+                  <div class="options-grid-v3 mt-none" style="grid-template-columns: 1fr;">
+                    <label class="input-wrap-v3">
+                      <input name="unit" type="text" maxlength="20" value="unidad" required placeholder="Unidad" />
+                    </label>
+                  </div>
+                  <label class="input-wrap-v3" style="margin-top: 10px;">
+                    <span class="icon">📂</span>
+                    <input name="category" type="text" maxlength="50" placeholder="Categoría (Ej. Perros)" />
+                  </label>
+
+                  <label class="stock-switch-v3">
+                    <input name="disponible" type="checkbox" checked />
+                    <span class="stock-slider"></span>
+                    <span class="stock-text">Producto disponible en stock</span>
+                  </label>
+
+                  <label class="form-select-v3 upload-label">
+                    <span>🖼️ Imagen del producto</span>
+                    <input id="imageFileInput" name="imageFile" type="file" accept="image/*" />
+                  </label>
+                  
+                  <div class="image-preview-admin">
+                    <img id="imagePreview" src="images/taza.svg" alt="Vista previa" />
+                  </div>
+
+                  <div class="action-buttons-row">
+                    <button id="saveProductBtn" type="submit" class="btn-wapp-massive" style="margin-top: 10px;">💾 Guardar producto</button>
+                    <button id="cancelEditBtn" type="button" class="btn-danger-v3 hidden" style="width: 100%; margin-top:10px;">✕ Cancelar edición</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Lista de productos -->
+              <div class="admin-card-v3 list-side">
+                <h3>Productos actuales</h3>
+                <p class="subtitle-v3">Edita disponibilidad o elimina.</p>
+                
+                <div id="adminProductsList" class="admin-product-list mt-sm"></div>
+                <p id="adminEmptyState" class="empty-state hidden">Aún no hay productos registrados.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL PEDIDOS -->
+          <div id="ordersPanel" class="admin-panel">
+            <div class="admin-card-v3 full-width-card">
+              <div class="admin-header-row">
+                <div>
+                  <h3>Gestionar pedidos</h3>
+                  <p class="subtitle-v3">Actualiza el estado y envíalos.</p>
+                </div>
+                <button id="refreshOrdersBtn" class="btn-block-green-light" style="width: auto;">🔄 Actualizar lista</button>
+              </div>
+              <div id="adminOrdersList" class="admin-orders-list-v3 mt-sm"></div>
+              <p id="adminOrdersEmptyState" class="empty-state hidden">No hay pedidos registrados aún.</p>
+            </div>
+          </div>
+
+          <!-- PANEL ESTADÍSTICAS -->
+          <div id="statsPanel" class="admin-panel">
+            <div class="admin-card-v3 full-width-card">
+              <h3>Estadísticas de ventas</h3>
+              <p class="subtitle-v3">Visualiza tus productos más vendidos y horas pico.</p>
+              
+              <div class="stats-grid-v3 mt-sm">
+                <div class="chart-wrapper-v3">
+                  <h4>🏆 Más vendidos</h4>
+                  <div class="chart-container-v3"><canvas id="bestSellersChart"></canvas></div>
+                </div>
+                <div class="chart-wrapper-v3">
+                  <h4>📈 Ventas (7 días)</h4>
+                  <div class="chart-container-v3"><canvas id="salesTrendsChart"></canvas></div>
+                </div>
+                <div class="chart-wrapper-v3 chart-full-v3">
+                  <h4>⏰ Horas pico</h4>
+                  <div class="chart-container-v3"><canvas id="peakHoursChart"></canvas></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL REPARTIDORES -->
+          <div id="driversPanel" class="admin-panel">
+            <div class="admin-card-v3 full-width-card">
+              <div class="admin-header-row">
+                <div>
+                  <h3>Repartidores</h3>
+                  <p class="subtitle-v3">Administra los domiciliarios activos.</p>
+                </div>
+                <button id="addDriverBtn" class="btn-block-green-light" style="width:auto; padding: 10px 20px;">+ Agregar</button>
+              </div>
+              <div id="driversList" class="drivers-grid-v3 mt-sm"></div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </main>
+
+  </div>
 
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module" src="js/main.js"></script>

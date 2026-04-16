@@ -4,246 +4,229 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Dog City — Los mejores perros calientes y comida rápida. Arma tu pedido y envíalo directo por WhatsApp con tu ubicación." />
-  <title>Dog City | Perros Calientes</title>
+  <title>Dog City | Sistema de Pedidos por WhatsApp</title>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles-v3.css" />
   <link rel="icon" href="images/uploads/DOGCITY.png" />
 </head>
-<body data-page="store">
-  <div class="app-bg"></div>
-
-  <!-- ─── HEADER ─────────────────────────────── -->
-  <header class="topbar">
-    <a class="brand" href="index.html">
-      <span class="brand-mark">
-        <img src="images/uploads/DOGCITY.png" alt="Dog City" />
-      </span>
-      <div>
-        <strong>Dog City</strong>
-        <span>Pide por WhatsApp 🌭</span>
+<body data-page="store" class="theme-dark-global">
+  
+  <!-- Global background gradient/dark theme -->
+  <div class="global-bg-wrapper">
+    
+    <!-- TOP PAGE HEADER -->
+    <div class="global-header">
+      <div class="mobile-version-tag">VERSIÓN MÓVIL</div>
+      <div class="global-header-title">
+        <h1>Sistema de Pedidos por <span class="text-green">WhatsApp</span></h1>
+        <p>Más pedidos, menos llamadas, sin complicaciones.</p>
       </div>
-    </a>
-
-    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="storeNav" aria-label="Menú">
-      <span></span><span></span><span></span>
-    </button>
-
-    <nav id="storeNav" class="nav-links">
-      <a href="index.html" class="is-active">🛒 Tienda</a>
-    </nav>
-  </header>
-
-  <!-- ─── MAIN ──────────────────────────────── -->
-  <main class="layout store-layout">
-
-    <!-- Hero -->
-    <section class="store-hero">
-      <div class="store-hero-content">
-        <span class="hero-badge">🔥 Pedidos por WhatsApp</span>
-        <h1>Perros calientes<br><span class="hero-accent">con actitud</span></h1>
-        <p>Arma tu combo en segundos, agrega salsas y notas especiales, y envíanos el pedido directo desde aquí.</p>
-        <div class="hero-stats">
-          <div class="hero-stat"><strong>🚀</strong><span>Entrega rápida</span></div>
-          <div class="hero-stat"><strong>📍</strong><span>Ubicación GPS</span></div>
-          <div class="hero-stat"><strong>💳</strong><span>Efectivo o Nequi</span></div>
-        </div>
-      </div>
-      <aside class="hero-total-card">
-        <div class="hero-total-inner">
-          <span class="hero-total-label">Tu pedido</span>
-          <strong id="orderTotal">$0</strong>
-          <span id="selectedCount" class="hero-total-meta">0 productos</span>
-          <button id="openOrderModalBtn" class="btn btn-primary hero-cta" type="button">
-            Revisar pedido →
-          </button>
-        </div>
-      </aside>
-    </section>
-
-    <!-- Productos -->
-    <section class="products-section panel">
-      <div class="section-header">
-        <div>
-          <span class="section-kicker">Menú</span>
-          <h2>Lo que tenemos hoy</h2>
-          <p>Busca tu favorito y ajusta la cantidad en tiempo real.</p>
-        </div>
-      </div>
-
-      <!-- Buscador + Orden -->
-      <div class="store-toolbar">
-        <label class="toolbar-field">
-          <span>🔍 Buscar</span>
-          <input id="searchInput" type="search" placeholder="Perro, hamburguesa, bebida..." />
-        </label>
-        <label class="toolbar-field">
-          <span>↕ Ordenar</span>
-          <select id="sortSelect">
-            <option value="featured">Destacados</option>
-            <option value="name-asc">Nombre A-Z</option>
-            <option value="price-asc">Menor precio</option>
-            <option value="price-desc">Mayor precio</option>
-          </select>
-        </label>
-      </div>
-
-      <!-- Categorías -->
-      <nav id="categoryNav" class="category-nav" aria-label="Categorías"></nav>
-
-      <!-- Grid de productos -->
-      <div id="productsList" class="product-grid" aria-live="polite"></div>
-      <p id="productsEmptyState" class="empty-state hidden">No encontramos productos con esa búsqueda.</p>
-    </section>
-  </main>
-
-  <!-- ─── BARRA MÓVIL INFERIOR ──────────────── -->
-  <div class="mobile-bar">
-    <div class="mobile-bar-info">
-      <span id="mobileSelectedCount" class="mobile-bar-count">0 items</span>
-      <strong id="mobileOrderTotal" class="mobile-bar-total">$0</strong>
+      <div class="pc-version-tag">VERSIÓN PC</div>
     </div>
-    <button id="mobileGenerateBtn" class="btn btn-primary" type="button">Ver pedido →</button>
-  </div>
 
-  <!-- ─── LANZADOR FLOTANTE (ESCRITORIO) ──────── -->
-  <aside class="floating-order-launcher">
-    <span class="section-kicker">Pedido actual</span>
-    <strong id="floatingOrderTotal">$0</strong>
-    <span id="floatingSelectedCount" class="summary-meta">0 productos</span>
-    <button id="openOrderModalBtn2" class="btn btn-primary" type="button">Revisar pedido →</button>
-  </aside>
-
-  <!-- ─── MODAL DE PEDIDO ───────────────────── -->
-  <div id="orderModal" class="order-modal hidden" aria-hidden="true">
-    <div id="orderModalBackdrop" class="order-modal-backdrop"></div>
-    <aside class="panel order-panel-modal" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
-
-      <div class="order-modal-header">
-        <div>
-          <span class="section-kicker">Tu pedido</span>
-          <h2 id="orderModalTitle">Resumen y envío</h2>
-          <p>Completa tus datos y genera el mensaje.</p>
-        </div>
-        <button id="closeOrderModalBtn" class="modal-close-btn" type="button" aria-label="Cerrar">×</button>
-      </div>
-
-      <!-- Datos del cliente -->
-      <div class="customer-grid">
-        <label class="toolbar-field">
-          Nombre
-          <input id="customerName" type="text" placeholder="Tu nombre completo" />
-        </label>
-        <label class="toolbar-field">
-          Dirección
-          <input id="customerAddress" type="text" placeholder="Tu dirección de entrega" />
-        </label>
-        <label class="toolbar-field">
-          Teléfono
-          <input id="customerPhone" type="tel" placeholder="Tu número de celular" />
-        </label>
-      </div>
-
-      <!-- Ubicación -->
-      <div class="location-box" id="locationBox">
-        <div>
-          <strong>📍 Ubicación (obligatoria para domicilio)</strong>
-          <p id="locationStatus">Agrega tu ubicación para que el domiciliario te encuentre fácilmente.</p>
-        </div>
-        <button id="locationBtn" class="btn btn-secondary" type="button">Usar GPS</button>
-      </div>
-
-      <!-- Opciones de entrega y pago -->
-      <div class="checkout-options-grid">
-        <label class="toolbar-field">
-          🛵 Entrega
-          <select id="deliveryMethodSelect">
-            <option value="envio">Domicilio / Envío</option>
-            <option value="recogida">Recoger en local</option>
-          </select>
-        </label>
-        <label class="toolbar-field">
-          💳 Pago
-          <select id="paymentMethodSelect">
-            <option value="efectivo">💵 Efectivo</option>
-            <option value="transferencia">📱 Nequi</option>
-          </select>
-        </label>
-      </div>
-
-      <!-- Info Nequi (oculta por defecto) -->
-      <div id="nequiInfoBlock" class="nequi-info-card hidden">
-        <div class="nequi-details">
-          <strong>📱 Paga a Nequi:</strong>
-          <p>Número: <span class="nequi-number">3143243707</span></p>
-          <p>Titular: <span class="nequi-name">Josue Sepulveda</span></p>
-          <p class="small-note">Sube la captura del pago para procesar tu pedido más rápido.</p>
-        </div>
-        
-        <label class="toolbar-field" style="margin-top: 12px; margin-bottom: 8px;">
-          <strong>📸 Subir comprobante</strong>
-          <input id="paymentReceiptInput" type="file" accept="image/*" />
-        </label>
-        
-        <div class="image-preview-card" style="margin-bottom: 0;">
-          <span class="image-preview-label">Vista previa del comprobante</span>
-          <img id="receiptImagePreview" src="images/taza.svg" alt="Vista previa del comprobante" style="max-height: 140px; display: none;" />
-        </div>
-      </div>
-
-
-      <!-- Comentarios -->
-      <label class="toolbar-field order-comment-field">
-        💬 Comentarios del pedido
-        <textarea id="orderComment" placeholder="Ej. sin cebolla, extra queso, timbrar al llegar..."></textarea>
-      </label>
-
-      <!-- Resumen -->
-      <div class="order-preview">
-        <p id="orderSummary">No hay productos seleccionados.</p>
-      </div>
-
-      <!-- Acciones -->
-      <button id="generateBtn" class="btn btn-primary order-submit-btn" type="button">
-        Paso 1: Generar pedido
-      </button>
-      <div class="actions">
-        <a id="whatsappLink" class="btn btn-success disabled" target="_blank" rel="noreferrer noopener" href="#">
-          Paso 2: Enviar por WhatsApp 💬
+    <!-- MAIN APP WINDOW -->
+    <main class="app-card" id="appCard">
+      
+      <!-- Inside App Header -->
+      <header class="app-card-header">
+        <a href="index.html" class="brand-v3">
+          <img src="images/uploads/DOGCITY.png" alt="Dog City" />
+          <div class="brand-text-v3">
+            <strong>DOG CITY</strong>
+            <span>LOS MEJORES PERROS</span>
+          </div>
         </a>
-        <button id="copyBtn" class="btn btn-secondary" type="button">Copiar mensaje</button>
-      </div>
+        
+        <nav class="desktop-nav-v3">
+          <a href="#" class="active">INICIO</a>
+          <a href="#">MENÚ</a>
+          <a href="#">NOSOTROS</a>
+          <a href="#">CONTACTO</a>
+        </nav>
+        
+        <!-- PC cart button in header -->
+        <button type="button" class="btn-pc-cart" id="openOrderModalBtn2">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg> 
+          <span class="cart-btn-texts">VER PEDIDO <br/><strong id="floatingOrderTotal">$0</strong></span>
+          <span id="floatingSelectedCount" class="cart-badge-v3">0</span>
+        </button>
+      </header>
 
-      <textarea id="generatedMessage" readonly placeholder="Aquí aparecerá el mensaje listo para WhatsApp."></textarea>
-    </aside>
+      <!-- Grid Content -->
+      <div class="app-card-body">
+        
+        <!-- Left Column: Menu -->
+        <section class="menu-col">
+          <div class="menu-filters-row">
+            <h2 class="menu-title-v3">NUESTRO MENÚ</h2>
+            <nav id="categoryNav" class="cats-v3"></nav>
+          </div>
+
+          <div class="search-sort-v3 hidden">
+            <!-- Hidden temporarily to match mockup directly, can be unhidden later -->
+            <input id="searchInput" placeholder="Buscar..." />
+            <select id="sortSelect">
+              <option value="featured">Destacados</option>
+              <option value="name-asc">Nombre A-Z</option>
+              <option value="price-asc">Menor/Mayor</option>
+            </select>
+          </div>
+
+          <div id="productsList" class="product-grid-v3" aria-live="polite"></div>
+          <p id="productsEmptyState" class="hidden" style="color:#666; margin-top:20px;">No encontramos productos.</p>
+        </section>
+
+        <!-- Right Column: Tu Pedido (Sidebar / Modal on Mobile) -->
+        <aside id="orderModal" class="sidebar-col order-modal-mobile hidden">
+          <div id="orderModalBackdrop" class="modal-backdrop-v3"></div>
+          
+          <div class="sidebar-inner-v3">
+            <button id="closeOrderModalBtn" class="close-mobile-btn">&times;</button>
+            <div class="sidebar-scrollable-v3">
+              
+              <h3 class="sidebar-title-v3">TU PEDIDO</h3>
+              
+              <div class="order-items-wrapper">
+                <div id="orderSummary" class="order-summary-v3">
+                  <!-- items injected here -->
+                  No hay productos seleccionados.
+                </div>
+                
+                <div class="order-total-v3">
+                  <span>TOTAL</span>
+                  <strong id="orderTotal" class="total-big">$0</strong>
+                </div>
+              </div>
+
+              <h3 class="sidebar-title-v3 mt-lg">TUS DATOS</h3>
+              
+              <div class="customer-form-v3">
+                <label class="input-wrap-v3">
+                  <span class="icon">👤</span>
+                  <input id="customerName" type="text" placeholder="Nombre completo" />
+                </label>
+                <label class="input-wrap-v3">
+                  <span class="icon">📞</span>
+                  <input id="customerPhone" type="tel" placeholder="Teléfono" />
+                </label>
+                <label class="input-wrap-v3">
+                  <span class="icon">📍</span>
+                  <input id="customerAddress" type="text" placeholder="Dirección" />
+                </label>
+              </div>
+
+              <div class="btn-location-wrapper">
+                <button id="locationBtn" class="btn-block-green-light">📍 Usar mi ubicación actual</button>
+                <p id="locationStatus" class="small-text-centered">Obligatorio para que el domiciliario llegue.</p>
+                <div id="locationBox" class="hidden"></div>
+              </div>
+
+              <div class="options-grid-v3">
+                <select id="deliveryMethodSelect" class="form-select-v3">
+                  <option value="envio">🛵 Domicilio</option>
+                  <option value="recogida">🏠 Recoger en local</option>
+                </select>
+                <select id="paymentMethodSelect" class="form-select-v3">
+                  <option value="efectivo">💵 Efectivo</option>
+                  <option value="transferencia">📱 Nequi</option>
+                </select>
+              </div>
+
+              <div id="nequiInfoBlock" class="nequi-card-v3 hidden">
+                <div class="nequi-header">
+                  <strong>Paga a Nequi: 3143243707</strong>
+                  <span>Josue Sepulveda</span>
+                </div>
+                <div class="nequi-upload">
+                  <label>
+                    <span>Subir comprobante</span>
+                    <input id="paymentReceiptInput" type="file" accept="image/*" />
+                  </label>
+                  <img id="receiptImagePreview" src="" style="display:none; height:60px;" />
+                </div>
+              </div>
+
+              <label class="mt-sm block">
+                <textarea id="orderComment" class="form-textarea-v3" placeholder="Comentarios del pedido (sin cebolla, etc.)"></textarea>
+              </label>
+
+              <button id="generateBtn" class="btn-wapp-massive">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA" width="24"/>
+                <div class="btn-text-content">
+                  <strong>ENVIAR PEDIDO POR WHATSAPP</strong>
+                  <span>Te llegará la confirmación</span>
+                </div>
+              </button>
+
+              <!-- Hidden defaults used by scripting -->
+              <div class="hidden">
+                 <button id="openOrderModalBtn"></button>
+                 <a id="whatsappLink"></a>
+                 <button id="copyBtn"></button>
+                 <textarea id="generatedMessage"></textarea>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </main>
+
+    <!-- BOTTOM INFO BAR -->
+    <div class="bottom-features-v3">
+      <div class="feature-col">
+        <span class="icon">🚀</span>
+        <div class="text">
+          <strong>PEDIDOS AUTOMÁTICOS</strong>
+          <p>El pedido llega directo<br/>a tu WhatsApp</p>
+        </div>
+      </div>
+      <div class="feature-col">
+        <span class="icon">📍</span>
+        <div class="text">
+          <strong>UBICACIÓN DEL CLIENTE</strong>
+          <p>Recibe la dirección en<br/>Google Maps</p>
+        </div>
+      </div>
+      <div class="feature-col">
+        <span class="icon">🕘</span>
+        <div class="text">
+          <strong>RÁPIDO Y FÁCIL</strong>
+          <p>Tus clientes piden en<br/>segundos</p>
+        </div>
+      </div>
+      <div class="feature-col">
+        <span class="icon">📈</span>
+        <div class="text">
+          <strong>MÁS VENTAS</strong>
+          <p>Mejora la experiencia y<br/>aumenta tus pedidos</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM TRUST BAR -->
+    <div class="bottom-trust-v3">
+      <div class="trust-item">🛡️ SEGURO Y CONFIABLE</div>
+      <div class="trust-item">📞 SOPORTE POR WHATSAPP</div>
+      <div class="trust-item">⚡ SIN LLAMADAS, SIN CONFUSIONES</div>
+    </div>
   </div>
 
-  <!-- ─── FOOTER ────────────────────────────── -->
-  <footer class="site-footer">
-    <div class="footer-brand">
-      <img src="images/uploads/DOGCITY.png" alt="Dog City" class="footer-logo" />
-      <div>
-        <strong>Dog City</strong>
-        <span class="footer-note">Hot dogs y comida rápida con pedidos por WhatsApp</span>
+  <!-- FLOATING MOBILE BAR (ONLY MOBILE) -->
+  <div class="floating-mobile-bar-v3" id="mobileBarV3">
+    <div class="mbar-left">
+      <span id="mobileSelectedCount" class="badge">0</span>
+      <div class="mbar-tot">
+        <small>Total:</small>
+        <strong id="mobileOrderTotal">$0</strong>
       </div>
     </div>
-    <div class="footer-links">
-      <a class="social-link social-instagram" href="https://www.instagram.com/thedogcityoficial?igsh=MXR5dXJqb3Y2a2VlNQ==" target="_blank" rel="noreferrer noopener">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2Zm0 1.8A3.95 3.95 0 0 0 3.8 7.75v8.5a3.95 3.95 0 0 0 3.95 3.95h8.5a3.95 3.95 0 0 0 3.95-3.95v-8.5a3.95 3.95 0 0 0-3.95-3.95Zm8.95 1.35a1.15 1.15 0 1 1 0 2.3 1.15 1.15 0 0 1 0-2.3ZM12 6.86A5.14 5.14 0 1 1 6.86 12 5.15 5.15 0 0 1 12 6.86Zm0 1.8A3.34 3.34 0 1 0 15.34 12 3.34 3.34 0 0 0 12 8.66Z"/></svg>
-        <span>Instagram</span>
-      </a>
-      <a class="social-link social-tiktok" href="https://www.tiktok.com/@thedogcityoficial?_r=1&_t=ZS-95NQmDdnSsr" target="_blank" rel="noreferrer noopener">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.75h-3.13v12.9a2.83 2.83 0 1 1-2.83-2.83c.25 0 .5.03.74.1V8.93a5.96 5.96 0 1 0 5.22 5.91V8.28a7.9 7.9 0 0 0 4.61 1.48V6.69h-.84Z"/></svg>
-        <span>TikTok</span>
-      </a>
-      <a class="social-link social-whatsapp" href="https://wa.me/573143243707" target="_blank" rel="noreferrer noopener">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.52 3.48A11.84 11.84 0 0 0 12.08 0 11.94 11.94 0 0 0 1.83 17.9L0 24l6.29-1.76a11.92 11.92 0 0 0 5.79 1.48h.01A11.94 11.94 0 0 0 24 11.86a11.83 11.83 0 0 0-3.48-8.38Zm-8.44 18.2h-.01a9.9 9.9 0 0 1-5.04-1.38l-.36-.21-3.73 1.04 1-3.63-.23-.37a9.9 9.9 0 1 1 8.37 4.55Zm5.43-7.43c-.3-.15-1.75-.86-2.02-.96s-.47-.15-.67.15-.77.96-.94 1.16-.35.22-.65.07a8.1 8.1 0 0 1-2.38-1.47 8.95 8.95 0 0 1-1.65-2.06c-.17-.3 0-.46.13-.61s.3-.35.45-.52a1.9 1.9 0 0 0 .3-.5.56.56 0 0 0-.03-.52c-.08-.15-.67-1.62-.92-2.21-.24-.58-.48-.5-.67-.5h-.57a1.09 1.09 0 0 0-.79.37 3.3 3.3 0 0 0-1.02 2.45 5.74 5.74 0 0 0 1.2 3.06 13.11 13.11 0 0 0 5.04 4.46 17.1 17.1 0 0 0 1.68.62 4.04 4.04 0 0 0 1.85.12 3.02 3.02 0 0 0 1.98-1.4 2.46 2.46 0 0 0 .17-1.4c-.07-.12-.27-.2-.57-.35Z"/></svg>
-        <span>WhatsApp</span>
-      </a>
-    </div>
-    <span class="footer-note">📍 Dog City — Zona central de la ciudad</span>
-  </footer>
+    <button id="mobileGenerateBtn" class="btn-wapp-small-v3">VER PEDIDO &rsaquo;</button>
+  </div>
 
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module" src="js/main.js"></script>

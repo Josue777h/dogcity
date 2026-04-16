@@ -403,6 +403,7 @@ export function buildStoreApp() {
         generatedMessage.value = mensajeFinal;
         whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeFinal)}`;
         whatsappLink.classList.remove('disabled');
+        window.open(whatsappLink.href, '_blank');
       }
       return;
     }
@@ -470,6 +471,7 @@ export function buildStoreApp() {
         generatedMessage.value = mensajeFinal;
         whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeFinal)}`;
         whatsappLink.classList.remove('disabled');
+        window.open(whatsappLink.href, '_blank');
       }
       
       lastOrderSignature = signature;
