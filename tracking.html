@@ -9,112 +9,51 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="styles-v3.css" />
   <link rel="icon" href="images/uploads/DOGCITY.png" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <style>
     /* Estilos específicos para el Rastreador integrados con v3 */
-    .tracker-card-v3 {
-      max-width: 500px;
-      margin: 0 auto;
-      width: 100%;
-    }
-    .status-timeline-v3 {
-      position: relative;
-      margin-top: 30px;
-      padding-left: 10px;
-    }
-    .timeline-item-v3 {
-      display: flex;
-      gap: 20px;
-      margin-bottom: 25px;
-      position: relative;
-    }
+    .tracker-card-v3 { max-width: 500px; margin: 0 auto; width: 100%; }
+    .status-timeline-v3 { position: relative; margin-top: 30px; padding-left: 10px; }
+    .timeline-item-v3 { display: flex; gap: 20px; margin-bottom: 25px; position: relative; }
     /* Línea del timeline */
     .timeline-item-v3:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      left: 19px;
-      top: 40px;
-      width: 2px;
-      height: calc(100% - 15px);
-      background: #e2e8f0;
-      z-index: 1;
+      content: ''; position: absolute; left: 19px; top: 40px; width: 2px;
+      height: calc(100% - 15px); background: #e2e8f0; z-index: 1;
     }
-    .timeline-item-v3.active:not(:last-child)::after {
-      background: #ffc107;
-    }
-    .timeline-item-v3.completed:not(:last-child)::after {
-      background: #25d366;
-    }
-
+    .timeline-item-v3.active:not(:last-child)::after { background: #ffc107; }
+    .timeline-item-v3.completed:not(:last-child)::after { background: #25d366; }
     .timeline-icon-v3 {
-      width: 40px; height: 40px;
-      border-radius: 50%;
-      background: #f1f5f9;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.2rem;
-      flex-shrink: 0;
-      z-index: 2;
-      border: 3px solid #fff;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-      transition: all 0.3s ease;
+      width: 40px; height: 40px; border-radius: 50%; background: #f1f5f9;
+      display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+      flex-shrink: 0; z-index: 2; border: 3px solid #fff;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.3s ease;
     }
     .timeline-item-v3.active .timeline-icon-v3 {
-      background: #fff3e0;
-      color: #e65100;
-      border-color: #ffc107;
-      transform: scale(1.1);
+      background: #fff3e0; color: #e65100; border-color: #ffc107; transform: scale(1.1);
     }
     .timeline-item-v3.completed .timeline-icon-v3 {
-      background: #e8f5e9;
-      color: #2e7d32;
-      border-color: #25d366;
+      background: #e8f5e9; color: #2e7d32; border-color: #25d366;
     }
-
-    .timeline-content-v3 {
-      padding-top: 4px;
-    }
-    .timeline-content-v3 h3 {
-      margin: 0; font-size: 0.95rem; font-weight: 800; color: #1a1a1a;
-    }
-    .timeline-content-v3 p {
-      margin: 2px 0 0; font-size: 0.8rem; color: #64748b; font-weight: 500;
-    }
-
-    .order-details-box {
-      margin-top: 25px;
-      padding: 16px;
-      background: #f8fafc;
-      border-radius: 16px;
-      border: 1px solid #e2e8f0;
-    }
-    .detail-row {
-      display: flex; justify-content: space-between;
-      margin-bottom: 8px; font-size: 0.85rem;
-    }
+    .timeline-content-v3 { padding-top: 4px; }
+    .timeline-content-v3 h3 { margin: 0; font-size: 0.95rem; font-weight: 800; color: #1a1a1a; }
+    .timeline-content-v3 p { margin: 2px 0 0; font-size: 0.8rem; color: #64748b; font-weight: 500; }
+    .order-details-box { margin-top: 25px; padding: 16px; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; }
+    .detail-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem; }
     .detail-row span:first-child { color: #64748b; font-weight: 600; }
     .detail-row span:last-child { color: #1a1a1a; font-weight: 800; }
-
-    .pulse-amber {
-      animation: pulse-amber 2s infinite;
-    }
+    .pulse-amber { animation: pulse-amber 2s infinite; }
     @keyframes pulse-amber {
       0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
       70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
       100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
     }
-    
-    .loading-wrap {
-      padding: 60px 20px; text-align: center;
-    }
+    .loading-wrap { padding: 60px 20px; text-align: center; }
     .back-btn-v3 {
-      display: block; width: 100%; text-align: center;
-      margin-top: 20px; padding: 12px;
-      background: #f1f5f9; color: #475569;
-      border-radius: 12px; text-decoration: none;
-      font-weight: 700; font-size: 0.85rem;
-      transition: all 0.2s;
+      display: block; width: 100%; text-align: center; margin-top: 20px; padding: 12px;
+      background: #f1f5f9; color: #475569; border-radius: 12px; text-decoration: none;
+      font-weight: 700; font-size: 0.85rem; transition: all 0.2s;
     }
     .back-btn-v3:hover { background: #e2e8f0; color: #1e293b; }
   </style>
@@ -123,8 +62,6 @@
 
   <div class="global-bg-wrapper">
     <main class="app-card">
-      
-      <!-- ── HEADER ── -->
       <header class="app-card-header">
         <a href="index.html" class="brand-v3">
           <img src="images/uploads/DOGCITY.png" alt="Dog City" />
@@ -138,175 +75,45 @@
 
       <div class="admin-body-wrap">
         <div id="trackingContent" class="tracker-card-v3">
-          <!-- El contenido se inyecta por JS -->
           <div class="loading-wrap">
             <div class="loading-spinner"></div>
             <p style="margin-top: 15px; color:#666; font-weight:600;">Conectando con la cocina...</p>
           </div>
         </div>
       </div>
-
     </main>
   </div>
 
   <footer class="site-footer">
-    <div class="footer-brand">
-      <strong>Dog City</strong>
-      <span class="footer-note">Estado en tiempo real de tu pedido.</span>
+    <div class="footer-container-v3">
+      <div class="footer-brand-mini">DOG CITY</div>
+      <nav class="footer-nav-mini">
+        <a href="index.html">Tienda</a>
+        <a href="tracking.html">Rastreo</a>
+        <a href="admin.html">Admin</a>
+      </nav>
+      <div class="footer-socials-mini">
+        <a href="#" class="social-mini-link"><i class="fab fa-instagram"></i></a>
+        <a href="#" class="social-mini-link"><i class="fab fa-facebook-f"></i></a>
+        <a href="https://wa.me/tu_numero" class="social-mini-link"><i class="fab fa-whatsapp"></i></a>
+      </div>
     </div>
   </footer>
 
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    window.SUPABASE_URL = "https://diaphikeanfkapoeynae.supabase.co";
-    window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpYXBoaWtlYW5ma2Fwb2V5bmFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTc1NDEsImV4cCI6MjA5MTE3MzU0MX0.eVAPQ7py4bfu3mTtzqv1dng5Czd2S_oGUxSOm3UOC58";
-  </script>
-  <script type="module" src="js/main.js"></script>
-  <script defer>
-    const trackingContent = document.getElementById('trackingContent');
-    let realtimeChannel = null;
-
-    function formatMoney(n) {
-      return '$' + Number(n).toLocaleString('es-CO');
-    }
-
-    function getSupabaseClient() {
-      if (!window.supabase?.createClient) throw new Error('Supabase no cargó');
-      return window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-    }
-
-    async function waitForSupabase(timeoutMs = 6000) {
-      const start = Date.now();
-      while (!window.supabase?.createClient) {
-        if (Date.now() - start > timeoutMs) throw new Error('Timeout Supabase');
-        await new Promise(r => setTimeout(r, 120));
-      }
-    }
-
-    async function loadOrder(orderId) {
-      try {
-        const supabase = getSupabaseClient();
-        const { data, error } = await supabase
-          .from('pedidos')
-          .select('*')
-          .eq('id', Number(orderId))
-          .single();
-
-        if (error || !data) {
-          showError('❌ El pedido no existe o fue eliminado.');
-          return;
-        }
-
-        displayOrderTracking(data);
-        setupRealtimeListener(data.id);
-      } catch (err) {
-        showError('❌ Error al conectar con el servidor.');
-      }
-    }
-
-    function showError(msg) {
-      trackingContent.innerHTML = `
-        <div class="admin-card-v3" style="text-align:center;">
-          <h2 style="font-size:3rem; margin-bottom:10px;">😕</h2>
-          <p style="color:#e53e3e; font-weight:700;">${msg}</p>
-          <a href="index.html" class="back-btn-v3">Volver a la tienda</a>
-        </div>
-      `;
-    }
-
-    function displayOrderTracking(order) {
-      const status = (order.estado || 'nuevo').toLowerCase();
-      const states = ['nuevo', 'preparando', 'listo'];
-      const curIdx = states.indexOf(status);
-
-      const stateTexts = {
-        'nuevo':      { icon: '📋', title: 'Recibido', desc: '¡Recibimos tu pedido en la cocina!' },
-        'preparando': { icon: '👨‍🍳', title: 'Preparando', desc: 'Tus perros calientes están en el fuego.' },
-        'listo':      { icon: '🛵', title: '¡Listo!', desc: 'Tu pedido está listo o en camino.' }
-      };
-
-      let timelineHtml = states.map((s, i) => {
-        const isActive = curIdx === i;
-        const isCompleted = curIdx > i;
-        const info = stateTexts[s];
-        
-        return `
-          <div class="timeline-item-v3 ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}">
-            <div class="timeline-icon-v3 ${isActive ? 'pulse-amber' : ''}">
-              ${isCompleted ? '✅' : info.icon}
-            </div>
-            <div class="timeline-content-v3">
-              <h3>${info.title}</h3>
-              <p>${info.desc}</p>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      trackingContent.innerHTML = `
-        <div class="admin-card-v3">
-          <div style="text-align:center; margin-bottom:20px;">
-            <h3 style="font-size:1.2rem; margin-bottom:5px;">Pedido #${order.id}</h3>
-            <span class="stock-badge ${status === 'listo' ? 'is-available' : 'is-warning'}" style="font-size:0.75rem; padding:6px 15px;">
-              ${status === 'nuevo' ? 'Orden Recibida' : status === 'preparando' ? 'En Preparación' : 'Listo para Entrega'}
-            </span>
-          </div>
-
-          <div class="status-timeline-v3">
-            ${timelineHtml}
-          </div>
-
-          <div class="order-details-box">
-            <div class="detail-row"><span>👤 Cliente</span><span>${order.nombre}</span></div>
-            <div class="detail-row"><span>💰 Total</span><span style="color:#c53030;">${formatMoney(order.total)}</span></div>
-            <div class="detail-row" style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
-              <span>📍 Entrega</span><span style="font-size:0.75rem; max-width:60%; text-align:right;">${order.direccion}</span>
-            </div>
-          </div>
-
-          <a href="index.html" class="back-btn-v3">← Volver a la tienda</a>
-        </div>
-
-        ${status === 'listo' ? `
-          <div class="admin-card-v3" style="margin-top:15px; background:#e8f5e9; border-color:#2563eb33; text-align:center;">
-            <p style="margin:0; font-weight:700; color:#2e7d32; font-size:0.85rem;">
-              🥳 ¡Tu pedido está listo! Prepara el apetito.
-            </p>
-          </div>
-        ` : ''}
-      `;
-    }
-
-    function setupRealtimeListener(orderId) {
-      if (realtimeChannel) realtimeChannel.unsubscribe();
+  <script type="module">
+    import { buildTrackingUI } from './js/ui/order.js';
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      const container = document.getElementById('trackingContent');
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id') || params.get('pedido');
       
-      const supabase = getSupabaseClient();
-      realtimeChannel = supabase
-        .channel(`track-${orderId}`)
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pedidos', filter: `id=eq.${orderId}` }, (payload) => {
-          displayOrderTracking(payload.new);
-        })
-        .subscribe();
+      const tracker = buildTrackingUI(container);
+      tracker.init(id);
 
-      // Backup Polling
-      const interval = setInterval(async () => {
-        const { data } = await supabase.from('pedidos').select('*').eq('id', orderId).single();
-        if (data) displayOrderTracking(data);
-      }, 5000);
-
-      window.addEventListener('beforeunload', () => {
-        clearInterval(interval);
-        if (realtimeChannel) realtimeChannel.unsubscribe();
-      });
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id') || params.get('pedido');
-    if (id) {
-      waitForSupabase().then(() => loadOrder(id)).catch(() => showError('Error de conexión.'));
-    } else {
-      showError('No se encontró ID de pedido.');
-    }
+      window.addEventListener('beforeunload', () => tracker.cleanup());
+    });
   </script>
 </body>
 </html>
