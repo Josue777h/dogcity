@@ -1202,3 +1202,89 @@ body.theme-dark-global {
   cursor: pointer; transition: background 0.2s; font-family: inherit;
 }
 .btn-danger-v3:hover { background: #FFCDD2; }
+/* ═══════════════════════════════════════════════════════
+   ADMIN PROFILE PANEL — Modern Identity Section
+   ═══════════════════════════════════════════════════════ */
+.profile-header-v3 {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 25px;
+}
+
+.profile-avatar-large {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #1A1A1A, #333);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.profile-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.profile-detail-item {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #edf2f7;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-detail-item .label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+}
+
+.profile-detail-item strong {
+  font-size: 0.95rem;
+  color: #1a202c;
+  font-weight: 700;
+}
+
+.profile-detail-item code {
+  font-family: 'Courier New', Courier, monospace;
+  background: #ebf4ff;
+  color: #2b6cb0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.profile-actions-v3 {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.profile-actions-v3 .btn-wapp-massive {
+  max-width: 300px;
+}
+
+@media(max-width: 640px) {
+  .profile-header-v3 {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+  .profile-actions-v3 {
+    justify-content: center;
+  }
+}

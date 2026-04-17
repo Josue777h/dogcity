@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="Panel de administración de Dog City." />
+  <meta name="description" content="Panel de administración de CAMLY." />
   <meta name="theme-color" content="#1A1A1A" />
-  <title>Dog City | Panel Admin</title>
+  <title>CAMLY | Panel Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -29,6 +29,9 @@
           <button id="adminLoginBtn" class="btn-wapp-massive" type="button">Entrar al panel</button>
         </div>
         <small id="adminPinStatus">Solo usuarios autenticados pueden gestionar el menú.</small>
+        <div style="margin-top:20px; border-top:1px solid #eee; padding-top:15px; font-size:0.85rem; color:#64748b;">
+          ¿No tienes una cuenta? <a href="registro.html" style="color:var(--accent-red); font-weight:700; text-decoration:none;">Regístrate aquí</a>
+        </div>
       </div>
     </section>
 
@@ -39,7 +42,7 @@
         <a href="index.html" class="brand-v3">
           <img src="images/uploads/DOGCITY.png" alt="Dog City" />
           <div class="brand-text-v3">
-            <strong>DOG CITY</strong>
+            <strong>CAMLY</strong>
             <span>PANEL ADMIN ⚙️</span>
           </div>
         </a>
@@ -57,6 +60,7 @@
           <button class="admin-tab" data-tab="orders"   role="tab" type="button">🛒 Pedidos</button>
           <button class="admin-tab" data-tab="stats"    role="tab" type="button">📊 Estadísticas</button>
           <button class="admin-tab" data-tab="drivers"  role="tab" type="button">🚚 Repartidores</button>
+          <button class="admin-tab" data-tab="profile"  role="tab" type="button">👤 Mi Perfil</button>
         </nav>
 
         <!-- ══ PRODUCTOS ════════════════════════════ -->
@@ -157,6 +161,41 @@
           </div>
         </div>
 
+        <!-- ══ MI PERFIL ══════════════════════════════ -->
+        <div id="profilePanel" class="admin-panel">
+          <div class="admin-card-v3 full-width-card">
+            <header class="profile-header-v3">
+              <div class="profile-avatar-large"><i class="fas fa-store"></i></div>
+              <div>
+                <h3 id="profileBusinessName">Cargando negocio...</h3>
+                <p id="profileBusinessStatus" class="subtitle-v3">Negocio verificado ✅</p>
+              </div>
+            </header>
+
+            <div class="profile-details-grid">
+              <div class="profile-detail-item">
+                <span class="label">📧 Correo del Administrador</span>
+                <strong id="profileAdminEmail">Cargando...</strong>
+              </div>
+              <div class="profile-detail-item">
+                <span class="label">📱 WhatsApp de Pedidos</span>
+                <strong id="profileBusinessPhone">Cargando...</strong>
+              </div>
+              <div class="profile-detail-item">
+                <span class="label">🔗 Identificador Único (Slug)</span>
+                <code id="profileBusinessSlug">Cargando...</code>
+              </div>
+            </div>
+
+            <div class="profile-actions-v3">
+              <a id="profileStoreLink" href="#" target="_blank" class="btn-wapp-massive">
+                <strong><i class="fas fa-external-link-alt"></i> VER MI TIENDA PÚBLICA</strong>
+                <span>camly.app/tienda</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
         <!-- ══ REPARTIDORES ══════════════════════════ -->
         <div id="driversPanel" class="admin-panel">
           <div class="admin-card-v3 full-width-card">
@@ -177,7 +216,7 @@
 
     <footer class="site-footer">
       <div class="footer-container-v3">
-        <div class="footer-brand-mini">DOG CITY</div>
+        <div class="footer-brand-mini">CAMLY</div>
         <nav class="footer-nav-mini">
           <a href="index.html">Tienda</a>
           <a href="tracking.html">Rastreo</a>

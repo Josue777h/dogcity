@@ -89,18 +89,18 @@ export function playNewOrderSound() {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
-    
+
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    
+
     const now = audioContext.currentTime;
     oscillator.frequency.setValueAtTime(800, now);
     gainNode.gain.setValueAtTime(0.3, now);
     gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-    
+
     oscillator.start(now);
     oscillator.stop(now + 0.1);
-    
+
     const osc2 = audioContext.createOscillator();
     osc2.connect(gainNode);
     osc2.frequency.setValueAtTime(1000, now + 0.15);
@@ -111,4 +111,12 @@ export function playNewOrderSound() {
   } catch (error) {
     console.warn('No se pudo reproducir sonido:', error);
   }
+}
+/**
+ * js/utils.js (Añadir al final)
+ */
+
+export function obtenerNegocioDesdeURL() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("negocio") || "dogcity";
 }

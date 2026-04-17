@@ -60,6 +60,12 @@ export function buildProductRecord(product, schema) {
   if (schema.fields.image) record[schema.fields.image] = product.image || DEFAULT_IMAGE;
   if (schema.fields.category) record[schema.fields.category] = product.categoria || 'Varios';
   if (schema.fields.available) record[schema.fields.available] = product.disponible !== false;
+  
+  // Campo SaaS central: negocio_id
+  if (product.negocio_id) {
+    record.negocio_id = product.negocio_id;
+  }
+  
   return record;
 }
 
@@ -72,34 +78,58 @@ export function normalizeProductRow(row) {
     unit: row.unidad || row.unit || 'unidad',
     image: row.imagen || row.image || DEFAULT_IMAGE,
     categoria: row.categoria || row.category || 'Varios',
-    disponible: row.disponible ?? row.available ?? true
+    disponible: row.disponible ?? row.available ?? true,
+    negocio_id: row.negocio_id
   };
 }
 
-export async function loadProducts() {
+export async function obtenerNegocioId(nombre) {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("negocios")
+    .select("id, nombre_visible, telefono")
+    .eq("nombre", nombre)
+    .single();
+
+  if (error) {
+    console.error("Error negocio:", error);
+    return null;
+  }
+  return data;
+}
+
+export async function loadProducts(negocioId = null) {
   const supabase = getSupabaseClient();
   const schema = await getProductSchema();
   
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('productos')
       .select(schema.select)
       .order('id', { ascending: false });
+
+    if (negocioId) {
+      query = query.eq('negocio_id', negocioId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     
     const products = (data || []).map(normalizeProductRow);
     
     if (products.length > 0) {
+      const cacheKey = negocioId ? `dogcity_products_cache_${negocioId}` : 'dogcity_products_cache';
       try {
-        localStorage.setItem('dogcity_products_cache', JSON.stringify(products));
-        localStorage.setItem('dogcity_cache_time', Date.now().toString());
+        localStorage.setItem(cacheKey, JSON.stringify(products));
+        localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
       } catch (e) {}
       return products;
     }
   } catch (error) {
+    const cacheKey = negocioId ? `dogcity_products_cache_${negocioId}` : 'dogcity_products_cache';
     try {
-      const cached = localStorage.getItem('dogcity_products_cache');
+      const cached = localStorage.getItem(cacheKey);
       if (cached) return JSON.parse(cached);
     } catch (e) {}
   }
@@ -241,13 +271,19 @@ export async function updateProduct(productId, productData) {
   return true;
 }
 
-export async function loadOrders() {
+export async function loadOrders(negocioId = null) {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from('pedidos')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(50);
+
+  if (negocioId) {
+    query = query.eq('negocio_id', negocioId);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return data || [];
 }
@@ -268,6 +304,62 @@ export async function seedDefaultCatalogIfEmpty() {
 
   if (error) throw error;
   return true;
+}
+
+export async function registerBusiness({ email, password, businessName, phone }) {
+  const supabase = getSupabaseClient();
+  
+  // 1. Crear usuario en Auth
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email,
+    password
+  });
+
+  if (authError) throw authError;
+  const user = authData.user;
+
+  // 2. Crear negocio en BD
+  const slug = businessName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
+  const { data: negocio, error: negocioError } = await supabase
+    .from('negocios')
+    .insert({
+      nombre: slug,
+      nombre_visible: businessName,
+      telefono: phone,
+      user_id: user.id
+    })
+    .select()
+    .single();
+
+  if (negocioError) throw negocioError;
+
+  // 3. Crear productos de ejemplo (Opcional, no debe bloquear el registro)
+  try {
+    const demoProducts = [
+      {
+        nombre: 'Hamburguesa Clásica',
+        precio: 15000,
+        descripcion: 'Carne de res, queso, lechuga y tomate.',
+        categoria: 'Hamburguesas',
+        negocio_id: negocio.id,
+        imagen: 'images/uploads/foto.png'
+      },
+      {
+        nombre: 'Papas Fritas',
+        precio: 8000,
+        descripcion: 'Papas crocantes con sal y salsas.',
+        categoria: 'Acompañantes',
+        negocio_id: negocio.id,
+        imagen: 'images/stickers.svg'
+      }
+    ];
+
+    await supabase.from('productos').insert(demoProducts);
+  } catch (demoErr) {
+    console.warn('No se pudieron crear los productos demo, pero el negocio se creó ok:', demoErr);
+  }
+
+  return { user, negocio };
 }
 
 export async function saveOrderToSupabase(payload) {

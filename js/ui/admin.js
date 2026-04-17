@@ -4,7 +4,8 @@ import {
   escapeHtml, 
   resolveProductImage, 
   pickPlaceholderImage,
-  playNewOrderSound 
+  playNewOrderSound,
+  obtenerNegocioDesdeURL
 } from '../utils.js';
 import { 
   loadProducts, 
@@ -19,7 +20,8 @@ import {
   seedDefaultCatalogIfEmpty, 
   uploadProductImage, 
   subscribeToOrdersRealtime,
-  getSupabaseClient 
+  getSupabaseClient,
+  obtenerNegocioId
 } from '../supabase.js';
 import { getDeliveryDrivers, saveDeliveryDrivers } from '../cart.js';
 import { showToast, requestNotificationPermission, showOrderNotification } from './toast.js';
@@ -30,7 +32,8 @@ export function buildAdminApp() {
     orders: [],
     drivers: [],
     editingProductId: null,
-    charts: {}
+    charts: {},
+    negocio: null
   };
 
   // ── DOM refs ──────────────────────────────────────────────
@@ -190,7 +193,7 @@ export function buildAdminApp() {
 
   async function loadAndRenderOrders() {
     const prev = state.orders.length;
-    state.orders = await loadOrders();
+    state.orders = await loadOrders(state.negocio?.id);
     renderOrders();
     if (statsPanel?.classList.contains('active')) renderStats();
     if (state.orders.length > prev && prev > 0) {
@@ -213,7 +216,7 @@ export function buildAdminApp() {
       if (isNaN(idx) || !drivers[idx]) return;
       driver = drivers[idx];
     }
-    const msg = `🚚 *Entrega Dog City*\n\n📍 *Ubicación:*\n${order.ubicacion_link}\n\n👤 *Cliente:* ${order.nombre}\n📞 *Tel:* ${order.telefono}\n💰 *Total:* ${formatMoney(order.total)}\n${order.entrega_metodo === 'envio' ? '🛵 Domicilio' : '🏠 Recoger en local'}`;
+    const msg = `🚚 *Entrega ${state.negocio?.nombre_visible || 'Local'}*\n\n📍 *Ubicación:*\n${order.ubicacion_link}\n\n👤 *Cliente:* ${order.nombre}\n📞 *Tel:* ${order.telefono}\n💰 *Total:* ${formatMoney(order.total)}\n${order.entrega_metodo === 'envio' ? '🛵 Domicilio' : '🏠 Recoger en local'}`;
     window.open(`https://wa.me/${driver.numero}?text=${encodeURIComponent(msg)}`, '_blank');
   }
 
@@ -340,27 +343,84 @@ export function buildAdminApp() {
     });
   }
 
+  // ── Profile ────────────────────────────────────────────────
+  async function renderProfile() {
+    if (!state.negocio) return;
+    
+    const bizName = $('profileBusinessName');
+    const bizPhone = $('profileBusinessPhone');
+    const bizSlug = $('profileBusinessSlug');
+    const bizLink = $('profileStoreLink');
+    const adminEmail = $('profileAdminEmail');
+
+    if (bizName) bizName.textContent = state.negocio.nombre_visible || 'Sin nombre';
+    if (bizPhone) bizPhone.textContent = state.negocio.telefono || 'Sin teléfono';
+    if (bizSlug) bizSlug.textContent = state.negocio.nombre || 'Sin slug';
+    
+    if (bizLink) {
+      const storeUrl = `${window.location.origin}/index.html?negocio=${state.negocio.nombre}`;
+      bizLink.href = storeUrl;
+      const displaySpan = bizLink.querySelector('span');
+      if (displaySpan) displaySpan.textContent = `camly.app/${state.negocio.nombre}`;
+    }
+
+    // Obtener email del usuario autenticado
+    try {
+      const session = await getSupabaseSession();
+      if (session && adminEmail) {
+        adminEmail.textContent = session.user.email;
+      }
+    } catch (e) {
+      if (adminEmail) adminEmail.textContent = 'No disponible';
+    }
+  }
+
   // ── Tabs ──────────────────────────────────────────────────
   function switchTab(target) {
     document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
     document.querySelector(`.admin-tab[data-tab="${target}"]`)?.classList.add('active');
-    [productsPanel, ordersPanel, statsPanel, driversPanel].forEach(p => p?.classList.remove('active'));
+    [
+      productsPanel, 
+      ordersPanel, 
+      statsPanel, 
+      driversPanel, 
+      $('profilePanel')
+    ].forEach(p => p?.classList.remove('active'));
+    
     $(`${target}Panel`)?.classList.add('active');
+    
     if (target === 'orders') loadAndRenderOrders();
     if (target === 'stats') renderStats();
     if (target === 'drivers') renderDrivers();
+    if (target === 'profile') renderProfile();
   }
 
   // ── Init ──────────────────────────────────────────────────
   async function init() {
+    // 1. Detectar negocio antes que nada
+    try {
+      const nombreNegocio = obtenerNegocioDesdeURL();
+      state.negocio = await obtenerNegocioId(nombreNegocio);
+      
+      if (!state.negocio) {
+        console.warn(`No se encontró el negocio "${nombreNegocio}".`);
+      } else {
+        const brandTitle = document.querySelector('.brand-text-v3 strong');
+        if (brandTitle) brandTitle.textContent = state.negocio.nombre_visible || 'PANEL ADMIN';
+      }
+    } catch (err) {
+      console.error('Error detectando negocio:', err);
+    }
+
     const supabase = getSupabaseClient();
 
-    supabase.auth.onAuthStateChange((_, session) => {
+    supabase.auth.onAuthStateChange(async (_, session) => {
       setAdminAuthenticated(session);
       if (session) {
-        seedDefaultCatalogIfEmpty()
-          .then(() => loadProducts())
-          .then(products => { state.products = products; renderProducts(); });
+        // En SaaS, la semilla debe ser manual o controlada, 
+        // pero cargamos productos del negocio actual
+        state.products = await loadProducts(state.negocio?.id);
+        renderProducts();
         loadAndRenderOrders();
       }
     });
@@ -368,7 +428,7 @@ export function buildAdminApp() {
     const session = await getSupabaseSession();
     setAdminAuthenticated(session);
     if (session) {
-      state.products = await loadProducts();
+      state.products = await loadProducts(state.negocio?.id);
       renderProducts();
       loadAndRenderOrders();
     }
@@ -390,7 +450,8 @@ export function buildAdminApp() {
           unit: fd.get('unit') || 'unidad',
           categoria: fd.get('category') || 'Varios',
           disponible: fd.get('disponible') === 'on',
-          image: imageUrl
+          image: imageUrl,
+          negocio_id: state.negocio?.id || null
         };
 
         if (state.editingProductId) {
@@ -401,7 +462,7 @@ export function buildAdminApp() {
           showToast('Producto creado ✅', 'success');
         }
         resetForm();
-        state.products = await loadProducts();
+        state.products = await loadProducts(state.negocio?.id);
         renderProducts();
       } catch (err) {
         showToast(err.message, 'error');
@@ -440,7 +501,7 @@ export function buildAdminApp() {
         if (confirm('¿Eliminar este producto permanentemente?')) {
           await deleteProduct(id);
           showToast('Producto eliminado', 'warning');
-          state.products = await loadProducts();
+          state.products = await loadProducts(state.negocio?.id);
           renderProducts();
         }
       }
@@ -451,14 +512,14 @@ export function buildAdminApp() {
 
     // Auth
     adminLoginBtn?.addEventListener('click', async () => {
+      const email = adminEmailInput.value;
+      const password = adminPasswordInput.value;
       try {
-        if (adminLoginBtn) adminLoginBtn.textContent = 'Entrando...';
-        await signInAdmin(adminEmailInput.value, adminPasswordInput.value);
-        showToast('¡Bienvenido! 👋', 'success');
-      } catch (e) {
-        showToast(e.message, 'error');
-      } finally {
-        if (adminLoginBtn) adminLoginBtn.textContent = 'Entrar al panel';
+        const session = await signInAdmin(email, password);
+        setAdminAuthenticated(session);
+        showToast('¡Bienvenido al panel!', 'success');
+      } catch (err) {
+        showToast('Error de acceso', 'error');
       }
     });
 
@@ -468,11 +529,17 @@ export function buildAdminApp() {
 
     adminLogoutBtn?.addEventListener('click', async () => {
       await signOutAdmin();
-      showToast('Sesión cerrada', 'info');
+      setAdminAuthenticated(null);
+      showToast('Sesión cerrada');
     });
 
     // Actualizar pedidos
-    refreshOrdersBtn?.addEventListener('click', loadAndRenderOrders);
+    refreshOrdersBtn?.addEventListener('click', async () => {
+      state.orders = await loadOrders(state.negocio?.id);
+      renderOrders();
+      updateStatsAndCharts();
+      showToast('Pedidos actualizados');
+    });
 
     // Agregar repartidor
     addDriverBtn?.addEventListener('click', () => {
@@ -487,8 +554,14 @@ export function buildAdminApp() {
       showToast(`Repartidor "${nombre}" agregado 🚚`, 'success');
     });
 
-    // Realtime
-    subscribeToOrdersRealtime(() => loadAndRenderOrders());
+    // Realtime (Filtrado por negocio)
+    subscribeToOrdersRealtime(async (payload) => {
+      const newOrder = payload.new;
+      // Solo recargar si pertenece a este negocio o si no hay contexto (fallback)
+      if (!state.negocio || !newOrder || !newOrder.negocio_id || newOrder.negocio_id === state.negocio.id) {
+        await loadAndRenderOrders();
+      }
+    });
 
     // Tabs
     document.querySelectorAll('.admin-tab').forEach(tab => {

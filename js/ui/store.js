@@ -3,7 +3,8 @@ import {
   formatMoney, 
   escapeHtml, 
   resolveProductImage, 
-  playNewOrderSound 
+  playNewOrderSound,
+  obtenerNegocioDesdeURL
 } from '../utils.js';
 import { 
   loadProducts, 
@@ -11,7 +12,8 @@ import {
   seedDefaultCatalogIfEmpty, 
   uploadProductImage, 
   uploadOrderReceipt,
-  subscribeToProductsRealtime 
+  subscribeToProductsRealtime,
+  obtenerNegocioId
 } from '../supabase.js';
 import { 
   CART_STORAGE_KEY, 
@@ -42,7 +44,8 @@ export function buildStoreApp() {
     locationLabel: '',
     lastChangedProductId: null,
     currentOrderNumber: null,
-    isLoading: true
+    isLoading: true,
+    negocio: null
   };
 
   const productsList = $('productsList');
@@ -298,7 +301,7 @@ export function buildStoreApp() {
     const locationLine = state.locationLink || 'No compartida';
 
     return [
-      `Hola Dog City \u{1F44B}, quiero hacer un pedido.`,
+      `Hola! \u{1F44B}, quiero hacer un pedido en ${state.negocio?.nombre_visible || 'la tienda'}.`,
       '',
       `\u{1F32D} Productos:`,
       lineItems,
@@ -318,6 +321,10 @@ export function buildStoreApp() {
       '',
       `Gracias \u{1F64C}`
     ].join('\n');
+  }
+
+  function buildWhatsAppNumber() {
+    return (state.negocio?.telefono || WHATSAPP_PHONE).replace(/\D/g, '');
   }
 
   function buildTrackingLink(pedidoId) {
@@ -410,7 +417,7 @@ export function buildStoreApp() {
       const mensajeFinal = `\u{1F9FE} Pedido #${lastOrderId}\n\n${message}\n\n\u{1F517} Seguimiento:\n${trackingLinkFinal}`;
       if (generatedMessage) {
         generatedMessage.value = mensajeFinal;
-        whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeFinal)}`;
+        whatsappLink.href = `https://wa.me/${buildWhatsAppNumber()}?text=${encodeURIComponent(mensajeFinal)}`;
         whatsappLink.classList.remove('disabled');
         window.open(whatsappLink.href, '_blank');
       }
@@ -455,7 +462,8 @@ export function buildStoreApp() {
         entrega_metodo: deliveryMethod,
         pago_metodo: paymentMethod,
         comprobante_url: receiptUrl,
-        token: `T-${Date.now()}`
+        token: `T-${Date.now()}`,
+        negocio_id: state.negocio?.id || null
       };
 
       console.log('📦 Intentando guardar pedido:', payload);
@@ -478,7 +486,7 @@ export function buildStoreApp() {
       
       if (generatedMessage) {
         generatedMessage.value = mensajeFinal;
-        whatsappLink.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(mensajeFinal)}`;
+        whatsappLink.href = `https://wa.me/${buildWhatsAppNumber()}?text=${encodeURIComponent(mensajeFinal)}`;
         whatsappLink.classList.remove('disabled');
         window.open(whatsappLink.href, '_blank');
       }
@@ -645,18 +653,37 @@ export function buildStoreApp() {
       }
     });
 
-    // Carga inicial de productos
+    // Carga inicial de datos (Negocio + Productos)
     setTimeout(async () => {
-      state.products = await loadProducts();
-      state.isLoading = false;
-      renderCategories();
-      renderProducts();
-      updateOrderDisplay();
-    }, 800);
+      try {
+        const nombreNegocio = obtenerNegocioDesdeURL();
+        state.negocio = await obtenerNegocioId(nombreNegocio);
+        
+        if (!state.negocio) {
+          console.warn(`No se encontró el negocio "${nombreNegocio}". Cargando por defecto.`);
+        }
 
-    // Suscripción en tiempo real
+        state.products = await loadProducts(state.negocio?.id);
+        state.isLoading = false;
+        renderCategories();
+        renderProducts();
+        updateOrderDisplay();
+
+        // Si el negocio tiene un nombre visible, actualizar el título
+        if (state.negocio?.nombre_visible) {
+          const brandTitle = document.querySelector('.brand-text-v3 strong');
+          if (brandTitle) brandTitle.textContent = state.negocio.nombre_visible;
+        }
+
+      } catch (err) {
+        console.error('Error al inicializar tienda:', err);
+        showToast('Error cargando la tienda.', 'error');
+      }
+    }, 400);
+
+    // Suscripción en tiempo real filtrada
     subscribeToProductsRealtime(async () => {
-      state.products = await loadProducts();
+      state.products = await loadProducts(state.negocio?.id);
       renderCategories();
       renderProducts();
       updateOrderDisplay();
