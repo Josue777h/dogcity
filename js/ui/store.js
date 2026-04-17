@@ -182,7 +182,7 @@ export function buildStoreApp() {
     if (orderTotal) orderTotal.textContent = formatMoney(total);
     if (selectedCount) selectedCount.textContent = `${units} ${units === 1 ? 'producto seleccionado' : 'productos seleccionados'}`;
     if (mobileOrderTotal) mobileOrderTotal.textContent = formatMoney(total);
-    if (mobileSelectedCount) mobileSelectedCount.textContent = `${units} ${units === 1 ? 'producto' : 'productos'}`;
+    if (mobileSelectedCount) mobileSelectedCount.textContent = units;
     if (floatingOrderTotal) floatingOrderTotal.textContent = formatMoney(total);
     if (floatingSelectedCount) floatingSelectedCount.textContent = `${units} ${units === 1 ? 'producto' : 'productos'}`;
 
