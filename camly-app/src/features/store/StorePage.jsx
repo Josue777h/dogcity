@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { Menu, X, Settings, Home, ShoppingBag, Info, Phone, MessageCircle, Clock, Search } from 'lucide-react';
-import { useBusinessStore, useCartStore, useToastStore } from '../stores';
-import { fetchBusiness, fetchProducts, subscribeToProducts } from '../lib/supabase';
-import { formatMoney } from '../lib/utils';
-import ProductCard from '../components/ProductCard';
-import OrderDrawer from '../components/OrderDrawer';
+import { useBusinessStore, useCartStore, useToastStore } from '../../stores';
+import { fetchBusiness, fetchProducts, subscribeToProducts } from '../../lib/supabase';
+import { formatMoney } from '../../lib/utils';
+import ProductCard from './ProductCard';
+import OrderDrawer from './OrderDrawer';
 
 export default function StorePage() {
   const [searchParams] = useSearchParams();

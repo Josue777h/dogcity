@@ -5,9 +5,9 @@ import {
   AlertCircle, ChevronRight, Store, Search, Filter, ArrowUpRight,
   TrendingUp, Users, DollarSign
 } from 'lucide-react';
-import { getSupabase, signIn, fetchProducts, createProduct, updateProduct, deleteProduct, fetchOrders, updateOrderStatus, subscribeToOrders, uploadImage } from '../lib/supabase';
-import { useAuthStore, useToastStore, useBusinessStore } from '../stores';
-import { formatMoney } from '../lib/utils';
+import { getSupabase, signIn, fetchProducts, createProduct, updateProduct, deleteProduct, fetchOrders, updateOrderStatus, subscribeToOrders, uploadImage } from '../../lib/supabase';
+import { useAuthStore, useToastStore, useBusinessStore } from '../../stores';
+import { formatMoney } from '../../lib/utils';
 
 const TABS = [
   { id: 'orders', label: 'Pedidos', icon: ShoppingBag },

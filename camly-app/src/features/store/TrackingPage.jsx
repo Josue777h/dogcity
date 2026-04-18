@@ -5,8 +5,8 @@ import {
   AlertCircle, ArrowLeft, Store, MessageCircle,
   MapPin, ShoppingCart, Loader2
 } from 'lucide-react';
-import { getSupabase } from '../lib/supabase';
-import { formatMoney } from '../lib/utils';
+import { getSupabase } from '../../lib/supabase';
+import { formatMoney } from '../../lib/utils';
 
 const STEPS = [
   { id: 'nuevo', label: 'Recibido', icon: Clock, color: 'brand' },

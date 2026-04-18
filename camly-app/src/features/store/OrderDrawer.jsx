@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { User, Phone, MapPin, Loader2, Navigation, MessageCircle, Copy, Trash2, X, CreditCard, Wallet, ShoppingBag } from 'lucide-react';
-import { useCartStore, useBusinessStore, useToastStore } from '../stores';
-import { formatMoney, openWhatsApp } from '../lib/utils';
-import { saveOrder } from '../lib/supabase';
-import { WHATSAPP_FALLBACK_PHONE } from '../lib/constants';
+import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
+import { formatMoney, openWhatsApp } from '../../lib/utils';
+import { saveOrder } from '../../lib/supabase';
+import { WHATSAPP_FALLBACK_PHONE } from '../../lib/constants';
 
 export default function OrderDrawer({ isOpen, onClose }) {
   const business = useBusinessStore((s) => s.business);

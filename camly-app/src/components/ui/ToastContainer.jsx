@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { useToastStore } from '../stores';
+import { useToastStore } from '../../stores';
 
 const typeStyles = {
   success: 'bg-emerald-50 border-emerald-200 text-emerald-800',

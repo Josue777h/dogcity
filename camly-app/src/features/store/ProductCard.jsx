@@ -1,6 +1,6 @@
 import { ShoppingCart, Plus, Minus, Info } from 'lucide-react';
-import { formatMoney } from '../lib/utils';
-import { useCartStore, useBusinessStore } from '../stores';
+import { formatMoney } from '../../lib/utils';
+import { useCartStore, useBusinessStore } from '../../stores';
 
 export default function ProductCard({ product }) {
   const business = useBusinessStore((s) => s.business);

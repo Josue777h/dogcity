@@ -1,27 +1,35 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import StorePage from './pages/StorePage';
-import AdminPage from './pages/AdminPage';
-import RegisterPage from './pages/RegisterPage';
-import TrackingPage from './pages/TrackingPage';
-import ToastContainer from './components/ToastContainer';
+import StorePage from './features/store/StorePage';
+import AdminPage from './features/admin/AdminPage';
+import RegisterPage from './features/auth/RegisterPage';
+import TrackingPage from './features/store/TrackingPage';
+import LandingPage from './features/marketing/LandingPage';
+import WelcomePage from './features/marketing/WelcomePage';
+import AuthGuard from './features/auth/AuthGuard';
+import ToastContainer from './components/ui/ToastContainer';
 
 export default function App() {
   return (
     <BrowserRouter>
       <ToastContainer />
       <Routes>
-        {/* Rutas principales del SaaS */}
-        <Route path="/" element={<StorePage />} />
-        <Route path="/:slug" element={<StorePage />} />
-        
-        {/* Panel Administrativo (detecta slug por query param o auth) */}
-        <Route path="/admin" element={<AdminPage />} />
-        
-        {/* Registro de negocios para el SaaS */}
+        {/* ── MARKETING & PUBLIC ───────────────────────────── */}
+        <Route path="/" element={<LandingPage />} />
         <Route path="/registro" element={<RegisterPage />} />
+        <Route path="/bienvenido" element={<WelcomePage />} />
         
-        {/* Seguimiento de pedidos */}
+        {/* ── ADMIN PANEL (PROTECTED) ──────────────────────── */}
+        <Route path="/admin" element={
+          <AuthGuard>
+            <AdminPage />
+          </AuthGuard>
+        } />
+        
+        {/* ── CUSTOMER EXPERIENCE ──────────────────────────── */}
         <Route path="/tracking" element={<TrackingPage />} />
+        
+        {/* MULTI-TENANT STORE: This catches everything else as a slug */}
+        <Route path="/:slug" element={<StorePage />} />
         
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

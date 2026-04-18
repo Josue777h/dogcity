@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Store, Phone, Mail, Lock, ArrowRight, Loader2, CheckCircle2, ShoppingBag, Truck, BarChart3, ShieldCheck, UserPlus } from 'lucide-react';
-import { registerBusiness } from '../lib/supabase';
-import { useToastStore } from '../stores';
+import { registerBusiness } from '../../lib/supabase';
+import { useToastStore } from '../../stores';
 
 const FEATURES = [
   { icon: ShoppingBag, text: 'CATÁLOGO EN LÍNEA' },
@@ -29,8 +29,8 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await registerBusiness(form);
-      addToast('¡Negocio creado! Revisa tu email', 'success');
-      window.location.href = '/admin';
+      addToast('¡Negocio creado! Bienvenido', 'success');
+      window.location.href = '/bienvenido';
     } catch (err) {
       addToast(err.message, 'error');
     } finally {
