@@ -1,0 +1,8 @@
+[build]
+  command = "cd camly-app && npm run build"
+  publish = "camly-app/dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
