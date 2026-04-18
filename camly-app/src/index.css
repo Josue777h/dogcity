@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #2563EB;
+  --color-accent: #7C3AED;
+  --color-dark: #1F2937;
+  --color-surface: #FFFFFF;
+  --color-bg-alt: #F9FAFB;
+  --color-border: #E5E7EB;
+  --color-muted: #6B7280;
+  
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+
+  --shadow-premium: 0 10px 30px -10px rgba(37, 99, 235, 0.1);
+}
+
+/* ── Custom Utilities ── */
+@layer base {
+  body {
+    @apply bg-bg-alt text-dark font-sans box-border;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  .fluid-container {
+    @apply w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .premium-card {
+    @apply bg-surface border border-border rounded-2xl shadow-premium overflow-hidden transition-all duration-300;
+  }
+  
+  .btn-primary {
+    @apply bg-brand hover:bg-brand/90 text-white font-bold py-3 px-6 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2;
+  }
+
+  .admin-sidebar {
+    @apply fixed left-0 top-0 h-full w-64 bg-dark text-white p-6 z-50 transition-transform;
+  }
+}
+
+/* Hide scrollbars but keep functionality */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

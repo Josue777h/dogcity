@@ -206,7 +206,7 @@ body.theme-dark-global {
    APP CARD
    ================================================================ */
 .app-card {
-  width: 100%; max-width: 1220px;
+  width: 100%; max-width: 1440px;
   background: var(--white);
   border-radius: var(--r-xl);
   overflow: hidden;
@@ -352,8 +352,9 @@ body.theme-dark-global {
    ================================================================ */
 .product-grid-v3 {
   display: grid; gap: 14px;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
+@media(max-width: 1440px) { .product-grid-v3 { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); } }
 @media(max-width: 560px) { .product-grid-v3 { grid-template-columns: 1fr 1fr; gap: 10px; } }
 @media(max-width: 340px) { .product-grid-v3 { grid-template-columns: 1fr; } }
 
