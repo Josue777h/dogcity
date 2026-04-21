@@ -203,7 +203,13 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-alt flex flex-col lg:flex-row">
+    <div 
+      className="min-h-screen bg-bg-alt flex flex-col lg:flex-row"
+      style={{ 
+        '--primary-brand': business?.theme_color || '#2563EB',
+        '--secondary-brand': business?.color_secundario || '#F9FAFB'
+      }}
+    >
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 

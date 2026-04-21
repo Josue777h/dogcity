@@ -61,7 +61,10 @@ export async function fetchBusiness(slug) {
     .eq('nombre', slug)
     .single();
   if (error) { console.error('Error negocio:', error); return null; }
-  return data;
+  return {
+    ...data,
+    metodos_pago: Array.isArray(data.metodos_pago) ? data.metodos_pago : ['efectivo', 'transferencia']
+  };
 }
 
 // ── Products ──
@@ -167,7 +170,9 @@ export async function registerBusiness({ email, password, businessName, phone })
       nombre_visible: businessName, 
       telefono: phone, 
       user_id: authData.user.id,
-      theme_color: '#2563EB' // Default theme
+      theme_color: '#2563EB',
+      color_secundario: '#F9FAFB',
+      metodos_pago: ['efectivo', 'transferencia']
     })
     .select()
     .single();

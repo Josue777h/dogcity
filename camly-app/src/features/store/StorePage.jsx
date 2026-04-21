@@ -78,13 +78,19 @@ export default function StorePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div 
+      className="min-h-screen bg-white"
+      style={{ 
+        '--primary-brand': business?.theme_color || '#2563EB',
+        '--secondary-brand': business?.color_secundario || '#F9FAFB'
+      }}
+    >
       {/* ── TOP NAV ────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 w-full bg-white/80 backdrop-blur-md z-[80] border-b border-border">
         <div className="fluid-container h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 decoration-0">
-            <div className="w-10 h-10 bg-brand rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand/20">
-              <ShoppingBag size={22} />
+            <div className="w-10 h-10 bg-brand rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand/20 overflow-hidden">
+              {business?.logo_url ? <img src={business.logo_url} className="w-full h-full object-contain p-1" /> : <ShoppingBag size={22} />}
             </div>
             <div className="hidden sm:block">
               <h1 className="text-lg font-black text-dark uppercase tracking-tight leading-none">{business?.nombre_visible || 'CAMLY'}</h1>
@@ -156,7 +162,7 @@ export default function StorePage() {
                   <p className="text-sm text-muted">Intenta con otra categoría o término de búsqueda.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                   {visible.map((p) => (
                     <ProductCard key={p.id} product={p} />
                   ))}

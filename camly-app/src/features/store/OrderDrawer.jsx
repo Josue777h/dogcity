@@ -208,9 +208,16 @@ export default function OrderDrawer({ isOpen, onClose }) {
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-2">Método Pago</label>
-                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full p-4 bg-white border border-border rounded-xl text-xs font-bold outline-none cursor-pointer focus:border-brand">
-                  <option value="efectivo">💵 Efectivo</option>
-                  <option value="transferencia">📱 Transferencia</option>
+                <select 
+                  value={paymentMethod} 
+                  onChange={(e) => setPaymentMethod(e.target.value)} 
+                  className="w-full p-4 bg-white border border-border rounded-xl text-xs font-bold outline-none cursor-pointer focus:border-brand"
+                >
+                  {business.metodos_pago?.includes('efectivo') && <option value="efectivo">💵 Efectivo</option>}
+                  {business.metodos_pago?.includes('transferencia') && <option value="transferencia">📱 Transferencia</option>}
+                  {(!business.metodos_pago || business.metodos_pago.length === 0) && (
+                    <option value="efectivo">💵 Efectivo</option>
+                  )}
                 </select>
               </div>
             </div>

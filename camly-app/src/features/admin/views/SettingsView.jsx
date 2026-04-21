@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { 
-  Save, User, Phone, MapPin, Globe, Loader2, 
-  Instagram, Facebook, MessageSquare, Palette,
-  CheckCircle2, CreditCard
+  CheckCircle2, CreditCard, Upload, Smartphone, Check, Settings
 } from 'lucide-react';
 import { getSupabase } from '../../../lib/supabase';
 import { useToastStore } from '../../../stores';
@@ -27,6 +25,10 @@ export default function SettingsView({ business, onUpdate }) {
     facebook: business?.facebook || '',
     footer_message: business?.footer_message || '',
     theme_color: business?.theme_color || '#2563EB',
+    color_secundario: business?.color_secundario || '#F9FAFB',
+    logo_url: business?.logo_url || '',
+    whatsapp_contacto: business?.whatsapp_contacto || business?.telefono || '',
+    metodos_pago: business?.metodos_pago || ['efectivo', 'transferencia'],
     pago_alias: business?.pago_alias || '',
     pago_banco: business?.pago_banco || '',
   });
@@ -47,6 +49,10 @@ export default function SettingsView({ business, onUpdate }) {
           facebook: formData.facebook,
           footer_message: formData.footer_message,
           theme_color: formData.theme_color,
+          color_secundario: formData.color_secundario,
+          logo_url: formData.logo_url,
+          whatsapp_contacto: formData.whatsapp_contacto,
+          metodos_pago: formData.metodos_pago,
           pago_alias: formData.pago_alias,
           pago_banco: formData.pago_banco
         })
@@ -70,8 +76,9 @@ export default function SettingsView({ business, onUpdate }) {
       <div className="flex gap-4 mb-8 overflow-x-auto pb-2 scrollbar-hide">
         {[
           { id: 'perfil', label: 'Perfil', icon: User },
-          { id: 'redes', label: 'Redes Sociales', icon: Instagram },
-          { id: 'diseno', label: 'Diseño y Tema', icon: Palette },
+          { id: 'marca', label: 'Marca y Logo', icon: Palette },
+          { id: 'pagos', label: 'Pagos', icon: CreditCard },
+          { id: 'redes', label: 'Redes', icon: Instagram },
         ].map(tab => (
           <button
             key={tab.id}
@@ -95,152 +102,169 @@ export default function SettingsView({ business, onUpdate }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">
-                    <User size={12} /> Nombre Público
+                    <User size={12} /> Nombre del Negocio
                   </label>
                   <input 
                     type="text" 
                     value={formData.nombre_visible}
                     onChange={e => setFormData({...formData, nombre_visible: e.target.value})}
-                    placeholder="Ej: Burger House"
-                    className="w-full p-4 bg-bg-alt border border-border rounded-2xl font-bold text-dark outline-none focus:border-brand shadow-inner" 
+                    className="w-full p-4 bg-bg-alt border border-border rounded-xl font-bold text-dark outline-none focus:border-brand" 
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">
-                    <Phone size={12} /> WhatsApp (Pedidos)
+                    <Smartphone size={12} /> WhatsApp Público
                   </label>
                   <input 
                     type="tel" 
-                    value={formData.telefono}
-                    onChange={e => setFormData({...formData, telefono: e.target.value})}
-                    placeholder="573000000000"
-                    className="w-full p-4 bg-bg-alt border border-border rounded-2xl font-bold text-dark outline-none focus:border-brand shadow-inner" 
+                    value={formData.whatsapp_contacto}
+                    onChange={e => setFormData({...formData, whatsapp_contacto: e.target.value})}
+                    className="w-full p-4 bg-bg-alt border border-border rounded-xl font-bold text-dark outline-none focus:border-brand" 
                   />
                 </div>
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">
-                  <MapPin size={12} /> Dirección de Local
+                  <MapPin size={12} /> Dirección Física
                 </label>
                 <input 
                   type="text" 
                   value={formData.direccion}
                   onChange={e => setFormData({...formData, direccion: e.target.value})}
-                  placeholder="Ej: Calle 10 # 45-20"
-                  className="w-full p-4 bg-bg-alt border border-border rounded-2xl font-bold text-dark outline-none focus:border-brand shadow-inner" 
+                  className="w-full p-4 bg-bg-alt border border-border rounded-xl font-bold text-dark outline-none focus:border-brand" 
                 />
               </div>
+            </div>
+          )}
 
-              <div className="pt-6 border-t border-border mt-8">
-                <h4 className="text-[10px] font-black text-brand uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                  <CreditCard size={14} /> Información de Pago (Transferencia)
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">
-                      Número o Alias de Pago
-                    </label>
-                    <input 
-                      type="text" 
-                      value={formData.pago_alias}
-                      onChange={e => setFormData({...formData, pago_alias: e.target.value})}
-                      placeholder="Ej: Nequi 300 123 4567"
-                      className="w-full p-4 bg-bg-alt border border-border rounded-2xl font-bold text-dark outline-none focus:border-brand shadow-inner" 
-                    />
+          {activeTab === 'marca' && (
+            <div className="space-y-10 animate-in fade-in duration-300">
+              <div className="space-y-4">
+                <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Logo del Negocio</label>
+                <div className="flex items-center gap-6">
+                  <div className="relative group">
+                    <div className="w-24 h-24 bg-bg-alt border-2 border-dashed border-border rounded-3xl flex items-center justify-center overflow-hidden">
+                      {formData.logo_url ? (
+                        <img src={formData.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                      ) : <Upload className="text-muted" />}
+                    </div>
+                    <button type="button" className="absolute -bottom-2 -right-2 bg-brand text-white p-2 rounded-xl shadow-lg border-2 border-white">
+                      <Upload size={14} />
+                    </button>
                   </div>
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">
-                      Banco o Plataforma
-                    </label>
+                  <div className="flex-1 space-y-2">
                     <input 
                       type="text" 
-                      value={formData.pago_banco}
-                      onChange={e => setFormData({...formData, pago_banco: e.target.value})}
-                      placeholder="Ej: Bancolombia / Nequi"
-                      className="w-full p-4 bg-bg-alt border border-border rounded-2xl font-bold text-dark outline-none focus:border-brand shadow-inner" 
+                      value={formData.logo_url}
+                      onChange={e => setFormData({...formData, logo_url: e.target.value})}
+                      placeholder="URL de tu logo (.png, .jpg)"
+                      className="w-full p-4 bg-bg-alt border border-border rounded-xl font-bold text-xs outline-none focus:border-brand" 
                     />
+                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Se recomienda fondo transparente</p>
                   </div>
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Color de Marca</label>
+                  <div className="grid grid-cols-5 gap-3">
+                    {THEME_COLORS.map(c => (
+                      <button 
+                        key={c.hex} type="button" 
+                        onClick={() => setFormData({...formData, theme_color: c.hex})}
+                        className={`aspect-square rounded-xl ${c.class} border-4 ${formData.theme_color === c.hex ? 'border-brand' : 'border-transparent'}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Color Secundario</label>
+                  <input 
+                    type="color" 
+                    value={formData.color_secundario}
+                    onChange={e => setFormData({...formData, color_secundario: e.target.value})}
+                    className="w-full h-12 rounded-xl cursor-pointer border-none bg-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'pagos' && (
+            <div className="space-y-10 animate-in fade-in duration-300">
+              <div className="space-y-4">
+                <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Métodos Activos</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[
+                    { id: 'efectivo', label: 'Efectivo', icon: Wallet },
+                    { id: 'transferencia', label: 'Transferencia', icon: CreditCard },
+                  ].map(m => (
+                    <button
+                      key={m.id} type="button"
+                      onClick={() => {
+                        const active = formData.metodos_pago.includes(m.id);
+                        setFormData({
+                          ...formData,
+                          metodos_pago: active 
+                            ? formData.metodos_pago.filter(x => x !== m.id)
+                            : [...formData.metodos_pago, m.id]
+                        });
+                      }}
+                      className={`flex items-center justify-between p-6 rounded-2xl border-2 transition-all
+                        ${formData.metodos_pago.includes(m.id) ? 'border-brand bg-brand/5' : 'border-border bg-white opacity-60'}`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <m.icon size={20} className={formData.metodos_pago.includes(m.id) ? 'text-brand' : 'text-muted'} />
+                        <span className="font-black text-xs uppercase tracking-widest">{m.label}</span>
+                      </div>
+                      {formData.metodos_pago.includes(m.id) && <Check size={16} className="text-brand" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {formData.metodos_pago.includes('transferencia') && (
+                <div className="p-8 bg-bg-alt rounded-3xl border border-border space-y-6">
+                  <h5 className="text-[10px] font-black text-brand uppercase tracking-[0.2em] flex items-center gap-2">
+                    <CreditCard size={14} /> Configuración de Transferencia
+                  </h5>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-black text-muted uppercase tracking-widest ml-1">Banco / Plataforma</label>
+                      <input type="text" value={formData.pago_banco} onChange={e => setFormData({...formData, pago_banco: e.target.value})} className="w-full p-4 bg-white border border-border rounded-xl font-bold text-xs" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-black text-muted uppercase tracking-widest ml-1">Cuenta / Alias</label>
+                      <input type="text" value={formData.pago_alias} onChange={e => setFormData({...formData, pago_alias: e.target.value})} className="w-full p-4 bg-white border border-border rounded-xl font-bold text-xs" />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === 'redes' && (
             <div className="space-y-8 animate-in fade-in duration-300">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">
-                    <Instagram size={12} /> Instagram (Usuario)
+                    <Instagram size={12} /> Instagram
                   </label>
-                  <input 
-                    type="text" 
-                    value={formData.instagram}
-                    onChange={e => setFormData({...formData, instagram: e.target.value})}
-                    placeholder="@tu_negocio"
-                    className="w-full p-4 bg-bg-alt border border-border rounded-2xl font-bold text-dark outline-none focus:border-brand shadow-inner" 
-                  />
+                  <input type="text" value={formData.instagram} onChange={e => setFormData({...formData, instagram: e.target.value})} className="w-full p-4 bg-bg-alt border border-border rounded-xl font-bold text-dark" />
                 </div>
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">
-                    <Facebook size={12} /> Facebook (Slug)
+                    <Facebook size={12} /> Facebook
                   </label>
-                  <input 
-                    type="text" 
-                    value={formData.facebook}
-                    onChange={e => setFormData({...formData, facebook: e.target.value})}
-                    placeholder="perfil_fb"
-                    className="w-full p-4 bg-bg-alt border border-border rounded-2xl font-bold text-dark outline-none focus:border-brand shadow-inner" 
-                  />
+                  <input type="text" value={formData.facebook} onChange={e => setFormData({...formData, facebook: e.target.value})} className="w-full p-4 bg-bg-alt border border-border rounded-xl font-bold text-dark" />
                 </div>
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">
-                  <MessageSquare size={12} /> Mensaje al pie de página
+                  <MessageSquare size={12} /> Mensaje del Footer
                 </label>
-                <textarea 
-                  value={formData.footer_message}
-                  onChange={e => setFormData({...formData, footer_message: e.target.value})}
-                  placeholder="¡Gracias por elegirnos! El mejor sabor de la ciudad."
-                  className="w-full p-4 bg-bg-alt border border-border rounded-2xl font-medium text-dark outline-none focus:border-brand shadow-inner min-h-[100px]" 
-                />
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'diseno' && (
-            <div className="space-y-8 animate-in fade-in duration-300">
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Color Principal (Premium)</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-                  {THEME_COLORS.map(color => (
-                    <button
-                      key={color.hex}
-                      type="button"
-                      onClick={() => setFormData({...formData, theme_color: color.hex})}
-                      className={`relative aspect-square rounded-2xl ${color.class} border-4 transition-all
-                        ${formData.theme_color === color.hex ? 'border-brand scale-105 shadow-xl shadow-brand/20' : 'border-transparent hover:scale-105'}`}
-                    >
-                      {formData.theme_color === color.hex && (
-                        <div className="absolute inset-0 flex items-center justify-center text-white">
-                          <CheckCircle2 size={32} />
-                        </div>
-                      )}
-                      <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-black text-white/80 uppercase">
-                        {color.name}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="p-6 bg-bg-alt border border-dashed border-border rounded-2xl flex items-center gap-4">
-                 <div className="w-12 h-12 rounded-xl bg-brand flex items-center justify-center text-white">
-                    <Palette size={24} />
-                 </div>
-                 <div>
-                    <h5 className="text-xs font-black text-dark uppercase">Personalización SaaS</h5>
-                    <p className="text-[10px] font-bold text-muted uppercase mt-0.5">El color se aplicará en toda la tienda de tus clientes.</p>
-                 </div>
+                <textarea value={formData.footer_message} onChange={e => setFormData({...formData, footer_message: e.target.value})} className="w-full p-4 bg-bg-alt border border-border rounded-xl font-medium text-dark min-h-[100px]" />
               </div>
             </div>
           )}

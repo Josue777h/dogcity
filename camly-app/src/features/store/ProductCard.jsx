@@ -19,7 +19,7 @@ export default function ProductCard({ product }) {
     <article 
       className={`premium-card group hover:border-brand/30 ${isSelected ? 'border-brand ring-1 ring-brand/10' : ''}`}
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+      <div className="relative aspect-square sm:aspect-[4/3] overflow-hidden bg-gray-100">
         <img
           src={product.image}
           alt={product.name}
@@ -29,57 +29,58 @@ export default function ProductCard({ product }) {
         />
       </div>
       
-      <div className="p-5 flex flex-col h-[220px]">
+      <div className="p-3 sm:p-5 flex flex-col h-[180px] sm:h-[220px]">
         <div className="flex-1">
-          <h3 className="text-lg font-black text-dark leading-tight group-hover:text-brand transition-colors line-clamp-2">
+          <h3 className="text-sm sm:text-lg font-black text-dark leading-tight group-hover:text-brand transition-colors line-clamp-2">
             {product.name}
           </h3>
-          <p className="text-xs text-muted mt-2 line-clamp-3 leading-relaxed font-medium">
+          <p className="hidden sm:block text-xs text-muted mt-2 line-clamp-3 leading-relaxed font-medium">
             {product.description || 'Sin descripción disponible.'}
           </p>
         </div>
 
-        <div className="mt-4 space-y-4">
+        <div className="mt-2 sm:mt-4 space-y-2 sm:space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-xl font-black text-brand tracking-tighter">{formatMoney(product.price)}</span>
+            <span className="text-base sm:text-xl font-black text-brand tracking-tighter">{formatMoney(product.price)}</span>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {!isSelected ? (
               <button
                 onClick={() => increment(bid, product.id)}
-                className="w-full btn-primary !py-2 !text-xs !rounded-lg"
+                className="w-full btn-primary !py-1.5 sm:!py-2 !text-[10px] sm:!text-xs !rounded-lg"
               >
-                <Plus size={14} /> Agregar
+                <Plus size={12} className="sm:hidden" />
+                <Plus size={14} className="hidden sm:block" />
+                <span>AGREGAR</span>
               </button>
             ) : (
-              <div className="flex items-center w-full bg-bg-alt rounded-lg p-1 border border-border">
+              <div className="flex items-center w-full bg-bg-alt rounded-lg overflow-hidden border border-border">
                 <button
                   onClick={() => decrement(bid, product.id)}
-                  className="w-8 h-8 flex items-center justify-center text-brand hover:bg-white rounded-md transition-colors"
+                  className="flex-1 h-8 flex items-center justify-center text-brand hover:bg-white transition-colors"
                 >
-                  <Minus size={14} />
+                  <Minus size={12} />
                 </button>
-                <span className="flex-1 text-center font-black text-sm">{qty}</span>
+                <span className="w-8 text-center font-black text-xs sm:text-sm">{qty}</span>
                 <button
                   onClick={() => increment(bid, product.id)}
-                  className="w-8 h-8 flex items-center justify-center text-brand hover:bg-white rounded-md transition-colors"
+                  className="flex-1 h-8 flex items-center justify-center text-brand hover:bg-white transition-colors"
                 >
-                  <Plus size={14} />
+                  <Plus size={12} />
                 </button>
               </div>
             )}
           </div>
 
-          <div className={`transition-all duration-300 ${isSelected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-accent/5 border border-accent/10 rounded-lg">
-              <Info size={12} className="text-accent shrink-0" />
+          <div className={`transition-all duration-300 ${isSelected ? 'opacity-100 h-auto' : 'opacity-0 h-0 pointer-events-none'}`}>
+            <div className="flex items-center gap-2 px-2 py-1 bg-brand/5 border border-brand/10 rounded-md">
               <input
                 type="text"
                 value={note}
                 onChange={(e) => setNote(bid, product.id, e.target.value)}
-                placeholder="¿Alguna aclaración?"
-                className="w-full bg-transparent text-[11px] font-medium outline-none placeholder:text-accent/30 text-accent"
+                placeholder="Nota..."
+                className="w-full bg-transparent text-[10px] font-medium outline-none placeholder:text-brand/30 text-brand"
               />
             </div>
           </div>

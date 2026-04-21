@@ -91,11 +91,18 @@ export default function TrackingPage() {
     );
   }
 
+  const business = order.negocios;
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
   const currentStepIdx = STEPS.findIndex(s => s.id === (order.estado || order.status));
 
   return (
-    <div className="min-h-screen bg-bg-alt bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand/5 via-bg-alt to-bg-alt p-4 sm:p-8">
+    <div 
+      className="min-h-screen bg-bg-alt bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand/5 via-bg-alt to-bg-alt p-4 sm:p-8"
+      style={{ 
+        '--primary-brand': business?.theme_color || '#2563EB',
+        '--secondary-brand': business?.color_secundario || '#F9FAFB'
+      }}
+    >
       <div className="max-w-xl mx-auto space-y-8">
         
         {/* Header Navigation */}
@@ -105,9 +112,9 @@ export default function TrackingPage() {
            </Link>
            <div className="flex items-center gap-2">
              <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center text-white shadow-lg">
-               <Store size={16} />
+               {business?.logo_url ? <img src={business.logo_url} className="w-full h-full object-contain p-1" /> : <Store size={16} />}
              </div>
-             <span className="text-sm font-black text-dark uppercase tracking-tighter">{order.negocios?.nombre_visible}</span>
+             <span className="text-sm font-black text-dark uppercase tracking-tighter">{business?.nombre_visible}</span>
            </div>
         </div>
 
@@ -200,7 +207,7 @@ export default function TrackingPage() {
         <div className="text-center py-6 space-y-4">
            <p className="text-[10px] font-black text-muted uppercase tracking-[0.3em]">¿Alguna duda con tu pedido?</p>
            <a 
-            href={`https://wa.me/${order.negocios?.telefono || '573143243707'}`}
+            href={`https://wa.me/${business?.whatsapp_contacto || business?.telefono || '573143243707'}`}
             target="_blank" rel="noreferrer"
             className="inline-flex items-center gap-3 px-8 py-4 bg-success text-white rounded-2xl font-black text-sm shadow-xl shadow-success/30 transition-all hover:scale-105 active:scale-95"
            >
