@@ -8,14 +8,14 @@ export const WHATSAPP_FALLBACK_PHONE = '573143243707';
 
 export const PRODUCT_SCHEMA_VARIANTS = [
   {
-    label: 'es-full',
-    select: 'id, nombre, precio, descripcion, unidad, imagen, categoria, disponible, negocio_id',
-    fields: { name: 'nombre', price: 'precio', description: 'descripcion', unit: 'unidad', image: 'imagen', category: 'categoria', available: 'disponible' }
-  },
-  {
     label: 'es-no-unit',
     select: 'id, nombre, precio, descripcion, imagen, categoria, disponible, negocio_id',
     fields: { name: 'nombre', price: 'precio', description: 'descripcion', image: 'imagen', category: 'categoria', available: 'disponible' }
+  },
+  {
+    label: 'es-full',
+    select: 'id, nombre, precio, descripcion, unidad, imagen, categoria, disponible, negocio_id',
+    fields: { name: 'nombre', price: 'precio', description: 'descripcion', unit: 'unidad', image: 'imagen', category: 'categoria', available: 'disponible' }
   },
   {
     label: 'es-basic',

@@ -1,10 +1,11 @@
-import { Store, ShoppingBag, Package, Settings, LogOut, X } from 'lucide-react';
+import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, business, onSignOut, isOpen, onClose }) {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: Store },
     { id: 'orders', label: 'Pedidos', icon: ShoppingBag },
     { id: 'products', label: 'Productos', icon: Package },
+    { id: 'drivers', label: 'Domiciliarios', icon: Bike },
     { id: 'settings', label: 'Configuración', icon: Settings },
   ];
 

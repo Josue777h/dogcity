@@ -57,7 +57,7 @@ function normalizeProduct(row) {
 export async function fetchBusiness(slug) {
   const { data, error } = await getSupabase()
     .from('negocios')
-    .select('id, nombre, nombre_visible, telefono')
+    .select('*')
     .eq('nombre', slug)
     .single();
   if (error) { console.error('Error negocio:', error); return null; }
@@ -162,7 +162,13 @@ export async function registerBusiness({ email, password, businessName, phone })
   const slug = businessName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
   const { data: negocio, error: negocioError } = await getSupabase()
     .from('negocios')
-    .insert({ nombre: slug, nombre_visible: businessName, telefono: phone, user_id: authData.user.id })
+    .insert({ 
+      nombre: slug, 
+      nombre_visible: businessName, 
+      telefono: phone, 
+      user_id: authData.user.id,
+      theme_color: '#2563EB' // Default theme
+    })
     .select()
     .single();
   if (negocioError) throw negocioError;

@@ -7,6 +7,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
+    id: product?.id || null,
     name: product?.name || '',
     price: product?.price || '',
     categoria: product?.categoria || '',

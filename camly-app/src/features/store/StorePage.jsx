@@ -6,6 +6,7 @@ import { fetchBusiness, fetchProducts, subscribeToProducts } from '../../lib/sup
 import { formatMoney } from '../../lib/utils';
 import ProductCard from './ProductCard';
 import OrderDrawer from './OrderDrawer';
+import StoreFooter from './components/StoreFooter';
 
 export default function StorePage() {
   const [searchParams] = useSearchParams();
@@ -61,7 +62,7 @@ export default function StorePage() {
   const visible = useMemo(() => {
     return products.filter((p) => {
       if (!p.disponible) return false;
-      const matchesCat = currentCategory === 'Todos' || p.categoria === currentCategory;
+      const matchesCat = currentCategory === 'Todos' || (p.categoria || '').trim() === currentCategory.trim();
       const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesCat && matchesSearch;
     });
@@ -97,9 +98,6 @@ export default function StorePage() {
               <span className="text-[11px] font-bold uppercase tracking-wider">Negocio Abierto</span>
             </div>
             
-            <Link to="/admin" className="p-2 text-muted hover:text-brand transition-colors" title="Gestionar tienda">
-              <Settings size={20} />
-            </Link>
           </div>
         </div>
       </nav>
@@ -242,6 +240,7 @@ export default function StorePage() {
       )}
 
       <OrderDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <StoreFooter business={business} />
     </div>
   );
 }

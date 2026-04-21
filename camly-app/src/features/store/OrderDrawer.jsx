@@ -28,7 +28,6 @@ export default function OrderDrawer({ isOpen, onClose }) {
   const selectedItems = getSelectedItems(bid, products);
   const total = selectedItems.reduce((s, i) => s + i.quantity * i.price, 0);
   const whatsappPhone = (business?.telefono || WHATSAPP_FALLBACK_PHONE).replace(/\D/g, '');
-
   function buildMessage(orderId, token) {
     const lines = selectedItems.map((i) => {
       const note = (cart.notes[i.id] || '').trim();
@@ -37,17 +36,25 @@ export default function OrderDrawer({ isOpen, onClose }) {
 
     return [
       `¡Hola! Quiero hacer un pedido en *${business?.nombre_visible || 'la tienda'}*.`,
-      '', '🛒 *PRODUCTOS:*', lines,
-      '', `💰 *TOTAL: ${formatMoney(total)}*`,
-      '', '👤 *DATOS:*', `Nombre: ${customerName || 'Por confirmar'}`,
-      `Teléfono: ${customerPhone || 'Por confirmar'}`,
-      `Dirección: ${customerAddress || 'Por confirmar'}`,
-      '', `📍 *ENTREGA:* ${deliveryMethod === 'envio' ? 'Domilicio 🛵' : 'Recoger en local 🏠'}`,
-      `💳 *PAGO:* ${paymentMethod === 'efectivo' ? 'Efectivo 💵' : 'Nequi 📱'}`,
-      locationLink ? `\n📍 *UBI:* ${locationLink}` : '',
+      '', 
+      '🛒 *PRODUCTOS:*', 
+      lines,
+      '', 
+      `💰 *TOTAL: ${formatMoney(total)}*`,
+      '', 
+      '👤 *DATOS DE ENTREGA:*', 
+      `Nombre: ${customerName}`,
+      `Teléfono: ${customerPhone}`,
+      `Dirección: ${customerAddress || 'Recogida en local'}`,
+      '', 
+      `📍 *ENTREGA:* ${deliveryMethod === 'envio' ? 'Domicilio 🛵' : 'Recoger en local 🏠'}`,
+      `💳 *MÉTODO DE PAGO:* ${paymentMethod === 'efectivo' ? 'Efectivo 💵' : 'Transferencia 📱'}`,
+      paymentMethod === 'transferencia' ? '\n⚠️ _Enviaré el comprobante de transferencia por este medio._' : '',
+      locationLink ? `\n📍 *VALOR DE UBICACIÓN GPS:* ${locationLink}` : '',
       cart.comment ? `\n💬 *COMENTARIO:* ${cart.comment}` : '',
-      '', `🧾 *PEDIDO #${orderId.toString().slice(-6)}*`,
-      `🔗 *SEGUIMIENTO:* ${window.location.origin}/tracking?id=${orderId}&token=${token}`,
+      '', 
+      `🧾 *PEDIDO #${orderId.toString().slice(-6).toUpperCase()}*`,
+      `🔗 *SEGUIMIENTO EN VIVO:* ${window.location.origin}/tracking?id=${orderId}&token=${token}`,
     ].filter(Boolean).join('\n');
   }
 
@@ -194,19 +201,51 @@ export default function OrderDrawer({ isOpen, onClose }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-2">Método Entrega</label>
-                <select value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value)} className="w-full p-3 bg-white border border-border rounded-xl text-xs font-bold outline-none cursor-pointer">
+                <select value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value)} className="w-full p-4 bg-white border border-border rounded-xl text-xs font-bold outline-none cursor-pointer focus:border-brand">
                   <option value="envio">🛵 Domicilio</option>
                   <option value="recogida">🏠 Recoger en local</option>
                 </select>
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-2">Método Pago</label>
-                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full p-3 bg-white border border-border rounded-xl text-xs font-bold outline-none cursor-pointer">
+                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full p-4 bg-white border border-border rounded-xl text-xs font-bold outline-none cursor-pointer focus:border-brand">
                   <option value="efectivo">💵 Efectivo</option>
                   <option value="transferencia">📱 Transferencia</option>
                 </select>
               </div>
             </div>
+
+            {paymentMethod === 'transferencia' && (
+              <div className="p-6 bg-brand/5 border border-dashed border-brand/30 rounded-2xl animate-in zoom-in-95 duration-200">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-brand/10 rounded-lg text-brand">
+                    <Wallet size={20} />
+                  </div>
+                  <h4 className="text-xs font-black text-dark uppercase tracking-tight">Datos de Transferencia</h4>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted font-bold uppercase tracking-widest">Banco</span>
+                    <span className="text-dark font-black">{business?.pago_banco || 'Por confirmar'}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted font-bold uppercase tracking-widest">Cuenta / Alias</span>
+                    <span className="group flex items-center gap-2">
+                      <span className="text-dark font-black">{business?.pago_alias || 'Por confirmar'}</span>
+                      <button 
+                        onClick={() => { navigator.clipboard.writeText(business?.pago_alias); addToast('Copiado', 'info'); }}
+                        className="text-brand hover:scale-110 transition-transform"
+                      >
+                        <Copy size={12} />
+                      </button>
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-brand/60 font-medium italic mt-2">
+                    * Favor enviar el comprobante por WhatsApp después de generar el pedido.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-2">Comentarios Adicionales</label>

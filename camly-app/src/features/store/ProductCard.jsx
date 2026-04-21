@@ -19,35 +19,29 @@ export default function ProductCard({ product }) {
     <article 
       className={`premium-card group hover:border-brand/30 ${isSelected ? 'border-brand ring-1 ring-brand/10' : ''}`}
     >
-      <div className="relative aspect-video overflow-hidden bg-gray-100">
+      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
         <img
           src={product.image}
           alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           loading="lazy"
           onError={(e) => { e.target.src = '/images/taza.svg'; }}
         />
-        {product.categoria && (
-          <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-dark px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm">
-            {product.categoria}
-          </span>
-        )}
       </div>
       
-      <div className="p-4 flex flex-col h-[210px]">
+      <div className="p-5 flex flex-col h-[220px]">
         <div className="flex-1">
-          <h3 className="text-base font-extrabold text-dark leading-tight group-hover:text-brand transition-colors">
+          <h3 className="text-lg font-black text-dark leading-tight group-hover:text-brand transition-colors line-clamp-2">
             {product.name}
           </h3>
-          <p className="text-xs text-muted mt-2 line-clamp-2 leading-relaxed">
+          <p className="text-xs text-muted mt-2 line-clamp-3 leading-relaxed font-medium">
             {product.description || 'Sin descripción disponible.'}
           </p>
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-lg font-black text-brand">{formatMoney(product.price)}</span>
-            <span className="text-[10px] font-bold text-muted uppercase tracking-tighter">Per {product.unit || 'un'}</span>
+            <span className="text-xl font-black text-brand tracking-tighter">{formatMoney(product.price)}</span>
           </div>
           
           <div className="flex items-center gap-2">

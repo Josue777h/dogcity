@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Loader2, ChevronRight, LogOut } from 'lucide-react';
+import { Store, Loader2, ChevronRight, LogOut, Bike } from 'lucide-react';
 import { 
   getSupabase, 
   signIn, 
@@ -22,6 +22,7 @@ import DashboardView from './views/DashboardView';
 import ProductsView from './views/ProductsView';
 import OrdersView from './views/OrdersView';
 import SettingsView from './views/SettingsView';
+import DriversView from './views/DriversView';
 
 export default function AdminPage() {
   const { session, setSession } = useAuthStore();
@@ -241,6 +242,9 @@ export default function AdminPage() {
                 business={business} 
                 onUpdate={() => loadData(session.user.id, false)} 
               />
+            )}
+            {activeTab === 'drivers' && (
+              <DriversView businessId={business.id} />
             )}
           </div>
         </main>

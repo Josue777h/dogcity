@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import StorePage from './features/store/StorePage';
 import AdminPage from './features/admin/AdminPage';
 import RegisterPage from './features/auth/RegisterPage';
@@ -8,7 +9,18 @@ import WelcomePage from './features/marketing/WelcomePage';
 import AuthGuard from './features/auth/AuthGuard';
 import ToastContainer from './components/ui/ToastContainer';
 
+import { useBusinessStore } from './stores';
+
 export default function App() {
+  const { business } = useBusinessStore();
+
+  // Sync Global Theme
+  useEffect(() => {
+    if (business?.theme_color) {
+      document.documentElement.style.setProperty('--primary-color', business.theme_color);
+    }
+  }, [business?.theme_color]);
+
   return (
     <BrowserRouter>
       <ToastContainer />

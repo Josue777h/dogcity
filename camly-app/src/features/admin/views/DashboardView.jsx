@@ -1,92 +1,171 @@
-import { ShoppingBag, TrendingUp, DollarSign, Package } from 'lucide-react';
+import { useMemo } from 'react';
+import { 
+  TrendingUp, ShoppingBag, Users, DollarSign, 
+  ArrowUpRight, ArrowDownRight, Package, Loader2 
+} from 'lucide-react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, Cell, AreaChart, Area 
+} from 'recharts';
 import { formatMoney } from '../../../lib/utils';
 
 export default function DashboardView({ orders, products }) {
-  const stats = [
-    { 
-      label: 'Pedidos Hoy', 
-      value: orders.filter(o => o.created_at?.includes(new Date().toISOString().split('T')[0])).length, 
-      icon: ShoppingBag, 
-      color: 'blue' 
-    },
-    { 
-      label: 'Ingresos Totales', 
-      value: formatMoney(orders.reduce((s,o) => s + (o.total || 0), 0)), 
-      icon: TrendingUp, 
-      color: 'emerald' 
-    },
-    { 
-      label: 'Ticket Promedio', 
-      value: formatMoney(orders.length ? orders.reduce((s,o) => s + (o.total || 0), 0) / orders.length : 0), 
-      icon: DollarSign, 
-      color: 'amber' 
-    },
-    { 
-      label: 'Catálogo', 
-      value: products.length, 
-      icon: Package, 
-      color: 'slate' 
-    }
+  const stats = useMemo(() => {
+    const totalSales = orders.reduce((acc, o) => acc + (o.total || 0), 0);
+    const completedOrders = orders.filter(o => o.estado === 'entregado' || o.status === 'entregado');
+    const totalCompletedSales = completedOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+    const avgTicket = orders.length > 0 ? totalSales / orders.length : 0;
+    
+    // Group sales by day (last 7 days)
+    const last7Days = [...Array(7)].map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return d.toISOString().split('T')[0];
+    }).reverse();
+
+    const chartData = last7Days.map(date => {
+      const dayOrders = orders.filter(o => o.created_at.startsWith(date));
+      return {
+        name: new Date(date).toLocaleDateString('es-ES', { weekday: 'short' }),
+        ventas: dayOrders.reduce((acc, o) => acc + (o.total || 0), 0),
+        pedidos: dayOrders.length
+      };
+    });
+
+    // Top Products
+    const productCounts = {};
+    orders.forEach(o => {
+      if (Array.isArray(o.productos)) {
+        o.productos.forEach(p => {
+          productCounts[p.name] = (productCounts[p.name] || 0) + (p.quantity || 1);
+        });
+      }
+    });
+
+    const topProducts = Object.entries(productCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    return { totalSales, totalCompletedSales, avgTicket, chartData, topProducts, totalOrders: orders.length };
+  }, [orders]);
+
+  const cards = [
+    { label: 'Ventas Totales', value: formatMoney(stats.totalSales), icon: DollarSign, color: 'text-brand', bg: 'bg-brand/5', trend: '+12%' },
+    { label: 'Pedidos Realizados', value: stats.totalOrders, icon: ShoppingBag, color: 'text-accent', bg: 'bg-accent/5', trend: '+5%' },
+    { label: 'Ticket Promedio', value: formatMoney(stats.avgTicket), icon: TrendingUp, color: 'text-success', bg: 'bg-success/5', trend: '+2%' },
+    { label: 'Productos Activos', value: products.length, icon: Package, color: 'text-amber-500', bg: 'bg-amber-500/5', trend: '0%' },
   ];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Stats Grid */}
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* ── Stats Cards ───────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
-          <div key={i} className="bg-white border border-border p-6 rounded-[2rem] flex items-center gap-5 shadow-sm">
-            <div className={`p-4 bg-bg-alt rounded-2xl`}>
-              <stat.icon size={24} className={`text-${stat.color}-600`} />
+        {cards.map((card, i) => (
+          <div key={i} className="bg-white border border-border p-6 rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all group">
+            <div className="flex justify-between items-start mb-4">
+              <div className={`w-12 h-12 ${card.bg} ${card.color} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                <card.icon size={24} />
+              </div>
+              <div className="flex items-center gap-1 text-[10px] font-black text-success bg-success/10 px-2 py-1 rounded-lg">
+                <ArrowUpRight size={12} /> {card.trend}
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em]">{stat.label}</p>
-              <p className="text-xl font-black text-dark tracking-tighter">{stat.value}</p>
-            </div>
+            <p className="text-[10px] font-black text-muted uppercase tracking-widest">{card.label}</p>
+            <h3 className="text-2xl font-black text-dark tracking-tighter mt-1">{card.value}</h3>
           </div>
         ))}
       </div>
 
-      {/* Quick Tips / Welcome */}
-      <div className="bg-dark text-white p-8 sm:p-12 rounded-[2.5rem] relative overflow-hidden">
-        <div className="relative z-10 max-w-xl">
-          <h2 className="text-3xl sm:text-4xl font-black italic tracking-tighter uppercase mb-4">
-            Impulsa tus ventas <span className="text-brand">con Camly</span>
-          </h2>
-          <p className="text-white/60 font-medium mb-8">
-            Tienes {orders.length} pedidos registrados. Comparte tu link en redes sociales para empezar a recibir pedidos por WhatsApp automáticamente.
-          </p>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-3 bg-white/10 px-6 py-4 rounded-2xl backdrop-blur-md">
-              <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-              <span className="text-xs font-bold uppercase tracking-widest">Tienda Online Activa</span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* ── Sales Chart ──────────────────────────────────── */}
+        <div className="lg:col-span-2 bg-white border border-border p-8 rounded-[3rem] shadow-sm">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h4 className="text-lg font-black text-dark uppercase tracking-tight">Rendimiento Semanal</h4>
+              <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Ventas de los últimos 7 días</p>
+            </div>
+            <div className="flex gap-2">
+               <div className="flex items-center gap-2 text-[10px] font-black text-brand uppercase truncate">
+                  <div className="w-2 h-2 bg-brand rounded-full" /> Ingresos
+               </div>
             </div>
           </div>
+
+          <div className="w-full h-[350px] min-h-[350px] relative">
+            <ResponsiveContainer width="99%" height="100%">
+              <AreaChart data={stats.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorVentas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--color-brand)" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="var(--color-brand)" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 10, fontWeight: 900, fill: '#94A3B8' }}
+                  dy={10}
+                />
+                <YAxis hide />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 'bold' }}
+                  formatter={(val) => [formatMoney(val), 'Ventas']}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="ventas" 
+                  stroke="var(--color-brand)" 
+                  strokeWidth={4}
+                  fillOpacity={1} 
+                  fill="url(#colorVentas)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-brand/20 to-transparent pointer-events-none" />
-        <Store size={200} className="absolute -bottom-10 -right-10 text-white/5 rotate-12" />
+
+        {/* ── Top Products ─────────────────────────────────── */}
+        <div className="bg-white border border-border p-8 rounded-[3rem] shadow-sm">
+          <h4 className="text-lg font-black text-dark uppercase tracking-tight mb-1">Top Productos</h4>
+          <p className="text-[10px] text-muted font-bold uppercase tracking-widest mb-8">Los más pedidos históricamente</p>
+          
+          <div className="space-y-6">
+            {stats.topProducts.map((p, i) => (
+              <div key={i} className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 bg-bg-alt rounded-lg flex items-center justify-center text-xs font-black text-brand">
+                    {i + 1}
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-dark uppercase leading-none">{p.name}</p>
+                    <p className="text-[10px] font-bold text-muted uppercase mt-1">{p.count} ventas</p>
+                  </div>
+                </div>
+                <div className="w-24 h-2 bg-bg-alt rounded-full overflow-hidden">
+                   <div 
+                    className="h-full bg-brand rounded-full" 
+                    style={{ width: `${(p.count / stats.topProducts[0].count) * 100}%` }}
+                   />
+                </div>
+              </div>
+            ))}
+            
+            {stats.topProducts.length === 0 && (
+              <div className="py-10 text-center opacity-30">
+                <Package size={40} className="mx-auto mb-2" />
+                <p className="text-[10px] font-black uppercase">Sin datos aún</p>
+              </div>
+            )}
+          </div>
+
+          <button className="w-full mt-10 py-4 border-2 border-dashed border-border rounded-2xl text-[10px] font-black text-muted uppercase tracking-widest hover:border-brand/40 hover:text-brand transition-all">
+            VER REPORTE COMPLETO
+          </button>
+        </div>
       </div>
     </div>
-  );
-}
-
-function Store({ size, className }) {
-  return (
-    <svg 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/>
-      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-      <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
-      <path d="M2 7h20"/>
-      <path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"/>
-    </svg>
   );
 }
