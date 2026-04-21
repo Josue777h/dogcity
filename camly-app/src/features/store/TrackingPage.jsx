@@ -33,15 +33,45 @@ export default function TrackingPage() {
       }
 
       try {
-        const { data, error: sbError } = await getSupabase()
+        let resultData = null;
+
+        // Intentar primero con la consulta relacional (si la base de datos está perfectamente conectada)
+        const { data: joinData, error: joinError } = await getSupabase()
           .from('pedidos')
-          .select(`*, negocios(nombre, nombre_visible, telefono)`)
+          .select(`*, negocios(nombre, nombre_visible, telefono, theme_color, color_secundario, logo_url, whatsapp_contacto)`)
           .eq('id', id)
           .eq('token', token)
           .single();
 
-        if (sbError || !data) throw new Error('No pudimos encontrar tu pedido. Es posible que el enlace haya expirado.');
-        setOrder(data);
+        if (!joinError && joinData) {
+          resultData = joinData;
+        } else {
+          // Fallback: Si falla la relación (Error 400), buscar el pedido solo
+          console.warn('Fallback tracking query due to join error:', joinError);
+          const { data: fallbackData, error: fallbackError } = await getSupabase()
+            .from('pedidos')
+            .select('*')
+            .eq('id', id)
+            .eq('token', token)
+            .single();
+
+          if (fallbackError || !fallbackData) throw new Error('No pudimos encontrar tu pedido. Es posible que el enlace haya expirado.');
+          
+          // Intentar obtener los datos del negocio por separado si tenemos el ID
+          let businessData = null;
+          if (fallbackData.negocio_id) {
+             const { data: bData } = await getSupabase()
+               .from('negocios')
+               .select('*')
+               .eq('id', fallbackData.negocio_id)
+               .single();
+             businessData = bData;
+          }
+          
+          resultData = { ...fallbackData, negocios: businessData };
+        }
+        
+        setOrder(resultData);
       } catch (err) {
         setError(err.message);
       } finally {

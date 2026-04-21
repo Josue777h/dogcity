@@ -16,12 +16,14 @@ export default function App() {
 
   // Sync Global Theme
   useEffect(() => {
-    if (business?.theme_color) {
-      document.documentElement.style.setProperty('--primary-brand', business.theme_color);
-    }
-    if (business?.color_secundario) {
-      document.documentElement.style.setProperty('--secondary-brand', business.color_secundario);
-    }
+    const root = document.documentElement;
+    const primary = business?.theme_color || '#2563EB';
+    const secondary = business?.color_secundario || '#F9FAFB';
+    
+    root.style.setProperty('--primary-brand', primary);
+    root.style.setProperty('--secondary-brand', secondary);
+    
+    // Also update favicon or title if needed (optional)
   }, [business?.theme_color, business?.color_secundario]);
 
   return (

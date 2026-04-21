@@ -2,8 +2,9 @@ import { Link } from 'react-router-dom';
 import { 
   ShoppingBag, MessageCircle, BarChart3, Rocket, 
   ShieldCheck, Smartphone, CheckCircle2, ArrowRight,
-  Store, Users, Zap, Star
+  Store, Users, Zap, Star, Check
 } from 'lucide-react';
+import camlyPreview from '../../assets/camly_preview.jpeg';
 
 export default function LandingPage() {
   return (
@@ -131,18 +132,91 @@ export default function LandingPage() {
            
            <div className="relative">
               <div className="absolute inset-0 bg-brand/20 rounded-[3rem] blur-[100px] pointer-events-none" />
-              <div className="relative bg-dark rounded-[2.5rem] border-[12px] border-dark shadow-2xl overflow-hidden aspect-[9/16] w-full max-w-[320px] mx-auto scale-110 lg:scale-125">
+               <div className="relative bg-dark rounded-[2.5rem] border-[12px] border-dark shadow-2xl overflow-hidden aspect-[9/16] w-full max-w-[320px] mx-auto scale-110 lg:scale-125">
                  <img 
-                  src="/images/taza.svg" 
-                  className="w-full h-full object-cover opacity-20 grayscale" 
+                  src={camlyPreview} 
+                  className="w-full h-full object-cover" 
                   alt="Demo APP" 
                 />
-                <div className="absolute inset-0 flex items-center justify-center p-8 text-center text-white/40">
-                   <div className="space-y-4">
-                      <Smartphone size={48} className="mx-auto" />
-                      <p className="text-[10px] font-black uppercase tracking-widest">Vista Previa de Tienda</p>
-                   </div>
-                </div>
+              </div>
+           </div>
+        </div>
+      </section>
+
+      {/* ── PRICING SECTION ────────────────────────────────── */}
+      <section className="py-24 bg-bg-alt/30" id="pricing">
+        <div className="fluid-container max-w-5xl">
+           <div className="text-center space-y-4 mb-16">
+              <h2 className="text-4xl font-black text-dark uppercase tracking-tighter">PLANES SIMPLES, <span className="text-brand">SIN COMISIONES</span></h2>
+              <p className="text-muted font-medium max-w-xl mx-auto">Comienza gratis hoy mismo y escala cuando tu negocio lo necesite. Todo el control en tus manos.</p>
+           </div>
+           
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+              {/* PLAN ESSENTIAL */}
+              <div className="premium-card !p-10 border-border">
+                 <div className="space-y-6 mb-8">
+                    <h3 className="text-2xl font-black text-dark uppercase tracking-tight">Esencial</h3>
+                    <div className="flex items-end gap-2">
+                       <span className="text-5xl font-black tracking-tighter text-dark">$0</span>
+                       <span className="text-sm font-bold text-muted uppercase tracking-widest mb-2">/ de por vida</span>
+                    </div>
+                    <p className="text-sm text-muted font-medium">Perfecto para negocios que están iniciando y quieren organizarse.</p>
+                 </div>
+                 
+                 <ul className="space-y-4 mb-10">
+                    {[
+                      'Tu propio enlace (camly.co/tumarca)',
+                      'Catálogo con hasta 50 productos',
+                      'Recepción de pedidos por WhatsApp',
+                      'Panel de administración básico',
+                    ].map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-4 text-sm font-bold text-dark">
+                         <Check size={18} className="text-success shrink-0 mt-0.5" />
+                         {feature}
+                      </li>
+                    ))}
+                 </ul>
+                 
+                 <Link to="/registro" className="w-full btn-primary !bg-dark hover:!bg-brand/90 transition-colors inline-flex justify-center">
+                    COMENZAR GRATIS
+                 </Link>
+              </div>
+
+              {/* PLAN PRO */}
+              <div className="premium-card !p-10 border-brand shadow-2xl shadow-brand/20 relative overflow-hidden">
+                 <div className="absolute top-6 right-6 px-3 py-1 bg-brand text-white text-[9px] font-black uppercase tracking-widest rounded-full">
+                    RECOMENDADO
+                 </div>
+                 <div className="space-y-6 mb-8 relative z-10">
+                    <h3 className="text-2xl font-black text-brand uppercase tracking-tight">Profesional</h3>
+                    <div className="flex items-end gap-2">
+                       <span className="text-5xl font-black tracking-tighter text-dark">$15</span>
+                       <span className="text-sm font-bold text-muted uppercase tracking-widest mb-2">/ mes</span>
+                    </div>
+                    <p className="text-sm text-muted font-medium">Herramientas avanzadas para negocios con alto volumen de entregas.</p>
+                 </div>
+                 
+                 <ul className="space-y-4 mb-10 relative z-10">
+                    {[
+                      'Todo lo del plan Esencial',
+                      'Productos e imágenes ilimitadas',
+                      'Seguimiento GPS para el cliente',
+                      'Gestión de múltiples repartidores',
+                      'Temas de marca y colores personalizados',
+                      'Estadísticas y descargas en Excel'
+                    ].map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-4 text-sm font-bold text-dark">
+                         <Check size={18} className="text-brand shrink-0 mt-0.5" />
+                         {feature}
+                      </li>
+                    ))}
+                 </ul>
+                 
+                 <Link to="/registro" className="w-full btn-primary shadow-xl shadow-brand/30 inline-flex justify-center relative z-10">
+                    OBTENER PRUEBA PRO
+                 </Link>
+                 
+                 <div className="absolute bottom-0 right-0 w-64 h-64 bg-brand/10 rounded-full blur-[80px] pointer-events-none" />
               </div>
            </div>
         </div>

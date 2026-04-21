@@ -44,33 +44,41 @@ export default function SettingsView({ business, onUpdate }) {
     e.preventDefault();
     setLoading(true);
     try {
+      const payload = {
+        nombre_visible: formData.nombre_visible || '',
+        telefono: formData.telefono || '',
+        direccion: formData.direccion || '',
+        instagram: formData.instagram || '',
+        facebook: formData.facebook || '',
+        tiktok: formData.tiktok || '',
+        footer_message: formData.footer_message || '',
+        theme_color: formData.theme_color || '#2563EB',
+        color_secundario: formData.color_secundario || '#F9FAFB',
+        logo_url: formData.logo_url || '',
+        whatsapp_contacto: formData.whatsapp_contacto || '',
+        metodos_pago: Array.isArray(formData.metodos_pago) ? formData.metodos_pago : ['efectivo', 'transferencia'],
+        pago_alias: formData.pago_alias || '',
+        pago_banco: formData.pago_banco || ''
+      };
+
       const { error } = await getSupabase()
         .from('negocios')
-        .update({
-          nombre_visible: formData.nombre_visible,
-          telefono: formData.telefono,
-          direccion: formData.direccion,
-          instagram: formData.instagram,
-          facebook: formData.facebook,
-          tiktok: formData.tiktok,
-          footer_message: formData.footer_message,
-          theme_color: formData.theme_color,
-          color_secundario: formData.color_secundario,
-          logo_url: formData.logo_url,
-          whatsapp_contacto: formData.whatsapp_contacto,
-          metodos_pago: Array.isArray(formData.metodos_pago) ? formData.metodos_pago : ['efectivo', 'transferencia'],
-          pago_alias: formData.pago_alias,
-          pago_banco: formData.pago_banco
-        })
+        .update(payload)
         .eq('id', business.id);
         
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase Error:', error);
+        addToast(`Error: ${error.message} - ${error.hint || ''}`, 'error');
+        throw error;
+      }
       
       addToast('Configuración guardada correctamente', 'success');
       onUpdate();
     } catch (err) {
-      console.error(err);
-      addToast('Error al guardar cambios.', 'error');
+      console.error('Caught Error:', err);
+      if (!err.message?.includes('Error:')) {
+        addToast('Error al guardar cambios. Revisa la consola.', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -202,25 +210,48 @@ export default function SettingsView({ business, onUpdate }) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Color de Marca</label>
-                  <div className="grid grid-cols-5 gap-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Color de Marca</label>
+                    <div className="flex items-center gap-2">
+                       <input 
+                        type="color" 
+                        value={formData.theme_color}
+                        onChange={e => setFormData({...formData, theme_color: e.target.value})}
+                        className="w-8 h-8 rounded-lg cursor-pointer border-2 border-white shadow-sm"
+                       />
+                       <span className="text-[10px] font-mono font-bold text-dark uppercase">{formData.theme_color}</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-6 gap-3">
                     {THEME_COLORS.map(c => (
                       <button 
                         key={c.hex} type="button" 
                         onClick={() => setFormData({...formData, theme_color: c.hex})}
-                        className={`aspect-square rounded-xl ${c.class} border-4 ${formData.theme_color === c.hex ? 'border-brand' : 'border-transparent'}`}
+                        className={`aspect-square rounded-xl ${c.class} border-4 ${formData.theme_color === c.hex ? 'border-brand' : 'border-transparent'} transition-all hover:scale-110`}
                       />
                     ))}
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Color Secundario</label>
-                  <input 
-                    type="color" 
-                    value={formData.color_secundario}
-                    onChange={e => setFormData({...formData, color_secundario: e.target.value})}
-                    className="w-full h-12 rounded-xl cursor-pointer border-none bg-transparent"
-                  />
+                  <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Ambiente / Secundario</label>
+                  <div className="flex items-center gap-4">
+                    <input 
+                      type="color" 
+                      value={formData.color_secundario}
+                      onChange={e => setFormData({...formData, color_secundario: e.target.value})}
+                      className="flex-1 h-12 rounded-xl cursor-pointer border-none bg-bg-alt p-1"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setFormData({...formData, color_secundario: '#F9FAFB'})}
+                      className="px-4 py-3 bg-white border border-border rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-bg-alt transition-all"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-muted font-bold uppercase tracking-widest leading-loose">
+                    Este color se usa para fondos y contrastes suaves. Recomendamos colores claros.
+                  </p>
                 </div>
               </div>
             </div>

@@ -99,14 +99,14 @@ export default function DriversView({ businessId }) {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] border border-border">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-white p-6 rounded-[2rem] border border-border">
         <div>
            <h4 className="text-xl font-black text-dark uppercase tracking-tight">Gestión de Repartidores</h4>
            <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-1">Controla tu equipo de entregas</p>
         </div>
         <button 
           onClick={() => setIsAdding(!isAdding)}
-          className="btn-primary !py-3 !px-6 shadow-lg shadow-brand/20"
+          className="btn-primary !py-3 !px-6 shadow-lg shadow-brand/20 w-full sm:w-auto"
         >
           {isAdding ? <XCircle size={18} /> : <><UserPlus size={18} /> NUEVO REPARTIDOR</>}
         </button>

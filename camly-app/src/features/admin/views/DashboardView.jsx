@@ -92,9 +92,9 @@ export default function DashboardView({ orders, products }) {
             </div>
           </div>
 
-          <div className="w-full h-[350px] min-h-[350px] relative">
+          <div className="w-full h-[350px] min-h-[350px] relative overflow-hidden">
             {stats.chartData?.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <AreaChart data={stats.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorVentas" x1="0" y1="0" x2="0" y2="1">

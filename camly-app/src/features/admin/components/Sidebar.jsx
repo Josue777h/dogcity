@@ -27,9 +27,13 @@ export default function Sidebar({ activeTab, setActiveTab, business, onSignOut, 
       `}>
         <div className="p-8">
           <div className="flex items-center justify-between mb-10 lg:block">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-brand rounded-xl flex items-center justify-center shadow-lg shadow-brand/50 overflow-hidden">
-                {business?.logo_url ? <img src={business.logo_url} className="w-full h-full object-contain p-1" /> : <Store size={22} />}
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-brand rounded-2xl flex items-center justify-center shadow-lg shadow-brand/50 overflow-hidden border-2 border-white/10 shrink-0">
+                {business?.logo_url ? (
+                  <img src={business.logo_url} className="w-full h-full object-contain p-1.5" alt={business.nombre_visible} />
+                ) : (
+                  <Store size={28} />
+                )}
               </div>
               <div className="overflow-hidden">
                 <h2 className="text-lg font-black tracking-tighter truncate uppercase leading-none">

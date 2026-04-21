@@ -3,6 +3,11 @@
 :root {
   --primary-brand: #2563EB;
   --secondary-brand: #F9FAFB;
+  
+  /* Dynamic Aliases */
+  --color-brand: var(--primary-brand);
+  --color-brand-alt: var(--secondary-brand);
+  --color-brand-muted: color-mix(in srgb, var(--primary-brand), transparent 90%);
   --accent-brand: #7C3AED;
 }
 

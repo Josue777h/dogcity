@@ -94,36 +94,36 @@ export default function OrdersView({ orders, onUpdate }) {
             {/* Header Row */}
             <div 
               onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-              className="p-4 sm:p-6 cursor-pointer flex flex-col lg:grid lg:grid-cols-6 gap-4 items-center"
+              className="p-4 cursor-pointer grid grid-cols-2 lg:grid-cols-6 gap-3 items-center relative"
             >
-              <div className="flex items-center gap-3 w-full lg:w-auto">
-                <div className="px-3 py-1.5 bg-brand text-white rounded-lg font-black text-[10px] tracking-tight">
-                  #{order.id.toString().slice(-4).toUpperCase()}
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-dark">{new Date(order.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
+              <div className="col-span-2 lg:col-span-1 flex items-center justify-between w-full pr-8 lg:pr-0">
+                 <div className="flex items-center gap-2">
+                   <div className="px-2 py-1 bg-brand text-white rounded-md font-black text-[10px] tracking-tight leading-none shadow-sm">
+                     #{order.id.toString().slice(-4).toUpperCase()}
+                   </div>
+                   <span className="text-[10px] font-bold text-dark opacity-50">
+                     {new Date(order.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                   </span>
+                 </div>
               </div>
 
-              <div className="col-span-2 w-full lg:w-auto">
-                <p className="text-xs font-black text-dark uppercase tracking-tight truncate">{order.nombre}</p>
-                <p className="text-[10px] text-muted font-bold truncate tracking-widest uppercase">{order.entrega_metodo === 'envio' ? '🛵 Domicilio' : '🏠 Local'}</p>
+              <div className="col-span-2 lg:col-span-2 w-full">
+                <p className="text-sm font-black text-dark uppercase tracking-tight truncate pr-8">{order.nombre}</p>
+                <p className="text-[10px] text-muted font-bold tracking-widest uppercase">{order.entrega_metodo === 'envio' ? '🛵 Domicilio' : '🏠 Local'}</p>
               </div>
 
-              <div className="w-full lg:w-auto">
+              <div className="w-full">
                 <span className="text-sm font-black text-brand tracking-tighter">{formatMoney(order.total)}</span>
               </div>
 
-              <div className="w-full lg:w-auto">
-                <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest w-full text-center block ${getStatusColor(order.estado || order.status)}`}>
+              <div className="w-full">
+                <span className={`px-2 py-1 rounded border text-[9px] font-black uppercase tracking-widest w-full text-center block ${getStatusColor(order.estado || order.status)}`}>
                   {order.estado || order.status}
                 </span>
               </div>
 
-              <div className="flex justify-end gap-2 w-full lg:w-auto">
-                 <button className="p-2 transition-transform hover:scale-110 text-muted">
-                    <ChevronRight size={18} className={`transition-transform duration-300 ${expandedOrderId === order.id ? 'rotate-90' : ''}`} />
-                 </button>
+              <div className="absolute right-4 top-4 lg:relative lg:right-0 lg:top-0 lg:col-span-1 flex justify-end w-auto text-muted">
+                 <ChevronRight size={20} className={`transition-transform duration-300 ${expandedOrderId === order.id ? 'rotate-90 text-brand' : ''}`} />
               </div>
             </div>
 

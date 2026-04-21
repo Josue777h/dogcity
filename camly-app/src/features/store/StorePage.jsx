@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
-import { Menu, X, Settings, Home, ShoppingBag, Info, Phone, MessageCircle, Clock, Search } from 'lucide-react';
+import { Menu, X, Settings, Home, ShoppingBag, ShoppingCart, Info, Phone, MessageCircle, Clock, Search } from 'lucide-react';
 import { useBusinessStore, useCartStore, useToastStore } from '../../stores';
 import { fetchBusiness, fetchProducts, subscribeToProducts } from '../../lib/supabase';
 import { formatMoney } from '../../lib/utils';
@@ -88,9 +88,13 @@ export default function StorePage() {
       {/* ── TOP NAV ────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 w-full bg-white/80 backdrop-blur-md z-[80] border-b border-border">
         <div className="fluid-container h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 decoration-0">
-            <div className="w-10 h-10 bg-brand rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand/20 overflow-hidden">
-              {business?.logo_url ? <img src={business.logo_url} className="w-full h-full object-contain p-1" /> : <ShoppingBag size={22} />}
+          <Link to="/" className="flex items-center gap-4 decoration-0">
+            <div className="w-14 h-14 bg-brand rounded-2xl flex items-center justify-center text-white shadow-xl shadow-brand/20 overflow-hidden border-2 border-white/50">
+              {business?.logo_url ? (
+                <img src={business.logo_url} className="w-full h-full object-contain p-1.5" alt={business.nombre_visible} />
+              ) : (
+                <ShoppingBag size={28} />
+              )}
             </div>
             <div className="hidden sm:block">
               <h1 className="text-lg font-black text-dark uppercase tracking-tight leading-none">{business?.nombre_visible || 'CAMLY'}</h1>
@@ -103,6 +107,17 @@ export default function StorePage() {
               <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
               <span className="text-[11px] font-bold uppercase tracking-wider">Negocio Abierto</span>
             </div>
+            <button 
+              onClick={() => setDrawerOpen(true)}
+              className="relative p-2 text-dark hover:text-brand transition-colors bg-brand/5 rounded-xl border border-brand/10 hover:bg-brand hover:text-white"
+            >
+              <ShoppingCart size={22} />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-error text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                  {totalItems}
+                </span>
+              )}
+            </button>
             
           </div>
         </div>
