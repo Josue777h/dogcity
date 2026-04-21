@@ -75,7 +75,6 @@ export default function OrdersView({ orders, onUpdate }) {
     window.open(`https://wa.me/${driver.telefono}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  return (
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
   return (

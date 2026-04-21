@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { 
+  Save, User, Phone, MapPin, Globe, Loader2, 
+  Instagram, Facebook, MessageSquare, Palette,
   CheckCircle2, CreditCard, Upload, Smartphone, Check, Settings
 } from 'lucide-react';
 import { getSupabase } from '../../../lib/supabase';
