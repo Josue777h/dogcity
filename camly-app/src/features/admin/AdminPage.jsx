@@ -8,7 +8,8 @@ import {
   updateProduct, 
   deleteProduct, 
   fetchOrders, 
-  subscribeToOrders 
+  subscribeToOrders,
+  fetchSubscription
 } from '../../lib/supabase';
 import { useAuthStore, useToastStore, useBusinessStore } from '../../stores';
 
@@ -16,6 +17,7 @@ import { useAuthStore, useToastStore, useBusinessStore } from '../../stores';
 import Sidebar from './components/Sidebar';
 import AdminHeader from './components/AdminHeader';
 import ProductModal from './components/ProductModal';
+import BillingModal from '../../components/ui/BillingModal';
 
 // Views
 import DashboardView from './views/DashboardView';
@@ -74,12 +76,14 @@ export default function AdminPage() {
       setBusiness(biz);
       
       if (biz) {
-        const [p, o] = await Promise.all([
+        const [p, o, sub] = await Promise.all([
           fetchProducts(biz.id), 
-          fetchOrders(biz.id)
+          fetchOrders(biz.id),
+          fetchSubscription(biz.id)
         ]);
         setProducts(p);
         setOrders(o);
+        setBusiness(biz, sub); // Update Business with Subscription!
       }
     } catch (err) {
       console.error('Error loading admin data:', err);
@@ -264,6 +268,8 @@ export default function AdminPage() {
           onClose={() => setEditingProduct(null)}
         />
       )}
+      
+      <BillingModal />
     </div>
   );
 }

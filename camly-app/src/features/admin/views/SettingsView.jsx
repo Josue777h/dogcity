@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { getSupabase, uploadImage } from '../../../lib/supabase';
 import { useToastStore } from '../../../stores';
-
+import PremiumLock from '../../../components/ui/PremiumLock';
 const THEME_COLORS = [
   { name: 'Azul', hex: '#2563EB', class: 'bg-[#2563EB]' },
   { name: 'Morado', hex: '#7C3AED', class: 'bg-[#7C3AED]' },
@@ -175,86 +175,88 @@ export default function SettingsView({ business, onUpdate }) {
           )}
 
           {activeTab === 'marca' && (
-            <div className="space-y-10 animate-in fade-in duration-300">
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Logo del Negocio</label>
-                <div className="flex items-center gap-6">
-                  <div className="relative group">
-                    <div className="w-24 h-24 bg-bg-alt border-2 border-dashed border-border rounded-3xl flex items-center justify-center overflow-hidden">
-                      {isUploading ? (
-                        <Loader2 className="animate-spin text-brand" />
-                      ) : formData.logo_url ? (
-                        <img src={formData.logo_url} alt="Logo" className="w-full h-full object-cover" />
-                      ) : <Upload className="text-muted" />}
+            <PremiumLock featureName="Identidad Visual Avanzada">
+              <div className="space-y-10 animate-in fade-in duration-300">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Logo del Negocio</label>
+                  <div className="flex items-center gap-6">
+                    <div className="relative group">
+                      <div className="w-24 h-24 bg-bg-alt border-2 border-dashed border-border rounded-3xl flex items-center justify-center overflow-hidden">
+                        {isUploading ? (
+                          <Loader2 className="animate-spin text-brand" />
+                        ) : formData.logo_url ? (
+                          <img src={formData.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                        ) : <Upload className="text-muted" />}
+                      </div>
+                      <label className="absolute -bottom-2 -right-2 bg-brand text-white p-2 rounded-xl shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform">
+                        <Upload size={14} />
+                        <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                      </label>
                     </div>
-                    <label className="absolute -bottom-2 -right-2 bg-brand text-white p-2 rounded-xl shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform">
-                      <Upload size={14} />
-                      <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
-                    </label>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <div className="relative">
-                      <input 
-                        type="text" 
-                        value={formData.logo_url}
-                        onChange={e => setFormData({...formData, logo_url: e.target.value})}
-                        placeholder="URL de tu logo (.png, .jpg)"
-                        className="w-full p-4 bg-bg-alt border border-border rounded-xl font-bold text-xs outline-none focus:border-brand" 
-                      />
-                      <Globe size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted" />
+                    <div className="flex-1 space-y-2">
+                      <div className="relative">
+                        <input 
+                          type="text" 
+                          value={formData.logo_url}
+                          onChange={e => setFormData({...formData, logo_url: e.target.value})}
+                          placeholder="URL de tu logo (.png, .jpg)"
+                          className="w-full p-4 bg-bg-alt border border-border rounded-xl font-bold text-xs outline-none focus:border-brand" 
+                        />
+                        <Globe size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted" />
+                      </div>
+                      <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Sube tu archivo o pega una URL directa</p>
                     </div>
-                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Sube tu archivo o pega una URL directa</p>
                   </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Color de Marca</label>
-                    <div className="flex items-center gap-2">
-                       <input 
-                        type="color" 
-                        value={formData.theme_color}
-                        onChange={e => setFormData({...formData, theme_color: e.target.value})}
-                        className="w-8 h-8 rounded-lg cursor-pointer border-2 border-white shadow-sm"
-                       />
-                       <span className="text-[10px] font-mono font-bold text-dark uppercase">{formData.theme_color}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Color de Marca</label>
+                      <div className="flex items-center gap-2">
+                         <input 
+                          type="color" 
+                          value={formData.theme_color}
+                          onChange={e => setFormData({...formData, theme_color: e.target.value})}
+                          className="w-8 h-8 rounded-lg cursor-pointer border-2 border-white shadow-sm"
+                         />
+                         <span className="text-[10px] font-mono font-bold text-dark uppercase">{formData.theme_color}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-6 gap-3">
+                      {THEME_COLORS.map(c => (
+                        <button 
+                          key={c.hex} type="button" 
+                          onClick={() => setFormData({...formData, theme_color: c.hex})}
+                          className={`aspect-square rounded-xl ${c.class} border-4 ${formData.theme_color === c.hex ? 'border-brand' : 'border-transparent'} transition-all hover:scale-110`}
+                        />
+                      ))}
                     </div>
                   </div>
-                  <div className="grid grid-cols-6 gap-3">
-                    {THEME_COLORS.map(c => (
-                      <button 
-                        key={c.hex} type="button" 
-                        onClick={() => setFormData({...formData, theme_color: c.hex})}
-                        className={`aspect-square rounded-xl ${c.class} border-4 ${formData.theme_color === c.hex ? 'border-brand' : 'border-transparent'} transition-all hover:scale-110`}
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Ambiente / Secundario</label>
+                    <div className="flex items-center gap-4">
+                      <input 
+                        type="color" 
+                        value={formData.color_secundario}
+                        onChange={e => setFormData({...formData, color_secundario: e.target.value})}
+                        className="flex-1 h-12 rounded-xl cursor-pointer border-none bg-bg-alt p-1"
                       />
-                    ))}
+                      <button 
+                        type="button"
+                        onClick={() => setFormData({...formData, color_secundario: '#F9FAFB'})}
+                        className="px-4 py-3 bg-white border border-border rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-bg-alt transition-all"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                    <p className="text-[9px] text-muted font-bold uppercase tracking-widest leading-loose">
+                      Este color se usa para fondos y contrastes suaves. Recomendamos colores claros.
+                    </p>
                   </div>
-                </div>
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Ambiente / Secundario</label>
-                  <div className="flex items-center gap-4">
-                    <input 
-                      type="color" 
-                      value={formData.color_secundario}
-                      onChange={e => setFormData({...formData, color_secundario: e.target.value})}
-                      className="flex-1 h-12 rounded-xl cursor-pointer border-none bg-bg-alt p-1"
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => setFormData({...formData, color_secundario: '#F9FAFB'})}
-                      className="px-4 py-3 bg-white border border-border rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-bg-alt transition-all"
-                    >
-                      Reset
-                    </button>
-                  </div>
-                  <p className="text-[9px] text-muted font-bold uppercase tracking-widest leading-loose">
-                    Este color se usa para fondos y contrastes suaves. Recomendamos colores claros.
-                  </p>
                 </div>
               </div>
-            </div>
+            </PremiumLock>
           )}
 
           {activeTab === 'pagos' && (

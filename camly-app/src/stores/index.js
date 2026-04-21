@@ -95,10 +95,22 @@ export const useCartStore = create(
 // ══════════════════════════════════════════════
 export const useBusinessStore = create((set) => ({
   business: null,
+  subscription: null,
+  isPro: false,
   products: [],
   isLoading: true,
   error: null,
-  setBusiness: (business) => set({ business, isLoading: false }),
+  setBusiness: (business, subscription) => {
+    let isPro = false;
+    if (subscription) {
+       const isProPlan = subscription.plan === 'pro';
+       const isActive = subscription.estado === 'activo';
+       const isNotExpired = new Date(subscription.fecha_fin) > new Date();
+       
+       isPro = isProPlan && isActive && isNotExpired;
+    }
+    set({ business, subscription, isPro, isLoading: false });
+  },
   setProducts: (products) => set({ products }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error, isLoading: false }),

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { getSupabase } from '../../../lib/supabase';
 import { useToastStore } from '../../../stores';
+import PremiumLock from '../../../components/ui/PremiumLock';
 
 export default function DriversView({ businessId }) {
   const [drivers, setDrivers] = useState([]);
@@ -112,7 +113,9 @@ export default function DriversView({ businessId }) {
         </button>
       </div>
 
-      {isAdding && (
+      <PremiumLock featureName="Gestión de Equipo de Repartidores">
+        <div className="space-y-8 mt-8">
+          {isAdding && (
         <form onSubmit={handleAddDriver} className="bg-brand/5 border border-brand/20 p-8 rounded-[2.5rem] animate-in zoom-in-95 duration-200">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="space-y-2">
@@ -194,6 +197,8 @@ export default function DriversView({ businessId }) {
           </div>
         )}
       </div>
+     </div>
+    </PremiumLock>
     </div>
   );
 }

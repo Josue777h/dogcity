@@ -1,6 +1,8 @@
-import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike } from 'lucide-react';
-
+import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike, Sparkles } from 'lucide-react';
+import { useBusinessStore } from '../../../stores';
 export default function Sidebar({ activeTab, setActiveTab, business, onSignOut, isOpen, onClose }) {
+  const isPro = useBusinessStore(s => s.isPro);
+  
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: Store },
     { id: 'orders', label: 'Pedidos', icon: ShoppingBag },
@@ -74,6 +76,18 @@ export default function Sidebar({ activeTab, setActiveTab, business, onSignOut, 
           >
             <LogOut size={20} /> Cerrar Sesión
           </button>
+          
+          {!isPro && (
+            <button 
+               onClick={() => window.dispatchEvent(new CustomEvent('open-billing-modal'))}
+               className="mt-6 w-full flex flex-col items-center justify-center p-4 rounded-2xl bg-gradient-to-tr from-brand to-accent shadow-xl shadow-brand/20 relative overflow-hidden group hover:scale-105 transition-transform"
+            >
+               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+               <Sparkles size={24} className="text-white mb-2 animate-pulse" />
+               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Prueba PRO Total</span>
+               <span className="text-xs font-bold text-white/80">Desbloquear todo</span>
+            </button>
+          )}
         </div>
       </aside>
     </>

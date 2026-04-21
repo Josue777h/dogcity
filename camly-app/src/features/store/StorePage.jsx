@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { Menu, X, Settings, Home, ShoppingBag, ShoppingCart, Info, Phone, MessageCircle, Clock, Search } from 'lucide-react';
 import { useBusinessStore, useCartStore, useToastStore } from '../../stores';
-import { fetchBusiness, fetchProducts, subscribeToProducts } from '../../lib/supabase';
+import { fetchBusiness, fetchProducts, subscribeToProducts, fetchSubscription } from '../../lib/supabase';
 import { formatMoney } from '../../lib/utils';
 import ProductCard from './ProductCard';
 import OrderDrawer from './OrderDrawer';
@@ -31,8 +31,12 @@ export default function StorePage() {
         const biz = await fetchBusiness(slug);
         setBusiness(biz);
         if (biz) {
-          const prods = await fetchProducts(biz.id);
+          const [prods, sub] = await Promise.all([
+            fetchProducts(biz.id),
+            fetchSubscription(biz.id)
+          ]);
           setProducts(prods);
+          setBusiness(biz, sub);
         }
       } catch (err) {
         setError(err.message);
@@ -81,8 +85,8 @@ export default function StorePage() {
     <div 
       className="min-h-screen bg-white"
       style={{ 
-        '--primary-brand': business?.theme_color || '#2563EB',
-        '--secondary-brand': business?.color_secundario || '#F9FAFB'
+        '--primary-brand': useBusinessStore.getState().isPro ? (business?.theme_color || '#2563EB') : '#2563EB',
+        '--secondary-brand': useBusinessStore.getState().isPro ? (business?.color_secundario || '#F9FAFB') : '#F9FAFB'
       }}
     >
       {/* ── TOP NAV ────────────────────────────────────────── */}

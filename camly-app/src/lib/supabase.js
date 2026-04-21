@@ -67,6 +67,20 @@ export async function fetchBusiness(slug) {
   };
 }
 
+export async function fetchSubscription(negocioId) {
+  const { data, error } = await getSupabase()
+    .from('suscripciones')
+    .select('*')
+    .eq('negocio_id', negocioId)
+    .single();
+  
+  if (error) {
+     console.error('Error fetchSubscription:', error);
+     return null;
+  }
+  return data;
+}
+
 // ── Products ──
 export async function fetchProducts(negocioId = null) {
   const schema = await getSchema();
