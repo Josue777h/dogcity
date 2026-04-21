@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { 
   Save, User, Phone, MapPin, Globe, Loader2, 
   Instagram, Facebook, MessageSquare, Palette,
-  CheckCircle2, CreditCard, Upload, Smartphone, Check, Settings
+  CheckCircle2, CreditCard, Upload, Smartphone, Check, Settings,
+  Music2, Wallet
 } from 'lucide-react';
-import { getSupabase } from '../../../lib/supabase';
+import { getSupabase, uploadImage } from '../../../lib/supabase';
 import { useToastStore } from '../../../stores';
 
 const THEME_COLORS = [
@@ -30,11 +31,13 @@ export default function SettingsView({ business, onUpdate }) {
     color_secundario: business?.color_secundario || '#F9FAFB',
     logo_url: business?.logo_url || '',
     whatsapp_contacto: business?.whatsapp_contacto || business?.telefono || '',
-    metodos_pago: business?.metodos_pago || ['efectivo', 'transferencia'],
+    metodos_pago: Array.isArray(business?.metodos_pago) ? business?.metodos_pago : ['efectivo', 'transferencia'],
     pago_alias: business?.pago_alias || '',
     pago_banco: business?.pago_banco || '',
+    tiktok: business?.tiktok || '',
   });
   
+  const [isUploading, setIsUploading] = useState(false);
   const addToast = useToastStore(s => s.addToast);
 
   const handleSubmit = async (e) => {
@@ -49,12 +52,13 @@ export default function SettingsView({ business, onUpdate }) {
           direccion: formData.direccion,
           instagram: formData.instagram,
           facebook: formData.facebook,
+          tiktok: formData.tiktok,
           footer_message: formData.footer_message,
           theme_color: formData.theme_color,
           color_secundario: formData.color_secundario,
           logo_url: formData.logo_url,
           whatsapp_contacto: formData.whatsapp_contacto,
-          metodos_pago: formData.metodos_pago,
+          metodos_pago: Array.isArray(formData.metodos_pago) ? formData.metodos_pago : ['efectivo', 'transferencia'],
           pago_alias: formData.pago_alias,
           pago_banco: formData.pago_banco
         })
@@ -66,9 +70,32 @@ export default function SettingsView({ business, onUpdate }) {
       onUpdate();
     } catch (err) {
       console.error(err);
-      addToast('Error al guardar cambios. Verifica el SQL.', 'error');
+      addToast('Error al guardar cambios.', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      addToast('El logo no debe pesar más de 2MB', 'error');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const path = `logos/${business.id}-${Date.now()}.${file.name.split('.').pop()}`;
+      const url = await uploadImage(file, path);
+      setFormData({ ...formData, logo_url: url });
+      addToast('Logo cargado correctamente', 'success');
+    } catch (err) {
+      console.error(err);
+      addToast('Error al subir el logo', 'error');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -146,23 +173,29 @@ export default function SettingsView({ business, onUpdate }) {
                 <div className="flex items-center gap-6">
                   <div className="relative group">
                     <div className="w-24 h-24 bg-bg-alt border-2 border-dashed border-border rounded-3xl flex items-center justify-center overflow-hidden">
-                      {formData.logo_url ? (
+                      {isUploading ? (
+                        <Loader2 className="animate-spin text-brand" />
+                      ) : formData.logo_url ? (
                         <img src={formData.logo_url} alt="Logo" className="w-full h-full object-cover" />
                       ) : <Upload className="text-muted" />}
                     </div>
-                    <button type="button" className="absolute -bottom-2 -right-2 bg-brand text-white p-2 rounded-xl shadow-lg border-2 border-white">
+                    <label className="absolute -bottom-2 -right-2 bg-brand text-white p-2 rounded-xl shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform">
                       <Upload size={14} />
-                    </button>
+                      <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                    </label>
                   </div>
                   <div className="flex-1 space-y-2">
-                    <input 
-                      type="text" 
-                      value={formData.logo_url}
-                      onChange={e => setFormData({...formData, logo_url: e.target.value})}
-                      placeholder="URL de tu logo (.png, .jpg)"
-                      className="w-full p-4 bg-bg-alt border border-border rounded-xl font-bold text-xs outline-none focus:border-brand" 
-                    />
-                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Se recomienda fondo transparente</p>
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        value={formData.logo_url}
+                        onChange={e => setFormData({...formData, logo_url: e.target.value})}
+                        placeholder="URL de tu logo (.png, .jpg)"
+                        className="w-full p-4 bg-bg-alt border border-border rounded-xl font-bold text-xs outline-none focus:border-brand" 
+                      />
+                      <Globe size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted" />
+                    </div>
+                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Sube tu archivo o pega una URL directa</p>
                   </div>
                 </div>
               </div>
@@ -205,22 +238,23 @@ export default function SettingsView({ business, onUpdate }) {
                     <button
                       key={m.id} type="button"
                       onClick={() => {
-                        const active = formData.metodos_pago.includes(m.id);
+                        const currentMethods = Array.isArray(formData.metodos_pago) ? formData.metodos_pago : [];
+                        const active = currentMethods.includes(m.id);
                         setFormData({
                           ...formData,
                           metodos_pago: active 
-                            ? formData.metodos_pago.filter(x => x !== m.id)
-                            : [...formData.metodos_pago, m.id]
+                            ? currentMethods.filter(x => x !== m.id)
+                            : [...currentMethods, m.id]
                         });
                       }}
                       className={`flex items-center justify-between p-6 rounded-2xl border-2 transition-all
-                        ${formData.metodos_pago.includes(m.id) ? 'border-brand bg-brand/5' : 'border-border bg-white opacity-60'}`}
+                        ${(Array.isArray(formData.metodos_pago) && formData.metodos_pago.includes(m.id)) ? 'border-brand bg-brand/5' : 'border-border bg-white opacity-60'}`}
                     >
                       <div className="flex items-center gap-4">
-                        <m.icon size={20} className={formData.metodos_pago.includes(m.id) ? 'text-brand' : 'text-muted'} />
+                        <m.icon size={20} className={(Array.isArray(formData.metodos_pago) && formData.metodos_pago.includes(m.id)) ? 'text-brand' : 'text-muted'} />
                         <span className="font-black text-xs uppercase tracking-widest">{m.label}</span>
                       </div>
-                      {formData.metodos_pago.includes(m.id) && <Check size={16} className="text-brand" />}
+                      {(Array.isArray(formData.metodos_pago) && formData.metodos_pago.includes(m.id)) && <Check size={16} className="text-brand" />}
                     </button>
                   ))}
                 </div>
@@ -260,6 +294,12 @@ export default function SettingsView({ business, onUpdate }) {
                     <Facebook size={12} /> Facebook
                   </label>
                   <input type="text" value={formData.facebook} onChange={e => setFormData({...formData, facebook: e.target.value})} className="w-full p-4 bg-bg-alt border border-border rounded-xl font-bold text-dark" />
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">
+                    <Music2 size={12} /> TikTok
+                  </label>
+                  <input type="text" value={formData.tiktok} onChange={e => setFormData({...formData, tiktok: e.target.value})} className="w-full p-4 bg-bg-alt border border-border rounded-xl font-bold text-dark" />
                 </div>
               </div>
               <div className="space-y-2">

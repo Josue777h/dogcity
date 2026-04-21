@@ -1,4 +1,4 @@
-import { Phone, MapPin, Instagram, Facebook, ShoppingBag } from 'lucide-react';
+import { Phone, MapPin, Instagram, Facebook, ShoppingBag, Music2 } from 'lucide-react';
 import { formatMoney } from '../../../lib/utils';
 
 export default function StoreFooter({ business }) {
@@ -29,6 +29,11 @@ export default function StoreFooter({ business }) {
                 {business.facebook && (
                   <a href={`https://facebook.com/${business.facebook}`} target="_blank" rel="noreferrer" className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-brand hover:text-white transition-all">
                     <Facebook size={20} />
+                  </a>
+                )}
+                {business.tiktok && (
+                  <a href={`https://tiktok.com/@${business.tiktok.replace('@', '')}`} target="_blank" rel="noreferrer" className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-brand hover:text-white transition-all">
+                    <Music2 size={20} />
                   </a>
                 )}
              </div>

@@ -17,9 +17,12 @@ export default function App() {
   // Sync Global Theme
   useEffect(() => {
     if (business?.theme_color) {
-      document.documentElement.style.setProperty('--primary-color', business.theme_color);
+      document.documentElement.style.setProperty('--primary-brand', business.theme_color);
     }
-  }, [business?.theme_color]);
+    if (business?.color_secundario) {
+      document.documentElement.style.setProperty('--secondary-brand', business.color_secundario);
+    }
+  }, [business?.theme_color, business?.color_secundario]);
 
   return (
     <BrowserRouter>

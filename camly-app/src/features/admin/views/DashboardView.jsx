@@ -93,37 +93,43 @@ export default function DashboardView({ orders, products }) {
           </div>
 
           <div className="w-full h-[350px] min-h-[350px] relative">
-            <ResponsiveContainer width="99%" height="100%">
-              <AreaChart data={stats.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorVentas" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-brand)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--color-brand)" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fontWeight: 900, fill: '#94A3B8' }}
-                  dy={10}
-                />
-                <YAxis hide />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 'bold' }}
-                  formatter={(val) => [formatMoney(val), 'Ventas']}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="ventas" 
-                  stroke="var(--color-brand)" 
-                  strokeWidth={4}
-                  fillOpacity={1} 
-                  fill="url(#colorVentas)" 
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {stats.chartData?.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorVentas" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--color-brand)" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="var(--color-brand)" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 10, fontWeight: 900, fill: '#94A3B8' }}
+                  />
+                  <YAxis hide />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 'bold' }}
+                    formatter={(val) => [formatMoney(val), 'Ventas']}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="ventas" 
+                    stroke="var(--color-brand)" 
+                    strokeWidth={4}
+                    fillOpacity={1} 
+                    fill="url(#colorVentas)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-muted opacity-20">
+                <TrendingUp size={40} className="mb-2" />
+                <p className="text-[10px] font-black uppercase">Sin actividad reciente</p>
+              </div>
+            )}
           </div>
         </div>
 
