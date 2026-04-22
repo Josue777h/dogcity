@@ -197,11 +197,19 @@ export async function registerBusiness({ email, password, businessName, phone })
 
 // ── Storage ──
 export async function uploadImage(file, path) {
+  // Sanitize path to prevent 'Invalid Key' 400 errors from Supabase
+  const sanitizedPath = path.split('/').map(segment => 
+    segment.normalize('NFD') // Decompose accented characters
+           .replace(/[\u0300-\u036f]/g, '') // Remove accents
+           .replace(/[^a-zA-Z0-9.\-_]/g, '_') // Replace spaces/special chars with underscore
+  ).join('/');
+
   const { error } = await getSupabase().storage
     .from(SUPABASE_PRODUCT_BUCKET)
-    .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+    .upload(sanitizedPath, file, { cacheControl: '3600', upsert: false, contentType: file.type });
   if (error) throw error;
-  const { data } = getSupabase().storage.from(SUPABASE_PRODUCT_BUCKET).getPublicUrl(path);
+  
+  const { data } = getSupabase().storage.from(SUPABASE_PRODUCT_BUCKET).getPublicUrl(sanitizedPath);
   return data.publicUrl;
 }
 

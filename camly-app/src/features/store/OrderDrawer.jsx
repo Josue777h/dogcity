@@ -5,6 +5,19 @@ import { formatMoney, openWhatsApp } from '../../lib/utils';
 import { saveOrder } from '../../lib/supabase';
 import { WHATSAPP_FALLBACK_PHONE } from '../../lib/constants';
 
+// Función para calcular distancia entre dos puntos (Haversine)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export default function OrderDrawer({ isOpen, onClose }) {
   const business = useBusinessStore((s) => s.business);
   const products = useBusinessStore((s) => s.products);
@@ -21,12 +34,20 @@ export default function OrderDrawer({ isOpen, onClose }) {
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState(null);
+  
+  // Estados para domicilio inteligente
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [distanceKm, setDistanceKm] = useState(null);
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [isSearchingSuggestions, setIsSearchingSuggestions] = useState(false);
 
   if (!bid) return null;
 
   const cart = carts[bid] || { quantities: {}, notes: {}, comment: '' };
   const selectedItems = getSelectedItems(bid, products);
-  const total = selectedItems.reduce((s, i) => s + i.quantity * i.price, 0);
+  const subtotal = selectedItems.reduce((s, i) => s + i.quantity * i.price, 0);
+  const total = deliveryMethod === 'envio' ? subtotal + deliveryFee : subtotal;
   const whatsappPhone = (business?.telefono || WHATSAPP_FALLBACK_PHONE).replace(/\D/g, '');
   function buildMessage(orderId, token) {
     const lines = selectedItems.map((i) => {
@@ -40,7 +61,9 @@ export default function OrderDrawer({ isOpen, onClose }) {
       '🛒 *PRODUCTOS:*', 
       lines,
       '', 
-      `💰 *TOTAL: ${formatMoney(total)}*`,
+      `💰 *SUBTOTAL: ${formatMoney(subtotal)}*`,
+      deliveryMethod === 'envio' ? `🛵 *DOMICILIO: ${formatMoney(deliveryFee)}*${distanceKm ? ` (${distanceKm.toFixed(1)} km)` : ''}` : '',
+      `🔥 *TOTAL A PAGAR: ${formatMoney(total)}*`,
       '', 
       '👤 *DATOS DE ENTREGA:*', 
       `Nombre: ${customerName}`,
@@ -58,6 +81,89 @@ export default function OrderDrawer({ isOpen, onClose }) {
     ].filter(Boolean).join('\n');
   }
 
+  async function handleAddressUpdate(address) {
+    setCustomer('customerAddress', address);
+    if (!address || address.length < 5 || deliveryMethod !== 'envio') return;
+
+    // Solo calcular si el negocio tiene Lat/Lng configurados
+    if (!business?.lat || !business?.lng) return;
+
+    setIsCalculating(true);
+    try {
+      // Usar Photon para obtener coordenadas de la dirección final
+      const response = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(address)}&limit=1`);
+      const data = await response.json();
+
+      if (data && data.features && data.features.length > 0) {
+        const feature = data.features[0];
+        const clientLat = feature.geometry.coordinates[1];
+        const clientLng = feature.geometry.coordinates[0];
+        
+        const dist = calculateDistance(
+          parseFloat(business.lat), 
+          parseFloat(business.lng), 
+          clientLat, 
+          clientLng
+        );
+        
+        setDistanceKm(dist);
+        
+        // Lógica de cobro: costo_por_km (def: 1000) o minimo (def: 3000)
+        const costPerKm = business.costo_por_km || 1000;
+        const minFee = business.domicilio_minimo || 3000;
+        
+        const calculatedFee = Math.max(minFee, Math.round(dist * costPerKm / 100) * 100);
+        setDeliveryFee(calculatedFee);
+        addToast(`Envío calculado: ${formatMoney(calculatedFee)} (${dist.toFixed(1)} km)`, 'success');
+      }
+    } catch (err) {
+      console.error("Geocoding error:", err);
+    } finally {
+      setIsCalculating(false);
+    }
+  }
+
+  async function handleFetchSuggestions(query) {
+    setCustomer('customerAddress', query);
+    if (!query || query.length < 2 || deliveryMethod !== 'envio') {
+      setAddressSuggestions([]);
+      return;
+    }
+
+    setIsSearchingSuggestions(true);
+    try {
+      const bizLat = parseFloat(business?.lat);
+      const bizLng = parseFloat(business?.lng);
+
+      // Usar Photon API (basada en OpenStreetMap, mucho más rápida y sin problemas de CORS)
+      // Priorizar resultados cerca de las coordenadas del negocio
+      const bias = !isNaN(bizLat) && !isNaN(bizLng) ? `&lat=${bizLat}&lon=${bizLng}` : '';
+      
+      const response = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8${bias}`);
+      const data = await response.json();
+
+      // Mapear el formato de Photon al formato que ya usamos
+      const mapped = (data.features || []).map(f => ({
+        place_id: f.properties.osm_id + Math.random(),
+        display_name: [
+          f.properties.name,
+          f.properties.street,
+          f.properties.district,
+          f.properties.city,
+          f.properties.state
+        ].filter(Boolean).join(', '),
+        lat: f.geometry.coordinates[1],
+        lon: f.geometry.coordinates[0]
+      }));
+
+      setAddressSuggestions(mapped);
+    } catch (err) {
+      console.error("Autocomplete error:", err);
+    } finally {
+      setIsSearchingSuggestions(false);
+    }
+  }
+
   async function handleSubmit() {
     if (selectedItems.length === 0) { addToast('Selecciona al menos un producto', 'warning'); return; }
     if (!customerName.trim()) { addToast('Ingresa tu nombre', 'warning'); return; }
@@ -73,6 +179,8 @@ export default function OrderDrawer({ isOpen, onClose }) {
         ubicacion_link: locationLink,
         comentarios: (cart.comment || '').trim(),
         total,
+        domicilio_costo: deliveryMethod === 'envio' ? deliveryFee : 0,
+        distancia_km: distanceKm,
         status: 'nuevo',
         items: selectedItems.map((i) => ({ 
           id: i.id, 
@@ -186,11 +294,49 @@ export default function OrderDrawer({ isOpen, onClose }) {
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
                   <input 
-                    type="text" placeholder="Dirección exacta" 
-                    value={customerAddress} onChange={(e) => setCustomer('customerAddress', e.target.value)} 
+                    type="text" placeholder="Dirección exacta o lugar (Ej: Cancha Vallester)" 
+                    value={customerAddress} 
+                    onChange={(e) => handleFetchSuggestions(e.target.value)} 
+                    onBlur={() => setTimeout(() => setAddressSuggestions([]), 300)}
                     className="w-full pl-10 pr-4 py-3 bg-white border border-border rounded-xl focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all outline-none text-sm font-bold"
                   />
+                  
+                  {isSearchingSuggestions && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                       <Loader2 size={14} className="animate-spin text-brand" />
+                    </div>
+                  )}
+                  
+                  {addressSuggestions.length > 0 && (
+                    <div className="absolute top-[100%] left-0 w-full mt-2 bg-white border border-border rounded-2xl shadow-2xl z-[60] max-h-52 overflow-y-auto scrollbar-thin animate-in slide-in-from-top-2 duration-200">
+                      {addressSuggestions.map(place => (
+                        <button 
+                          key={place.place_id}
+                          type="button"
+                          onClick={() => {
+                             setCustomer('customerAddress', place.display_name);
+                             setAddressSuggestions([]);
+                             handleAddressUpdate(place.display_name);
+                          }}
+                          className="w-full text-left p-3 text-[10px] font-bold text-dark hover:bg-brand/5 border-b last:border-0 border-border/50 transition-colors flex items-start gap-2"
+                        >
+                          <Navigation size={12} className="text-brand shrink-0 mt-0.5" />
+                          <span>{place.display_name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
+                {deliveryMethod === 'envio' && deliveryFee > 0 && (
+                  <div className="flex items-center justify-between px-2 py-1 bg-brand/5 border border-brand/10 rounded-lg animate-in fade-in duration-300">
+                    <span className="text-[10px] font-black text-brand uppercase tracking-widest flex items-center gap-1">
+                      <Navigation size={10} /> {distanceKm?.toFixed(1)} km de distancia
+                    </span>
+                    <span className="text-xs font-black text-brand italic">
+                      + {formatMoney(deliveryFee)} Envío
+                    </span>
+                  </div>
+                )}
                 <button onClick={requestLocation} className="w-full py-3 bg-success/10 text-success border border-success/20 rounded-xl flex items-center justify-center gap-2 text-xs font-black transition-colors hover:bg-success/20">
                   <Navigation size={14}/> {locationLink ? 'UBICACIÓN CAPTURADA ✓' : 'COMPARTIR MI UBICACIÓN GPS'}
                 </button>

@@ -1,4 +1,4 @@
-import { Search, Plus, Edit, Trash2, Tag } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Tag, Package } from 'lucide-react';
 import { formatMoney } from '../../../lib/utils';
 
 export default function ProductsView({ products, onAdd, onEdit, onDelete }) {

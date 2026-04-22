@@ -263,6 +263,7 @@ export default function AdminPage() {
       {editingProduct && (
         <ProductModal 
           product={Object.keys(editingProduct).length > 0 ? editingProduct : null}
+          products={products}
           businessId={business.id}
           onSave={handleSaveProduct}
           onClose={() => setEditingProduct(null)}
