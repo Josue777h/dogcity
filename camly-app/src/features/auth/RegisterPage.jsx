@@ -11,7 +11,7 @@ const FEATURES = [
 ];
 
 import { MessageCircle } from 'lucide-react';
-import saasLogo from '../../assets/saas-logo.svg';
+import SaaSLogo from '../../components/common/SaaSLogo';
 
 export default function RegisterPage() {
   const addToast = useToastStore((s) => s.addToast);
@@ -51,10 +51,7 @@ export default function RegisterPage() {
            </div>
 
            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-10">
-                <img src={saasLogo} alt="Logo" className="w-12 h-12" />
-                <h1 className="text-2xl font-black tracking-tighter uppercase italic">CAMLY</h1>
-              </div>
+              <SaaSLogo className="h-16 mb-10 text-white" />
               <h2 className="text-5xl font-black leading-none tracking-tighter uppercase italic mb-6">
                 LLEVA TU NEGOCIO AL <span className="text-brand">SIGUIENTE NIVEL.</span>
               </h2>

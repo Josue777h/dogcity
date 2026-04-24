@@ -14,7 +14,7 @@ export default function StorePage() {
 
   const { business, products, isLoading, setBusiness, setProducts, setLoading, setError } = useBusinessStore();
   const bid = business?.id;
-  
+
   const totalItems = useCartStore((s) => s.getTotalItems(bid));
   const totalPrice = useCartStore((s) => s.getTotalPrice(bid, products));
   const addToast = useToastStore((s) => s.addToast);
@@ -82,9 +82,9 @@ export default function StorePage() {
   }
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-white"
-      style={{ 
+      style={{
         '--primary-brand': useBusinessStore.getState().isPro ? (business?.theme_color || '#2563EB') : '#2563EB',
         '--secondary-brand': useBusinessStore.getState().isPro ? (business?.color_secundario || '#F9FAFB') : '#F9FAFB'
       }}
@@ -102,7 +102,7 @@ export default function StorePage() {
             </div>
             <div className="hidden sm:block">
               <h1 className="text-lg font-black text-dark uppercase tracking-tight leading-none">{business?.nombre_visible || 'CAMLY'}</h1>
-              <span className="text-[10px] font-bold text-muted uppercase tracking-[0.2em]">SaaS de Pedidos</span>
+              {/* <span className="text-[10px] font-bold text-muted uppercase tracking-[0.2em]">SaaS de Pedidos</span> */}
             </div>
           </Link>
 
@@ -111,7 +111,7 @@ export default function StorePage() {
               <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
               <span className="text-[11px] font-bold uppercase tracking-wider">Negocio Abierto</span>
             </div>
-            <button 
+            <button
               onClick={() => setDrawerOpen(true)}
               className="relative p-2 text-dark hover:text-brand transition-colors bg-brand/5 rounded-xl border border-brand/10 hover:bg-brand hover:text-white"
             >
@@ -122,7 +122,7 @@ export default function StorePage() {
                 </span>
               )}
             </button>
-            
+
           </div>
         </div>
       </nav>
@@ -130,7 +130,7 @@ export default function StorePage() {
       <main className="pt-24 pb-32">
         <div className="fluid-container">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
+
             {/* ── LEFT COL: Categories (Sticky) ─────────────────── */}
             <aside className="lg:col-span-2 space-y-6">
               <div className="sticky top-24">
@@ -141,8 +141,8 @@ export default function StorePage() {
                       key={cat}
                       onClick={() => setCurrentCategory(cat)}
                       className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-sm font-bold transition-all
-                        ${currentCategory === cat 
-                          ? 'bg-brand text-white shadow-lg shadow-brand/20 translate-x-1' 
+                        ${currentCategory === cat
+                          ? 'bg-brand text-white shadow-lg shadow-brand/20 translate-x-1'
                           : 'bg-bg-alt text-dark hover:bg-border'}`}
                     >
                       {cat}
@@ -161,14 +161,14 @@ export default function StorePage() {
                   <p className="text-white/70 text-sm font-medium mt-1 uppercase tracking-widest">Encuentra tus favoritos hoy mismo</p>
                 </div>
                 <div className="relative w-full md:w-64">
-                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
-                   <input 
-                    type="text" 
-                    placeholder="Buscar producto..." 
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Buscar producto..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-sm font-bold outline-none placeholder:text-white/40 focus:bg-white/20 transition-all"
-                   />
+                  />
                 </div>
               </div>
 
@@ -195,12 +195,12 @@ export default function StorePage() {
                 <div className="premium-card !p-0">
                   <div className="bg-dark text-white p-5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                       <ShoppingBag size={18} className="text-brand" />
-                       <h3 className="font-black text-sm uppercase tracking-widest">Tu Pedido</h3>
+                      <ShoppingBag size={18} className="text-brand" />
+                      <h3 className="font-black text-sm uppercase tracking-widest">Tu Pedido</h3>
                     </div>
                     <span className="bg-brand px-2 py-0.5 rounded text-[10px] font-black">{totalItems}</span>
                   </div>
-                  
+
                   <div className="p-5 space-y-4 min-h-[300px] flex flex-col">
                     {totalItems === 0 ? (
                       <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30 grayscale">
@@ -246,21 +246,21 @@ export default function StorePage() {
       {/* ── MOBILE BAR ─────────────────────────────────────── */}
       {!drawerOpen && totalItems > 0 && (
         <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-[90] animate-in fade-in slide-in-from-bottom-5 duration-500">
-           <button 
+          <button
             onClick={() => setDrawerOpen(true)}
             className="w-full bg-dark text-white p-2 rounded-2xl flex items-center justify-between shadow-2xl overflow-hidden active:scale-95 transition-transform"
-           >
-              <div className="bg-brand h-12 w-12 rounded-xl flex items-center justify-center font-black text-lg">
-                {totalItems}
-              </div>
-              <div className="flex-1 px-4 text-left">
-                <p className="text-[10px] font-black opacity-60 uppercase tracking-widest leading-none">Total Pedido</p>
-                <p className="text-xl font-black tracking-tighter leading-none mt-1">{formatMoney(totalPrice)}</p>
-              </div>
-              <div className="bg-white/10 px-4 h-12 flex items-center rounded-xl text-xs font-black uppercase tracking-widest gap-2">
-                REVISAR <ShoppingBag size={14} />
-              </div>
-           </button>
+          >
+            <div className="bg-brand h-12 w-12 rounded-xl flex items-center justify-center font-black text-lg">
+              {totalItems}
+            </div>
+            <div className="flex-1 px-4 text-left">
+              <p className="text-[10px] font-black opacity-60 uppercase tracking-widest leading-none">Total Pedido</p>
+              <p className="text-xl font-black tracking-tighter leading-none mt-1">{formatMoney(totalPrice)}</p>
+            </div>
+            <div className="bg-white/10 px-4 h-12 flex items-center rounded-xl text-xs font-black uppercase tracking-widest gap-2">
+              REVISAR <ShoppingBag size={14} />
+            </div>
+          </button>
         </div>
       )}
 

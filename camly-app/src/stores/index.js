@@ -86,7 +86,15 @@ export const useCartStore = create(
         carts: { ...s.carts, [bid]: { quantities: {}, notes: {}, comment: '' } }
       })),
     }),
-    { name: 'camly-multi-cart' }
+    { 
+      name: 'camly-multi-cart',
+      partialize: (state) => ({ 
+        carts: state.carts,
+        customerName: state.customerName,
+        customerPhone: state.customerPhone,
+        // Excluimos customerAddress y locationLink de la persistencia para forzar fresh data
+      }),
+    }
   )
 );
 

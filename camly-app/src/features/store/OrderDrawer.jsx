@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Phone, MapPin, Loader2, Navigation, MessageCircle, Copy, Trash2, X, CreditCard, Wallet, ShoppingBag, Truck, CheckCircle2, Smartphone, ShoppingCart } from 'lucide-react';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
 import { formatMoney, openWhatsApp } from '../../lib/utils';
@@ -41,6 +41,16 @@ export default function OrderDrawer({ isOpen, onClose }) {
   const [distanceKm, setDistanceKm] = useState(null);
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [isSearchingSuggestions, setIsSearchingSuggestions] = useState(false);
+  
+  // Reiniciar ubicación cada vez que se abre el pedido (Requisito: GPS Fresco)
+  useEffect(() => {
+    if (isOpen) {
+      setCustomer('customerAddress', '');
+      setLocation(null, '');
+      setDistanceKm(null);
+      setDeliveryFee(0);
+    }
+  }, [isOpen]);
 
   if (!bid) return null;
 
@@ -50,43 +60,37 @@ export default function OrderDrawer({ isOpen, onClose }) {
   const total = deliveryMethod === 'envio' ? subtotal + deliveryFee : subtotal;
   const whatsappPhone = (business?.telefono || WHATSAPP_FALLBACK_PHONE).replace(/\D/g, '');
   function buildMessage(orderId, token) {
-    const lines = selectedItems.map((i) => {
+    const rawName = business?.nombre_visible || 'la tienda';
+    const formattedBusinessName = rawName.trim().toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+    const itemsLines = selectedItems.map((i) => {
       const note = (cart.notes[i.id] || '').trim();
-      return note ? `• ${i.quantity} x ${i.name}\n  Nota: ${note}` : `• ${i.quantity} x ${i.name}`;
+      return `• ${i.quantity} x ${i.name}${note ? ` (${note})` : ''}`;
     }).join('\n');
 
-    const subtotalText = formatMoney(subtotal);
-    const deliveryText = deliveryMethod === 'envio' ? `Domicilio: ${formatMoney(deliveryFee)} ${distanceKm ? `(${distanceKm.toFixed(1)} km)` : ''}` : '';
-    const totalText = `*Total: ${formatMoney(total)}*`;
-
-    return [
-      `¡Hola! Quiero hacer un pedido en *${business?.nombre_visible || 'la tienda'}*.`,
-      '', 
-      '🛒 *PRODUCTOS:*', 
-      lines,
+    const trackingUrl = `${window.location.origin}/tracking?id=${orderId}&token=${token}`;
+    
+    const parts = [
+      `¡Nuevo pedido en *${formattedBusinessName}*!`,
       '',
-      '💰 *RESUMEN:*',
-      `Subtotal: ${subtotalText}`,
-      deliveryText,
-      totalText,
+      itemsLines,
       '',
-      '📍 *ENTREGA:*',
-      `Tipo: ${deliveryMethod === 'envio' ? 'Domicilio' : 'Recoger en local'}`,
-      deliveryMethod === 'envio' ? `Dirección (referencia): ${customerAddress || 'No proporcionada'}` : '',
-      deliveryMethod === 'envio' ? `Ubicación exacta: ${locationLink}` : '',
+      `💰 Total: ${formatMoney(total)} ${deliveryMethod === 'envio' ? '(incluye domicilio)' : ''}`,
       '',
-      '👤 *DATOS DEL CLIENTE:*',
-      `Nombre: ${customerName}`,
-      `Teléfono: ${customerPhone}`,
+      deliveryMethod === 'envio' 
+        ? `📍 Domicilio\n${customerAddress || 'Dirección no especificada'}\nVer en mapa → ${locationLink || ''}` 
+        : '📍 Recoger en local',
       '',
-      '💳 *MÉTODO DE PAGO:*',
-      paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia',
+      `👤 ${customerName} - ${customerPhone}`,
       '',
-      paymentMethod === 'transferencia' ? 'Enviaré el comprobante por este medio.\n' : '',
+      `💳 Pago: ${paymentMethod === 'transferencia' ? 'Transferencia' : 'Efectivo'}`,
+      cart.comment ? `\n💬 Nota: ${cart.comment}` : '',
+      '',
       `📦 Pedido #${orderId.toString().slice(-6).toUpperCase()}`,
-      `🔗 Seguimiento:`,
-      `${window.location.origin}/tracking?id=${orderId}&token=${token}`,
-    ].filter(Boolean).join('\n');
+      `🔎 Ver pedido → ${trackingUrl}`
+    ].filter(Boolean);
+
+    return parts.join('\n');
   }
 
   async function handleAddressUpdate(address) {
@@ -191,7 +195,6 @@ export default function OrderDrawer({ isOpen, onClose }) {
         const lng = pos.coords.longitude;
         setLocation(`https://maps.google.com/?q=${lat},${lng}`, 'Ubicación GPS capturada');
         
-        // Calcular costo si el negocio tiene coordenadas
         if (business?.lat && business?.lng) {
           const dist = calculateDistance(
             parseFloat(business.lat), 
@@ -210,11 +213,19 @@ export default function OrderDrawer({ isOpen, onClose }) {
         setIsCalculating(false);
       },
       (err) => {
-        console.error(err);
-        addToast('Error al obtener ubicación. Activa el GPS.', 'error');
+        console.error("GPS Error:", err);
+        let msg = 'Error al obtener ubicación.';
+        if (err.code === 1) msg = 'Permiso denegado. Activa el GPS en ajustes.';
+        if (err.code === 3) msg = 'Tiempo agotado. Intenta de nuevo.';
+        
+        addToast(msg, 'error');
         setIsCalculating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { 
+        enableHighAccuracy: true, 
+        timeout: 15000, 
+        maximumAge: 0 
+      }
     );
   }
 
@@ -406,7 +417,14 @@ export default function OrderDrawer({ isOpen, onClose }) {
                     </div>
                     <button 
                       onClick={() => { 
-                        navigator.clipboard.writeText(business?.pago_alias || ''); 
+                        const alias = business?.pago_alias || '';
+                        const banco = business?.pago_banco || '';
+                        // Detectamos cuál campo parece ser el número (el que tiene más dígitos)
+                        const aliasDigits = (alias.match(/\d/g) || []).length;
+                        const bancoDigits = (banco.match(/\d/g) || []).length;
+                        const toCopy = aliasDigits >= bancoDigits ? alias : banco;
+                        
+                        navigator.clipboard.writeText(toCopy); 
                         addToast('Número copiado ✅', 'success'); 
                       }}
                       className="p-3 bg-brand text-white rounded-lg hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand/20"

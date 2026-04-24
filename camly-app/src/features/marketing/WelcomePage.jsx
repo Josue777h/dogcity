@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { PartyPopper, ArrowRight, Store, LayoutDashboard, Share2, Smartphone } from 'lucide-react';
 import { useBusinessStore } from '../../stores';
-import saasLogo from '../../assets/saas-logo.svg';
+import SaaSLogo from '../../components/common/SaaSLogo';
 
 export default function WelcomePage() {
   const { business } = useBusinessStore();
@@ -11,8 +11,8 @@ export default function WelcomePage() {
     <div className="min-h-screen bg-bg-alt flex items-center justify-center p-6 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand/5 via-bg-alt to-bg-alt">
       <div className="w-full max-w-2xl text-center space-y-12 animate-in zoom-in-95 duration-700">
         
-        <div className="space-y-4">
-           <img src={saasLogo} alt="CAMLY Logo" className="w-24 h-auto mx-auto mb-4" />
+        <div className="space-y-6">
+           <SaaSLogo className="w-full flex justify-center h-20 mb-8" />
            <div className="w-24 h-24 bg-brand rounded-3xl flex items-center justify-center text-white mx-auto shadow-2xl shadow-brand/30 animate-bounce">
               <PartyPopper size={48} />
            </div>

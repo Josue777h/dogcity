@@ -69,3 +69,13 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ── SaaS Logo Animations ── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
