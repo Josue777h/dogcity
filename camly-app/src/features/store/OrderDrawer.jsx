@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Phone, MapPin, Loader2, Navigation, MessageCircle, Copy, Trash2, X, CreditCard, Wallet, ShoppingBag } from 'lucide-react';
+import { User, Phone, MapPin, Loader2, Navigation, MessageCircle, Copy, Trash2, X, CreditCard, Wallet, ShoppingBag, Truck, CheckCircle2, Smartphone, ShoppingCart } from 'lucide-react';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
 import { formatMoney, openWhatsApp } from '../../lib/utils';
 import { saveOrder } from '../../lib/supabase';
@@ -55,29 +55,37 @@ export default function OrderDrawer({ isOpen, onClose }) {
       return note ? `• ${i.quantity} x ${i.name}\n  Nota: ${note}` : `• ${i.quantity} x ${i.name}`;
     }).join('\n');
 
+    const subtotalText = formatMoney(subtotal);
+    const deliveryText = deliveryMethod === 'envio' ? `Domicilio: ${formatMoney(deliveryFee)} ${distanceKm ? `(${distanceKm.toFixed(1)} km)` : ''}` : '';
+    const totalText = `*Total: ${formatMoney(total)}*`;
+
     return [
       `¡Hola! Quiero hacer un pedido en *${business?.nombre_visible || 'la tienda'}*.`,
       '', 
       '🛒 *PRODUCTOS:*', 
       lines,
-      '', 
-      `💰 *SUBTOTAL: ${formatMoney(subtotal)}*`,
-      deliveryMethod === 'envio' ? `🛵 *DOMICILIO: ${formatMoney(deliveryFee)}*${distanceKm ? ` (${distanceKm.toFixed(1)} km)` : ''}` : '',
-      `🔥 *TOTAL A PAGAR: ${formatMoney(total)}*`,
-      '', 
-      '👤 *DATOS DE ENTREGA:*', 
+      '',
+      '💰 *RESUMEN:*',
+      `Subtotal: ${subtotalText}`,
+      deliveryText,
+      totalText,
+      '',
+      '📍 *ENTREGA:*',
+      `Tipo: ${deliveryMethod === 'envio' ? 'Domicilio' : 'Recoger en local'}`,
+      deliveryMethod === 'envio' ? `Dirección (referencia): ${customerAddress || 'No proporcionada'}` : '',
+      deliveryMethod === 'envio' ? `Ubicación exacta: ${locationLink}` : '',
+      '',
+      '👤 *DATOS DEL CLIENTE:*',
       `Nombre: ${customerName}`,
       `Teléfono: ${customerPhone}`,
-      `Dirección: ${customerAddress || 'Recogida en local'}`,
-      '', 
-      `📍 *ENTREGA:* ${deliveryMethod === 'envio' ? 'Domicilio 🛵' : 'Recoger en local 🏠'}`,
-      `💳 *MÉTODO DE PAGO:* ${paymentMethod === 'efectivo' ? 'Efectivo 💵' : 'Transferencia 📱'}`,
-      paymentMethod === 'transferencia' ? '\n⚠️ _Enviaré el comprobante de transferencia por este medio._' : '',
-      locationLink ? `\n📍 *VALOR DE UBICACIÓN GPS:* ${locationLink}` : '',
-      cart.comment ? `\n💬 *COMENTARIO:* ${cart.comment}` : '',
-      '', 
-      `🧾 *PEDIDO #${orderId.toString().slice(-6).toUpperCase()}*`,
-      `🔗 *SEGUIMIENTO EN VIVO:* ${window.location.origin}/tracking?id=${orderId}&token=${token}`,
+      '',
+      '💳 *MÉTODO DE PAGO:*',
+      paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia',
+      '',
+      paymentMethod === 'transferencia' ? 'Enviaré el comprobante por este medio.\n' : '',
+      `📦 Pedido #${orderId.toString().slice(-6).toUpperCase()}`,
+      `🔗 Seguimiento:`,
+      `${window.location.origin}/tracking?id=${orderId}&token=${token}`,
     ].filter(Boolean).join('\n');
   }
 
@@ -123,51 +131,11 @@ export default function OrderDrawer({ isOpen, onClose }) {
     }
   }
 
-  async function handleFetchSuggestions(query) {
-    setCustomer('customerAddress', query);
-    if (!query || query.length < 2 || deliveryMethod !== 'envio') {
-      setAddressSuggestions([]);
-      return;
-    }
-
-    setIsSearchingSuggestions(true);
-    try {
-      const bizLat = parseFloat(business?.lat);
-      const bizLng = parseFloat(business?.lng);
-
-      // Usar Photon API (basada en OpenStreetMap, mucho más rápida y sin problemas de CORS)
-      // Priorizar resultados cerca de las coordenadas del negocio
-      const bias = !isNaN(bizLat) && !isNaN(bizLng) ? `&lat=${bizLat}&lon=${bizLng}` : '';
-      
-      const response = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8${bias}`);
-      const data = await response.json();
-
-      // Mapear el formato de Photon al formato que ya usamos
-      const mapped = (data.features || []).map(f => ({
-        place_id: f.properties.osm_id + Math.random(),
-        display_name: [
-          f.properties.name,
-          f.properties.street,
-          f.properties.district,
-          f.properties.city,
-          f.properties.state
-        ].filter(Boolean).join(', '),
-        lat: f.geometry.coordinates[1],
-        lon: f.geometry.coordinates[0]
-      }));
-
-      setAddressSuggestions(mapped);
-    } catch (err) {
-      console.error("Autocomplete error:", err);
-    } finally {
-      setIsSearchingSuggestions(false);
-    }
-  }
-
   async function handleSubmit() {
     if (selectedItems.length === 0) { addToast('Selecciona al menos un producto', 'warning'); return; }
     if (!customerName.trim()) { addToast('Ingresa tu nombre', 'warning'); return; }
     if (!customerPhone.trim()) { addToast('Ingresa tu teléfono', 'warning'); return; }
+    if (deliveryMethod === 'envio' && !locationLink) { addToast('Por favor captura tu ubicación GPS', 'warning'); return; }
 
     setIsSubmitting(true);
     try {
@@ -175,7 +143,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
       const payload = {
         nombre: customerName.trim(),
         telefono: customerPhone.trim(),
-        direccion: customerAddress.trim(),
+        direccion: deliveryMethod === 'envio' ? customerAddress : 'Recogida en local',
         ubicacion_link: locationLink,
         comentarios: (cart.comment || '').trim(),
         total,
@@ -201,6 +169,9 @@ export default function OrderDrawer({ isOpen, onClose }) {
       const message = buildMessage(orderId, token);
       setOrderResult({ id: orderId, message, token });
       addToast(`Pedido # ${orderId.toString().slice(-6)} generado`, 'success');
+      if (business?.theme_color) {
+        document.documentElement.style.setProperty('--primary-brand', business.theme_color);
+      }
     } catch (err) {
       addToast(`Error: ${err.message}`, 'error');
     } finally {
@@ -209,13 +180,41 @@ export default function OrderDrawer({ isOpen, onClose }) {
   }
 
   function requestLocation() {
-    if (!navigator.geolocation) { addToast('Navegador insuficiente', 'error'); return; }
+    if (!navigator.geolocation) { addToast('GPS no soportado en este navegador', 'error'); return; }
+    
+    // Feedback visual inmediato de carga
+    setIsCalculating(true);
+    
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLocation(`https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`, 'Ubicación agregada');
-        addToast('Ubicación capturada con éxito', 'success');
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setLocation(`https://maps.google.com/?q=${lat},${lng}`, 'Ubicación GPS capturada');
+        
+        // Calcular costo si el negocio tiene coordenadas
+        if (business?.lat && business?.lng) {
+          const dist = calculateDistance(
+            parseFloat(business.lat), 
+            parseFloat(business.lng), 
+            lat, 
+            lng
+          );
+          setDistanceKm(dist);
+          const costPerKm = business.costo_por_km || 1000;
+          const minFee = business.domicilio_minimo || 3000;
+          const calculatedFee = Math.max(minFee, Math.round(dist * costPerKm / 100) * 100);
+          setDeliveryFee(calculatedFee);
+        }
+        
+        addToast('Ubicación fijada con éxito ✅', 'success');
+        setIsCalculating(false);
       },
-      () => addToast('Permiso denegado por el usuario', 'error')
+      (err) => {
+        console.error(err);
+        addToast('Error al obtener ubicación. Activa el GPS.', 'error');
+        setIsCalculating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   }
 
@@ -235,8 +234,8 @@ export default function OrderDrawer({ isOpen, onClose }) {
                  <ShoppingBag size={20} />
                </div>
                <div>
-                 <h2 className="text-lg font-black text-dark uppercase tracking-tight">Tu Pedido</h2>
-                 <p className="text-[10px] font-bold text-muted uppercase tracking-widest leading-none mt-0.5">Checkout Seguro</p>
+                 <h2 className="text-lg font-black text-dark uppercase tracking-tight">Finalizar Pedido</h2>
+                 <p className="text-[10px] font-bold text-muted uppercase tracking-widest leading-none mt-0.5">Sigue los pasos para ordenar</p>
                </div>
              </div>
              <button onClick={onClose} className="p-2 hover:bg-bg-alt rounded-full transition-colors text-muted hover:text-dark">
@@ -247,24 +246,29 @@ export default function OrderDrawer({ isOpen, onClose }) {
           <div className="flex-1 overflow-y-auto p-6 space-y-8 hide-scrollbar">
             {/* Items Summary */}
             <div className="space-y-4">
-              <h3 className="text-xs font-black text-muted uppercase tracking-[0.15em]">🏷️ Resumen de Compra</h3>
-              <div className="bg-bg-alt rounded-2xl border border-border overflow-hidden">
+              <h3 className="text-xs font-black text-muted uppercase tracking-[0.15em] flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-brand rounded-full" /> Resumen de Compra
+              </h3>
+              <div className="bg-bg-alt rounded-[2rem] border border-border overflow-hidden">
                 {selectedItems.length === 0 ? (
                   <div className="p-8 text-center text-muted text-sm font-medium">El carrito está vacío</div>
                 ) : (
                   <div className="divide-y divide-border">
                     {selectedItems.map((item) => (
-                      <div key={item.id} className="p-4 flex items-center justify-between">
+                      <div key={item.id} className="p-6 flex items-center justify-between">
                         <div className="flex flex-col">
                           <span className="text-sm font-bold text-dark">{item.quantity}x {item.name}</span>
-                          {cart.notes[item.id] && <span className="text-[10px] text-muted italic mt-0.5">{cart.notes[item.id]}</span>}
+                          {cart.notes[item.id] && <span className="text-[10px] text-muted italic mt-0.5 bg-white px-2 py-0.5 rounded-full border border-border w-fit">{cart.notes[item.id]}</span>}
                         </div>
                         <span className="text-sm font-black text-dark">{formatMoney(item.quantity * item.price)}</span>
                       </div>
                     ))}
-                    <div className="p-4 bg-brand/5 flex items-center justify-between">
-                      <span className="text-sm font-black text-brand uppercase tracking-widest">Total a pagar</span>
-                      <span className="text-xl font-black text-brand">{formatMoney(total)}</span>
+                    <div className="p-8 bg-brand text-white flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Total a pagar</span>
+                        <span className="text-2xl font-black italic tracking-tighter">{formatMoney(total)}</span>
+                      </div>
+                      <ShoppingCart size={24} className="opacity-40" />
                     </div>
                   </div>
                 )}
@@ -272,133 +276,149 @@ export default function OrderDrawer({ isOpen, onClose }) {
             </div>
 
             {/* Customer Form */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-black text-muted uppercase tracking-[0.15em]">👤 Datos de Entrega</h3>
-              <div className="grid gap-3">
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
+            <div className="space-y-6">
+              <h3 className="text-xs font-black text-muted uppercase tracking-[0.15em] flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-brand rounded-full" /> Tus Datos
+              </h3>
+              
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => setDeliveryMethod('envio')} 
+                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${deliveryMethod === 'envio' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
+                  >
+                    <Truck size={24} className={deliveryMethod === 'envio' ? 'text-brand' : 'text-muted'} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">A Domicilio</span>
+                  </button>
+                  <button 
+                    onClick={() => { setDeliveryMethod('recogida'); setLocation(null, ''); setDeliveryFee(0); setDistanceKm(null); }} 
+                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${deliveryMethod === 'recogida' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
+                  >
+                    <ShoppingBag size={24} className={deliveryMethod === 'recogida' ? 'text-brand' : 'text-muted'} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Recoger</span>
+                  </button>
+                </div>
+
+                <div className="relative group">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={18} />
                   <input 
-                    type="text" placeholder="Nombre completo" 
+                    type="text" placeholder="Tu Nombre" 
                     value={customerName} onChange={(e) => setCustomer('customerName', e.target.value)} 
-                    className="w-full pl-10 pr-4 py-3 bg-white border border-border rounded-xl focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all outline-none text-sm font-bold"
+                    className="w-full pl-12 pr-4 py-4 bg-white border border-border rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-sm font-bold shadow-sm"
                   />
                 </div>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
+                
+                <div className="relative group">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={18} />
                   <input 
-                    type="tel" placeholder="WhatsApp / Teléfono" 
+                    type="tel" placeholder="WhatsApp" 
                     value={customerPhone} onChange={(e) => setCustomer('customerPhone', e.target.value)} 
-                    className="w-full pl-10 pr-4 py-3 bg-white border border-border rounded-xl focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all outline-none text-sm font-bold"
+                    className="w-full pl-12 pr-4 py-4 bg-white border border-border rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-sm font-bold shadow-sm"
                   />
                 </div>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
-                  <input 
-                    type="text" placeholder="Dirección exacta o lugar (Ej: Cancha Vallester)" 
-                    value={customerAddress} 
-                    onChange={(e) => handleFetchSuggestions(e.target.value)} 
-                    onBlur={() => setTimeout(() => setAddressSuggestions([]), 300)}
-                    className="w-full pl-10 pr-4 py-3 bg-white border border-border rounded-xl focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all outline-none text-sm font-bold"
-                  />
-                  
-                  {isSearchingSuggestions && (
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                       <Loader2 size={14} className="animate-spin text-brand" />
-                    </div>
-                  )}
-                  
-                  {addressSuggestions.length > 0 && (
-                    <div className="absolute top-[100%] left-0 w-full mt-2 bg-white border border-border rounded-2xl shadow-2xl z-[60] max-h-52 overflow-y-auto scrollbar-thin animate-in slide-in-from-top-2 duration-200">
-                      {addressSuggestions.map(place => (
-                        <button 
-                          key={place.place_id}
-                          type="button"
-                          onClick={() => {
-                             setCustomer('customerAddress', place.display_name);
-                             setAddressSuggestions([]);
-                             handleAddressUpdate(place.display_name);
-                          }}
-                          className="w-full text-left p-3 text-[10px] font-bold text-dark hover:bg-brand/5 border-b last:border-0 border-border/50 transition-colors flex items-start gap-2"
-                        >
-                          <Navigation size={12} className="text-brand shrink-0 mt-0.5" />
-                          <span>{place.display_name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {deliveryMethod === 'envio' && deliveryFee > 0 && (
-                  <div className="flex items-center justify-between px-2 py-1 bg-brand/5 border border-brand/10 rounded-lg animate-in fade-in duration-300">
-                    <span className="text-[10px] font-black text-brand uppercase tracking-widest flex items-center gap-1">
-                      <Navigation size={10} /> {distanceKm?.toFixed(1)} km de distancia
-                    </span>
-                    <span className="text-xs font-black text-brand italic">
-                      + {formatMoney(deliveryFee)} Envío
-                    </span>
+
+                {deliveryMethod === 'envio' && (
+                  <div className="relative group animate-in slide-in-from-top-2 duration-300">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={18} />
+                    <input 
+                      type="text" placeholder="Dirección / Punto de referencia" 
+                      value={customerAddress} onChange={(e) => setCustomer('customerAddress', e.target.value)} 
+                      className="w-full pl-12 pr-4 py-4 bg-white border border-border rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-sm font-bold shadow-sm"
+                    />
                   </div>
                 )}
-                <button onClick={requestLocation} className="w-full py-3 bg-success/10 text-success border border-success/20 rounded-xl flex items-center justify-center gap-2 text-xs font-black transition-colors hover:bg-success/20">
-                  <Navigation size={14}/> {locationLink ? 'UBICACIÓN CAPTURADA ✓' : 'COMPARTIR MI UBICACIÓN GPS'}
-                </button>
+
+                {deliveryMethod === 'envio' && !locationLink && (
+                  <button 
+                    onClick={requestLocation} 
+                    disabled={isCalculating}
+                    className="w-full py-5 bg-success text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-xl shadow-success/20 active:scale-95 transition-all animate-pulse"
+                  >
+                    {isCalculating ? (
+                      <Loader2 size={24} className="animate-spin" />
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2 font-black text-sm">
+                          <Navigation size={18} /> FIJAR MI UBICACIÓN GPS
+                        </div>
+                        <span className="text-[9px] font-bold uppercase opacity-80">Requerido para el domicilio</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {locationLink && deliveryMethod === 'envio' && (
+                  <div className="bg-success/5 border border-success/20 p-4 rounded-2xl flex items-center justify-between animate-in zoom-in-95 duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-success/20 rounded-xl flex items-center justify-center text-success">
+                        <CheckCircle2 size={20} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-success uppercase tracking-widest">Ubicación Precisa</p>
+                        <p className="text-[9px] font-bold text-muted uppercase mt-0.5">Capturada mediante GPS</p>
+                      </div>
+                    </div>
+                    <button onClick={requestLocation} className="text-[9px] font-black text-success underline uppercase tracking-widest">Cambiar</button>
+                  </div>
+                )}
+
+                {deliveryFee > 0 && deliveryMethod === 'envio' && (
+                  <div className="p-4 bg-brand/5 border border-brand/10 rounded-2xl flex items-center justify-between">
+                    <span className="text-[10px] font-black text-brand uppercase tracking-widest flex items-center gap-2">
+                       <Truck size={14} /> Domicilio ({distanceKm?.toFixed(1)} km)
+                    </span>
+                    <span className="text-sm font-black text-brand">{formatMoney(deliveryFee)}</span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Methods */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-2">Método Entrega</label>
-                <select value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value)} className="w-full p-4 bg-white border border-border rounded-xl text-xs font-bold outline-none cursor-pointer focus:border-brand">
-                  <option value="envio">🛵 Domicilio</option>
-                  <option value="recogida">🏠 Recoger en local</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-2">Método Pago</label>
-                <select 
-                  value={paymentMethod} 
-                  onChange={(e) => setPaymentMethod(e.target.value)} 
-                  className="w-full p-4 bg-white border border-border rounded-xl text-xs font-bold outline-none cursor-pointer focus:border-brand"
+            <div className="space-y-4">
+              <h3 className="text-xs font-black text-muted uppercase tracking-[0.15em] flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-brand rounded-full" /> Forma de Pago
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <button 
+                  onClick={() => setPaymentMethod('efectivo')} 
+                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${paymentMethod === 'efectivo' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
                 >
-                  {business.metodos_pago?.includes('efectivo') && <option value="efectivo">💵 Efectivo</option>}
-                  {business.metodos_pago?.includes('transferencia') && <option value="transferencia">📱 Transferencia</option>}
-                  {(!business.metodos_pago || business.metodos_pago.length === 0) && (
-                    <option value="efectivo">💵 Efectivo</option>
-                  )}
-                </select>
+                  <Wallet size={24} className={paymentMethod === 'efectivo' ? 'text-brand' : 'text-muted'} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Efectivo</span>
+                </button>
+                <button 
+                  onClick={() => setPaymentMethod('transferencia')} 
+                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${paymentMethod === 'transferencia' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
+                >
+                  <CreditCard size={24} className={paymentMethod === 'transferencia' ? 'text-brand' : 'text-muted'} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Transferencia</span>
+                </button>
               </div>
-            </div>
 
-            {paymentMethod === 'transferencia' && (
-              <div className="p-6 bg-brand/5 border border-dashed border-brand/30 rounded-2xl animate-in zoom-in-95 duration-200">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-brand/10 rounded-lg text-brand">
-                    <Wallet size={20} />
+              {paymentMethod === 'transferencia' && (
+                <div className="p-6 bg-brand/5 border-2 border-dashed border-brand/20 rounded-2xl animate-in zoom-in-95 duration-200">
+                  <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-4">Datos para el pago:</p>
+                  <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-border shadow-sm">
+                    <div>
+                      <p className="text-[9px] font-black text-brand uppercase leading-none mb-1">{business?.pago_banco || 'Nequi'}</p>
+                      <p className="text-lg font-black text-dark tracking-tight">{business?.pago_alias || 'Favor Consultar'}</p>
+                    </div>
+                    <button 
+                      onClick={() => { 
+                        navigator.clipboard.writeText(business?.pago_alias || ''); 
+                        addToast('Número copiado ✅', 'success'); 
+                      }}
+                      className="p-3 bg-brand text-white rounded-lg hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand/20"
+                      title="Copiar número"
+                    >
+                      <Copy size={18} />
+                    </button>
                   </div>
-                  <h4 className="text-xs font-black text-dark uppercase tracking-tight">Datos de Transferencia</h4>
+                  <p className="text-[9px] text-muted font-bold mt-4 italic">* Por favor envía el comprobante por WhatsApp al finalizar el pedido.</p>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted font-bold uppercase tracking-widest">Banco</span>
-                    <span className="text-dark font-black">{business?.pago_banco || 'Por confirmar'}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted font-bold uppercase tracking-widest">Cuenta / Alias</span>
-                    <span className="group flex items-center gap-2">
-                      <span className="text-dark font-black">{business?.pago_alias || 'Por confirmar'}</span>
-                      <button 
-                        onClick={() => { navigator.clipboard.writeText(business?.pago_alias); addToast('Copiado', 'info'); }}
-                        className="text-brand hover:scale-110 transition-transform"
-                      >
-                        <Copy size={12} />
-                      </button>
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-brand/60 font-medium italic mt-2">
-                    * Favor enviar el comprobante por WhatsApp después de generar el pedido.
-                  </p>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-2">Comentarios Adicionales</label>

@@ -127,9 +127,10 @@ export default function TrackingPage() {
 
   return (
     <div 
-      className="min-h-screen bg-bg-alt bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand/5 via-bg-alt to-bg-alt p-4 sm:p-8"
+      className="min-h-screen bg-bg-alt bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand/10 via-bg-alt to-bg-alt p-4 sm:p-8"
       style={{ 
         '--primary-brand': business?.theme_color || '#2563EB',
+        '--color-brand': business?.theme_color || '#2563EB',
         '--secondary-brand': business?.color_secundario || '#F9FAFB'
       }}
     >
@@ -137,11 +138,11 @@ export default function TrackingPage() {
         
         {/* Header Navigation */}
         <div className="flex items-center justify-between">
-           <Link to="/" className="flex items-center gap-2 text-dark hover:text-brand transition-colors font-black text-xs uppercase tracking-widest">
+           <Link to="/" className="flex items-center gap-2 text-dark hover:text-[var(--primary-brand)] transition-colors font-black text-xs uppercase tracking-widest">
              <ArrowLeft size={16} /> Volver
            </Link>
            <div className="flex items-center gap-2">
-             <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center text-white shadow-lg">
+             <div className="w-8 h-8 bg-[var(--primary-brand)] rounded-lg flex items-center justify-center text-white shadow-lg shadow-[var(--primary-brand)]/20">
                {business?.logo_url ? <img src={business.logo_url} className="w-full h-full object-contain p-1" /> : <Store size={16} />}
              </div>
              <span className="text-sm font-black text-dark uppercase tracking-tighter">{business?.nombre_visible}</span>
@@ -149,21 +150,21 @@ export default function TrackingPage() {
         </div>
 
         {/* Status Tracker Card */}
-        <div className="premium-card !p-8 space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-500">
+        <div className="premium-card !p-10 space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
           <div className="text-center">
-            <p className="text-[10px] font-black text-muted uppercase tracking-[0.3em] mb-2 leading-none">Estado del Pedido</p>
-            <h3 className="text-3xl font-black text-dark tracking-tighter uppercase italic italic">
+            <p className="text-[10px] font-black text-muted uppercase tracking-[0.3em] mb-3 leading-none">Estado del Pedido</p>
+            <h3 className="text-4xl font-black text-dark tracking-tighter uppercase italic italic">
               {STEPS[currentStepIdx]?.label || 'En Proceso'}
             </h3>
-            <p className="text-xs font-bold text-brand mt-1 uppercase tracking-widest opacity-60">Pedido #{order.id.toString().slice(-6)}</p>
+            <p className="text-[11px] font-bold text-[var(--primary-brand)] mt-2 uppercase tracking-[0.25em] opacity-60">Pedido #{order.id.toString().slice(-6)}</p>
           </div>
 
           {/* Real Stepper */}
           <div className="relative pt-4 px-2">
              {/* Background Line */}
-             <div className="absolute top-[38px] left-0 w-full h-1 bg-border rounded-full" />
+             <div className="absolute top-[38px] left-0 w-full h-1.5 bg-border/40 rounded-full" />
              <div 
-               className="absolute top-[38px] left-0 h-1 bg-brand rounded-full transition-all duration-1000" 
+               className="absolute top-[38px] left-0 h-1.5 bg-[var(--primary-brand)] rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(var(--primary-brand),0.4)]" 
                style={{ width: `${(currentStepIdx / (STEPS.length - 1)) * 100}%` }}
              />
 
@@ -172,12 +173,12 @@ export default function TrackingPage() {
                   const isActive = i <= currentStepIdx;
                   const isCurrent = i === currentStepIdx;
                   return (
-                    <div key={step.id} className="flex flex-col items-center gap-3">
-                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl
-                          ${isActive ? 'bg-brand text-white shadow-brand/30' : 'bg-white text-muted border border-border shadow-md'}`}>
-                         <step.icon size={20} className={isCurrent ? 'animate-pulse' : ''} />
+                    <div key={step.id} className="flex flex-col items-center gap-4">
+                       <div className={`w-14 h-14 rounded-[1.25rem] flex items-center justify-center transition-all duration-500 shadow-2xl
+                          ${isActive ? 'bg-[var(--primary-brand)] text-white shadow-[var(--primary-brand)]/30' : 'bg-white text-muted border border-border shadow-md'}`}>
+                         <step.icon size={24} className={isCurrent ? 'animate-pulse' : ''} />
                        </div>
-                       <span className={`text-[9px] font-black uppercase tracking-widest transition-colors
+                       <span className={`text-[10px] font-black uppercase tracking-widest transition-colors
                           ${isActive ? 'text-dark' : 'text-muted/40'}`}>
                          {step.label}
                        </span>
@@ -187,61 +188,64 @@ export default function TrackingPage() {
              </div>
           </div>
 
-          <div className="bg-bg-alt/50 border border-border/50 rounded-2xl p-6 flex items-center gap-4">
-             <div className="w-12 h-12 bg-white rounded-xl shadow-inner flex items-center justify-center text-brand">
-                <Truck size={24} className="animate-bounce" />
+          <div className="bg-[var(--primary-brand)]/5 border border-[var(--primary-brand)]/10 rounded-3xl p-6 flex items-center gap-5 transition-all">
+             <div className="w-14 h-14 bg-white rounded-2xl shadow-xl flex items-center justify-center text-[var(--primary-brand)]">
+                <Truck size={28} className="animate-bounce" />
              </div>
              <div>
-                <p className="text-xs font-black text-dark uppercase tracking-tight">
+                <p className="text-sm font-black text-dark uppercase tracking-tight leading-tight">
                   {order.estado === 'nuevo' && 'Estamos revisando tu pedido...'}
                   {order.estado === 'preparando' && 'El chef está trabajando para tí.'}
                   {order.estado === 'enviado' && '¡El domiciliario está en camino!'}
                   {order.estado === 'entregado' && 'Esperamos que lo disfrutes.'}
                 </p>
-                <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-0.5">Actualizado hace un momento</p>
+                <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-1">Sincronizado en tiempo real</p>
              </div>
           </div>
         </div>
 
         {/* Order Details Card */}
         <div className="premium-card overflow-hidden">
-          <div className="p-6 border-b border-border bg-bg-alt/30 flex items-center gap-3">
-             <ShoppingCart size={18} className="text-muted" />
+          <div className="p-8 border-b border-border bg-bg-alt/30 flex items-center gap-3">
+             <ShoppingCart size={20} className="text-muted" />
              <h4 className="text-xs font-black text-dark uppercase tracking-[0.2em]">Resumen del Pedido</h4>
           </div>
           
-          <div className="p-6 divide-y divide-border">
+          <div className="p-8 divide-y divide-border/50">
              {items?.map((item, idx) => (
-                <div key={idx} className="py-4 flex items-center justify-between">
+                <div key={idx} className="py-5 flex items-center justify-between">
                    <div className="flex flex-col">
                       <span className="text-sm font-bold text-dark">{item.cantidad}x {item.nombre}</span>
-                      {item.nota && <span className="text-[10px] text-muted italic mt-0.5">Nota: {item.nota}</span>}
+                      {item.nota && <span className="text-[10px] text-muted italic mt-1 bg-white px-2 py-0.5 rounded-full border border-border w-fit">Nota: {item.nota}</span>}
                    </div>
-                   <span className="text-sm font-black text-dark opacity-40">{formatMoney(item.precio * item.cantidad)}</span>
+                   <span className="text-sm font-black text-dark opacity-60">{formatMoney(item.precio * item.cantidad)}</span>
                 </div>
              ))}
-             <div className="pt-6 flex flex-col gap-2">
-                <div className="flex justify-between items-center opacity-40 text-[10px] font-black uppercase tracking-widest">
+             <div className="pt-8 flex flex-col gap-3">
+                <div className="flex justify-between items-center opacity-40 text-[11px] font-black uppercase tracking-[0.2em]">
                    <span>Subtotal</span>
                    <span>{formatMoney(order.total)}</span>
                 </div>
-                <div className="flex justify-between items-center text-lg font-black text-brand">
-                   <span>TOTAL PAGADO</span>
-                   <span>{formatMoney(order.total)}</span>
+                <div className="flex justify-between items-center pt-2">
+                   <span className="text-[11px] font-black text-muted uppercase tracking-[0.2em]">TOTAL PAGADO</span>
+                   <span className="text-2xl font-black text-[var(--primary-brand)] italic tracking-tighter">
+                     {formatMoney(order.total)}
+                   </span>
                 </div>
              </div>
           </div>
         </div>
 
         {/* Contact Footer */}
-        <div className="text-center py-6 space-y-4">
-           <p className="text-[10px] font-black text-muted uppercase tracking-[0.3em]">¿Alguna duda con tu pedido?</p>
+        <div className="text-center py-8 space-y-5">
+           <p className="text-[10px] font-black text-muted uppercase tracking-[0.4em]">¿Dudas con tu compra?</p>
            <a 
             href={`https://wa.me/${business?.whatsapp_contacto || business?.telefono || '573143243707'}`}
             target="_blank" rel="noreferrer"
-            className="inline-flex items-center gap-3 px-8 py-4 bg-success text-white rounded-2xl font-black text-sm shadow-xl shadow-success/30 transition-all hover:scale-105 active:scale-95"
+            className="inline-flex items-center gap-4 px-12 py-5 bg-success text-white rounded-[2rem] font-black text-sm shadow-2xl shadow-success/30 transition-all hover:scale-105 active:scale-95 group"
            >
-             <MessageCircle size={20} /> HABLAR CON LA TIENDA
+             <MessageCircle size={22} className="group-hover:rotate-12 transition-transform" /> 
+             <span className="uppercase tracking-widest">Chat con Soporte</span>
            </a>
         </div>
 

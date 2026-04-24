@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import camlyPreview from '../../assets/camly_preview.jpeg';
 
+import saasLogo from '../../assets/saas-logo.svg';
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#fafafa] text-dark font-sans overflow-x-hidden selection:bg-brand selection:text-white">
@@ -13,10 +15,8 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 w-full bg-white/80 backdrop-blur-xl z-[100] border-b border-border/40">
         <div className="fluid-container h-[72px] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-brand rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand/20">
-              <ShoppingBag size={20} />
-            </div>
-            <h1 className="text-xl font-black tracking-tighter uppercase italic leading-none">CAMLY</h1>
+            <img src={saasLogo} alt="CAMLY Logo" className="h-10 w-auto" />
+            <h1 className="text-xl font-black tracking-tighter uppercase italic leading-none hidden sm:block">CAMLY</h1>
           </div>
           
           <div className="flex items-center gap-4 sm:gap-6">
@@ -270,9 +270,7 @@ export default function LandingPage() {
       <footer className="py-12 bg-white border-t border-border">
         <div className="fluid-container flex flex-col md:flex-row items-center justify-between gap-8">
            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center text-white">
-                <ShoppingBag size={15} />
-              </div>
+              <img src={saasLogo} alt="CAMLY Logo" className="h-8 w-auto grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all" />
               <h1 className="text-sm font-black tracking-tighter uppercase italic text-dark">CAMLY</h1>
            </div>
            

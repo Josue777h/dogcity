@@ -36,7 +36,6 @@ export default function SettingsView({ business, onUpdate }) {
     facebook: business?.facebook || '',
     footer_message: business?.footer_message || '',
     theme_color: business?.theme_color || '#2563EB',
-    color_secundario: business?.color_secundario || '#F9FAFB',
     logo_url: business?.logo_url || '',
     whatsapp_contacto: business?.whatsapp_contacto || business?.telefono || '',
     metodos_pago: Array.isArray(business?.metodos_pago) ? business?.metodos_pago : ['efectivo', 'transferencia'],
@@ -65,7 +64,6 @@ export default function SettingsView({ business, onUpdate }) {
         tiktok: formData.tiktok || '',
         footer_message: formData.footer_message || '',
         theme_color: formData.theme_color || '#2563EB',
-        color_secundario: formData.color_secundario || '#F9FAFB',
         logo_url: formData.logo_url || '',
         whatsapp_contacto: formData.whatsapp_contacto || '',
         metodos_pago: Array.isArray(formData.metodos_pago) ? formData.metodos_pago : ['efectivo', 'transferencia'],
@@ -302,7 +300,7 @@ export default function SettingsView({ business, onUpdate }) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="grid grid-cols-1 gap-10">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Color de Marca</label>
@@ -325,27 +323,6 @@ export default function SettingsView({ business, onUpdate }) {
                         />
                       ))}
                     </div>
-                  </div>
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Ambiente / Secundario</label>
-                    <div className="flex items-center gap-4">
-                      <input 
-                        type="color" 
-                        value={formData.color_secundario}
-                        onChange={e => setFormData({...formData, color_secundario: e.target.value})}
-                        className="flex-1 h-12 rounded-xl cursor-pointer border-none bg-bg-alt p-1"
-                      />
-                      <button 
-                        type="button"
-                        onClick={() => setFormData({...formData, color_secundario: '#F9FAFB'})}
-                        className="px-4 py-3 bg-white border border-border rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-bg-alt transition-all"
-                      >
-                        Reset
-                      </button>
-                    </div>
-                    <p className="text-[9px] text-muted font-bold uppercase tracking-widest leading-loose">
-                      Este color se usa para fondos y contrastes suaves. Recomendamos colores claros.
-                    </p>
                   </div>
                 </div>
               </div>
