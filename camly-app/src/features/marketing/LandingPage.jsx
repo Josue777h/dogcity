@@ -51,8 +51,8 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-300">
-            <Link to="/registro" className="w-full sm:w-auto btn-primary !py-4 !px-8 !text-sm !font-black shadow-2xl shadow-brand/30 hover:scale-105 transition-transform">
-              EMPIEZA A VENDER EN 2 MINUTOS
+            <Link to="/registro" className="w-full sm:w-auto btn-primary !py-4 !px-8 !text-sm !font-black shadow-2xl shadow-brand/30 hover:scale-105 transition-transform uppercase">
+              EMPEZAR 7 DÍAS GRATIS
             </Link>
           </div>
 
@@ -159,62 +159,34 @@ export default function LandingPage() {
       <section className="py-32 bg-[#fafafa]" id="pricing">
         <div className="fluid-container max-w-5xl">
           <div className="text-center space-y-4 mb-20">
-            <h2 className="text-4xl font-black text-dark uppercase tracking-tighter">PRECIOS CLAROS, <span className="text-brand">SIN COMISIONES</span></h2>
-            <p className="text-muted font-medium max-w-xl mx-auto">Elige el plan que se adapte a tu volumen operativo. Cancela cuando quieras.</p>
+            <h2 className="text-4xl font-black text-dark uppercase tracking-tighter">UN SOLO PLAN, <span className="text-brand">TODO INCLUIDO</span></h2>
+            <p className="text-muted font-medium max-w-xl mx-auto">Prueba 7 días gratis. Luego, una tarifa plana que se adapta a tu crecimiento. Cancela cuando quieras.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-            {/* PLAN ESSENTIAL */}
-            <div className="bg-white border border-border rounded-[2.5rem] p-10 hover:border-brand/30 transition-colors">
-              <div className="space-y-6 mb-8 mt-2">
-                <h3 className="text-xl font-black text-dark uppercase tracking-tight">Esencial</h3>
-                <div className="flex items-end gap-2">
-                  <span className="text-6xl font-black tracking-tighter text-dark leading-none">$0</span>
-                  <span className="text-xs font-bold text-muted uppercase tracking-widest mb-1.5">/ de por vida</span>
-                </div>
-                <p className="text-sm text-muted font-medium pr-4">Perfecto para negocios que quieren digitalizar su menú gratis hoy mismo.</p>
-              </div>
-
-              <ul className="space-y-4 mb-10 pt-8 border-t border-border">
-                {[
-                  'Tu catálogo web personalizado',
-                  'Recepción de pedidos por WhatsApp',
-                  'Panel de control de stock básico',
-                  'Soporte comunitario'
-                ].map((feature, idx) => (
-                  <li key={idx} className="flex items-start gap-4 text-sm font-bold text-dark">
-                    <Check size={18} className="text-dark/40 shrink-0 mt-0.5" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <Link to="/registro" className="w-full btn-primary !bg-dark hover:!bg-brand transition-colors inline-flex justify-center text-xs">
-                EMPEZAR GRATIS AHORA
-              </Link>
-            </div>
-
-            {/* PLAN PRO */}
+          <div className="max-w-2xl mx-auto">
+            {/* PLAN PRO ÚNICO */}
             <div className="bg-dark border-2 border-brand rounded-[2.5rem] p-10 shadow-2xl shadow-brand/20 relative overflow-hidden group">
               <div className="absolute top-6 right-6 px-3 py-1.5 bg-brand text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-sm">
-                RECOMENDADO
+                ACCESO TOTAL
               </div>
-              <div className="space-y-6 mb-8 mt-2 relative z-10">
-                <h3 className="text-xl font-black text-brand uppercase tracking-tight">Profesional</h3>
-                <div className="flex items-end gap-2">
-                  <span className="text-6xl font-black tracking-tighter text-white leading-none">$15</span>
-                  <span className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1.5">/ mes</span>
+              <div className="space-y-6 mb-8 mt-2 relative z-10 text-center sm:text-left">
+                <h3 className="text-2xl font-black text-brand uppercase tracking-tight">Profesional</h3>
+                <div className="flex flex-col sm:flex-row sm:items-end gap-2 justify-center sm:justify-start">
+                  <span className="text-7xl font-black tracking-tighter text-white leading-none">$15</span>
+                  <span className="text-sm font-bold text-white/40 uppercase tracking-widest mb-1.5">USD / mes</span>
                 </div>
-                <p className="text-sm text-white/60 font-medium pr-4">El motor operativo para pymes con alto volumen de entregas y domicilios.</p>
+                <p className="text-sm text-white/60 font-medium pr-4">La solución definitiva para negocios que exigen rendimiento, control y una imagen estelar en WhatsApp.</p>
               </div>
 
-              <ul className="space-y-4 mb-10 pt-8 border-t border-white/10 relative z-10">
+              <ul className="space-y-4 mb-10 pt-8 border-t border-white/10 relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-x-4">
                 {[
                   'Incopora colores y logo de marca',
-                  'Seguimiento GPS en tiempo real',
-                  'Gestión de equipo de repartidores',
-                  'Productos e imágenes ilimitadas',
-                  'Métricas y exportación de ventas'
+                  'Seguimiento GPS exacto del cliente',
+                  'Gestión de equipo de domiciliarios',
+                  'Productos y categorías ilimitadas',
+                  'Métricas y estadísticas de ventas',
+                  'Sin límite de pedidos mensuales',
+                  'Soporte directo'
                 ].map((feature, idx) => (
                   <li key={idx} className="flex items-start gap-4 text-sm font-bold text-white">
                     <Check size={18} className="text-brand shrink-0 mt-0.5" />
@@ -223,9 +195,14 @@ export default function LandingPage() {
                 ))}
               </ul>
 
-              <Link to="/registro" className="w-full btn-primary shadow-xl shadow-brand/30 inline-flex justify-center text-xs relative z-10 hover:scale-105 transition-transform">
-                EMPIEZA TU PRUEBA PRO
-              </Link>
+              <div className="relative z-10 flex flex-col gap-3">
+                <Link to="/registro" className="w-full btn-primary !py-5 shadow-xl shadow-brand/30 inline-flex justify-center text-sm relative z-10 hover:scale-105 transition-transform uppercase">
+                  INICIAR 7 DÍAS GRATIS
+                </Link>
+                <p className="text-center text-[10px] text-white/40 font-black uppercase tracking-widest">
+                  SIN TARJETA DE CRÉDITO. CANCELA CUANDO QUIERAS.
+                </p>
+              </div>
 
               <div className="absolute bottom-0 right-0 w-64 h-64 bg-brand/20 rounded-full blur-[80px] pointer-events-none group-hover:bg-brand/30 transition-colors" />
             </div>
@@ -259,8 +236,8 @@ export default function LandingPage() {
             <p className="text-white/60 text-lg font-medium">
               Crea tu tienda en minutos, comparte tu link, y mira cómo comienzan a caer los pedidos organizados directamente a tu WhatsApp.
             </p>
-            <Link to="/registro" className="btn-primary !py-5 !px-10 !text-sm !rounded-2xl shadow-2xl shadow-brand/40 inline-flex hover:scale-105 transition-transform">
-              CREAR MI TIENDA GRATIS
+            <Link to="/registro" className="btn-primary !py-5 !px-10 !text-sm !rounded-2xl shadow-2xl shadow-brand/40 inline-flex hover:scale-105 transition-transform uppercase">
+              INICIAR 7 DÍAS GRATIS
             </Link>
           </div>
         </div>

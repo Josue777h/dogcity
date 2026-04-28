@@ -104,22 +104,40 @@ export const useCartStore = create(
 export const useBusinessStore = create((set) => ({
   business: null,
   subscription: null,
-  isPro: false,
+  isExpired: false,
+  trialDaysLeft: 0,
   products: [],
+  categories: [],
   isLoading: true,
   error: null,
   setBusiness: (business, subscription) => {
     let isPro = false;
+    let isExpired = false;
+    let trialDaysLeft = 0;
+    
     if (subscription) {
        const isProPlan = subscription.plan === 'pro';
-       const isActive = subscription.estado === 'activo';
-       const isNotExpired = new Date(subscription.fecha_fin) > new Date();
+       const isActive = subscription.estado === 'activo' || subscription.estado === 'trial';
+       const endDate = new Date(subscription.fecha_fin);
+       const now = new Date();
        
-       isPro = isProPlan && isActive && isNotExpired;
+       isExpired = subscription.estado === 'vencido' || now > endDate;
+       isPro = isProPlan && isActive && !isExpired;
+       
+       if (subscription.estado === 'trial' && !isExpired) {
+         const diffTime = Math.abs(endDate - now);
+         trialDaysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+       }
+    } else {
+       // Si el negocio no tiene suscripción se bloquea como expired por seguridad
+       // o puedes dejarlo false dependiendo del flujo legacy
+       isExpired = false; 
+       // Se deja en `false` por ahora para no bloquear tiendas legacy (hasta migración completa).
     }
-    set({ business, subscription, isPro, isLoading: false });
+    set({ business, subscription, isPro, isExpired, trialDaysLeft, isLoading: false });
   },
   setProducts: (products) => set({ products }),
+  setCategories: (categories) => set({ categories }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error, isLoading: false }),
 }));

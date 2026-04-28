@@ -1,8 +1,9 @@
-import { Copy, ExternalLink, Menu } from 'lucide-react';
-import { useToastStore } from '../../../stores';
+import { Copy, ExternalLink, Menu, Zap, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { useToastStore, useBusinessStore } from '../../../stores';
 
 export default function AdminHeader({ title, business, onOpenMenu }) {
   const addToast = useToastStore(s => s.addToast);
+  const { isPro, isExpired, trialDaysLeft, subscription } = useBusinessStore();
   const storeUrl = `${window.location.origin}/${business?.nombre}`;
 
   const copyLink = () => {
@@ -33,6 +34,26 @@ export default function AdminHeader({ title, business, onOpenMenu }) {
         <div className="hidden sm:flex flex-col items-end mr-2">
           <span className="text-[9px] font-black text-muted uppercase tracking-widest">Tienda Activa</span>
           <span className="text-[11px] font-bold text-dark">{business?.nombre}.camly.app</span>
+        </div>
+
+        {/* BADGE DE ESTADO DE PLAN */}
+        <div className="hidden md:flex ml-2 pr-2 border-r border-border">
+          {isExpired ? (
+             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-error/10 text-error rounded-lg border border-error/20">
+               <AlertTriangle size={14} />
+               <span className="text-[10px] font-black uppercase tracking-widest">Plan Vencido</span>
+             </div>
+          ) : subscription?.es_trial ? (
+             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 text-orange-600 rounded-lg border border-orange-500/20">
+               <Zap size={14} className="fill-orange-600 animate-pulse" />
+               <span className="text-[10px] font-black uppercase tracking-widest">Prueba: {trialDaysLeft} Días</span>
+             </div>
+          ) : isPro ? (
+             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-success/10 text-success rounded-lg border border-success/20">
+               <CheckCircle2 size={14} />
+               <span className="text-[10px] font-black uppercase tracking-widest">Plan Pro</span>
+             </div>
+          ) : null}
         </div>
         
         <div className="flex items-center bg-bg-alt border border-border rounded-xl p-1 gap-1">

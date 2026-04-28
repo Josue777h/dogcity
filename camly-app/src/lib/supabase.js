@@ -36,6 +36,7 @@ function buildRecord(product, schema) {
   if (schema.fields.category) record[schema.fields.category] = product.categoria || 'Varios';
   if (schema.fields.available) record[schema.fields.available] = product.disponible !== false;
   if (product.negocio_id) record.negocio_id = product.negocio_id;
+  if (product.categoria_id) record.categoria_id = product.categoria_id;
   return record;
 }
 
@@ -48,9 +49,51 @@ function normalizeProduct(row) {
     unit: row.unidad || row.unit || 'unidad',
     image: row.imagen || row.image || DEFAULT_IMAGE,
     categoria: row.categoria || row.category || 'Varios',
+    categoria_id: row.categoria_id || null,
     disponible: row.disponible ?? row.available ?? true,
     negocio_id: row.negocio_id,
   };
+}
+
+// ── Categories ──
+export async function fetchCategories(negocioId) {
+  if (!negocioId) return [];
+  const { data, error } = await getSupabase()
+    .from('categorias')
+    .select('*')
+    .eq('negocio_id', negocioId)
+    .order('nombre', { ascending: true });
+  if (error) {
+    if (error.code === '42P01') return []; // Relation does not exist yet
+    throw error;
+  }
+  return data || [];
+}
+
+export async function createCategory(payload) {
+  const { data, error } = await getSupabase()
+    .from('categorias')
+    .insert([{ ...payload, nombre: payload.nombre.trim() }])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateCategory(id, updates) {
+  const { error } = await getSupabase()
+    .from('categorias')
+    .update(updates)
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteCategory(id) {
+  const { error } = await getSupabase()
+    .from('categorias')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
 }
 
 // ── Business (Negocio) ──
@@ -78,6 +121,18 @@ export async function fetchSubscription(negocioId) {
      console.error('Error fetchSubscription:', error);
      return null;
   }
+  
+  // Auto-expiración lógica
+  if (data && (data.estado === 'trial' || data.estado === 'activo')) {
+    const isExpired = new Date(data.fecha_fin) < new Date();
+    if (isExpired) {
+      data.estado = 'vencido';
+      data.es_trial = false;
+      // Actualizar en base de datos 
+      await getSupabase().from('suscripciones').update({ estado: 'vencido', es_trial: false }).eq('id', data.id);
+    }
+  }
+
   return data;
 }
 
@@ -149,6 +204,14 @@ export async function updateOrderStatus(id, status) {
   if (error) throw error;
 }
 
+export async function deleteOrder(id) {
+  const { error } = await getSupabase()
+    .from('pedidos')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
 // ── Auth ──
 export async function signIn(email, password) {
   const { data, error } = await getSupabase().auth.signInWithPassword({ email, password });
@@ -191,6 +254,23 @@ export async function registerBusiness({ email, password, businessName, phone })
     .select()
     .single();
   if (negocioError) throw negocioError;
+
+  // Insertar Suscripción Trial (7 días) automáticamente
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  const { error: subError } = await getSupabase()
+    .from('suscripciones')
+    .insert({
+      negocio_id: negocio.id,
+      plan: 'pro',
+      estado: 'trial',
+      fecha_fin: d.toISOString(),
+      es_trial: true
+    });
+    
+  if (subError) {
+    console.error("Error creando la suscripción:", subError);
+  }
 
   return { user: authData.user, negocio };
 }

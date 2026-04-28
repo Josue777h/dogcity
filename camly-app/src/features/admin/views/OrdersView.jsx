@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { 
   MessageCircle, Clock, CheckCircle2, ChevronRight, 
-  User, MapPin, Package, Bike, ArrowUpRight 
+  User, MapPin, Package, Bike, ArrowUpRight, Trash2
 } from 'lucide-react';
 import { formatMoney } from '../../../lib/utils';
-import { updateOrderStatus, getSupabase } from '../../../lib/supabase';
+import { updateOrderStatus, getSupabase, deleteOrder } from '../../../lib/supabase';
 
 export default function OrdersView({ orders, onUpdate }) {
   const [drivers, setDrivers] = useState([]);
@@ -40,6 +40,19 @@ export default function OrdersView({ orders, onUpdate }) {
       onUpdate();
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleDeleteOrder = async (e, orderId) => {
+    e.stopPropagation();
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este pedido permanentemente? Esta acción no se puede deshacer.')) return;
+    
+    try {
+      await deleteOrder(orderId);
+      onUpdate();
+    } catch (err) {
+      console.error(err);
+      alert('Hubo un error al eliminar el pedido.');
     }
   };
 
@@ -80,12 +93,12 @@ export default function OrdersView({ orders, onUpdate }) {
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
       {/* Header List */}
-      <div className="hidden lg:grid grid-cols-6 gap-4 px-8 py-4 bg-dark/5 rounded-2xl text-[10px] font-black text-muted uppercase tracking-[0.2em]">
-        <span>ID / Tiempo</span>
-        <span className="col-span-2">Cliente / Detalles</span>
-        <span>Total</span>
-        <span>Estado</span>
-        <span className="text-right">Acciones</span>
+      <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-3 bg-dark/5 rounded-2xl text-[9px] font-black text-muted uppercase tracking-[0.2em] items-center">
+        <span className="col-span-2 pl-2">ID / Tiempo</span>
+        <span className="col-span-4">Cliente / Detalles</span>
+        <span className="col-span-2 text-center">Total</span>
+        <span className="col-span-2 text-center">Estado</span>
+        <span className="col-span-2 text-right pr-2">Acciones</span>
       </div>
 
       <div className="space-y-3">
@@ -94,36 +107,51 @@ export default function OrdersView({ orders, onUpdate }) {
             {/* Header Row */}
             <div 
               onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-              className="p-4 cursor-pointer grid grid-cols-2 lg:grid-cols-6 gap-3 items-center relative"
+              className="p-3 sm:px-5 cursor-pointer grid grid-cols-2 lg:grid-cols-12 gap-4 items-center relative"
             >
-              <div className="col-span-2 lg:col-span-1 flex items-center justify-between w-full pr-8 lg:pr-0">
-                 <div className="flex items-center gap-2">
-                   <div className="px-2 py-1 bg-brand text-white rounded-md font-black text-[10px] tracking-tight leading-none shadow-sm">
-                     #{order.id.toString().slice(-4).toUpperCase()}
-                   </div>
-                   <span className="text-[10px] font-bold text-dark opacity-50">
-                     {new Date(order.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                   </span>
+              {/* ID & TIEMPO */}
+              <div className="col-span-2 lg:col-span-2 flex items-center gap-3 w-full pr-16 lg:pr-0">
+                 <div className="px-2.5 py-1.5 bg-brand text-white rounded-lg font-black text-[10px] tracking-tighter leading-none shadow-sm">
+                   #{order.id.toString().slice(-4).toUpperCase()}
                  </div>
+                 <span className="text-[10px] font-bold text-muted uppercase tracking-widest">
+                   {new Date(order.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                 </span>
               </div>
 
-              <div className="col-span-2 lg:col-span-2 w-full">
-                <p className="text-sm font-black text-dark uppercase tracking-tight truncate pr-8">{order.nombre}</p>
-                <p className="text-[10px] text-muted font-bold tracking-widest uppercase">{order.entrega_metodo === 'envio' ? '🛵 Domicilio' : '🏠 Local'}</p>
+              {/* CLIENTE & MÉTODO */}
+              <div className="col-span-2 lg:col-span-4 flex flex-col justify-center">
+                <p className="text-xs font-black text-dark uppercase tracking-tight truncate pr-8 lg:pr-0">{order.nombre}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {order.entrega_metodo === 'envio' ? <Bike size={10} className="text-brand"/> : <MapPin size={10} className="text-brand"/>}
+                  <p className="text-[9px] text-muted font-black tracking-widest uppercase">{order.entrega_metodo === 'envio' ? 'DOMICILIO' : 'LOCAL'}</p>
+                </div>
               </div>
 
-              <div className="w-full">
+              {/* TOTAL */}
+              <div className="col-span-1 lg:col-span-2 flex items-center lg:justify-center">
                 <span className="text-sm font-black text-brand tracking-tighter">{formatMoney(order.total)}</span>
               </div>
 
-              <div className="w-full">
-                <span className={`px-2 py-1 rounded border text-[9px] font-black uppercase tracking-widest w-full text-center block ${getStatusColor(order.estado || order.status)}`}>
+              {/* ESTADO */}
+              <div className="col-span-1 lg:col-span-2 flex items-center lg:justify-center">
+                <span className={`px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-widest w-full lg:w-auto text-center shadow-sm ${getStatusColor(order.estado || order.status)}`}>
                   {order.estado || order.status}
                 </span>
               </div>
 
-              <div className="absolute right-4 top-4 lg:relative lg:right-0 lg:top-0 lg:col-span-1 flex justify-end w-auto text-muted">
-                 <ChevronRight size={20} className={`transition-transform duration-300 ${expandedOrderId === order.id ? 'rotate-90 text-brand' : ''}`} />
+              {/* ACCIONES */}
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 lg:relative lg:translate-y-0 lg:right-0 lg:col-span-2 flex items-center justify-end gap-2 z-10">
+                 <button 
+                   onClick={(e) => handleDeleteOrder(e, order.id)}
+                   className="p-2 text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all shadow-sm border border-red-100"
+                   title="Eliminar pedido"
+                 >
+                   <Trash2 size={16} />
+                 </button>
+                 <div className="p-2 text-muted hover:text-brand bg-bg-alt rounded-xl transition-colors">
+                   <ChevronRight size={18} className={`transition-transform duration-300 ${expandedOrderId === order.id ? 'rotate-90' : ''}`} />
+                 </div>
               </div>
             </div>
 
@@ -176,7 +204,7 @@ export default function OrdersView({ orders, onUpdate }) {
 
                     <div className="mt-6 flex gap-2">
                        <a href={`https://wa.me/${order.telefono}`} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-success text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest">
-                          <MessageCircle size={14} /> Cliente
+                          <i className="fa-brands fa-whatsapp text-[16px]"></i> CLIENTE
                        </a>
                        <select 
                         value={order.estado || order.status}

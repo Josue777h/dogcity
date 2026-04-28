@@ -1,7 +1,18 @@
+import { useState } from 'react';
 import { Search, Plus, Edit, Trash2, Tag, Package } from 'lucide-react';
 import { formatMoney } from '../../../lib/utils';
+import ConfirmModal from '../../../components/ui/ConfirmModal';
+import { useBusinessStore } from '../../../stores';
 
 export default function ProductsView({ products, onAdd, onEdit, onDelete }) {
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const { categories } = useBusinessStore();
+
+  const getCategoryName = (id, fallbackName) => {
+    if (!id) return fallbackName || 'Sin Categoría';
+    const cat = categories.find(c => c.id === id);
+    return cat ? cat.nombre : (fallbackName || 'Sin Categoría');
+  };
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -42,7 +53,9 @@ export default function ProductsView({ products, onAdd, onEdit, onDelete }) {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <Tag size={10} className="text-brand" />
-                    <span className="text-[9px] font-black text-muted uppercase tracking-widest truncate">{p.categoria || 'Sin Categoría'}</span>
+                    <span className="text-[9px] font-black text-muted uppercase tracking-widest truncate">
+                      {getCategoryName(p.categoria_id, p.categoria)}
+                    </span>
                   </div>
                   <h4 className="text-sm font-black text-dark truncate leading-tight group-hover:text-brand transition-colors">{p.name}</h4>
                   <p className="text-[10px] text-muted font-medium line-clamp-1 mt-1">{p.description || 'Sin descripción'}</p>
@@ -59,7 +72,7 @@ export default function ProductsView({ products, onAdd, onEdit, onDelete }) {
                   <Edit size={18} />
                 </button>
                 <button 
-                  onClick={() => { if(confirm('¿Seguro que deseas eliminar este producto?')) onDelete(p.id) }}
+                  onClick={() => setItemToDelete(p)}
                   className="p-2.5 text-muted hover:text-error hover:bg-error/5 rounded-xl transition-all"
                   title="Eliminar"
                 >
@@ -83,6 +96,14 @@ export default function ProductsView({ products, onAdd, onEdit, onDelete }) {
           </div>
         )}
       </div>
+
+      <ConfirmModal 
+        isOpen={!!itemToDelete}
+        title="Eliminar Producto"
+        message={`¿Seguro que deseas eliminar "${itemToDelete?.name}"? Esta acción no se puede deshacer.`}
+        onConfirm={() => onDelete(itemToDelete.id)}
+        onCancel={() => setItemToDelete(null)}
+      />
     </div>
   );
 }

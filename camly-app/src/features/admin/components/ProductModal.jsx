@@ -1,18 +1,21 @@
-import { useState, useRef } from 'react';
-import { X, Save, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
-import { uploadImage } from '../../../lib/supabase';
-import { useToastStore } from '../../../stores';
+import { useState, useRef, useEffect } from 'react';
+import { X, Save, Upload, Loader2, Image as ImageIcon, Plus } from 'lucide-react';
+import { uploadImage, createCategory } from '../../../lib/supabase';
+import { useToastStore, useBusinessStore } from '../../../stores';
 
 export default function ProductModal({ product, products = [], businessId, onSave, onClose }) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [showCategorySugg, setShowCategorySugg] = useState(false);
   
-  const existingCategories = Array.from(new Set(products.map(p => p.categoria).filter(Boolean)));
+  const { categories, setCategories } = useBusinessStore();
+  const [isAddingCat, setIsAddingCat] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [savingCat, setSavingCat] = useState(false);
   const [formData, setFormData] = useState({
     id: product?.id || null,
     name: product?.name || '',
     price: product?.price || '',
+    categoria_id: product?.categoria_id || '',
     categoria: product?.categoria || '',
     description: product?.description || '',
     image: product?.image || '',
@@ -20,13 +23,33 @@ export default function ProductModal({ product, products = [], businessId, onSav
     negocio_id: businessId
   });
 
-  const filteredCategories = existingCategories.filter(c => 
-    c.toLowerCase().includes((formData.categoria || '').toLowerCase()) && 
-    c !== formData.categoria
-  );
-
-  const fileInputRef = useRef(null);
   const addToast = useToastStore(s => s.addToast);
+  const fileInputRef = useRef(null);
+
+  const handleQuickAddCat = async (e) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    setSavingCat(true);
+    try {
+      const newCat = await createCategory({ nombre: newCatName, negocio_id: businessId });
+      // Update global context categories
+      setCategories([...categories, newCat].sort((a,b) => a.nombre.localeCompare(b.nombre)));
+      // Auto-assign
+      setFormData(prev => ({ ...prev, categoria_id: newCat.id, categoria: newCat.nombre }));
+      setIsAddingCat(false);
+      setNewCatName('');
+      addToast('Categoría creada', 'success');
+    } catch (err) {
+      console.error(err);
+      if(err.code === '23505') {
+         addToast('Esta categoría ya existe', 'error');
+      } else {
+         addToast('Error al crear. ¿Corriste el Script SQL en Supabase?', 'error');
+      }
+    } finally {
+      setSavingCat(false);
+    }
+  };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -142,36 +165,52 @@ export default function ProductModal({ product, products = [], businessId, onSav
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1 relative">
-              <label className="text-[10px] font-black text-muted uppercase tracking-widest">Categoría</label>
-              <input 
-                type="text" 
-                value={formData.categoria}
-                onFocus={() => setShowCategorySugg(true)}
-                onBlur={() => setTimeout(() => setShowCategorySugg(false), 200)}
-                onChange={e => {
-                  setFormData({...formData, categoria: e.target.value});
-                  setShowCategorySugg(true);
-                }}
-                placeholder="Ej: Snacks, Bebidas..."
-                className="w-full p-3 bg-bg-alt border border-border rounded-xl font-bold text-sm outline-none focus:border-brand"
-              />
-              {showCategorySugg && filteredCategories.length > 0 && (
-                <div className="absolute top-[100%] left-0 w-full mt-1 bg-white border border-border rounded-xl shadow-xl z-[100] max-h-40 overflow-y-auto scrollbar-thin">
-                  {filteredCategories.map(cat => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onMouseDown={(e) => { 
-                        e.preventDefault(); 
-                        setFormData({...formData, categoria: cat}); 
-                        setShowCategorySugg(false); 
-                      }}
-                      className="w-full text-left px-4 py-2 text-xs font-bold text-dark hover:bg-bg-alt hover:text-brand transition-colors border-b last:border-0 border-border/50"
-                    >
-                      {cat}
-                    </button>
-                  ))}
+              <div className="flex justify-between items-center h-4">
+                <label className="text-[10px] font-black text-muted uppercase tracking-widest">Categoría</label>
+                {!isAddingCat && (
+                  <button type="button" onClick={() => setIsAddingCat(true)} className="text-[9px] font-black text-brand uppercase flex items-center gap-1 hover:underline">
+                    <Plus size={10} /> Nueva
+                  </button>
+                )}
+              </div>
+              
+              {isAddingCat ? (
+                <div className="flex items-center gap-2 bg-brand/5 p-2 rounded-xl border border-brand/20">
+                  <input 
+                    autoFocus
+                    type="text" 
+                    value={newCatName}
+                    onChange={e => setNewCatName(e.target.value)}
+                    placeholder="Nombre Categoría"
+                    className="flex-1 bg-white border border-border px-3 py-1.5 rounded-lg text-xs font-bold outline-none focus:border-brand"
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleQuickAddCat(e); } }}
+                  />
+                  <button type="button" onClick={handleQuickAddCat} disabled={savingCat} className="bg-brand text-white p-1.5 rounded-lg shadow-md">
+                    {savingCat ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  </button>
+                  <button type="button" onClick={() => setIsAddingCat(false)} className="text-muted hover:text-error p-1">
+                    <X size={14} />
+                  </button>
                 </div>
+              ) : (
+                <select 
+                  value={formData.categoria_id || ''}
+                  onChange={e => {
+                    const matchedCat = categories.find(c => c.id === e.target.value);
+                    setFormData({
+                      ...formData, 
+                      categoria_id: e.target.value,
+                      categoria: matchedCat ? matchedCat.nombre : ''
+                    });
+                  }}
+                  className="w-full p-3 bg-bg-alt border border-border rounded-xl font-bold text-sm outline-none focus:border-brand"
+                  required
+                >
+                  <option value="" disabled>Selecciona una categoría</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                  ))}
+                </select>
               )}
             </div>
             <div className="space-y-1">

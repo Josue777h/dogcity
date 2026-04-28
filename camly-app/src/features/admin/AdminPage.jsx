@@ -9,7 +9,8 @@ import {
   deleteProduct, 
   fetchOrders, 
   subscribeToOrders,
-  fetchSubscription
+  fetchSubscription,
+  fetchCategories
 } from '../../lib/supabase';
 import { useAuthStore, useToastStore, useBusinessStore } from '../../stores';
 
@@ -25,10 +26,12 @@ import ProductsView from './views/ProductsView';
 import OrdersView from './views/OrdersView';
 import SettingsView from './views/SettingsView';
 import DriversView from './views/DriversView';
+import CategoriesView from './views/CategoriesView';
+import PlanExpiredView from './views/PlanExpiredView';
 
 export default function AdminPage() {
   const { session, setSession } = useAuthStore();
-  const { business, setBusiness } = useBusinessStore();
+  const { business, setBusiness, isExpired, setCategories, setProducts: setGlobalProducts } = useBusinessStore();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const addToast = useToastStore((s) => s.addToast);
@@ -76,14 +79,17 @@ export default function AdminPage() {
       setBusiness(biz);
       
       if (biz) {
-        const [p, o, sub] = await Promise.all([
+        const [p, o, sub, cats] = await Promise.all([
           fetchProducts(biz.id), 
           fetchOrders(biz.id),
-          fetchSubscription(biz.id)
+          fetchSubscription(biz.id),
+          fetchCategories(biz.id)
         ]);
-        setProducts(p);
+        setProducts(p); // local
+        setGlobalProducts(p); // global (necesario para el conteo de CategoriasView)
         setOrders(o);
-        setBusiness(biz, sub); // Update Business with Subscription!
+        setBusiness(biz, sub);
+        setCategories(cats);
       }
     } catch (err) {
       console.error('Error loading admin data:', err);
@@ -223,15 +229,19 @@ export default function AdminPage() {
         onClose={() => setIsMenuOpen(false)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative">
         <AdminHeader 
           title={activeTab} 
           business={business} 
           onOpenMenu={() => setIsMenuOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-8 overflow-y-auto">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 p-4 sm:p-8 overflow-y-auto relative">
+          {isExpired && (
+            <PlanExpiredView onOpenBilling={() => window.dispatchEvent(new CustomEvent('open-billing-modal'))} />
+          )}
+
+          <div className={`max-w-7xl mx-auto transition-opacity duration-300 ${isExpired ? 'opacity-20 pointer-events-none blur-sm' : ''}`}>
             {activeTab === 'dashboard' && <DashboardView orders={orders} products={products} />}
             {activeTab === 'products' && (
               <ProductsView 
@@ -255,6 +265,9 @@ export default function AdminPage() {
             )}
             {activeTab === 'drivers' && (
               <DriversView businessId={business.id} />
+            )}
+            {activeTab === 'categories' && (
+              <CategoriesView businessId={business.id} />
             )}
           </div>
         </main>

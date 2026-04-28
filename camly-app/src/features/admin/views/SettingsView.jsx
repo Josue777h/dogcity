@@ -44,6 +44,8 @@ export default function SettingsView({ business, onUpdate }) {
     tiktok: business?.tiktok || '',
     lat: business?.lat || '',
     lng: business?.lng || '',
+    tipo_domicilio: business?.tipo_domicilio || 'automatico',
+    precio_domicilio: business?.precio_domicilio || 0,
     costo_por_km: business?.costo_por_km || 1000,
     domicilio_minimo: business?.domicilio_minimo || 3000,
   });
@@ -71,8 +73,10 @@ export default function SettingsView({ business, onUpdate }) {
         pago_banco: formData.pago_banco || '',
         lat: formData.lat || null,
         lng: formData.lng || null,
-        costo_por_km: parseInt(formData.costo_por_km) || 1000,
-        domicilio_minimo: parseInt(formData.domicilio_minimo) || 3000,
+        tipo_domicilio: formData.tipo_domicilio || 'automatico',
+        precio_domicilio: Number(formData.precio_domicilio) || 0,
+        costo_por_km: Number(formData.costo_por_km) || 0,
+        domicilio_minimo: Number(formData.domicilio_minimo) || 0,
       };
 
       const { error } = await getSupabase()
@@ -149,13 +153,23 @@ export default function SettingsView({ business, onUpdate }) {
           const lng = parseFloat(formData.lng) || -72.50782;
 
           mapInstance.current = L.map('map-picker', { zoomControl: false }).setView([lat, lng], 15);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© CARTO'
           }).addTo(mapInstance.current);
 
           L.control.zoom({ position: 'bottomright' }).addTo(mapInstance.current);
 
-          markerRef.current = L.marker([lat, lng], { draggable: true }).addTo(mapInstance.current);
+          // Crear marcador avanzado estático
+          const pulsingIcon = new L.divIcon({
+            className: 'bg-transparent border-none', // Anular caja
+            html: `<div style="display:flex; align-items:center; justify-content:center; width:24px; height:24px;">
+                     <div style="width:16px; height:16px; background:var(--primary-brand, #2563EB); border-radius:50%; border:3px solid white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.4);"></div>
+                   </div>`,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+          });
+
+          markerRef.current = L.marker([lat, lng], { draggable: true, icon: pulsingIcon }).addTo(mapInstance.current);
 
           markerRef.current.on('dragend', () => {
              const pos = markerRef.current.getLatLng();
@@ -396,33 +410,86 @@ export default function SettingsView({ business, onUpdate }) {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-border/50">
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">
-                    <Wallet size={12} className="text-brand" /> Precio Mínimo Domicilio
-                  </label>
-                  <input 
-                    type="number" 
-                    value={formData.domicilio_minimo}
-                    onChange={e => setFormData({...formData, domicilio_minimo: e.target.value})}
-                    placeholder="Ej: 3000"
-                    className="w-full p-4 bg-brand/5 border border-brand/20 rounded-xl font-black text-brand outline-none focus:bg-brand/10" 
-                  />
-                  <p className="text-[9px] text-muted font-bold uppercase tracking-widest ml-1">Lo mínimo que cobrarás siempre</p>
+              {/* Opciones de Modalidad de Domicilio */}
+              <div className="space-y-4 pt-6 border-t border-border/50">
+                <h4 className="text-[10px] font-black text-brand uppercase tracking-[0.2em] flex items-center gap-2">
+                  <Truck size={14} /> Modalidad de Cobro de Domicilio
+                </h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <button 
+                    type="button"
+                    onClick={() => setFormData({...formData, tipo_domicilio: 'automatico'})}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${formData.tipo_domicilio === 'automatico' ? 'border-brand bg-brand/5 shadow-md shadow-brand/10' : 'border-border bg-white hover:border-brand/30'}`}
+                  >
+                    <span className="block text-xs font-black text-dark tracking-tight uppercase">Automático</span>
+                    <span className="block text-[9px] text-muted font-bold mt-1 leading-snug">Distancia x Costo KM. (Requiere GPS).</span>
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => setFormData({...formData, tipo_domicilio: 'fijo'})}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${formData.tipo_domicilio === 'fijo' ? 'border-brand bg-brand/5 shadow-md shadow-brand/10' : 'border-border bg-white hover:border-brand/30'}`}
+                  >
+                    <span className="block text-xs font-black text-dark tracking-tight uppercase">Fijo</span>
+                    <span className="block text-[9px] text-muted font-bold mt-1 leading-snug">Una tarifa plana para toda la ciudad.</span>
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => setFormData({...formData, tipo_domicilio: 'manual'})}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${formData.tipo_domicilio === 'manual' ? 'border-brand bg-brand/5 shadow-md shadow-brand/10' : 'border-border bg-white hover:border-brand/30'}`}
+                  >
+                    <span className="block text-xs font-black text-dark tracking-tight uppercase">Manual</span>
+                    <span className="block text-[9px] text-muted font-bold mt-1 leading-snug">Costos a confirmar internamente.</span>
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">
-                    <Navigation size={12} className="text-brand" /> Precio por Kilómetro
-                  </label>
-                  <input 
-                    type="number" 
-                    value={formData.costo_por_km}
-                    onChange={e => setFormData({...formData, costo_por_km: e.target.value})}
-                    placeholder="Ej: 1000"
-                    className="w-full p-4 bg-brand/5 border border-border rounded-xl font-black text-brand outline-none focus:border-brand" 
-                  />
-                  <p className="text-[9px] text-muted font-bold uppercase tracking-widest ml-1">Ej: 5km = $5.000 extras</p>
-                </div>
+
+                {formData.tipo_domicilio === 'fijo' && (
+                  <div className="bg-brand/5 p-6 rounded-2xl border border-brand/20 animate-in zoom-in-95 duration-200 mt-4">
+                    <label className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1 mb-2">
+                       Tarifa Plana (Dominio Ciudad)
+                    </label>
+                    <input 
+                      type="number" 
+                      value={formData.precio_domicilio}
+                      onChange={e => setFormData({...formData, precio_domicilio: e.target.value})}
+                      placeholder="Ej: 5000"
+                      className="w-full md:w-1/2 p-4 bg-white border border-border rounded-xl font-black text-brand outline-none focus:border-brand shadow-sm" 
+                    />
+                  </div>
+                )}
+
+                {formData.tipo_domicilio === 'automatico' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">
+                        <Wallet size={12} className="text-brand" /> Precio Mínimo Domicilio
+                      </label>
+                      <input 
+                        type="number" 
+                        value={formData.domicilio_minimo}
+                        onChange={e => setFormData({...formData, domicilio_minimo: e.target.value})}
+                        placeholder="Ej: 3000"
+                        className="w-full p-4 bg-brand/5 border border-brand/20 rounded-xl font-black text-brand outline-none focus:bg-brand/10" 
+                      />
+                      <p className="text-[9px] text-muted font-bold uppercase tracking-widest ml-1">Lo mínimo que cobrarás siempre</p>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">
+                        <Navigation size={12} className="text-brand" /> Precio por Kilómetro
+                      </label>
+                      <input 
+                        type="number" 
+                        value={formData.costo_por_km}
+                        onChange={e => setFormData({...formData, costo_por_km: e.target.value})}
+                        placeholder="Ej: 1000"
+                        className="w-full p-4 bg-brand/5 border border-border rounded-xl font-black text-brand outline-none focus:border-brand" 
+                      />
+                      <p className="text-[9px] text-muted font-bold uppercase tracking-widest ml-1">Ej: 5km = $5.000 extras</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

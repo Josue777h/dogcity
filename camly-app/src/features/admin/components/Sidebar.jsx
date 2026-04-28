@@ -1,4 +1,4 @@
-import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike, Sparkles } from 'lucide-react';
+import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike, Sparkles, Tag } from 'lucide-react';
 import { useBusinessStore } from '../../../stores';
 export default function Sidebar({ activeTab, setActiveTab, business, onSignOut, isOpen, onClose }) {
   const isPro = useBusinessStore(s => s.isPro);
@@ -7,6 +7,7 @@ export default function Sidebar({ activeTab, setActiveTab, business, onSignOut, 
     { id: 'dashboard', label: 'Dashboard', icon: Store },
     { id: 'orders', label: 'Pedidos', icon: ShoppingBag },
     { id: 'products', label: 'Productos', icon: Package },
+    { id: 'categories', label: 'Categorías', icon: Tag },
     { id: 'drivers', label: 'Domiciliarios', icon: Bike },
     { id: 'settings', label: 'Configuración', icon: Settings },
   ];

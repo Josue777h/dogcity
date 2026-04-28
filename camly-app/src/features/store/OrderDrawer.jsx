@@ -18,6 +18,8 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+import LocationPickerMap from './components/LocationPickerMap';
+
 export default function OrderDrawer({ isOpen, onClose }) {
   const business = useBusinessStore((s) => s.business);
   const products = useBusinessStore((s) => s.products);
@@ -37,6 +39,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
   
   // Estados para domicilio inteligente
   const [isCalculating, setIsCalculating] = useState(false);
+  const [mapCoords, setMapCoords] = useState(null);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [distanceKm, setDistanceKm] = useState(null);
   const [addressSuggestions, setAddressSuggestions] = useState([]);
@@ -59,6 +62,8 @@ export default function OrderDrawer({ isOpen, onClose }) {
   const subtotal = selectedItems.reduce((s, i) => s + i.quantity * i.price, 0);
   const total = deliveryMethod === 'envio' ? subtotal + deliveryFee : subtotal;
   const whatsappPhone = (business?.telefono || WHATSAPP_FALLBACK_PHONE).replace(/\D/g, '');
+  const tipoDom = business?.tipo_domicilio || 'automatico';
+
   function buildMessage(orderId, token) {
     const rawName = business?.nombre_visible || 'la tienda';
     const formattedBusinessName = rawName.trim().toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -70,15 +75,24 @@ export default function OrderDrawer({ isOpen, onClose }) {
 
     const trackingUrl = `${window.location.origin}/tracking?id=${orderId}&token=${token}`;
     
+    let envioString = '';
+    if (deliveryMethod === 'envio') {
+      if (tipoDom === 'manual') envioString = 'Domicilio: Por confirmar';
+      else if (tipoDom === 'fijo') envioString = `Domicilio: ${formatMoney(deliveryFee)}`;
+      else envioString = `Domicilio: ${formatMoney(deliveryFee)}${distanceKm ? ` (${distanceKm.toFixed(1)} km)` : ''}`;
+    }
+
     const parts = [
       `¡Nuevo pedido en *${formattedBusinessName}*!`,
       '',
       itemsLines,
       '',
-      `💰 Total: ${formatMoney(total)} ${deliveryMethod === 'envio' ? '(incluye domicilio)' : ''}`,
+      (tipoDom === 'manual' && deliveryMethod === 'envio') 
+        ? `💰 Subtotal: ${formatMoney(total)}\n🔄 ${envioString}`
+        : `💰 Total: ${formatMoney(total)}\n${deliveryMethod === 'envio' ? `🚚 ${envioString}` : ''}`,
       '',
       deliveryMethod === 'envio' 
-        ? `📍 Domicilio\n${customerAddress || 'Dirección no especificada'}\nVer en mapa → ${locationLink || ''}` 
+        ? `📍 Dirección de entrega\n${customerAddress || 'Dirección no especificada'}\nVer en mapa → ${locationLink || ''}` 
         : '📍 Recoger en local',
       '',
       `👤 ${customerName} - ${customerPhone}`,
@@ -119,14 +133,22 @@ export default function OrderDrawer({ isOpen, onClose }) {
         );
         
         setDistanceKm(dist);
+        setDistanceKm(dist);
         
-        // Lógica de cobro: costo_por_km (def: 1000) o minimo (def: 3000)
-        const costPerKm = business.costo_por_km || 1000;
-        const minFee = business.domicilio_minimo || 3000;
-        
-        const calculatedFee = Math.max(minFee, Math.round(dist * costPerKm / 100) * 100);
-        setDeliveryFee(calculatedFee);
-        addToast(`Envío calculado: ${formatMoney(calculatedFee)} (${dist.toFixed(1)} km)`, 'success');
+        if (tipoDom === 'fijo') {
+          setDeliveryFee(Number(business.precio_domicilio) || 0);
+          addToast(`Tarifa Fija de Envio Aplicada`, 'success');
+        } else if (tipoDom === 'manual') {
+          setDeliveryFee(0);
+          addToast(`Ubicación capturada para confirmación`, 'success');
+        } else {
+          // Lógica de cobro Automático: costo_por_km (def: 1000) o minimo (def: 3000)
+          const costPerKm = business.costo_por_km || 1000;
+          const minFee = business.domicilio_minimo || 3000;
+          const calculatedFee = Math.max(minFee, Math.round(dist * costPerKm / 100) * 100);
+          setDeliveryFee(calculatedFee);
+          addToast(`Envío calculado: ${formatMoney(calculatedFee)} (${dist.toFixed(1)} km)`, 'success');
+        }
       }
     } catch (err) {
       console.error("Geocoding error:", err);
@@ -183,31 +205,42 @@ export default function OrderDrawer({ isOpen, onClose }) {
     }
   }
 
+  function updateLocationFromCoords(lat, lng, actionText = 'Ubicación Ajustada') {
+    setLocation(`https://maps.google.com/?q=${lat},${lng}`, actionText);
+    setMapCoords({ lat, lng });
+    
+    if (business?.lat && business?.lng) {
+      const dist = calculateDistance(
+        parseFloat(business.lat), 
+        parseFloat(business.lng), 
+        lat, 
+        lng
+      );
+      setDistanceKm(dist);
+      
+      if (tipoDom === 'fijo') {
+        setDeliveryFee(Number(business.precio_domicilio) || 0);
+      } else if (tipoDom === 'manual') {
+        setDeliveryFee(0);
+      } else {
+        const costPerKm = business.costo_por_km || 1000;
+        const minFee = business.domicilio_minimo || 3000;
+        const calculatedFee = Math.max(minFee, Math.round(dist * costPerKm / 100) * 100);
+        setDeliveryFee(calculatedFee);
+      }
+    }
+  }
+
   function requestLocation() {
     if (!navigator.geolocation) { addToast('GPS no soportado en este navegador', 'error'); return; }
     
-    // Feedback visual inmediato de carga
     setIsCalculating(true);
     
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        setLocation(`https://maps.google.com/?q=${lat},${lng}`, 'Ubicación GPS capturada');
-        
-        if (business?.lat && business?.lng) {
-          const dist = calculateDistance(
-            parseFloat(business.lat), 
-            parseFloat(business.lng), 
-            lat, 
-            lng
-          );
-          setDistanceKm(dist);
-          const costPerKm = business.costo_por_km || 1000;
-          const minFee = business.domicilio_minimo || 3000;
-          const calculatedFee = Math.max(minFee, Math.round(dist * costPerKm / 100) * 100);
-          setDeliveryFee(calculatedFee);
-        }
+        updateLocationFromCoords(lat, lng, 'Ubicación GPS capturada');
         
         addToast('Ubicación fijada con éxito ✅', 'success');
         setIsCalculating(false);
@@ -302,7 +335,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
                     <span className="text-[10px] font-black uppercase tracking-widest">A Domicilio</span>
                   </button>
                   <button 
-                    onClick={() => { setDeliveryMethod('recogida'); setLocation(null, ''); setDeliveryFee(0); setDistanceKm(null); }} 
+                    onClick={() => { setDeliveryMethod('recogida'); setLocation(null, ''); setDeliveryFee(0); setDistanceKm(null); setMapCoords(null); }} 
                     className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${deliveryMethod === 'recogida' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
                   >
                     <ShoppingBag size={24} className={deliveryMethod === 'recogida' ? 'text-brand' : 'text-muted'} />
@@ -339,11 +372,21 @@ export default function OrderDrawer({ isOpen, onClose }) {
                   </div>
                 )}
 
+                {mapCoords && deliveryMethod === 'envio' && (
+                  <div className="animate-in fade-in zoom-in-95 duration-500">
+                    <LocationPickerMap 
+                      lat={mapCoords.lat} 
+                      lng={mapCoords.lng} 
+                      onLocationChange={(newLat, newLng) => updateLocationFromCoords(newLat, newLng, 'Pin Ajustado')} 
+                    />
+                  </div>
+                )}
+
                 {deliveryMethod === 'envio' && !locationLink && (
                   <button 
                     onClick={requestLocation} 
                     disabled={isCalculating}
-                    className="w-full py-5 bg-success text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-xl shadow-success/20 active:scale-95 transition-all animate-pulse"
+                    className="w-full py-5 bg-success text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-xl shadow-success/20 active:scale-95 transition-all animate-pulse mt-2"
                   >
                     {isCalculating ? (
                       <Loader2 size={24} className="animate-spin" />
@@ -359,29 +402,44 @@ export default function OrderDrawer({ isOpen, onClose }) {
                 )}
 
                 {locationLink && deliveryMethod === 'envio' && (
-                  <div className="bg-success/5 border border-success/20 p-4 rounded-2xl flex items-center justify-between animate-in zoom-in-95 duration-200">
+                  <div className="bg-success/5 border border-success/20 p-4 rounded-2xl flex items-center justify-between animate-in zoom-in-95 duration-200 mt-2">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-success/20 rounded-xl flex items-center justify-center text-success">
                         <CheckCircle2 size={20} />
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-success uppercase tracking-widest">Ubicación Precisa</p>
-                        <p className="text-[9px] font-bold text-muted uppercase mt-0.5">Capturada mediante GPS</p>
+                        <p className="text-[9px] font-bold text-muted uppercase mt-0.5">Capturada y ajustada en GPS</p>
                       </div>
                     </div>
-                    <button onClick={requestLocation} className="text-[9px] font-black text-success underline uppercase tracking-widest">Cambiar</button>
+                    <button onClick={requestLocation} className="text-[9px] font-black text-success underline uppercase tracking-widest">Re-centrar</button>
                   </div>
                 )}
 
-                {deliveryFee > 0 && deliveryMethod === 'envio' && (
+                {deliveryFee >= 0 && deliveryMethod === 'envio' && (
                   <div className="p-4 bg-brand/5 border border-brand/10 rounded-2xl flex items-center justify-between">
                     <span className="text-[10px] font-black text-brand uppercase tracking-widest flex items-center gap-2">
-                       <Truck size={14} /> Domicilio ({distanceKm?.toFixed(1)} km)
+                       <Truck size={14} /> Domicilio
                     </span>
-                    <span className="text-sm font-black text-brand">{formatMoney(deliveryFee)}</span>
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] text-muted tracking-widest uppercase mb-1">
+                        {tipoDom === 'manual' ? 'Costo de envío' : (distanceKm && tipoDom === 'automatico') ? `${distanceKm.toFixed(1)} km` : 'Envío Local'}
+                      </span>
+                      <span className="text-sm font-black text-brand">
+                        {tipoDom === 'manual' ? 'Por confirmar' : formatMoney(deliveryFee)}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
+              
+              {tipoDom === 'manual' && deliveryMethod === 'envio' && (
+                <div className="bg-brand/5 border border-brand/20 p-3 rounded-xl mt-3 animate-in fade-in">
+                   <p className="text-[9px] font-bold text-muted uppercase tracking-widest text-center">
+                     * El valor del domicilio será confirmado por el negocio
+                   </p>
+                </div>
+              )}
             </div>
 
             {/* Methods */}

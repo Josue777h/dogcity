@@ -6,8 +6,10 @@ import {
 import { getSupabase } from '../../../lib/supabase';
 import { useToastStore } from '../../../stores';
 import PremiumLock from '../../../components/ui/PremiumLock';
+import ConfirmModal from '../../../components/ui/ConfirmModal';
 
 export default function DriversView({ businessId }) {
+  const [itemToDelete, setItemToDelete] = useState(null);
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -75,7 +77,6 @@ export default function DriversView({ businessId }) {
   };
 
   const deleteDriver = async (id) => {
-    if (!confirm('¿Eliminar a este domiciliario?')) return;
     try {
       const { error } = await getSupabase()
         .from('domiciliarios')
@@ -159,7 +160,7 @@ export default function DriversView({ businessId }) {
               </div>
               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button 
-                  onClick={() => deleteDriver(driver.id)}
+                  onClick={() => setItemToDelete(driver)}
                   className="p-2 text-error/40 hover:text-error hover:bg-error/10 rounded-lg transition-colors"
                 >
                   <Trash2 size={16} />
@@ -199,6 +200,14 @@ export default function DriversView({ businessId }) {
       </div>
      </div>
     </PremiumLock>
+
+    <ConfirmModal 
+      isOpen={!!itemToDelete}
+      title="Desvincular Repartidor"
+      message={`¿Estás seguro de eliminar a "${itemToDelete?.nombre}"?`}
+      onConfirm={() => deleteDriver(itemToDelete.id)}
+      onCancel={() => setItemToDelete(null)}
+    />
     </div>
   );
 }

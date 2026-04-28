@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { Menu, X, Settings, Home, ShoppingBag, ShoppingCart, Info, Phone, MessageCircle, Clock, Search } from 'lucide-react';
 import { useBusinessStore, useCartStore, useToastStore } from '../../stores';
-import { fetchBusiness, fetchProducts, subscribeToProducts, fetchSubscription } from '../../lib/supabase';
+import { fetchBusiness, fetchProducts, subscribeToProducts, fetchSubscription, fetchCategories } from '../../lib/supabase';
 import { formatMoney } from '../../lib/utils';
 import ProductCard from './ProductCard';
 import OrderDrawer from './OrderDrawer';
@@ -12,7 +12,7 @@ export default function StorePage() {
   const [searchParams] = useSearchParams();
   const slug = useParams().slug || searchParams.get('negocio') || 'dogcity';
 
-  const { business, products, isLoading, setBusiness, setProducts, setLoading, setError } = useBusinessStore();
+  const { business, products, categories, isLoading, setBusiness, setProducts, setCategories, setLoading, setError } = useBusinessStore();
   const bid = business?.id;
 
   const totalItems = useCartStore((s) => s.getTotalItems(bid));
@@ -31,12 +31,14 @@ export default function StorePage() {
         const biz = await fetchBusiness(slug);
         setBusiness(biz);
         if (biz) {
-          const [prods, sub] = await Promise.all([
+          const [prods, sub, cats] = await Promise.all([
             fetchProducts(biz.id),
-            fetchSubscription(biz.id)
+            fetchSubscription(biz.id),
+            fetchCategories(biz.id)
           ]);
           setProducts(prods);
           setBusiness(biz, sub);
+          setCategories(cats);
         }
       } catch (err) {
         setError(err.message);
@@ -58,19 +60,33 @@ export default function StorePage() {
     return () => sub?.unsubscribe();
   }, [slug]);
 
-  const categories = useMemo(() => {
+  const visibleCategories = useMemo(() => {
+    if (categories && categories.length > 0) {
+      // Priorizar tabla relacional
+      const sorted = [...categories].sort((a,b) => a.nombre.localeCompare(b.nombre)).map(c => c.nombre);
+      return ['Todos', ...sorted];
+    }
+    // Fallback legacy
     const cats = [...new Set(products.map((p) => p.categoria).filter(Boolean))];
-    return ['Todos', ...cats];
-  }, [products]);
+    const sorted = cats.sort((a,b) => a.localeCompare(b));
+    return ['Todos', ...sorted];
+  }, [categories, products]);
 
   const visible = useMemo(() => {
     return products.filter((p) => {
       if (!p.disponible) return false;
-      const matchesCat = currentCategory === 'Todos' || (p.categoria || '').trim() === currentCategory.trim();
+      
+      let pCatName = p.categoria;
+      if (p.categoria_id && categories?.length > 0) {
+        const found = categories.find(c => c.id === p.categoria_id);
+        if (found) pCatName = found.nombre;
+      }
+      
+      const matchesCat = currentCategory === 'Todos' || (pCatName || '').trim() === currentCategory.trim();
       const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesCat && matchesSearch;
     });
-  }, [products, currentCategory, searchTerm]);
+  }, [products, currentCategory, searchTerm, categories]);
 
   if (isLoading) {
     return (
@@ -136,7 +152,7 @@ export default function StorePage() {
               <div className="sticky top-24">
                 <h3 className="text-xs font-black text-muted uppercase tracking-[0.2em] mb-4 pl-1">Categorías</h3>
                 <nav className="flex lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 hide-scrollbar">
-                  {categories.map((cat) => (
+                  {visibleCategories.map((cat) => (
                     <button
                       key={cat}
                       onClick={() => setCurrentCategory(cat)}
