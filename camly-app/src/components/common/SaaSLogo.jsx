@@ -1,5 +1,5 @@
 import React from 'react';
-import saasLogo from '../../assets/saas-logo.svg';
+import saasLogo from '../../assets/saas-logo.webp';
 
 /**
  * SaaSLogo Component

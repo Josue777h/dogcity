@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import camlyPreview from '../../assets/ejemplo.jpeg';
 
-import saasLogo from '../../assets/saas-logo.svg';
+import saasLogo from '../../assets/saas-logo.webp';
 import SaaSLogo from '../../components/common/SaaSLogo';
 
 export default function LandingPage() {
@@ -39,19 +39,19 @@ export default function LandingPage() {
         </div>
 
         <div className="fluid-container relative z-10 text-center max-w-4xl mx-auto space-y-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-border/50 rounded-full text-dark text-[10px] font-black uppercase tracking-[0.2em] shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-border/50 rounded-full text-dark text-[10px] font-black uppercase tracking-[0.2em] shadow-sm animate-fade-in-up stagger-1">
             <Rocket size={14} className="text-brand" /> Únete a +5 negocios creciendo
           </div>
-          <h2 className="text-5xl sm:text-6xl md:text-7xl font-black text-dark tracking-tighter uppercase italic leading-[0.95] animate-in fade-in slide-in-from-bottom-3 duration-700 delay-100">
+          <h2 className="text-5xl sm:text-6xl md:text-7xl font-black text-dark tracking-tighter uppercase italic leading-[0.95] animate-fade-in-up stagger-2">
             Convierte WhatsApp en tu <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand to-accent pr-4">mejor vendedor.</span>
           </h2>
 
-          <p className="text-lg md:text-xl text-muted font-medium max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+          <p className="text-lg md:text-xl text-muted font-medium max-w-2xl mx-auto leading-relaxed animate-fade-in-up stagger-3">
             Ofrece un catálogo impecable. Recibe pedidos estructurados, con GPS exacto y cero confusiones directamente en tu chat.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-300">
-            <Link to="/registro" className="w-full sm:w-auto btn-primary !py-4 !px-8 !text-sm !font-black shadow-2xl shadow-brand/30 hover:scale-105 transition-transform uppercase">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-fade-in-up stagger-4">
+            <Link to="/registro" className="w-full sm:w-auto btn-primary animate-scale-in stagger-5 !py-4 !px-8 !text-sm !font-black shadow-2xl shadow-brand/30 hover:scale-105 transition-transform uppercase">
               EMPEZAR 7 DÍAS GRATIS
             </Link>
           </div>

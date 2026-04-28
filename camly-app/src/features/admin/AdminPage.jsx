@@ -76,7 +76,6 @@ export default function AdminPage() {
         .single();
       
       if (bizErr) throw bizErr;
-      setBusiness(biz);
       
       if (biz) {
         const [p, o, sub, cats] = await Promise.all([
@@ -130,7 +129,11 @@ export default function AdminPage() {
         await createProduct(productData);
         addToast('Producto creado', 'success');
       }
-      await loadData(session.user.id, false);
+      if (business) {
+        const p = await fetchProducts(business.id);
+        setProducts(p);
+        setGlobalProducts(p);
+      }
     } catch (err) {
       console.error(err);
       addToast('Error al procesar producto', 'error');
@@ -141,7 +144,11 @@ export default function AdminPage() {
     try {
       await deleteProduct(id);
       addToast('Producto eliminado', 'info');
-      await loadData(session.user.id, false);
+      if (business) {
+        const p = await fetchProducts(business.id);
+        setProducts(p);
+        setGlobalProducts(p);
+      }
     } catch (err) {
       console.error(err);
       addToast('Error al eliminar', 'error');

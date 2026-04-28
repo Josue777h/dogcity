@@ -5,10 +5,12 @@ import {
 } from 'lucide-react';
 import { formatMoney } from '../../../lib/utils';
 import { updateOrderStatus, getSupabase, deleteOrder } from '../../../lib/supabase';
+import ConfirmModal from '../../../components/ui/ConfirmModal';
 
 export default function OrdersView({ orders, onUpdate }) {
   const [drivers, setDrivers] = useState([]);
   const [loadingDriver, setLoadingDriver] = useState(null);
+  const [orderToDelete, setOrderToDelete] = useState(null);
 
   useEffect(() => {
     async function loadDrivers() {
@@ -43,17 +45,21 @@ export default function OrdersView({ orders, onUpdate }) {
     }
   };
 
-  const handleDeleteOrder = async (e, orderId) => {
-    e.stopPropagation();
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este pedido permanentemente? Esta acción no se puede deshacer.')) return;
-    
+  const confirmDelete = async () => {
+    if (!orderToDelete) return;
     try {
-      await deleteOrder(orderId);
+      await deleteOrder(orderToDelete.id);
+      setOrderToDelete(null);
       onUpdate();
     } catch (err) {
       console.error(err);
       alert('Hubo un error al eliminar el pedido.');
     }
+  };
+
+  const handleDeleteClick = (e, order) => {
+    e.stopPropagation();
+    setOrderToDelete(order);
   };
 
   const handleAssignDriver = async (orderId, driverId) => {
@@ -93,25 +99,25 @@ export default function OrdersView({ orders, onUpdate }) {
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
       {/* Header List */}
-      <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-3 bg-dark/5 rounded-2xl text-[9px] font-black text-muted uppercase tracking-[0.2em] items-center">
-        <span className="col-span-2 pl-2">ID / Tiempo</span>
-        <span className="col-span-4">Cliente / Detalles</span>
+      <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-2 text-[10px] font-black text-muted uppercase tracking-[0.2em] items-center mb-1">
+        <span className="col-span-2 pl-2">Pedido</span>
+        <span className="col-span-4">Cliente</span>
         <span className="col-span-2 text-center">Total</span>
         <span className="col-span-2 text-center">Estado</span>
-        <span className="col-span-2 text-right pr-2">Acciones</span>
+        <span className="col-span-2 text-center">Acciones</span>
       </div>
 
       <div className="space-y-3">
-        {orders.map(order => (
-          <div key={order.id} className="bg-white border border-border rounded-3xl overflow-hidden hover:border-brand/40 transition-all duration-300 shadow-sm hover:shadow-xl">
+        {orders.map((order, i) => (
+          <div key={order.id} className={`bg-white border border-border rounded-3xl overflow-hidden hover:border-brand/40 transition-all duration-300 shadow-sm hover:shadow-xl animate-fade-in-up stagger-${(i % 5) + 1}`} style={{ animationFillMode: 'both' }}>
             {/* Header Row */}
             <div 
               onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-              className="p-3 sm:px-5 cursor-pointer grid grid-cols-2 lg:grid-cols-12 gap-4 items-center relative"
+              className="px-4 py-3 sm:px-6 cursor-pointer grid grid-cols-2 lg:grid-cols-12 gap-4 items-center relative"
             >
               {/* ID & TIEMPO */}
               <div className="col-span-2 lg:col-span-2 flex items-center gap-3 w-full pr-16 lg:pr-0">
-                 <div className="px-2.5 py-1.5 bg-brand text-white rounded-lg font-black text-[10px] tracking-tighter leading-none shadow-sm">
+                 <div className="px-3 py-1.5 bg-brand text-white rounded-full font-black text-[10px] tracking-widest leading-none shadow-sm">
                    #{order.id.toString().slice(-4).toUpperCase()}
                  </div>
                  <span className="text-[10px] font-bold text-muted uppercase tracking-widest">
@@ -135,29 +141,43 @@ export default function OrdersView({ orders, onUpdate }) {
 
               {/* ESTADO */}
               <div className="col-span-1 lg:col-span-2 flex items-center lg:justify-center">
-                <span className={`px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-widest w-full lg:w-auto text-center shadow-sm ${getStatusColor(order.estado || order.status)}`}>
+                <span className={`px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest w-full lg:w-auto text-center shadow-sm ${getStatusColor(order.estado || order.status)}`}>
                   {order.estado || order.status}
                 </span>
               </div>
 
-              {/* ACCIONES */}
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 lg:relative lg:translate-y-0 lg:right-0 lg:col-span-2 flex items-center justify-end gap-2 z-10">
+              {/* ACCIONES (DESKTOP) */}
+              <div className="hidden lg:flex lg:col-span-2 items-center justify-center gap-2">
                  <button 
-                   onClick={(e) => handleDeleteOrder(e, order.id)}
-                   className="p-2 text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all shadow-sm border border-red-100"
+                   onClick={(e) => handleDeleteClick(e, order)}
+                   className="w-9 h-9 flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-full transition-all border border-red-100 animate-scale-in"
                    title="Eliminar pedido"
                  >
                    <Trash2 size={16} />
                  </button>
-                 <div className="p-2 text-muted hover:text-brand bg-bg-alt rounded-xl transition-colors">
+                 <div className="w-9 h-9 flex items-center justify-center text-muted hover:text-brand bg-bg-alt rounded-full transition-colors">
                    <ChevronRight size={18} className={`transition-transform duration-300 ${expandedOrderId === order.id ? 'rotate-90' : ''}`} />
+                 </div>
+              </div>
+
+              {/* ACCIONES (MOBILE) */}
+              <div className="lg:hidden absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-end gap-2 z-10">
+                 <button 
+                   onClick={(e) => handleDeleteClick(e, order)}
+                   className="w-8 h-8 flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-full transition-all border border-red-100 animate-scale-in"
+                   title="Eliminar pedido"
+                 >
+                   <Trash2 size={14} />
+                 </button>
+                 <div className="w-8 h-8 flex items-center justify-center text-muted hover:text-brand bg-bg-alt rounded-full transition-colors">
+                   <ChevronRight size={16} className={`transition-transform duration-300 ${expandedOrderId === order.id ? 'rotate-90' : ''}`} />
                  </div>
               </div>
             </div>
 
             {/* Expanded Content */}
             {expandedOrderId === order.id && (
-              <div className="px-6 pb-6 pt-2 border-t border-dashed border-border animate-in slide-in-from-top-2 duration-300">
+              <div className="px-6 pb-6 pt-2 border-t border-dashed border-border animate-fade-in-down">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {/* Summary */}
                   <div className="space-y-6">
@@ -224,6 +244,14 @@ export default function OrdersView({ orders, onUpdate }) {
           </div>
         ))}
       </div>
+
+      <ConfirmModal 
+        isOpen={!!orderToDelete}
+        title="Eliminar Pedido"
+        message={`¿Estás seguro de que deseas eliminar permanentemente el pedido de "${orderToDelete?.nombre}"? Esta acción no se puede deshacer.`}
+        onConfirm={confirmDelete}
+        onCancel={() => setOrderToDelete(null)}
+      />
     </div>
   );
 }

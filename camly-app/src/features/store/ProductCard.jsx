@@ -3,7 +3,7 @@ import { ShoppingCart, Plus, Minus, Info, X } from 'lucide-react';
 import { formatMoney } from '../../lib/utils';
 import { useCartStore, useBusinessStore } from '../../stores';
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, index = 0 }) {
   const business = useBusinessStore((s) => s.business);
   const bid = business?.id;
   
@@ -21,7 +21,8 @@ export default function ProductCard({ product }) {
   return (
     <>
     <article 
-      className={`premium-card group hover:border-brand/30 flex flex-col h-full ${isSelected ? 'border-brand ring-1 ring-brand/10' : ''}`}
+      className={`premium-card group hover:border-brand/30 flex flex-col h-full animate-fade-in-up stagger-${(index % 5) + 1} ${isSelected ? 'border-brand ring-1 ring-brand/10' : ''}`}
+      style={{ animationFillMode: 'both' }}
     >
       <div 
         className="relative aspect-square sm:aspect-[4/3] overflow-hidden bg-gray-100 cursor-pointer"
@@ -61,7 +62,7 @@ export default function ProductCard({ product }) {
             {!isSelected ? (
               <button
                 onClick={() => increment(bid, product.id)}
-                className="w-full btn-primary !py-1.5 sm:!py-2 !text-[10px] sm:!text-xs !rounded-lg"
+                className="w-full btn-primary animate-scale-in !py-1.5 sm:!py-2 !text-[10px] sm:!text-xs !rounded-lg"
               >
                 <Plus size={12} className="sm:hidden" />
                 <Plus size={14} className="hidden sm:block" />
@@ -111,7 +112,7 @@ export default function ProductCard({ product }) {
         />
         
         {/* Modal Contenido */}
-        <div className="relative bg-white w-full max-w-md md:max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] md:h-[600px] animate-in zoom-in-95 duration-300">
+        <div className="relative bg-white w-full max-w-md md:max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] md:h-[600px] animate-fade-in-up duration-300">
           <button 
             onClick={() => setShowModal(false)}
             className="absolute top-4 right-4 w-10 h-10 bg-black/10 backdrop-blur-md rounded-full flex items-center justify-center text-dark hover:bg-black/20 transition-colors z-20 shadow-sm"

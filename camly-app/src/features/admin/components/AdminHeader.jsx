@@ -6,6 +6,14 @@ export default function AdminHeader({ title, business, onOpenMenu }) {
   const { isPro, isExpired, trialDaysLeft, subscription } = useBusinessStore();
   const storeUrl = `${window.location.origin}/${business?.nombre}`;
 
+  const getProDaysLeft = () => {
+    if (!subscription || !subscription.fecha_fin || subscription.estado === 'trial') return null;
+    const diff = new Date(subscription.fecha_fin) - new Date();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
+
+  const proDaysLeft = getProDaysLeft();
+
   const copyLink = () => {
     navigator.clipboard.writeText(storeUrl);
     addToast('Link copiado al portapapeles', 'success');
@@ -43,7 +51,7 @@ export default function AdminHeader({ title, business, onOpenMenu }) {
                <AlertTriangle size={14} />
                <span className="text-[10px] font-black uppercase tracking-widest">Plan Vencido</span>
              </div>
-          ) : subscription?.es_trial ? (
+          ) : subscription?.estado === 'trial' ? (
              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 text-orange-600 rounded-lg border border-orange-500/20">
                <Zap size={14} className="fill-orange-600 animate-pulse" />
                <span className="text-[10px] font-black uppercase tracking-widest">Prueba: {trialDaysLeft} Días</span>
@@ -51,7 +59,9 @@ export default function AdminHeader({ title, business, onOpenMenu }) {
           ) : isPro ? (
              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-success/10 text-success rounded-lg border border-success/20">
                <CheckCircle2 size={14} />
-               <span className="text-[10px] font-black uppercase tracking-widest">Plan Pro</span>
+               <span className="text-[10px] font-black uppercase tracking-widest">
+                 Plan Pro {proDaysLeft !== null ? `(${proDaysLeft} DÍAS)` : ''}
+               </span>
              </div>
           ) : null}
         </div>
