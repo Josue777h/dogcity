@@ -204,10 +204,10 @@ export default function OrderDrawer({ isOpen, onClose }) {
       // Experiencia Pro: Vibración hápitca si está disponible
       if (navigator.vibrate) navigator.vibrate(100);
 
-      // Auto-redirección tras 1.5 segundos para que el usuario vea el éxito
+      // Auto-redirección tras 1 segundo EXACTO (según requerimiento)
       setTimeout(() => {
         openWhatsApp(whatsappPhone, message);
-      }, 1500);
+      }, 1000);
 
     } catch (err) {
       addToast(`Error: ${err.message}`, 'error');
@@ -283,62 +283,62 @@ export default function OrderDrawer({ isOpen, onClose }) {
       <div className={`absolute right-0 top-0 h-full w-full max-w-lg bg-surface shadow-2xl transition-transform duration-500 transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="p-4 border-b border-border flex items-center justify-between bg-surface sticky top-0 z-10">
+          <div className="p-3 sm:p-4 border-b border-border flex items-center justify-between bg-surface sticky top-0 z-10">
              <div className="flex items-center gap-3">
-               <div className="w-9 h-9 bg-brand/10 rounded-xl flex items-center justify-center text-brand">
-                 <ShoppingBag size={18} />
+               <div className="w-8 h-8 sm:w-9 sm:h-9 bg-brand/10 rounded-xl flex items-center justify-center text-brand">
+                 <ShoppingBag size={16} className="sm:w-[18px] sm:h-[18px]" />
                </div>
                <div>
-                 <h2 className="text-base font-black text-dark uppercase tracking-tight">Finalizar Pedido</h2>
-                 <p className="text-[9px] font-bold text-muted uppercase tracking-widest leading-none mt-0.5">Sigue los pasos para ordenar</p>
+                 <h2 className="text-sm sm:text-base font-black text-dark uppercase tracking-tight">Finalizar Pedido</h2>
+                 <p className="text-[8px] sm:text-[9px] font-bold text-muted uppercase tracking-widest leading-none mt-0.5">Sigue los pasos para ordenar</p>
                </div>
              </div>
              <button onClick={onClose} className="p-2 hover:bg-bg-alt rounded-full transition-colors text-muted hover:text-dark">
-               <X size={20} />
+               <X size={18} className="sm:w-5 sm:h-5" />
              </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-5 hide-scrollbar">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 sm:space-y-5 hide-scrollbar">
             {orderResult ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center animate-in zoom-in-95 duration-500">
-                <div className="w-24 h-24 bg-success/10 rounded-full flex items-center justify-center text-success mb-6 relative">
-                  <CheckCircle2 size={48} className="animate-in fade-in zoom-in duration-700" />
+              <div className="flex flex-col items-center justify-center py-6 sm:py-10 text-center animate-in zoom-in-95 duration-500">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-success/10 rounded-full flex items-center justify-center text-success mb-4 sm:mb-6 relative">
+                  <CheckCircle2 size={40} className="sm:w-12 sm:h-12 animate-in fade-in zoom-in duration-700" />
                   <div className="absolute inset-0 bg-success/20 rounded-full animate-ping" />
                 </div>
                 
-                <h2 className="text-2xl font-black text-dark uppercase tracking-tight mb-2">¡Pedido Generado!</h2>
-                <p className="text-sm font-bold text-muted uppercase tracking-widest mb-8">
+                <h2 className="text-xl sm:text-2xl font-black text-dark uppercase tracking-tight mb-1 sm:mb-2">¡Pedido Generado!</h2>
+                <p className="text-xs sm:text-sm font-bold text-muted uppercase tracking-widest mb-4 sm:mb-8">
                   Pedido #{orderResult.id.toString().slice(-6).toUpperCase()}
                 </p>
 
-                <div className="bg-bg-alt p-6 rounded-2xl border border-border w-full space-y-4 mb-8">
-                  <div className="flex items-center justify-center gap-3 text-brand">
-                    <Loader2 size={18} className="animate-spin" />
-                    <span className="text-xs font-black uppercase tracking-widest">Redirigiendo a WhatsApp...</span>
+                <div className="bg-bg-alt p-4 sm:p-6 rounded-2xl border border-border w-full space-y-3 sm:space-y-4 mb-4 sm:mb-8">
+                  <div className="flex items-center justify-center gap-2 sm:gap-3 text-brand">
+                    <Loader2 size={16} className="sm:w-[18px] sm:h-[18px] animate-spin" />
+                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">Redirigiendo a WhatsApp...</span>
                   </div>
-                  <p className="text-[10px] font-bold text-muted uppercase tracking-tighter">
+                  <p className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-tighter">
                     Si no se abre automáticamente en un momento, usa el botón de abajo.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 w-full">
+                <div className="grid grid-cols-1 gap-2 sm:gap-3 w-full">
                   <button 
                     onClick={() => openWhatsApp(whatsappPhone, orderResult.message)}
-                    className="w-full btn-primary !bg-success !border-success !py-5 shadow-xl shadow-success/20 flex items-center justify-center gap-3"
+                    className="w-full btn-primary !bg-success !border-success py-3 sm:!py-5 shadow-xl shadow-success/20 flex items-center justify-center gap-2 sm:gap-3"
                   >
-                    <MessageCircle size={24} /> <span className="text-lg">ABRIR WHATSAPP</span>
+                    <MessageCircle size={20} className="sm:w-6 sm:h-6" /> <span className="text-base sm:text-lg">ABRIR WHATSAPP</span>
                   </button>
                   
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
                     <button 
                       onClick={() => { navigator.clipboard.writeText(orderResult.message); addToast('Mensaje copiado ✅', 'success'); }} 
-                      className="py-4 bg-dark text-white rounded-xl text-xs font-black uppercase flex items-center justify-center gap-2 hover:bg-dark/90 transition-colors"
+                      className="py-3 sm:py-4 bg-dark text-white rounded-xl text-[10px] sm:text-xs font-black uppercase flex items-center justify-center gap-2 hover:bg-dark/90 transition-colors"
                     >
-                      <Copy size={16}/> Copiar
+                      <Copy size={14} className="sm:w-4 sm:h-4" /> Copiar
                     </button>
                     <button 
                       onClick={() => { clearCart(bid); setOrderResult(null); onClose(); }} 
-                      className="py-4 border-2 border-brand text-brand rounded-xl text-xs font-black uppercase transition-all hover:bg-brand hover:text-white"
+                      className="py-3 sm:py-4 border-2 border-brand text-brand rounded-xl text-[10px] sm:text-xs font-black uppercase transition-all hover:bg-brand hover:text-white"
                     >
                       Nuevo Pedido
                     </button>
@@ -384,52 +384,52 @@ export default function OrderDrawer({ isOpen, onClose }) {
                     <div className="w-1.5 h-1.5 bg-brand rounded-full" /> Tus Datos
                   </h3>
                   
-                  <div className="grid gap-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <button 
-                        onClick={() => setDeliveryMethod('envio')} 
-                        className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${deliveryMethod === 'envio' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
-                      >
-                        <Truck size={20} className={deliveryMethod === 'envio' ? 'text-brand' : 'text-muted'} />
-                        <span className="text-[9px] font-black uppercase tracking-widest">A Domicilio</span>
-                      </button>
-                      <button 
-                        onClick={() => { setDeliveryMethod('recogida'); setLocation(null, ''); setDeliveryFee(0); setDistanceKm(null); setMapCoords(null); }} 
-                        className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${deliveryMethod === 'recogida' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
-                      >
-                        <ShoppingBag size={20} className={deliveryMethod === 'recogida' ? 'text-brand' : 'text-muted'} />
-                        <span className="text-[9px] font-black uppercase tracking-widest">Recoger</span>
-                      </button>
-                    </div>
+                <div className="grid gap-2 sm:gap-3">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    <button 
+                      onClick={() => setDeliveryMethod('envio')} 
+                      className={`p-2 sm:p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${deliveryMethod === 'envio' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
+                    >
+                      <Truck size={18} className={deliveryMethod === 'envio' ? 'text-brand' : 'text-muted'} />
+                      <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest">A Domicilio</span>
+                    </button>
+                    <button 
+                      onClick={() => { setDeliveryMethod('recogida'); setLocation(null, ''); setDeliveryFee(0); setDistanceKm(null); setMapCoords(null); }} 
+                      className={`p-2 sm:p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${deliveryMethod === 'recogida' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
+                    >
+                      <ShoppingBag size={18} className={deliveryMethod === 'recogida' ? 'text-brand' : 'text-muted'} />
+                      <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest">Recoger</span>
+                    </button>
+                  </div>
 
-                    <div className="relative group">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={16} />
+                  <div className="relative group">
+                    <User className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={14} className="sm:w-4 sm:h-4" />
+                    <input 
+                      type="text" placeholder="Tu Nombre" 
+                      value={customerName} onChange={(e) => setCustomer('customerName', e.target.value)} 
+                      className="w-full pl-9 sm:pl-12 pr-4 py-2 sm:py-3 bg-white border border-border rounded-xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-[11px] sm:text-xs font-bold shadow-sm"
+                    />
+                  </div>
+                  
+                  <div className="relative group">
+                    <Phone className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={14} className="sm:w-4 sm:h-4" />
+                    <input 
+                      type="tel" placeholder="WhatsApp" 
+                      value={customerPhone} onChange={(e) => setCustomer('customerPhone', e.target.value)} 
+                      className="w-full pl-9 sm:pl-12 pr-4 py-2 sm:py-3 bg-white border border-border rounded-xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-[11px] sm:text-xs font-bold shadow-sm"
+                    />
+                  </div>
+
+                  {deliveryMethod === 'envio' && (
+                    <div className="relative group animate-in slide-in-from-top-2 duration-300">
+                      <MapPin className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={14} className="sm:w-4 sm:h-4" />
                       <input 
-                        type="text" placeholder="Tu Nombre" 
-                        value={customerName} onChange={(e) => setCustomer('customerName', e.target.value)} 
-                        className="w-full pl-10 pr-4 py-3 bg-white border border-border rounded-xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-xs font-bold shadow-sm"
+                        type="text" placeholder="Dirección / Punto de referencia" 
+                        value={customerAddress} onChange={(e) => setCustomer('customerAddress', e.target.value)} 
+                        className="w-full pl-9 sm:pl-12 pr-4 py-2 sm:py-3 bg-white border border-border rounded-xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-[11px] sm:text-xs font-bold shadow-sm"
                       />
                     </div>
-                    
-                    <div className="relative group">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={16} />
-                      <input 
-                        type="tel" placeholder="WhatsApp" 
-                        value={customerPhone} onChange={(e) => setCustomer('customerPhone', e.target.value)} 
-                        className="w-full pl-10 pr-4 py-3 bg-white border border-border rounded-xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-xs font-bold shadow-sm"
-                      />
-                    </div>
-
-                    {deliveryMethod === 'envio' && (
-                      <div className="relative group animate-in slide-in-from-top-2 duration-300">
-                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={16} />
-                        <input 
-                          type="text" placeholder="Dirección / Punto de referencia" 
-                          value={customerAddress} onChange={(e) => setCustomer('customerAddress', e.target.value)} 
-                          className="w-full pl-10 pr-4 py-3 bg-white border border-border rounded-xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-xs font-bold shadow-sm"
-                        />
-                      </div>
-                    )}
+                  )}
 
                     {mapCoords && deliveryMethod === 'envio' && (
                       <div className="animate-in fade-in zoom-in-95 duration-500">
@@ -564,22 +564,22 @@ export default function OrderDrawer({ isOpen, onClose }) {
           </div>
 
           {/* Footer Actions */}
-          <div className="p-4 border-t border-border bg-bg-alt sticky bottom-0 z-10">
+          <div className="p-3 sm:p-4 border-t border-border bg-bg-alt sticky bottom-0 z-10">
             {!orderResult ? (
               <button 
                 onClick={handleSubmit} 
                 disabled={isSubmitting || selectedItems.length === 0} 
-                className="w-full group btn-primary !py-5 shadow-2xl shadow-brand/20 disabled:opacity-50"
+                className="w-full group btn-primary py-4 sm:!py-5 shadow-2xl shadow-brand/20 disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <Loader2 size={24} className="animate-spin" />
                 ) : (
                   <div className="flex flex-col items-center">
                     <div className="flex items-center gap-2">
-                      <MessageCircle size={20} />
-                      <span className="text-lg">REALIZAR PEDIDO</span>
+                      <MessageCircle size={18} className="sm:w-5 sm:h-5" />
+                      <span className="text-base sm:text-lg">REALIZAR PEDIDO</span>
                     </div>
-                    <span className="text-[9px] font-bold opacity-60 uppercase tracking-[0.2em] mt-1 italic">Vía WhatsApp Automatizado</span>
+                    <span className="text-[8px] sm:text-[9px] font-bold opacity-60 uppercase tracking-[0.2em] mt-1 italic">Vía WhatsApp Automatizado</span>
                   </div>
                 )}
               </button>
