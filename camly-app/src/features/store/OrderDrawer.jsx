@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Phone, MapPin, Loader2, Navigation, MessageCircle, Copy, Trash2, X, CreditCard, Wallet, ShoppingBag, Truck, CheckCircle2, Smartphone, ShoppingCart } from 'lucide-react';
+import { User, Phone, MapPin, Loader2, Navigation, MessageCircle, Copy, Trash2, X, CreditCard, Wallet, ShoppingBag, Truck, CheckCircle2, Smartphone, ShoppingCart, Minus, Plus } from 'lucide-react';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
 import { formatMoney, openWhatsApp } from '../../lib/utils';
 import { saveOrder } from '../../lib/supabase';
@@ -29,7 +29,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
   const { 
     carts, customerName, customerPhone, customerAddress,
     locationLink, setCustomer, setLocation, setComment,
-    getSelectedItems, clearCart 
+    getSelectedItems, clearCart, increment, decrement 
   } = useCartStore();
 
   const [deliveryMethod, setDeliveryMethod] = useState('envio');
@@ -204,9 +204,21 @@ export default function OrderDrawer({ isOpen, onClose }) {
       // Experiencia Pro: Vibración hápitca si está disponible
       if (navigator.vibrate) navigator.vibrate(100);
 
-      // Auto-redirección tras 1 segundo EXACTO (según requerimiento)
+      // Limpiar carrito local inmediatamente después del éxito
+      clearCart(bid);
+
+      // Auto-redirección tras 1 segundo EXACTO
       setTimeout(() => {
-        openWhatsApp(whatsappPhone, message);
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const url = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`;
+        
+        if (isMobile) {
+          // En móvil, forzar redirección en la misma pestaña para evitar bloqueos de popup
+          window.location.href = url;
+        } else {
+          // En desktop usamos la utilidad que maneja pestañas nuevas
+          openWhatsApp(whatsappPhone, message);
+        }
       }, 1000);
 
     } catch (err) {
@@ -358,12 +370,32 @@ export default function OrderDrawer({ isOpen, onClose }) {
                     ) : (
                       <div className="divide-y divide-border">
                         {selectedItems.map((item) => (
-                          <div key={item.id} className="p-3 flex items-center justify-between">
-                            <div className="flex flex-col">
-                              <span className="text-xs font-bold text-dark">{item.quantity}x {item.name}</span>
-                              {cart.notes[item.id] && <span className="text-[9px] text-muted italic mt-0.5 bg-white px-2 py-0.5 rounded-full border border-border w-fit">{cart.notes[item.id]}</span>}
+                          <div key={item.id} className="p-3 flex items-center justify-between gap-4">
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span className="text-xs font-bold text-dark truncate">{item.name}</span>
+                              {cart.notes[item.id] && <span className="text-[9px] text-muted italic mt-0.5 bg-white px-2 py-0.5 rounded-full border border-border w-fit truncate max-w-full">{cart.notes[item.id]}</span>}
                             </div>
-                            <span className="text-xs font-black text-dark">{formatMoney(item.quantity * item.price)}</span>
+                            
+                            <div className="flex items-center gap-3">
+                              {/* Mini Contador Compacto */}
+                              <div className="flex items-center bg-white rounded-lg border border-border overflow-hidden p-0.5 shadow-sm">
+                                <button 
+                                  onClick={() => decrement(bid, item.id)}
+                                  className="w-6 h-6 flex items-center justify-center text-muted hover:text-brand hover:bg-brand/5 transition-colors"
+                                >
+                                  <Minus size={12} />
+                                </button>
+                                <span className="w-6 text-center text-[11px] font-black text-dark">{item.quantity}</span>
+                                <button 
+                                  onClick={() => increment(bid, item.id)}
+                                  className="w-6 h-6 flex items-center justify-center text-muted hover:text-brand hover:bg-brand/5 transition-colors"
+                                >
+                                  <Plus size={12} />
+                                </button>
+                              </div>
+                              
+                              <span className="text-xs font-black text-dark min-w-[60px] text-right">{formatMoney(item.quantity * item.price)}</span>
+                            </div>
                           </div>
                         ))}
                         <div className="p-4 bg-brand text-white flex items-center justify-between">
@@ -403,7 +435,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
                   </div>
 
                   <div className="relative group">
-                    <User className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={14} className="sm:w-4 sm:h-4" />
+                    <User className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <input 
                       type="text" placeholder="Tu Nombre" 
                       value={customerName} onChange={(e) => setCustomer('customerName', e.target.value)} 
@@ -412,7 +444,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
                   </div>
                   
                   <div className="relative group">
-                    <Phone className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={14} className="sm:w-4 sm:h-4" />
+                    <Phone className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <input 
                       type="tel" placeholder="WhatsApp" 
                       value={customerPhone} onChange={(e) => setCustomer('customerPhone', e.target.value)} 
@@ -422,7 +454,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
 
                   {deliveryMethod === 'envio' && (
                     <div className="relative group animate-in slide-in-from-top-2 duration-300">
-                      <MapPin className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={14} className="sm:w-4 sm:h-4" />
+                      <MapPin className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       <input 
                         type="text" placeholder="Dirección / Punto de referencia" 
                         value={customerAddress} onChange={(e) => setCustomer('customerAddress', e.target.value)} 
