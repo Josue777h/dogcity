@@ -61,7 +61,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
   const selectedItems = getSelectedItems(bid, products);
   const subtotal = selectedItems.reduce((s, i) => s + i.quantity * i.price, 0);
   const total = deliveryMethod === 'envio' ? subtotal + deliveryFee : subtotal;
-  const whatsappPhone = (business?.telefono || WHATSAPP_FALLBACK_PHONE).replace(/\D/g, '');
+  const whatsappPhone = (business?.whatsapp_contacto || business?.telefono || WHATSAPP_FALLBACK_PHONE).replace(/\D/g, '');
   const tipoDom = business?.tipo_domicilio || 'automatico';
 
   function buildMessage(orderId, token) {
@@ -194,10 +194,21 @@ export default function OrderDrawer({ isOpen, onClose }) {
 
       const message = buildMessage(orderId, token);
       setOrderResult({ id: orderId, message, token });
-      addToast(`Pedido # ${orderId.toString().slice(-6)} generado`, 'success');
+      
+      addToast(`✅ Pedido #${orderId.toString().slice(-6).toUpperCase()} generado`, 'success');
+
       if (business?.theme_color) {
         document.documentElement.style.setProperty('--primary-brand', business.theme_color);
       }
+
+      // Experiencia Pro: Vibración hápitca si está disponible
+      if (navigator.vibrate) navigator.vibrate(100);
+
+      // Auto-redirección tras 1.5 segundos para que el usuario vea el éxito
+      setTimeout(() => {
+        openWhatsApp(whatsappPhone, message);
+      }, 1500);
+
     } catch (err) {
       addToast(`Error: ${err.message}`, 'error');
     } finally {
@@ -272,242 +283,288 @@ export default function OrderDrawer({ isOpen, onClose }) {
       <div className={`absolute right-0 top-0 h-full w-full max-w-lg bg-surface shadow-2xl transition-transform duration-500 transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="p-6 border-b border-border flex items-center justify-between bg-surface sticky top-0 z-10">
+          <div className="p-4 border-b border-border flex items-center justify-between bg-surface sticky top-0 z-10">
              <div className="flex items-center gap-3">
-               <div className="w-10 h-10 bg-brand/10 rounded-xl flex items-center justify-center text-brand">
-                 <ShoppingBag size={20} />
+               <div className="w-9 h-9 bg-brand/10 rounded-xl flex items-center justify-center text-brand">
+                 <ShoppingBag size={18} />
                </div>
                <div>
-                 <h2 className="text-lg font-black text-dark uppercase tracking-tight">Finalizar Pedido</h2>
-                 <p className="text-[10px] font-bold text-muted uppercase tracking-widest leading-none mt-0.5">Sigue los pasos para ordenar</p>
+                 <h2 className="text-base font-black text-dark uppercase tracking-tight">Finalizar Pedido</h2>
+                 <p className="text-[9px] font-bold text-muted uppercase tracking-widest leading-none mt-0.5">Sigue los pasos para ordenar</p>
                </div>
              </div>
              <button onClick={onClose} className="p-2 hover:bg-bg-alt rounded-full transition-colors text-muted hover:text-dark">
-               <X size={24} />
+               <X size={20} />
              </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-8 hide-scrollbar">
-            {/* Items Summary */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-black text-muted uppercase tracking-[0.15em] flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-brand rounded-full" /> Resumen de Compra
-              </h3>
-              <div className="bg-bg-alt rounded-[2rem] border border-border overflow-hidden">
-                {selectedItems.length === 0 ? (
-                  <div className="p-8 text-center text-muted text-sm font-medium">El carrito está vacío</div>
-                ) : (
-                  <div className="divide-y divide-border">
-                    {selectedItems.map((item) => (
-                      <div key={item.id} className="p-6 flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-dark">{item.quantity}x {item.name}</span>
-                          {cart.notes[item.id] && <span className="text-[10px] text-muted italic mt-0.5 bg-white px-2 py-0.5 rounded-full border border-border w-fit">{cart.notes[item.id]}</span>}
-                        </div>
-                        <span className="text-sm font-black text-dark">{formatMoney(item.quantity * item.price)}</span>
-                      </div>
-                    ))}
-                    <div className="p-8 bg-brand text-white flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Total a pagar</span>
-                        <span className="text-2xl font-black italic tracking-tighter">{formatMoney(total)}</span>
-                      </div>
-                      <ShoppingCart size={24} className="opacity-40" />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Customer Form */}
-            <div className="space-y-6">
-              <h3 className="text-xs font-black text-muted uppercase tracking-[0.15em] flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-brand rounded-full" /> Tus Datos
-              </h3>
-              
-              <div className="grid gap-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <button 
-                    onClick={() => setDeliveryMethod('envio')} 
-                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${deliveryMethod === 'envio' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
-                  >
-                    <Truck size={24} className={deliveryMethod === 'envio' ? 'text-brand' : 'text-muted'} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">A Domicilio</span>
-                  </button>
-                  <button 
-                    onClick={() => { setDeliveryMethod('recogida'); setLocation(null, ''); setDeliveryFee(0); setDistanceKm(null); setMapCoords(null); }} 
-                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${deliveryMethod === 'recogida' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
-                  >
-                    <ShoppingBag size={24} className={deliveryMethod === 'recogida' ? 'text-brand' : 'text-muted'} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Recoger</span>
-                  </button>
-                </div>
-
-                <div className="relative group">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={18} />
-                  <input 
-                    type="text" placeholder="Tu Nombre" 
-                    value={customerName} onChange={(e) => setCustomer('customerName', e.target.value)} 
-                    className="w-full pl-12 pr-4 py-4 bg-white border border-border rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-sm font-bold shadow-sm"
-                  />
+          <div className="flex-1 overflow-y-auto p-5 space-y-5 hide-scrollbar">
+            {orderResult ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center animate-in zoom-in-95 duration-500">
+                <div className="w-24 h-24 bg-success/10 rounded-full flex items-center justify-center text-success mb-6 relative">
+                  <CheckCircle2 size={48} className="animate-in fade-in zoom-in duration-700" />
+                  <div className="absolute inset-0 bg-success/20 rounded-full animate-ping" />
                 </div>
                 
-                <div className="relative group">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={18} />
-                  <input 
-                    type="tel" placeholder="WhatsApp" 
-                    value={customerPhone} onChange={(e) => setCustomer('customerPhone', e.target.value)} 
-                    className="w-full pl-12 pr-4 py-4 bg-white border border-border rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-sm font-bold shadow-sm"
-                  />
+                <h2 className="text-2xl font-black text-dark uppercase tracking-tight mb-2">¡Pedido Generado!</h2>
+                <p className="text-sm font-bold text-muted uppercase tracking-widest mb-8">
+                  Pedido #{orderResult.id.toString().slice(-6).toUpperCase()}
+                </p>
+
+                <div className="bg-bg-alt p-6 rounded-2xl border border-border w-full space-y-4 mb-8">
+                  <div className="flex items-center justify-center gap-3 text-brand">
+                    <Loader2 size={18} className="animate-spin" />
+                    <span className="text-xs font-black uppercase tracking-widest">Redirigiendo a WhatsApp...</span>
+                  </div>
+                  <p className="text-[10px] font-bold text-muted uppercase tracking-tighter">
+                    Si no se abre automáticamente en un momento, usa el botón de abajo.
+                  </p>
                 </div>
 
-                {deliveryMethod === 'envio' && (
-                  <div className="relative group animate-in slide-in-from-top-2 duration-300">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={18} />
-                    <input 
-                      type="text" placeholder="Dirección / Punto de referencia" 
-                      value={customerAddress} onChange={(e) => setCustomer('customerAddress', e.target.value)} 
-                      className="w-full pl-12 pr-4 py-4 bg-white border border-border rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-sm font-bold shadow-sm"
-                    />
-                  </div>
-                )}
-
-                {mapCoords && deliveryMethod === 'envio' && (
-                  <div className="animate-in fade-in zoom-in-95 duration-500">
-                    <LocationPickerMap 
-                      lat={mapCoords.lat} 
-                      lng={mapCoords.lng} 
-                      onLocationChange={(newLat, newLng) => updateLocationFromCoords(newLat, newLng, 'Pin Ajustado')} 
-                    />
-                  </div>
-                )}
-
-                {deliveryMethod === 'envio' && !locationLink && (
+                <div className="grid grid-cols-1 gap-3 w-full">
                   <button 
-                    onClick={requestLocation} 
-                    disabled={isCalculating}
-                    className="w-full py-5 bg-success text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-xl shadow-success/20 active:scale-95 transition-all animate-pulse mt-2"
+                    onClick={() => openWhatsApp(whatsappPhone, orderResult.message)}
+                    className="w-full btn-primary !bg-success !border-success !py-5 shadow-xl shadow-success/20 flex items-center justify-center gap-3"
                   >
-                    {isCalculating ? (
-                      <Loader2 size={24} className="animate-spin" />
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-2 font-black text-sm">
-                          <Navigation size={18} /> FIJAR MI UBICACIÓN GPS
-                        </div>
-                        <span className="text-[9px] font-bold uppercase opacity-80">Requerido para el domicilio</span>
-                      </>
-                    )}
+                    <MessageCircle size={24} /> <span className="text-lg">ABRIR WHATSAPP</span>
                   </button>
-                )}
-
-                {locationLink && deliveryMethod === 'envio' && (
-                  <div className="bg-success/5 border border-success/20 p-4 rounded-2xl flex items-center justify-between animate-in zoom-in-95 duration-200 mt-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-success/20 rounded-xl flex items-center justify-center text-success">
-                        <CheckCircle2 size={20} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-success uppercase tracking-widest">Ubicación Precisa</p>
-                        <p className="text-[9px] font-bold text-muted uppercase mt-0.5">Capturada y ajustada en GPS</p>
-                      </div>
-                    </div>
-                    <button onClick={requestLocation} className="text-[9px] font-black text-success underline uppercase tracking-widest">Re-centrar</button>
-                  </div>
-                )}
-
-                {deliveryFee >= 0 && deliveryMethod === 'envio' && (
-                  <div className="p-4 bg-brand/5 border border-brand/10 rounded-2xl flex items-center justify-between">
-                    <span className="text-[10px] font-black text-brand uppercase tracking-widest flex items-center gap-2">
-                       <Truck size={14} /> Domicilio
-                    </span>
-                    <div className="flex flex-col items-end">
-                      <span className="text-[10px] text-muted tracking-widest uppercase mb-1">
-                        {tipoDom === 'manual' ? 'Costo de envío' : (distanceKm && tipoDom === 'automatico') ? `${distanceKm.toFixed(1)} km` : 'Envío Local'}
-                      </span>
-                      <span className="text-sm font-black text-brand">
-                        {tipoDom === 'manual' ? 'Por confirmar' : formatMoney(deliveryFee)}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {tipoDom === 'manual' && deliveryMethod === 'envio' && (
-                <div className="bg-brand/5 border border-brand/20 p-3 rounded-xl mt-3 animate-in fade-in">
-                   <p className="text-[9px] font-bold text-muted uppercase tracking-widest text-center">
-                     * El valor del domicilio será confirmado por el negocio
-                   </p>
-                </div>
-              )}
-            </div>
-
-            {/* Methods */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-black text-muted uppercase tracking-[0.15em] flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-brand rounded-full" /> Forma de Pago
-              </h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <button 
-                  onClick={() => setPaymentMethod('efectivo')} 
-                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${paymentMethod === 'efectivo' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
-                >
-                  <Wallet size={24} className={paymentMethod === 'efectivo' ? 'text-brand' : 'text-muted'} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Efectivo</span>
-                </button>
-                <button 
-                  onClick={() => setPaymentMethod('transferencia')} 
-                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${paymentMethod === 'transferencia' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
-                >
-                  <CreditCard size={24} className={paymentMethod === 'transferencia' ? 'text-brand' : 'text-muted'} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Transferencia</span>
-                </button>
-              </div>
-
-              {paymentMethod === 'transferencia' && (
-                <div className="p-6 bg-brand/5 border-2 border-dashed border-brand/20 rounded-2xl animate-in zoom-in-95 duration-200">
-                  <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-4">Datos para el pago:</p>
-                  <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-border shadow-sm">
-                    <div>
-                      <p className="text-[9px] font-black text-brand uppercase leading-none mb-1">{business?.pago_banco || 'Nequi'}</p>
-                      <p className="text-lg font-black text-dark tracking-tight">{business?.pago_alias || 'Favor Consultar'}</p>
-                    </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
                     <button 
-                      onClick={() => { 
-                        const alias = business?.pago_alias || '';
-                        const banco = business?.pago_banco || '';
-                        // Detectamos cuál campo parece ser el número (el que tiene más dígitos)
-                        const aliasDigits = (alias.match(/\d/g) || []).length;
-                        const bancoDigits = (banco.match(/\d/g) || []).length;
-                        const toCopy = aliasDigits >= bancoDigits ? alias : banco;
-                        
-                        navigator.clipboard.writeText(toCopy); 
-                        addToast('Número copiado ✅', 'success'); 
-                      }}
-                      className="p-3 bg-brand text-white rounded-lg hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand/20"
-                      title="Copiar número"
+                      onClick={() => { navigator.clipboard.writeText(orderResult.message); addToast('Mensaje copiado ✅', 'success'); }} 
+                      className="py-4 bg-dark text-white rounded-xl text-xs font-black uppercase flex items-center justify-center gap-2 hover:bg-dark/90 transition-colors"
                     >
-                      <Copy size={18} />
+                      <Copy size={16}/> Copiar
+                    </button>
+                    <button 
+                      onClick={() => { clearCart(bid); setOrderResult(null); onClose(); }} 
+                      className="py-4 border-2 border-brand text-brand rounded-xl text-xs font-black uppercase transition-all hover:bg-brand hover:text-white"
+                    >
+                      Nuevo Pedido
                     </button>
                   </div>
-                  <p className="text-[9px] text-muted font-bold mt-4 italic">* Por favor envía el comprobante por WhatsApp al finalizar el pedido.</p>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <>
+                {/* Items Summary */}
+                <div className="space-y-3">
+                  <h3 className="text-[10px] font-black text-muted uppercase tracking-[0.15em] flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-brand rounded-full" /> Resumen de Compra
+                  </h3>
+                  <div className="bg-bg-alt rounded-2xl border border-border overflow-hidden">
+                    {selectedItems.length === 0 ? (
+                      <div className="p-6 text-center text-muted text-xs font-medium">El carrito está vacío</div>
+                    ) : (
+                      <div className="divide-y divide-border">
+                        {selectedItems.map((item) => (
+                          <div key={item.id} className="p-3 flex items-center justify-between">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-dark">{item.quantity}x {item.name}</span>
+                              {cart.notes[item.id] && <span className="text-[9px] text-muted italic mt-0.5 bg-white px-2 py-0.5 rounded-full border border-border w-fit">{cart.notes[item.id]}</span>}
+                            </div>
+                            <span className="text-xs font-black text-dark">{formatMoney(item.quantity * item.price)}</span>
+                          </div>
+                        ))}
+                        <div className="p-4 bg-brand text-white flex items-center justify-between">
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-black uppercase tracking-widest opacity-80">Total a pagar</span>
+                            <span className="text-xl font-black italic tracking-tighter">{formatMoney(total)}</span>
+                          </div>
+                          <ShoppingCart size={20} className="opacity-40" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted uppercase tracking-widest pl-2">Comentarios Adicionales</label>
-              <textarea 
-                value={cart.comment} onChange={(e) => setComment(bid, e.target.value)} 
-                className="w-full p-4 bg-white border border-border rounded-xl text-sm font-medium outline-none min-h-[100px] focus:border-brand" 
-                placeholder="Ej: Tocar el timbre fuerte, traer cambio de 50mil..."
-              />
-            </div>
+                {/* Customer Form */}
+                <div className="space-y-4">
+                  <h3 className="text-[10px] font-black text-muted uppercase tracking-[0.15em] flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-brand rounded-full" /> Tus Datos
+                  </h3>
+                  
+                  <div className="grid gap-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <button 
+                        onClick={() => setDeliveryMethod('envio')} 
+                        className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${deliveryMethod === 'envio' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
+                      >
+                        <Truck size={20} className={deliveryMethod === 'envio' ? 'text-brand' : 'text-muted'} />
+                        <span className="text-[9px] font-black uppercase tracking-widest">A Domicilio</span>
+                      </button>
+                      <button 
+                        onClick={() => { setDeliveryMethod('recogida'); setLocation(null, ''); setDeliveryFee(0); setDistanceKm(null); setMapCoords(null); }} 
+                        className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${deliveryMethod === 'recogida' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
+                      >
+                        <ShoppingBag size={20} className={deliveryMethod === 'recogida' ? 'text-brand' : 'text-muted'} />
+                        <span className="text-[9px] font-black uppercase tracking-widest">Recoger</span>
+                      </button>
+                    </div>
+
+                    <div className="relative group">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={16} />
+                      <input 
+                        type="text" placeholder="Tu Nombre" 
+                        value={customerName} onChange={(e) => setCustomer('customerName', e.target.value)} 
+                        className="w-full pl-10 pr-4 py-3 bg-white border border-border rounded-xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-xs font-bold shadow-sm"
+                      />
+                    </div>
+                    
+                    <div className="relative group">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={16} />
+                      <input 
+                        type="tel" placeholder="WhatsApp" 
+                        value={customerPhone} onChange={(e) => setCustomer('customerPhone', e.target.value)} 
+                        className="w-full pl-10 pr-4 py-3 bg-white border border-border rounded-xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-xs font-bold shadow-sm"
+                      />
+                    </div>
+
+                    {deliveryMethod === 'envio' && (
+                      <div className="relative group animate-in slide-in-from-top-2 duration-300">
+                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors" size={16} />
+                        <input 
+                          type="text" placeholder="Dirección / Punto de referencia" 
+                          value={customerAddress} onChange={(e) => setCustomer('customerAddress', e.target.value)} 
+                          className="w-full pl-10 pr-4 py-3 bg-white border border-border rounded-xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-xs font-bold shadow-sm"
+                        />
+                      </div>
+                    )}
+
+                    {mapCoords && deliveryMethod === 'envio' && (
+                      <div className="animate-in fade-in zoom-in-95 duration-500">
+                        <LocationPickerMap 
+                          lat={mapCoords.lat} 
+                          lng={mapCoords.lng} 
+                          onLocationChange={(newLat, newLng) => updateLocationFromCoords(newLat, newLng, 'Pin Ajustado')} 
+                        />
+                      </div>
+                    )}
+
+                    {deliveryMethod === 'envio' && !locationLink && (
+                      <button 
+                        onClick={requestLocation} 
+                        disabled={isCalculating}
+                        className="w-full py-5 bg-success text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-xl shadow-success/20 active:scale-95 transition-all animate-pulse mt-2"
+                      >
+                        {isCalculating ? (
+                          <Loader2 size={24} className="animate-spin" />
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2 font-black text-sm">
+                              <Navigation size={18} /> FIJAR MI UBICACIÓN GPS
+                            </div>
+                            <span className="text-[9px] font-bold uppercase opacity-80">Requerido para el domicilio</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    {locationLink && deliveryMethod === 'envio' && (
+                      <div className="bg-success/5 border border-success/20 p-4 rounded-2xl flex items-center justify-between animate-in zoom-in-95 duration-200 mt-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-success/20 rounded-xl flex items-center justify-center text-success">
+                            <CheckCircle2 size={20} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-success uppercase tracking-widest">Ubicación Precisa</p>
+                            <p className="text-[9px] font-bold text-muted uppercase mt-0.5">Capturada y ajustada en GPS</p>
+                          </div>
+                        </div>
+                        <button onClick={requestLocation} className="text-[9px] font-black text-success underline uppercase tracking-widest">Re-centrar</button>
+                      </div>
+                    )}
+
+                    {deliveryFee >= 0 && deliveryMethod === 'envio' && (
+                      <div className="p-4 bg-brand/5 border border-brand/10 rounded-2xl flex items-center justify-between">
+                        <span className="text-[10px] font-black text-brand uppercase tracking-widest flex items-center gap-2">
+                           <Truck size={14} /> Domicilio
+                        </span>
+                        <div className="flex flex-col items-end">
+                          <span className="text-[10px] text-muted tracking-widest uppercase mb-1">
+                            {tipoDom === 'manual' ? 'Costo de envío' : (distanceKm && tipoDom === 'automatico') ? `${distanceKm.toFixed(1)} km` : 'Envío Local'}
+                          </span>
+                          <span className="text-sm font-black text-brand">
+                            {tipoDom === 'manual' ? 'Por confirmar' : formatMoney(deliveryFee)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {tipoDom === 'manual' && deliveryMethod === 'envio' && (
+                    <div className="bg-brand/5 border border-brand/20 p-3 rounded-xl mt-3 animate-in fade-in">
+                       <p className="text-[9px] font-bold text-muted uppercase tracking-widest text-center">
+                         * El valor del domicilio será confirmado por el negocio
+                       </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Methods */}
+                <div className="space-y-3">
+                  <h3 className="text-[10px] font-black text-muted uppercase tracking-[0.15em] flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-brand rounded-full" /> Forma de Pago
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <button 
+                      onClick={() => setPaymentMethod('efectivo')} 
+                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${paymentMethod === 'efectivo' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
+                    >
+                      <Wallet size={20} className={paymentMethod === 'efectivo' ? 'text-brand' : 'text-muted'} />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Efectivo</span>
+                    </button>
+                    <button 
+                      onClick={() => setPaymentMethod('transferencia')} 
+                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${paymentMethod === 'transferencia' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
+                    >
+                      <CreditCard size={20} className={paymentMethod === 'transferencia' ? 'text-brand' : 'text-muted'} />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Transferencia</span>
+                    </button>
+                  </div>
+
+                  {paymentMethod === 'transferencia' && (
+                    <div className="p-4 bg-brand/5 border-2 border-dashed border-brand/20 rounded-xl animate-in zoom-in-95 duration-200">
+                      <p className="text-[9px] font-black text-muted uppercase tracking-widest mb-2">Datos para el pago:</p>
+                      <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-border shadow-sm">
+                        <div>
+                          <p className="text-[8px] font-black text-brand uppercase leading-none mb-1">{business?.pago_banco || 'Nequi'}</p>
+                          <p className="text-base font-black text-dark tracking-tight">{business?.pago_alias || 'Favor Consultar'}</p>
+                        </div>
+                        <button 
+                          onClick={() => { 
+                            const alias = business?.pago_alias || '';
+                            const banco = business?.pago_banco || '';
+                            const aliasDigits = (alias.match(/\d/g) || []).length;
+                            const bancoDigits = (banco.match(/\d/g) || []).length;
+                            const toCopy = aliasDigits >= bancoDigits ? alias : banco;
+                            navigator.clipboard.writeText(toCopy); 
+                            addToast('Número copiado ✅', 'success'); 
+                          }}
+                          className="p-2.5 bg-brand text-white rounded-lg hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand/20"
+                        >
+                          <Copy size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-muted uppercase tracking-widest pl-2">Comentarios Adicionales</label>
+                  <textarea 
+                    value={cart.comment} onChange={(e) => setComment(bid, e.target.value)} 
+                    className="w-full p-3 bg-white border border-border rounded-xl text-xs font-medium outline-none min-h-[80px] focus:border-brand" 
+                    placeholder="Ej: Traer cambio de 50mil..."
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           {/* Footer Actions */}
-          <div className="p-6 border-t border-border bg-bg-alt sticky bottom-0 z-10">
+          <div className="p-4 border-t border-border bg-bg-alt sticky bottom-0 z-10">
             {!orderResult ? (
               <button 
                 onClick={handleSubmit} 
@@ -526,26 +583,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
                   </div>
                 )}
               </button>
-            ) : (
-              <div className="flex flex-col gap-3">
-                <a 
-                  href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(orderResult.message)}`}
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="w-full btn-primary !bg-success !border-success py-4 shadow-xl shadow-success/20 animate-bounce"
-                >
-                  <MessageCircle size={20} /> <span className="text-lg uppercase">ABRIR WHATSAPP</span>
-                </a>
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => { navigator.clipboard.writeText(orderResult.message); addToast('Copiado', 'success'); }} className="py-3 bg-dark text-white rounded-xl text-xs font-black uppercase flex items-center justify-center gap-2">
-                    <Copy size={14}/> Copiar
-                  </button>
-                  <button onClick={() => { clearCart(bid); setOrderResult(null); onClose(); }} className="py-3 border-2 border-brand text-brand rounded-xl text-xs font-black uppercase transition-colors hover:bg-brand hover:text-white">
-                    Nuevo Pedido
-                  </button>
-                </div>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

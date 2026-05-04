@@ -6,11 +6,14 @@ import L from 'leaflet';
 // Creación de Icono Avanzado (Punto Limpio Estático)
 const pulsingIcon = new L.divIcon({
   className: 'bg-transparent border-none',
-  html: `<div style="display:flex; align-items:center; justify-content:center; width:24px; height:24px;">
-           <div style="width:16px; height:16px; background:var(--primary-brand, #2563EB); border-radius:50%; border:3px solid white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.4);"></div>
+  html: `<div style="display:flex; align-items:center; justify-content:center; width:40px; height:40px;">
+           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+             <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="var(--primary-brand, #2563EB)"/>
+             <circle cx="12" cy="9" r="3" fill="white"/>
+           </svg>
          </div>`,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12]
+  iconSize: [40, 40],
+  iconAnchor: [20, 40] // La punta del pin (abajo centro)
 });
 
 // Componente para re-centrar el mapa agresivamente cuando cambia el estado nativo
