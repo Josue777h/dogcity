@@ -6,6 +6,7 @@ import ToastContainer from './components/ui/ToastContainer';
 // Code Splitting (Lazy Loading)
 const StorePage = lazy(() => import('./features/store/StorePage'));
 const AdminPage = lazy(() => import('./features/admin/AdminPage'));
+const LoginPage = lazy(() => import('./features/auth/LoginPage'));
 const RegisterPage = lazy(() => import('./features/auth/RegisterPage'));
 const TrackingPage = lazy(() => import('./features/store/TrackingPage'));
 const LandingPage = lazy(() => import('./features/marketing/LandingPage'));
@@ -42,6 +43,7 @@ export default function App() {
         <Routes>
           {/* ── MARKETING & PUBLIC ───────────────────────────── */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/registro" element={<RegisterPage />} />
           <Route path="/bienvenido" element={<WelcomePage />} />
           

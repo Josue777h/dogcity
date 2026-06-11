@@ -118,13 +118,13 @@ export const useBusinessStore = create((set) => ({
     if (subscription) {
        const isProPlan = subscription.plan === 'pro';
        const isActive = subscription.estado === 'activo' || subscription.estado === 'trial';
-       const endDate = new Date(subscription.fecha_fin);
+       const endDate = subscription.fecha_fin ? new Date(subscription.fecha_fin) : null;
        const now = new Date();
        
-       isExpired = subscription.estado === 'vencido' || now > endDate;
+       isExpired = subscription.estado === 'vencido' || (endDate ? now > endDate : false);
        isPro = isProPlan && isActive && !isExpired;
        
-       if (subscription.estado === 'trial' && !isExpired) {
+       if (subscription.estado === 'trial' && !isExpired && endDate) {
          const diffTime = Math.abs(endDate - now);
          trialDaysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
        }

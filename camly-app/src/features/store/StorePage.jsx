@@ -106,19 +106,18 @@ export default function StorePage() {
       }}
     >
       {/* ── TOP NAV ────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 w-full bg-white/80 backdrop-blur-md z-[80] border-b border-border">
-        <div className="fluid-container h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-4 decoration-0">
-            <div className="w-14 h-14 bg-brand rounded-2xl flex items-center justify-center text-white shadow-xl shadow-brand/20 overflow-hidden border-2 border-white/50">
+      <nav className="fixed top-0 left-0 w-full bg-white/80 backdrop-blur-md z-[80] border-b border-border pt-safe">
+        <div className="fluid-container h-14 sm:h-16 flex items-center justify-between gap-2">
+          <Link to="/" className="flex items-center gap-2 sm:gap-4 decoration-0 min-w-0 flex-1">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 bg-brand rounded-2xl flex items-center justify-center text-white shadow-xl shadow-brand/20 overflow-hidden border-2 border-white/50 shrink-0">
               {business?.logo_url ? (
-                <img src={business.logo_url} className="w-full h-full object-contain p-1.5" alt={business.nombre_visible} />
+                <img src={business.logo_url} className="w-full h-full object-contain p-1.5" alt={business.nombre_visible} loading="lazy" />
               ) : (
-                <ShoppingBag size={28} />
+                <ShoppingBag size={24} className="sm:w-7 sm:h-7" />
               )}
             </div>
-            <div className="hidden sm:block">
-              <h1 className="text-lg font-black text-dark uppercase tracking-tight leading-none">{business?.nombre_visible || 'CAMLY'}</h1>
-              {/* <span className="text-[10px] font-bold text-muted uppercase tracking-[0.2em]">SaaS de Pedidos</span> */}
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-lg font-black text-dark uppercase tracking-tight leading-none truncate">{business?.nombre_visible || 'CAMLY'}</h1>
             </div>
           </Link>
 
@@ -143,7 +142,7 @@ export default function StorePage() {
         </div>
       </nav>
 
-      <main className="pt-24 pb-32">
+      <main className="pt-20 sm:pt-24 pb-28 sm:pb-32">
         <div className="fluid-container">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
@@ -151,7 +150,7 @@ export default function StorePage() {
             <aside className="lg:col-span-2 space-y-6">
               <div className="sticky top-24">
                 <h3 className="text-xs font-black text-muted uppercase tracking-[0.2em] mb-4 pl-1">Categorías</h3>
-                <nav className="flex lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 hide-scrollbar">
+                <nav className="flex lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 hide-scrollbar scroll-fade-x -mx-1 px-1">
                   {visibleCategories.map((cat) => (
                     <button
                       key={cat}
@@ -171,9 +170,9 @@ export default function StorePage() {
             {/* ── CENTER COL: Products Grid ─────────────────────── */}
             <section className="lg:col-span-7 space-y-8">
               {/* Hero / Filter Bar */}
-              <div className="premium-card !p-6 bg-gradient-to-br from-brand to-accent text-white flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="premium-card !p-4 sm:!p-6 bg-gradient-to-br from-brand to-accent text-white flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
                 <div className="text-center md:text-left">
-                  <h2 className="text-3xl font-black italic tracking-tighter">¡EL MEJOR MENÚ!</h2>
+                  <h2 className="text-2xl sm:text-3xl font-black italic tracking-tighter">¡EL MEJOR MENÚ!</h2>
                   <p className="text-white/70 text-sm font-medium mt-1 uppercase tracking-widest">Encuentra tus favoritos hoy mismo</p>
                 </div>
                 <div className="relative w-full md:w-64">
@@ -197,7 +196,7 @@ export default function StorePage() {
                   <p className="text-sm text-muted">Intenta con otra categoría o término de búsqueda.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+                <div className="grid grid-cols-1 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                   {visible.map((p, i) => (
                     <ProductCard key={p.id} product={p} index={i} />
                   ))}
@@ -261,7 +260,7 @@ export default function StorePage() {
 
       {/* ── MOBILE BAR ─────────────────────────────────────── */}
       {!drawerOpen && totalItems > 0 && (
-        <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-[90] animate-in fade-in slide-in-from-bottom-5 duration-500">
+        <div className="lg:hidden fixed bottom-safe left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md z-[90] animate-in fade-in slide-in-from-bottom-5 duration-500 pb-safe">
           <button
             onClick={() => setDrawerOpen(true)}
             className="w-full bg-dark text-white p-2 rounded-2xl flex items-center justify-between shadow-2xl overflow-hidden active:scale-95 transition-transform"

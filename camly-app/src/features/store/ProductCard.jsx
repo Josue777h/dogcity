@@ -36,7 +36,7 @@ export default function ProductCard({ product, index = 0 }) {
           onError={(e) => { e.target.src = '/images/taza.svg'; }}
         />
         <div className="absolute inset-0 bg-dark/0 group-hover:bg-dark/10 transition-colors flex items-center justify-center">
-           <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 text-dark px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-sm shadow-xl">
+           <span className="touch-visible transition-opacity bg-white/90 text-dark px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest backdrop-blur-sm shadow-xl">
              Ver Detalles
            </span>
         </div>
@@ -104,7 +104,7 @@ export default function ProductCard({ product, index = 0 }) {
 
     {/* ── MODAL DETALLE DE PRODUCTO ── */}
     {showModal && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
         {/* Backdrop */}
         <div 
           className="absolute inset-0 bg-dark/40 backdrop-blur-sm transition-opacity" 
@@ -112,7 +112,7 @@ export default function ProductCard({ product, index = 0 }) {
         />
         
         {/* Modal Contenido */}
-        <div className="relative bg-white w-full max-w-md md:max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] md:h-[600px] animate-fade-in-up duration-300">
+        <div className="relative bg-white w-full max-w-md md:max-w-4xl rounded-t-[2rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[92vh] sm:max-h-[90vh] md:h-[600px] animate-fade-in-up duration-300 pb-safe">
           <button 
             onClick={() => setShowModal(false)}
             className="absolute top-4 right-4 w-10 h-10 bg-black/10 backdrop-blur-md rounded-full flex items-center justify-center text-dark hover:bg-black/20 transition-colors z-20 shadow-sm"

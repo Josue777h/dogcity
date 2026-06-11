@@ -29,11 +29,9 @@ export default function AuthGuard({ children }) {
     );
   }
 
-  // If no session is found, we don't block the AdminPage itself 
-  // because the AdminPage has its own login UI if !session.
-  // HOWEVER, a real SaaS might want a separate /login page.
-  // For now, we'll allow AdminPage to handle its own login state 
-  // to maintain the user's current flow.
+  if (!session) {
+    return <Navigate to="/login" replace />;
+  }
   
   return children;
 }

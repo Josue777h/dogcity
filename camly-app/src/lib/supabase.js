@@ -123,7 +123,7 @@ export async function fetchSubscription(negocioId) {
   }
   
   // Auto-expiración lógica
-  if (data && (data.estado === 'trial' || data.estado === 'activo')) {
+  if (data && data.fecha_fin && (data.estado === 'trial' || data.estado === 'activo')) {
     const isExpired = new Date(data.fecha_fin) < new Date();
     if (isExpired) {
       data.estado = 'vencido';
@@ -204,6 +204,17 @@ export async function updateOrderStatus(id, status) {
   if (error) throw error;
 }
 
+export async function confirmOrderDelivery(id, domicilioCosto, newTotal) {
+  const { error } = await getSupabase()
+    .from('pedidos')
+    .update({
+      domicilio_costo: domicilioCosto,
+      total: newTotal,
+    })
+    .eq('id', id);
+  if (error) throw error;
+}
+
 export async function deleteOrder(id) {
   const { error } = await getSupabase()
     .from('pedidos')
@@ -255,21 +266,21 @@ export async function registerBusiness({ email, password, businessName, phone })
     .single();
   if (negocioError) throw negocioError;
 
-  // Insertar Suscripción Trial (7 días) automáticamente
+  // Insertar Suscripción Trial (7 días) automáticamente (usando upsert por si ya existe creada por trigger)
   const d = new Date();
   d.setDate(d.getDate() + 7);
   const { error: subError } = await getSupabase()
     .from('suscripciones')
-    .insert({
+    .upsert({
       negocio_id: negocio.id,
       plan: 'pro',
       estado: 'trial',
       fecha_fin: d.toISOString(),
       es_trial: true
-    });
+    }, { onConflict: 'negocio_id' });
     
   if (subError) {
-    console.error("Error creando la suscripción:", subError);
+    console.error("Error creando/actualizando la suscripción:", subError);
   }
 
   return { user: authData.user, negocio };

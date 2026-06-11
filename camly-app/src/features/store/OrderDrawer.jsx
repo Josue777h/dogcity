@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { User, Phone, MapPin, Loader2, Navigation, MessageCircle, Copy, Trash2, X, CreditCard, Wallet, ShoppingBag, Truck, CheckCircle2, Smartphone, ShoppingCart, Minus, Plus } from 'lucide-react';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
-import { formatMoney, openWhatsApp } from '../../lib/utils';
+import { formatMoney, openWhatsApp, reverseGeocode } from '../../lib/utils';
 import { saveOrder } from '../../lib/supabase';
 import { WHATSAPP_FALLBACK_PHONE } from '../../lib/constants';
 
@@ -18,7 +18,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-import LocationPickerMap from './components/LocationPickerMap';
+const LocationPickerMap = lazy(() => import('./components/LocationPickerMap'));
 
 export default function OrderDrawer({ isOpen, onClose }) {
   const business = useBusinessStore((s) => s.business);
@@ -55,6 +55,15 @@ export default function OrderDrawer({ isOpen, onClose }) {
     }
   }, [isOpen]);
 
+  // Bloquear scroll del body cuando el drawer está abierto
+  useEffect(() => {
+    if (isOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [isOpen]);
+
   if (!bid) return null;
 
   const cart = carts[bid] || { quantities: {}, notes: {}, comment: '' };
@@ -77,10 +86,13 @@ export default function OrderDrawer({ isOpen, onClose }) {
     
     let envioString = '';
     if (deliveryMethod === 'envio') {
-      if (tipoDom === 'manual') envioString = 'Domicilio: Por confirmar';
+      if (tipoDom === 'manual') envioString = 'Domicilio: *Te confirmamos el costo en este chat*';
       else if (tipoDom === 'fijo') envioString = `Domicilio: ${formatMoney(deliveryFee)}`;
       else envioString = `Domicilio: ${formatMoney(deliveryFee)}${distanceKm ? ` (${distanceKm.toFixed(1)} km)` : ''}`;
     }
+
+    const addressLine = customerAddress?.trim()
+      || (locationLink ? 'Ubicación GPS capturada (ver mapa)' : 'Dirección no especificada');
 
     const parts = [
       `¡Nuevo pedido en *${formattedBusinessName}*!`,
@@ -88,11 +100,11 @@ export default function OrderDrawer({ isOpen, onClose }) {
       itemsLines,
       '',
       (tipoDom === 'manual' && deliveryMethod === 'envio') 
-        ? `💰 Subtotal: ${formatMoney(total)}\n🔄 ${envioString}`
+        ? `💰 Subtotal productos: ${formatMoney(subtotal)}\n🚚 ${envioString}`
         : `💰 Total: ${formatMoney(total)}\n${deliveryMethod === 'envio' ? `🚚 ${envioString}` : ''}`,
       '',
       deliveryMethod === 'envio' 
-        ? `📍 Dirección de entrega\n${customerAddress || 'Dirección no especificada'}\nVer en mapa → ${locationLink || ''}` 
+        ? `📍 Ubicación de entrega\n${addressLine}\nVer en mapa → ${locationLink || ''}` 
         : '📍 Recoger en local',
       '',
       `👤 ${customerName} - ${customerPhone}`,
@@ -231,6 +243,13 @@ export default function OrderDrawer({ isOpen, onClose }) {
   function updateLocationFromCoords(lat, lng, actionText = 'Ubicación Ajustada') {
     setLocation(`https://maps.google.com/?q=${lat},${lng}`, actionText);
     setMapCoords({ lat, lng });
+
+    // Autocompletar dirección desde GPS si el campo está vacío
+    if (!customerAddress?.trim()) {
+      reverseGeocode(lat, lng).then((addr) => {
+        if (addr) setCustomer('customerAddress', addr);
+      });
+    }
     
     if (business?.lat && business?.lng) {
       const dist = calculateDistance(
@@ -302,7 +321,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
                </div>
                <div>
                  <h2 className="text-sm sm:text-base font-black text-dark uppercase tracking-tight">Finalizar Pedido</h2>
-                 <p className="text-[8px] sm:text-[9px] font-bold text-muted uppercase tracking-widest leading-none mt-0.5">Sigue los pasos para ordenar</p>
+                 <p className="text-[10px] sm:text-[11px] font-bold text-muted uppercase tracking-widest leading-none mt-0.5">Sigue los pasos para ordenar</p>
                </div>
              </div>
              <button onClick={onClose} className="p-2 hover:bg-bg-alt rounded-full transition-colors text-muted hover:text-dark">
@@ -423,14 +442,14 @@ export default function OrderDrawer({ isOpen, onClose }) {
                       className={`p-2 sm:p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${deliveryMethod === 'envio' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
                     >
                       <Truck size={18} className={deliveryMethod === 'envio' ? 'text-brand' : 'text-muted'} />
-                      <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest">A Domicilio</span>
+                      <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest">A Domicilio</span>
                     </button>
                     <button 
                       onClick={() => { setDeliveryMethod('recogida'); setLocation(null, ''); setDeliveryFee(0); setDistanceKm(null); setMapCoords(null); }} 
                       className={`p-2 sm:p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${deliveryMethod === 'recogida' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
                     >
                       <ShoppingBag size={18} className={deliveryMethod === 'recogida' ? 'text-brand' : 'text-muted'} />
-                      <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest">Recoger</span>
+                      <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest">Recoger</span>
                     </button>
                   </div>
 
@@ -465,11 +484,17 @@ export default function OrderDrawer({ isOpen, onClose }) {
 
                     {mapCoords && deliveryMethod === 'envio' && (
                       <div className="animate-in fade-in zoom-in-95 duration-500">
-                        <LocationPickerMap 
-                          lat={mapCoords.lat} 
-                          lng={mapCoords.lng} 
-                          onLocationChange={(newLat, newLng) => updateLocationFromCoords(newLat, newLng, 'Pin Ajustado')} 
-                        />
+                        <Suspense fallback={
+                          <div className="h-40 bg-bg-alt rounded-2xl flex items-center justify-center border border-border">
+                            <Loader2 size={24} className="animate-spin text-brand" />
+                          </div>
+                        }>
+                          <LocationPickerMap 
+                            lat={mapCoords.lat} 
+                            lng={mapCoords.lng} 
+                            onLocationChange={(newLat, newLng) => updateLocationFromCoords(newLat, newLng, 'Pin Ajustado')} 
+                          />
+                        </Suspense>
                       </div>
                     )}
 
@@ -477,7 +502,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
                       <button 
                         onClick={requestLocation} 
                         disabled={isCalculating}
-                        className="w-full py-5 bg-success text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-xl shadow-success/20 active:scale-95 transition-all animate-pulse mt-2"
+                        className="w-full py-4 sm:py-5 bg-success text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-xl shadow-success/20 active:scale-95 transition-all mt-2 ring-2 ring-success/30"
                       >
                         {isCalculating ? (
                           <Loader2 size={24} className="animate-spin" />
@@ -525,9 +550,9 @@ export default function OrderDrawer({ isOpen, onClose }) {
                   </div>
                   
                   {tipoDom === 'manual' && deliveryMethod === 'envio' && (
-                    <div className="bg-brand/5 border border-brand/20 p-3 rounded-xl mt-3 animate-in fade-in">
-                       <p className="text-[9px] font-bold text-muted uppercase tracking-widest text-center">
-                         * El valor del domicilio será confirmado por el negocio
+                    <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl mt-3 animate-fade-in">
+                       <p className="text-[9px] font-black text-amber-700 uppercase tracking-widest text-center leading-relaxed">
+                         El negocio te confirmará el costo del domicilio por WhatsApp según tu ubicación
                        </p>
                     </div>
                   )}
@@ -596,7 +621,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
           </div>
 
           {/* Footer Actions */}
-          <div className="p-3 sm:p-4 border-t border-border bg-bg-alt sticky bottom-0 z-10">
+          <div className="p-3 sm:p-4 border-t border-border bg-bg-alt sticky bottom-0 z-10 pb-safe">
             {!orderResult ? (
               <button 
                 onClick={handleSubmit} 
@@ -611,7 +636,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
                       <MessageCircle size={18} className="sm:w-5 sm:h-5" />
                       <span className="text-base sm:text-lg">REALIZAR PEDIDO</span>
                     </div>
-                    <span className="text-[8px] sm:text-[9px] font-bold opacity-60 uppercase tracking-[0.2em] mt-1 italic">Vía WhatsApp Automatizado</span>
+                    <span className="text-[10px] sm:text-[11px] font-bold opacity-60 uppercase tracking-[0.2em] mt-1 italic">Vía WhatsApp Automatizado</span>
                   </div>
                 )}
               </button>

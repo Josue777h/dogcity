@@ -18,7 +18,7 @@ export default function SaaSLogo({ className = "h-10", withText = true, animated
           src={saasLogo} 
           alt="CAMLY" 
           className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
-          fetchpriority="high"
+          fetchPriority="high"
         />
         
         {/* Efecto de resplandor premium */}

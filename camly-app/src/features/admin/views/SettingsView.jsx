@@ -145,55 +145,59 @@ export default function SettingsView({ business, onUpdate }) {
   };
 
   useEffect(() => {
-    if (activeTab === 'logistica' && typeof L !== 'undefined') {
-      // Pequeño delay para que el contenedor esté listo en el DOM
-      const timer = setTimeout(() => {
-        if (!mapInstance.current) {
-          const lat = parseFloat(formData.lat) || 7.89391;
-          const lng = parseFloat(formData.lng) || -72.50782;
+    if (activeTab !== 'logistica') return;
 
-          mapInstance.current = L.map('map-picker', { zoomControl: false }).setView([lat, lng], 15);
-          L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '© CARTO'
-          }).addTo(mapInstance.current);
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const [{ default: L }] = await Promise.all([
+        import('leaflet'),
+        import('leaflet/dist/leaflet.css'),
+      ]);
+      if (cancelled || mapInstance.current) return;
 
-          L.control.zoom({ position: 'bottomright' }).addTo(mapInstance.current);
+      const lat = parseFloat(formData.lat) || 7.89391;
+      const lng = parseFloat(formData.lng) || -72.50782;
 
-          // Crear marcador avanzado estático
-          const pulsingIcon = new L.divIcon({
-            className: 'bg-transparent border-none',
-            html: `<div style="display:flex; align-items:center; justify-content:center; width:40px; height:40px;">
-                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
-                       <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="var(--primary-brand, #2563EB)"/>
-                       <circle cx="12" cy="9" r="3" fill="white"/>
-                     </svg>
-                   </div>`,
-            iconSize: [40, 40],
-            iconAnchor: [20, 40]
-          });
+      mapInstance.current = L.map('map-picker', { zoomControl: false }).setView([lat, lng], 15);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© CARTO'
+      }).addTo(mapInstance.current);
 
-          markerRef.current = L.marker([lat, lng], { draggable: true, icon: pulsingIcon }).addTo(mapInstance.current);
+      L.control.zoom({ position: 'bottomright' }).addTo(mapInstance.current);
 
-          markerRef.current.on('dragend', () => {
-             const pos = markerRef.current.getLatLng();
-             setFormData(prev => ({ ...prev, lat: pos.lat, lng: pos.lng }));
-          });
+      const pulsingIcon = new L.divIcon({
+        className: 'bg-transparent border-none',
+        html: `<div style="display:flex; align-items:center; justify-content:center; width:40px; height:40px;">
+                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+                   <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="var(--primary-brand, #2563EB)"/>
+                   <circle cx="12" cy="9" r="3" fill="white"/>
+                 </svg>
+               </div>`,
+        iconSize: [40, 40],
+        iconAnchor: [20, 40]
+      });
 
-          mapInstance.current.on('click', (e) => {
-             markerRef.current.setLatLng(e.latlng);
-             setFormData(prev => ({ ...prev, lat: e.latlng.lat, lng: e.latlng.lng }));
-          });
-        }
-      }, 300);
+      markerRef.current = L.marker([lat, lng], { draggable: true, icon: pulsingIcon }).addTo(mapInstance.current);
 
-      return () => {
-        clearTimeout(timer);
-        if (mapInstance.current) {
-          mapInstance.current.remove();
-          mapInstance.current = null;
-        }
-      };
-    }
+      markerRef.current.on('dragend', () => {
+        const pos = markerRef.current.getLatLng();
+        setFormData(prev => ({ ...prev, lat: pos.lat, lng: pos.lng }));
+      });
+
+      mapInstance.current.on('click', (e) => {
+        markerRef.current.setLatLng(e.latlng);
+        setFormData(prev => ({ ...prev, lat: e.latlng.lat, lng: e.latlng.lng }));
+      });
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
+    };
   }, [activeTab]);
 
   return (

@@ -37,9 +37,26 @@
 
 /* ── Custom Utilities ── */
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     @apply bg-bg-alt text-dark font-sans box-border;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  img, video {
+    max-width: 100%;
+    height: auto;
+  }
+
+  button, a, [role="button"] {
+    touch-action: manipulation;
   }
 }
 
@@ -53,11 +70,150 @@
   }
   
   .btn-primary {
-    @apply bg-brand hover:bg-brand/90 text-white font-bold py-3 px-6 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2;
+    @apply relative overflow-hidden bg-brand hover:bg-brand/90 text-white font-bold py-3 px-6 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2;
+  }
+
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+
+  .btn-primary:hover::before {
+    transform: translateX(100%);
+  }
+
+  .btn-shimmer {
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite;
   }
 
   .admin-sidebar {
     @apply fixed left-0 top-0 h-full w-64 bg-dark text-white p-6 z-50 transition-transform;
+  }
+
+  /* Glassmorphism */
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-lg;
+  }
+
+  .glass-dark {
+    @apply bg-dark/60 backdrop-blur-xl border border-white/10;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply text-transparent bg-clip-text;
+    background-image: linear-gradient(135deg, var(--color-brand) 0%, var(--accent-brand) 50%, var(--color-brand) 100%);
+    background-size: 200% auto;
+    animation: gradient-shift 4s ease infinite;
+  }
+
+  /* 3D card effect */
+  .card-3d {
+    @apply transition-all duration-300;
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+
+  /* Input focus glow */
+  .input-glow {
+    @apply transition-all duration-300 outline-none;
+  }
+
+  .input-glow:focus {
+    @apply border-brand ring-2 ring-brand/20;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-brand), transparent 85%);
+  }
+
+  /* Gradient border card */
+  .gradient-border {
+    position: relative;
+    background: var(--color-dark, #1F2937);
+    border-radius: 2.5rem;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, var(--color-brand), var(--accent-brand), var(--color-brand));
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+    z-index: -1;
+  }
+
+  /* Navbar scrolled state */
+  .navbar-scrolled {
+    @apply bg-white/95 backdrop-blur-2xl shadow-lg shadow-brand/5;
+    border-bottom-color: color-mix(in srgb, var(--color-brand), transparent 85%);
+  }
+
+  /* Status pulse for new orders */
+  .pulse-new {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply bg-border/60 rounded-xl animate-pulse;
+  }
+
+  /* Modal transitions */
+  .modal-backdrop {
+    animation: fade-in 0.2s ease-out forwards;
+  }
+
+  .modal-content {
+    animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* Sparkline mini chart */
+  .sparkline {
+    @apply h-8 w-full opacity-60;
+  }
+
+  /* Safe area (iOS notch / home indicator) */
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .pt-safe {
+    padding-top: max(0px, env(safe-area-inset-top));
+  }
+
+  .bottom-safe {
+    bottom: max(1.5rem, calc(1.5rem + env(safe-area-inset-bottom)));
+  }
+
+  /* Touch-friendly minimum tap target */
+  .tap-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Horizontal scroll with fade hint */
+  .scroll-fade-x {
+    mask-image: linear-gradient(to right, transparent, black 8px, black calc(100% - 8px), transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 8px, black calc(100% - 8px), transparent);
+  }
+
+  /* Visible on touch devices (replaces hover-only) */
+  .touch-visible {
+    @apply opacity-100;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .touch-visible {
+      @apply opacity-0;
+    }
+    .group:hover .touch-visible {
+      @apply opacity-100;
+    }
   }
 }
 
@@ -106,16 +262,72 @@
   to { height: 0; opacity: 0; overflow: hidden; }
 }
 
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-brand), transparent 60%); }
+  50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-brand), transparent 100%); }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes slide-up-stagger {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes orb-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+@keyframes ribbon-shimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes star-pop {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
 /* Utility Classes for Animations */
 .animate-float { animation: float 3s ease-in-out infinite; }
 .animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
 .animate-fade-in-up { animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .animate-fade-in-down { animation: fade-in-down 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .animate-scale-in { animation: scale-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-orb { animation: orb-float 8s ease-in-out infinite; }
+.animate-ribbon { animation: ribbon-shimmer 2s ease-in-out infinite; }
+.animate-star-pop { animation: star-pop 1.5s ease-in-out infinite; }
 
-/* Stagger Helpers (usar con style={{ animationDelay: '0.1s' }} etc) */
+/* Stagger Helpers */
 .stagger-1 { animation-delay: 50ms; }
 .stagger-2 { animation-delay: 100ms; }
 .stagger-3 { animation-delay: 150ms; }
 .stagger-4 { animation-delay: 200ms; }
 .stagger-5 { animation-delay: 250ms; }
+
+/* 3D hover only on devices with mouse */
+@media (hover: hover) and (pointer: fine) {
+  .card-3d:hover {
+    transform: translateY(-8px) rotateX(2deg);
+    box-shadow: 0 25px 50px -12px rgba(37, 99, 235, 0.15), 0 0 0 1px rgba(37, 99, 235, 0.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html { scroll-behavior: auto; }
+}

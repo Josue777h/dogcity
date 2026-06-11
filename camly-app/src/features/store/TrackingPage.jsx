@@ -6,7 +6,7 @@ import {
   MapPin, ShoppingCart, Loader2
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
-import { formatMoney } from '../../lib/utils';
+import { formatMoney, isDeliveryPending, getOrderSubtotal } from '../../lib/utils';
 
 const STEPS = [
   { id: 'nuevo', label: 'Recibido', icon: Clock, color: 'brand' },
@@ -124,6 +124,8 @@ export default function TrackingPage() {
   const business = order.negocios;
   const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
   const currentStepIdx = STEPS.findIndex(s => s.id === (order.estado || order.status));
+  const deliveryPending = isDeliveryPending(order);
+  const subtotal = getOrderSubtotal(order);
 
   return (
     <div 
@@ -194,10 +196,11 @@ export default function TrackingPage() {
              </div>
              <div>
                 <p className="text-sm font-black text-dark uppercase tracking-tight leading-tight">
-                  {order.estado === 'nuevo' && 'Estamos revisando tu pedido...'}
-                  {order.estado === 'preparando' && 'El chef está trabajando para tí.'}
-                  {order.estado === 'enviado' && '¡El domiciliario está en camino!'}
-                  {order.estado === 'entregado' && 'Esperamos que lo disfrutes.'}
+                  {deliveryPending && 'Confirmando costo de domicilio contigo...'}
+                  {!deliveryPending && order.estado === 'nuevo' && 'Estamos revisando tu pedido...'}
+                  {!deliveryPending && order.estado === 'preparando' && 'El chef está trabajando para tí.'}
+                  {!deliveryPending && order.estado === 'enviado' && '¡El domiciliario está en camino!'}
+                  {!deliveryPending && order.estado === 'entregado' && 'Esperamos que lo disfrutes.'}
                 </p>
                 <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-1">Sincronizado en tiempo real</p>
              </div>
@@ -212,26 +215,45 @@ export default function TrackingPage() {
           </div>
           
           <div className="p-8 divide-y divide-border/50">
-             {items?.map((item, idx) => (
+             {items?.map((item, idx) => {
+                const qty = item.cantidad ?? item.quantity ?? 1;
+                const name = item.nombre ?? item.name ?? 'Producto';
+                const price = item.precio ?? item.price ?? 0;
+                return (
                 <div key={idx} className="py-5 flex items-center justify-between">
                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-dark">{item.cantidad}x {item.nombre}</span>
+                      <span className="text-sm font-bold text-dark">{qty}x {name}</span>
                       {item.nota && <span className="text-[10px] text-muted italic mt-1 bg-white px-2 py-0.5 rounded-full border border-border w-fit">Nota: {item.nota}</span>}
                    </div>
-                   <span className="text-sm font-black text-dark opacity-60">{formatMoney(item.precio * item.cantidad)}</span>
+                   <span className="text-sm font-black text-dark opacity-60">{formatMoney(price * qty)}</span>
                 </div>
-             ))}
+             );})}
              <div className="pt-8 flex flex-col gap-3">
-                <div className="flex justify-between items-center opacity-40 text-[11px] font-black uppercase tracking-[0.2em]">
-                   <span>Subtotal</span>
-                   <span>{formatMoney(order.total)}</span>
+                <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-[0.2em]">
+                   <span className="text-muted">Subtotal productos</span>
+                   <span>{formatMoney(subtotal)}</span>
                 </div>
-                <div className="flex justify-between items-center pt-2">
-                   <span className="text-[11px] font-black text-muted uppercase tracking-[0.2em]">TOTAL PAGADO</span>
+                {order.entrega_metodo === 'envio' && (
+                  <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-[0.2em]">
+                    <span className={deliveryPending ? 'text-amber-600' : 'text-muted'}>Domicilio</span>
+                    <span className={deliveryPending ? 'text-amber-600' : 'text-dark'}>
+                      {deliveryPending ? 'Por confirmar' : formatMoney(order.domicilio_costo || 0)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-2 border-t border-border/50">
+                   <span className="text-[11px] font-black text-muted uppercase tracking-[0.2em]">
+                     {deliveryPending ? 'TOTAL ESTIMADO' : 'TOTAL'}
+                   </span>
                    <span className="text-2xl font-black text-[var(--primary-brand)] italic tracking-tighter">
-                     {formatMoney(order.total)}
+                     {formatMoney(order.total)}{deliveryPending ? '*' : ''}
                    </span>
                 </div>
+                {deliveryPending && (
+                  <p className="text-[9px] text-amber-600 font-bold uppercase tracking-widest text-center">
+                    * El total final incluirá el domicilio confirmado por WhatsApp
+                  </p>
+                )}
              </div>
           </div>
         </div>
