@@ -311,8 +311,16 @@ export default function OrderDrawer({ isOpen, onClose }) {
         onClick={onClose}
       />
       
-      <div className={`absolute right-0 top-0 h-full w-full max-w-lg bg-surface shadow-2xl transition-transform duration-500 transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed bottom-0 left-0 right-0 h-[85vh] w-full rounded-t-[2.5rem] lg:rounded-none bg-surface shadow-2xl transition-transform duration-500 transform lg:top-0 lg:bottom-0 lg:right-0 lg:left-auto lg:h-full lg:max-w-lg z-20
+        ${isOpen 
+          ? 'translate-y-0 lg:translate-y-0 lg:translate-x-0' 
+          : 'translate-y-full lg:translate-y-0 lg:translate-x-full'
+        }
+      `}>
         <div className="flex flex-col h-full">
+          {/* Drag handle for mobile */}
+          <div className="w-12 h-1 bg-border/60 rounded-full mx-auto mt-3 mb-1 shrink-0 lg:hidden" />
+
           {/* Header */}
           <div className="p-3 sm:p-4 border-b border-border flex items-center justify-between bg-surface sticky top-0 z-10">
              <div className="flex items-center gap-3">

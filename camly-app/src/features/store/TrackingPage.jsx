@@ -152,7 +152,7 @@ export default function TrackingPage() {
         </div>
 
         {/* Status Tracker Card */}
-        <div className="premium-card !p-10 space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
+        <div className="premium-card p-6 sm:p-10 space-y-8 sm:space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
           <div className="text-center">
             <p className="text-[10px] font-black text-muted uppercase tracking-[0.3em] mb-3 leading-none">Estado del Pedido</p>
             <h3 className="text-4xl font-black text-dark tracking-tighter uppercase italic">
@@ -163,27 +163,44 @@ export default function TrackingPage() {
 
           {/* Real Stepper */}
           <div className="relative pt-4 px-2">
-             {/* Background Line */}
-             <div className="absolute top-[38px] left-0 w-full h-1.5 bg-border/40 rounded-full" />
-             <div 
-               className="absolute top-[38px] left-0 h-1.5 bg-[var(--primary-brand)] rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(var(--primary-brand),0.4)]" 
-               style={{ width: `${(currentStepIdx / (STEPS.length - 1)) * 100}%` }}
-             />
+             {/* Horizontal Background Line (desktop) */}
+             <div className="hidden md:block absolute top-[28px] left-7 right-7 h-[3px] bg-border/40 rounded-full">
+                <div 
+                  className="h-full bg-[var(--primary-brand)] rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(var(--primary-brand),0.4)]" 
+                  style={{ width: `${(currentStepIdx / (STEPS.length - 1)) * 100}%` }}
+                />
+             </div>
 
-             <div className="relative flex justify-between">
+             {/* Vertical Background Line (mobile) */}
+             <div className="md:hidden absolute top-7 bottom-7 left-7 w-[3px] bg-border/40 rounded-full">
+                <div 
+                  className="w-full bg-[var(--primary-brand)] rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(var(--primary-brand),0.4)]" 
+                  style={{ height: `${(currentStepIdx / (STEPS.length - 1)) * 100}%` }}
+                />
+             </div>
+
+             <div className="relative flex flex-col md:flex-row justify-between gap-6 md:gap-4">
                 {STEPS.map((step, i) => {
                   const isActive = i <= currentStepIdx;
                   const isCurrent = i === currentStepIdx;
                   return (
-                    <div key={step.id} className="flex flex-col items-center gap-4">
-                       <div className={`w-14 h-14 rounded-[1.25rem] flex items-center justify-center transition-all duration-500 shadow-2xl
+                    <div key={step.id} className="flex flex-row md:flex-col items-center gap-4 relative z-10 w-full md:w-auto">
+                       <div className={`w-14 h-14 rounded-[1.25rem] flex items-center justify-center transition-all duration-500 shadow-2xl shrink-0
                           ${isActive ? 'bg-[var(--primary-brand)] text-white shadow-[var(--primary-brand)]/30' : 'bg-white text-muted border border-border shadow-md'}`}>
                          <step.icon size={24} className={isCurrent ? 'animate-pulse' : ''} />
                        </div>
-                       <span className={`text-[10px] font-black uppercase tracking-widest transition-colors
-                          ${isActive ? 'text-dark' : 'text-muted/40'}`}>
-                         {step.label}
-                       </span>
+                       <div className="flex flex-col md:items-center text-left md:text-center">
+                         <span className={`text-xs md:text-[10px] font-black uppercase tracking-widest transition-colors
+                            ${isActive ? 'text-dark' : 'text-muted/40'}`}>
+                           {step.label}
+                         </span>
+                         <span className="text-[10px] font-bold text-muted md:hidden mt-0.5">
+                           {step.id === 'nuevo' && 'Hemos recibido tu pedido y lo confirmaremos.'}
+                           {step.id === 'preparando' && 'Tu pedido ya se está preparando en la cocina.'}
+                           {step.id === 'enviado' && 'El repartidor va en camino a tu ubicación.'}
+                           {step.id === 'entregado' && '¡Entregado! Esperamos que lo disfrutes mucho.'}
+                         </span>
+                       </div>
                     </div>
                   );
                 })}
@@ -209,12 +226,12 @@ export default function TrackingPage() {
 
         {/* Order Details Card */}
         <div className="premium-card overflow-hidden">
-          <div className="p-8 border-b border-border bg-bg-alt/30 flex items-center gap-3">
+          <div className="p-5 sm:p-8 border-b border-border bg-bg-alt/30 flex items-center gap-3">
              <ShoppingCart size={20} className="text-muted" />
              <h4 className="text-xs font-black text-dark uppercase tracking-[0.2em]">Resumen del Pedido</h4>
           </div>
           
-          <div className="p-8 divide-y divide-border/50">
+          <div className="p-5 sm:p-8 divide-y divide-border/50">
              {items?.map((item, idx) => {
                 const qty = item.cantidad ?? item.quantity ?? 1;
                 const name = item.nombre ?? item.name ?? 'Producto';

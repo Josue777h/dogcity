@@ -27,6 +27,7 @@ const SettingsView = lazy(() => import('./views/SettingsView'));
 const DriversView = lazy(() => import('./views/DriversView'));
 const CategoriesView = lazy(() => import('./views/CategoriesView'));
 const PlanExpiredView = lazy(() => import('./views/PlanExpiredView'));
+const RevenueView = lazy(() => import('./views/RevenueView'));
 
 function ViewLoader() {
   return (
@@ -206,6 +207,12 @@ export default function AdminPage() {
                 <OrdersView 
                   orders={orders} 
                   onUpdate={() => loadData(session.user.id, false)} 
+                />
+              )}
+              {activeTab === 'revenue' && (
+                <RevenueView 
+                  orders={orders} 
+                  business={business}
                 />
               )}
               {activeTab === 'settings' && (

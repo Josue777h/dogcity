@@ -44,18 +44,18 @@ export default function ProductCard({ product, index = 0 }) {
       
       <div className="p-3 sm:p-5 flex flex-col flex-1">
         <div className="flex-1 cursor-pointer" onClick={() => setShowModal(true)}>
-          <h3 className="text-sm sm:text-lg font-black text-dark leading-tight group-hover:text-brand transition-colors line-clamp-2">
+          <h3 className="text-xs sm:text-base font-black text-dark leading-tight group-hover:text-brand transition-colors line-clamp-2">
             {product.name}
           </h3>
-          <p className="text-xs text-muted mt-2 line-clamp-2 sm:line-clamp-3 leading-relaxed font-medium">
+          <p className="text-[10px] sm:text-xs text-muted mt-1 line-clamp-2 sm:line-clamp-3 leading-normal font-medium">
             {product.description || 'Sin descripción disponible.'}
           </p>
-          <button className="text-[10px] text-brand font-black uppercase mt-1 tracking-widest hover:underline">Ver más</button>
+          <button className="text-[9px] sm:text-[10px] text-brand font-black uppercase mt-0.5 tracking-widest hover:underline">Ver más</button>
         </div>
 
-        <div className="mt-2 sm:mt-4 space-y-2 sm:space-y-4">
+        <div className="mt-2 sm:mt-4 space-y-1.5 sm:space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-base sm:text-xl font-black text-brand tracking-tighter">{formatMoney(product.price)}</span>
+            <span className="text-sm sm:text-lg font-black text-brand tracking-tighter">{formatMoney(product.price)}</span>
           </div>
           
           <div className="flex items-center gap-1.5 sm:gap-2">

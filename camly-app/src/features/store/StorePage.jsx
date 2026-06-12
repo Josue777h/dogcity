@@ -196,7 +196,7 @@ export default function StorePage() {
                   <p className="text-sm text-muted">Intenta con otra categoría o término de búsqueda.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                   {visible.map((p, i) => (
                     <ProductCard key={p.id} product={p} index={i} />
                   ))}

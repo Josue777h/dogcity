@@ -1,9 +1,10 @@
-import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike, Sparkles, Tag } from 'lucide-react';
+import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike, Sparkles, Tag, DollarSign } from 'lucide-react';
 import { useBusinessStore } from '../../../stores';
 
 const MAIN_TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: Store },
   { id: 'orders', label: 'Pedidos', icon: ShoppingBag },
+  { id: 'revenue', label: 'Ingresos', icon: DollarSign },
   { id: 'products', label: 'Productos', icon: Package },
 ];
 

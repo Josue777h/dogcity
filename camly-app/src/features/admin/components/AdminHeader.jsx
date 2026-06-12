@@ -54,12 +54,6 @@ export default function AdminHeader({ title, business, onOpenMenu }) {
       </div>
       
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* Search placeholder */}
-        <div className="hidden lg:flex items-center gap-2 bg-bg-alt border border-border rounded-xl px-3 py-2 w-48">
-          <Search size={14} className="text-muted shrink-0" />
-          <span className="text-[11px] text-muted/60 font-medium">Buscar...</span>
-        </div>
-
         {/* Plan badge — visible en todos los tamaños */}
         <div className="flex shrink-0">
           {isExpired ? (
@@ -82,12 +76,6 @@ export default function AdminHeader({ title, business, onOpenMenu }) {
             </div>
           ) : null}
         </div>
-
-        {/* Notifications placeholder */}
-        <button className="hidden sm:flex relative p-2.5 bg-bg-alt border border-border rounded-xl text-muted hover:text-dark hover:border-brand/30 transition-all" title="Notificaciones">
-          <Bell size={16} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full border border-white" />
-        </button>
         
         <div className="flex items-center bg-bg-alt border border-border rounded-xl p-1 gap-1">
           <button 

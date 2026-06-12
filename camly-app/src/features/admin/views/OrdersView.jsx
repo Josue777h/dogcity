@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   ChevronRight, User, MapPin, Package, Bike, Trash2, Map,
-  MessageCircle, Loader2, AlertCircle, CheckCircle2
+  MessageCircle, Loader2, AlertCircle, CheckCircle2, X
 } from 'lucide-react';
 import { 
   formatMoney, getOrderSubtotal, isDeliveryPending, 
@@ -205,6 +205,7 @@ export default function OrdersView({ orders, onUpdate }) {
   const [orderToDelete, setOrderToDelete] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [selectedOrderForDriver, setSelectedOrderForDriver] = useState(null);
 
   useEffect(() => {
     async function loadDrivers() {
@@ -448,15 +449,15 @@ export default function OrdersView({ orders, onUpdate }) {
                       <div className="pt-4 border-t border-border">
                         <h4 className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-4">Gestión de Envío</h4>
                         <div className="flex gap-2">
-                          <select 
+                          <button 
+                            type="button"
                             disabled={loadingDriver === order.id}
-                            value={order.domiciliario_id || ''}
-                            onChange={(e) => handleAssignDriver(order.id, e.target.value)}
-                            className="flex-1 bg-bg-alt border border-border px-4 py-2.5 rounded-xl text-[10px] font-black text-dark outline-none input-glow"
+                            onClick={() => setSelectedOrderForDriver(order)}
+                            className="flex-1 bg-bg-alt border border-border px-4 py-2.5 rounded-xl text-[10px] font-black text-dark text-left outline-none input-glow flex items-center justify-between"
                           >
-                            <option value="">Sin asignar</option>
-                            {drivers.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
-                          </select>
+                            <span>{drivers.find(d => d.id === order.domiciliario_id)?.nombre || 'Sin asignar'}</span>
+                            <ChevronRight size={12} className="rotate-90 text-muted shrink-0" />
+                          </button>
                           {order.domiciliario_id && (
                             <button onClick={() => handleDispatch(order)} className="px-4 py-2 bg-dark text-white rounded-xl text-[9px] font-black uppercase hover:bg-dark/90 transition-colors">Despachar</button>
                           )}
@@ -506,6 +507,121 @@ export default function OrdersView({ orders, onUpdate }) {
         onConfirm={confirmDelete}
         onCancel={() => setOrderToDelete(null)}
       />
+
+      <DriverSelectModal
+        isOpen={!!selectedOrderForDriver}
+        drivers={drivers}
+        currentDriverId={selectedOrderForDriver?.domiciliario_id}
+        loading={loadingDriver === selectedOrderForDriver?.id}
+        onSelect={async (driverId) => {
+          if (selectedOrderForDriver) {
+            await handleAssignDriver(selectedOrderForDriver.id, driverId);
+            setSelectedOrderForDriver(null);
+          }
+        }}
+        onClose={() => setSelectedOrderForDriver(null)}
+      />
+    </div>
+  );
+}
+
+function DriverSelectModal({ isOpen, onClose, drivers, currentDriverId, onSelect, loading }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div 
+        className="absolute inset-0 bg-dark/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative bg-white w-full max-w-sm flex flex-col rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+        
+        <div className="p-6 text-center relative overflow-hidden">
+           {/* Glow background */}
+           <div className="absolute top-0 right-0 w-32 h-32 bg-brand/10 rounded-full blur-[40px] pointer-events-none" />
+           <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand/5 rounded-full blur-[40px] pointer-events-none" />
+
+           <button 
+             onClick={onClose}
+             className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-bg-alt text-muted hover:text-dark hover:bg-border transition-colors z-10"
+           >
+             <X size={16} />
+           </button>
+
+           <div className="relative z-10 space-y-4">
+              <div className="w-12 h-12 bg-brand/10 rounded-2xl flex items-center justify-center mx-auto text-brand shadow-md mb-2">
+                <Bike size={24} />
+              </div>
+              <h2 className="text-lg font-black text-dark uppercase tracking-tight">
+                Asignar Domiciliario
+              </h2>
+              <p className="text-[10px] font-black text-muted uppercase tracking-widest leading-none">
+                Selecciona un repartidor activo
+              </p>
+           </div>
+        </div>
+
+        {/* Drivers list */}
+        <div className="max-h-[300px] overflow-y-auto px-6 pb-6 space-y-2 relative z-10">
+          <button
+            onClick={() => onSelect(null)}
+            className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all text-left
+              ${!currentDriverId 
+                ? 'border-brand bg-brand/5 text-brand font-black' 
+                : 'border-border bg-white text-muted hover:bg-bg-alt'}`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+                <User size={16} />
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider">Sin Asignar</p>
+                <p className="text-[9px] font-medium text-muted">Remover domiciliario asignado</p>
+              </div>
+            </div>
+          </button>
+
+          {drivers.map((d) => {
+            const isAssigned = d.id === currentDriverId;
+            return (
+              <button
+                key={d.id}
+                onClick={() => onSelect(d.id)}
+                className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all text-left
+                  ${isAssigned 
+                    ? 'border-brand bg-brand/5 text-brand font-black' 
+                    : 'border-border bg-white text-dark hover:bg-bg-alt hover:border-brand/30'}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-black text-xs uppercase
+                    ${isAssigned ? 'bg-brand text-white' : 'bg-brand/10 text-brand'}`}>
+                    {d.nombre.slice(0, 2)}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold truncate max-w-[150px]">{d.nombre}</p>
+                    <p className="text-[9px] font-semibold text-muted tracking-widest">{d.telefono || 'Sin teléfono'}</p>
+                  </div>
+                </div>
+                {isAssigned && (
+                  <CheckCircle2 size={16} className="text-brand shrink-0" />
+                )}
+              </button>
+            );
+          })}
+
+          {drivers.length === 0 && (
+            <div className="py-6 text-center text-muted opacity-40">
+              <p className="text-xs font-bold uppercase tracking-widest">No hay domiciliarios creados</p>
+            </div>
+          )}
+        </div>
+
+        {loading && (
+          <div className="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center z-20">
+            <Loader2 className="animate-spin text-brand" size={24} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
