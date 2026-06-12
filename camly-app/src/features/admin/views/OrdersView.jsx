@@ -165,7 +165,7 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <input
           type="number"
           min="0"
@@ -178,10 +178,10 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
         <button
           onClick={handleConfirm}
           disabled={loading || !feeNum}
-          className="btn-primary !bg-success !py-3 !px-5 shadow-lg shadow-success/20 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+          className="btn-primary !bg-success !py-3 !px-5 shadow-lg shadow-success/20 disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap"
         >
           {loading ? <Loader2 size={18} className="animate-spin" /> : <MessageCircle size={18} />}
-          <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Enviar total</span>
+          <span className="text-[10px] font-black uppercase tracking-widest">Enviar total</span>
         </button>
       </div>
 
@@ -284,7 +284,7 @@ export default function OrdersView({ orders, onUpdate }) {
     const driver = drivers.find(d => d.id === order.domiciliario_id);
     if (!driver) return;
     const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion || '')}`;
-    const message = `🚀 *NUEVO PEDIDO ASIGNADO*\n\n👤 *Cliente:* ${order.nombre}\n📞 *Tel:* ${order.telefono}\n📍 *Dirección:* ${order.direccion || 'Ver mapa'}\n🗺️ *Google Maps:* ${mapsLink}\n\n💰 *Valor:* ${formatMoney(order.total)}`;
+    const message = `NUEVO PEDIDO ASIGNADO\n\nCliente: ${order.nombre}\nTel: ${order.telefono}\nDirección: ${order.direccion || 'Ver mapa'}\nGoogle Maps: ${mapsLink}\n\nValor: ${formatMoney(order.total)}`;
     window.open(`https://wa.me/${driver.telefono}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -425,7 +425,7 @@ export default function OrdersView({ orders, onUpdate }) {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-6">
                       <div>
-                        <h4 className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-4">📍 Detalles de Entrega</h4>
+                        <h4 className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-4">Detalles de Entrega</h4>
                         <p className="text-xs font-bold text-dark flex items-center gap-2"><User size={14}/> {order.nombre} - <span className="text-brand">{order.telefono}</span></p>
                         <p className="text-xs text-muted font-medium mt-2 flex items-start gap-2 italic"><MapPin size={14}/> {order.direccion || 'Recogida en local'}</p>
                       </div>
@@ -446,7 +446,7 @@ export default function OrdersView({ orders, onUpdate }) {
                       )}
 
                       <div className="pt-4 border-t border-border">
-                        <h4 className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-4">🛵 Gestión de Envío</h4>
+                        <h4 className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-4">Gestión de Envío</h4>
                         <div className="flex gap-2">
                           <select 
                             disabled={loadingDriver === order.id}
@@ -465,7 +465,7 @@ export default function OrdersView({ orders, onUpdate }) {
                     </div>
 
                     <div className="bg-bg-alt/50 rounded-2xl p-6">
-                      <h4 className="text-[10px] font-black text-dark uppercase tracking-[0.2em] mb-4">🛒 Productos</h4>
+                      <h4 className="text-[10px] font-black text-dark uppercase tracking-[0.2em] mb-4">Productos</h4>
                       <OrderItems order={order} />
 
                       <div className="mt-6 flex gap-2">

@@ -155,7 +155,7 @@ export default function TrackingPage() {
         <div className="premium-card !p-10 space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
           <div className="text-center">
             <p className="text-[10px] font-black text-muted uppercase tracking-[0.3em] mb-3 leading-none">Estado del Pedido</p>
-            <h3 className="text-4xl font-black text-dark tracking-tighter uppercase italic italic">
+            <h3 className="text-4xl font-black text-dark tracking-tighter uppercase italic">
               {STEPS[currentStepIdx]?.label || 'En Proceso'}
             </h3>
             <p className="text-[11px] font-bold text-[var(--primary-brand)] mt-2 uppercase tracking-[0.25em] opacity-60">Pedido #{order.id.toString().slice(-6)}</p>
@@ -251,7 +251,7 @@ export default function TrackingPage() {
                 </div>
                 {deliveryPending && (
                   <p className="text-[9px] text-amber-600 font-bold uppercase tracking-widest text-center">
-                    * El total final incluirá el domicilio confirmado por WhatsApp
+                    El total final incluirá el domicilio confirmado por WhatsApp
                   </p>
                 )}
              </div>

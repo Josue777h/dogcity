@@ -110,7 +110,7 @@ export default function DashboardView({ orders, products, business, onNavigate }
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-dark tracking-tighter uppercase">
-            {greeting}, <span className="text-brand">{name}</span> 👋
+            {greeting}, <span className="text-brand">{name}</span>
           </h2>
           <p className="text-sm text-muted font-medium mt-1">Aquí tienes el resumen de tu negocio hoy.</p>
         </div>
@@ -195,7 +195,7 @@ export default function DashboardView({ orders, products, business, onNavigate }
         {/* Side panels */}
         <div className="space-y-8">
           <div className="bg-white border border-border p-8 rounded-[3rem] shadow-sm">
-            <h4 className="text-xs font-black text-muted uppercase tracking-[0.2em] mb-6">💰 Ingresos x Pago</h4>
+            <h4 className="text-xs font-black text-muted uppercase tracking-[0.2em] mb-6">Ingresos por Tipo de Pago</h4>
             <div className="space-y-6">
               {Object.entries(stats.paymentMethods).length > 0 ? (
                 Object.entries(stats.paymentMethods).map(([method, total]) => (

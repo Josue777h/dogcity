@@ -101,13 +101,13 @@ export default function BillingModal() {
                        fecha_inicio: new Date().toISOString(), 
                        fecha_fin: d.toISOString()
                      }).eq('negocio_id', business.id);
-                     alert('✨ ¡Suscripción Activa por 30 días! Refrescando...');
+                     alert('¡Suscripción Activa por 30 días! Refrescando...');
                      window.location.reload();
                    } catch(e) { console.error(e); }
                  }}
                  className="w-full text-center text-brand text-[10px] font-black uppercase tracking-widest hover:underline p-2 border border-dashed border-brand/30 rounded-xl bg-brand/5"
                >
-                 🛠️ DEV: Simular Pago (+30 Días)
+                 DEV: Simular Pago (+30 Días)
                </button>
             </div>
          </div>

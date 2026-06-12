@@ -100,20 +100,20 @@ export default function OrderDrawer({ isOpen, onClose }) {
       itemsLines,
       '',
       (tipoDom === 'manual' && deliveryMethod === 'envio') 
-        ? `💰 Subtotal productos: ${formatMoney(subtotal)}\n🚚 ${envioString}`
-        : `💰 Total: ${formatMoney(total)}\n${deliveryMethod === 'envio' ? `🚚 ${envioString}` : ''}`,
+        ? `Subtotal productos: ${formatMoney(subtotal)}\n${envioString}`
+        : `Total: ${formatMoney(total)}\n${deliveryMethod === 'envio' ? `${envioString}` : ''}`,
       '',
       deliveryMethod === 'envio' 
-        ? `📍 Ubicación de entrega\n${addressLine}\nVer en mapa → ${locationLink || ''}` 
-        : '📍 Recoger en local',
+        ? `Ubicación de entrega\n${addressLine}\nVer en mapa → ${locationLink || ''}` 
+        : 'Recoger en local',
       '',
-      `👤 ${customerName} - ${customerPhone}`,
+      `${customerName} - ${customerPhone}`,
       '',
-      `💳 Pago: ${paymentMethod === 'transferencia' ? 'Transferencia' : 'Efectivo'}`,
-      cart.comment ? `\n💬 Nota: ${cart.comment}` : '',
+      `Pago: ${paymentMethod === 'transferencia' ? 'Transferencia' : 'Efectivo'}`,
+      cart.comment ? `\nNota: ${cart.comment}` : '',
       '',
-      `📦 Pedido #${orderId.toString().slice(-6).toUpperCase()}`,
-      `🔎 Ver pedido → ${trackingUrl}`
+      `Pedido #${orderId.toString().slice(-6).toUpperCase()}`,
+      `Ver pedido → ${trackingUrl}`
     ].filter(Boolean);
 
     return parts.join('\n');
@@ -207,7 +207,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
       const message = buildMessage(orderId, token);
       setOrderResult({ id: orderId, message, token });
       
-      addToast(`✅ Pedido #${orderId.toString().slice(-6).toUpperCase()} generado`, 'success');
+      addToast(`Pedido #${orderId.toString().slice(-6).toUpperCase()} generado`, 'success');
 
       if (business?.theme_color) {
         document.documentElement.style.setProperty('--primary-brand', business.theme_color);
@@ -284,7 +284,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
         const lng = pos.coords.longitude;
         updateLocationFromCoords(lat, lng, 'Ubicación GPS capturada');
         
-        addToast('Ubicación fijada con éxito ✅', 'success');
+        addToast('Ubicación fijada con éxito', 'success');
         setIsCalculating(false);
       },
       (err) => {
@@ -362,7 +362,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
                   
                   <div className="grid grid-cols-2 gap-2 sm:gap-3">
                     <button 
-                      onClick={() => { navigator.clipboard.writeText(orderResult.message); addToast('Mensaje copiado ✅', 'success'); }} 
+                      onClick={() => { navigator.clipboard.writeText(orderResult.message); addToast('Mensaje copiado', 'success'); }} 
                       className="py-3 sm:py-4 bg-dark text-white rounded-xl text-[10px] sm:text-xs font-black uppercase flex items-center justify-center gap-2 hover:bg-dark/90 transition-colors"
                     >
                       <Copy size={14} className="sm:w-4 sm:h-4" /> Copiar
@@ -597,7 +597,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
                             const bancoDigits = (banco.match(/\d/g) || []).length;
                             const toCopy = aliasDigits >= bancoDigits ? alias : banco;
                             navigator.clipboard.writeText(toCopy); 
-                            addToast('Número copiado ✅', 'success'); 
+                            addToast('Número copiado', 'success'); 
                           }}
                           className="p-2.5 bg-brand text-white rounded-lg hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand/20"
                         >

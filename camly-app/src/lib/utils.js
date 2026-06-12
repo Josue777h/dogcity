@@ -120,17 +120,17 @@ export function buildDeliveryConfirmationMessage(order, businessName, domicilioC
   }).join('\n');
 
   return [
-    `¡Hola ${order.nombre}! 👋`,
+    `¡Hola ${order.nombre}!`,
     '',
     `Tu pedido *#${orderRef}* en *${businessName}*:`,
     '',
     itemsLines,
-    `🚚 Domicilio: ${formatMoney(domicilioCosto)}`,
+    `Domicilio: ${formatMoney(domicilioCosto)}`,
     '',
-    `💰 *TOTAL A PAGAR: ${formatMoney(total)}*`,
+    `*TOTAL A PAGAR: ${formatMoney(total)}*`,
     '',
-    `¿Confirmamos tu pedido? Responde *SÍ* para continuar ✅`,
-    trackingUrl ? `🔎 Seguimiento: ${trackingUrl}` : '',
+    `¿Confirmamos tu pedido? Responde *SI* para continuar`,
+    trackingUrl ? `Seguimiento: ${trackingUrl}` : '',
   ].filter(Boolean).join('\n');
 }
 
