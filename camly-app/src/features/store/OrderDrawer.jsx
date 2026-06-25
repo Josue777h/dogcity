@@ -79,41 +79,41 @@ export default function OrderDrawer({ isOpen, onClose }) {
 
     const itemsLines = selectedItems.map((i) => {
       const note = (cart.notes[i.id] || '').trim();
-      return `• ${i.quantity} x ${i.name}${note ? ` (${note})` : ''}`;
+      return `🛒 ${i.quantity} x ${i.name}${note ? ` (${note})` : ''}`;
     }).join('\n');
 
     const trackingUrl = `${window.location.origin}/tracking?id=${orderId}&token=${token}`;
     
     let envioString = '';
     if (deliveryMethod === 'envio') {
-      if (tipoDom === 'manual') envioString = 'Domicilio: *Te confirmamos el costo en este chat*';
-      else if (tipoDom === 'fijo') envioString = `Domicilio: ${formatMoney(deliveryFee)}`;
-      else envioString = `Domicilio: ${formatMoney(deliveryFee)}${distanceKm ? ` (${distanceKm.toFixed(1)} km)` : ''}`;
+      if (tipoDom === 'manual') envioString = '🚚 Domicilio: *Te confirmamos el costo en este chat*';
+      else if (tipoDom === 'fijo') envioString = `🚚 Domicilio: ${formatMoney(deliveryFee)}`;
+      else envioString = `🚚 Domicilio: ${formatMoney(deliveryFee)}${distanceKm ? ` (${distanceKm.toFixed(1)} km)` : ''}`;
     }
 
     const addressLine = customerAddress?.trim()
-      || (locationLink ? 'Ubicación GPS capturada (ver mapa)' : 'Dirección no especificada');
+      || (locationLink ? '📍 Ubicación GPS capturada (ver mapa)' : '📍 Dirección no especificada');
 
     const parts = [
-      `¡Nuevo pedido en *${formattedBusinessName}*!`,
+      `🛍️ ¡Nuevo pedido en *${formattedBusinessName}*!`,
       '',
       itemsLines,
       '',
       (tipoDom === 'manual' && deliveryMethod === 'envio') 
-        ? `Subtotal productos: ${formatMoney(subtotal)}\n${envioString}`
-        : `Total: ${formatMoney(total)}\n${deliveryMethod === 'envio' ? `${envioString}` : ''}`,
+        ? `💰 Subtotal productos: ${formatMoney(subtotal)}\n${envioString}`
+        : `💰 Total: ${formatMoney(total)}\n${deliveryMethod === 'envio' ? `${envioString}` : ''}`,
       '',
       deliveryMethod === 'envio' 
-        ? `Ubicación de entrega\n${addressLine}\nVer en mapa → ${locationLink || ''}` 
-        : 'Recoger en local',
+        ? `📍 Ubicación de entrega\n${addressLine}\n🗺️ Ver en mapa → ${locationLink || ''}` 
+        : '🏪 Recoger en local',
       '',
-      `${customerName} - ${customerPhone}`,
+      `👤 ${customerName} - 📱 ${customerPhone}`,
       '',
-      `Pago: ${paymentMethod === 'transferencia' ? 'Transferencia' : 'Efectivo'}`,
-      cart.comment ? `\nNota: ${cart.comment}` : '',
+      `💳 Pago: ${paymentMethod === 'transferencia' ? '🏦 Transferencia' : '💵 Efectivo'}`,
+      cart.comment ? `\n📝 Nota: ${cart.comment}` : '',
       '',
-      `Pedido #${orderId.toString().slice(-6).toUpperCase()}`,
-      `Ver pedido → ${trackingUrl}`
+      `🔢 Pedido #${orderId.toString().slice(-6).toUpperCase()}`,
+      `🔗 Ver pedido → ${trackingUrl}`
     ].filter(Boolean);
 
     return parts.join('\n');

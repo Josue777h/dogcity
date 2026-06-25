@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { 
   TrendingUp, ShoppingBag, DollarSign, 
-  ArrowUpRight, Package, Plus, PackagePlus
+  ArrowUpRight, Package, Plus, PackagePlus, Trophy
 } from 'lucide-react';
 import { 
   XAxis, YAxis, CartesianGrid, 
@@ -219,7 +219,9 @@ export default function DashboardView({ orders, products, business, onNavigate }
           </div>
 
           <div className="bg-white border border-border p-8 rounded-[3rem] shadow-sm">
-            <h4 className="text-xs font-black text-muted uppercase tracking-[0.2em] mb-6">🏆 Productos Top</h4>
+            <h4 className="text-xs font-black text-muted uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+              <Trophy size={14} className="text-amber-500" /> Productos Top
+            </h4>
             <div className="space-y-5">
               {stats.topProducts.length > 0 ? (
                 stats.topProducts.map((p, i) => (
