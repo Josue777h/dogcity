@@ -1,60 +1,56 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Loader2, ChevronRight, Store, ArrowLeft, ShieldCheck, Quote } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, ShieldCheck, CheckCircle2, Sparkles } from 'lucide-react';
 import { signIn } from '../../lib/supabase';
 import { useAuthStore, useToastStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
-import { useAnimatedCounter } from '../../lib/utils';
 
 const TESTIMONIALS = [
-  { quote: 'CAMLY transformó completamente nuestra operación de delivery.', author: 'María L.', role: 'Restaurante El Sabor' },
-  { quote: 'Mis clientes piden más rápido y cometo menos errores.', author: 'Carlos R.', role: 'Pizza Express' },
-  { quote: 'El panel es tan simple que lo aprendí en 10 minutos.', author: 'Ana P.', role: 'Café Central' },
+  { quote: 'CAMLY transformó completamente nuestra operación de delivery. Ahora los pedidos entran sin errores.', author: 'María Lopera', role: 'Restaurante El Sabor Colombiano' },
+  { quote: 'Mis clientes hacen sus pedidos mucho más rápido y mis repartidores ya no se pierden con la dirección.', author: 'Carlos Restrepo', role: 'Pizza Express & Burger' },
+  { quote: 'El panel de control es tan intuitivo que capacitamos al equipo en menos de 10 minutos.', author: 'Ana Sofía Pérez', role: 'Café & Bistro Central' },
 ];
 
 export default function LoginPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const setSession = useAuthStore((s) => s.setSession);
-  const addToast = useToastStore((s) => s.addToast);
+  const navigate      = useNavigate();
+  const location      = useLocation();
+  const setSession    = useAuthStore(s => s.setSession);
+  const addToast      = useToastStore(s => s.addToast);
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [focusedField, setFocusedField] = useState(null);
+  const [email,         setEmail]         = useState('');
+  const [password,      setPassword]      = useState('');
+  const [showPassword,  setShowPassword]  = useState(false);
+  const [loading,       setLoading]       = useState(false);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
-
-  const ordersCount = useAnimatedCounter(1200, 1800);
-  const businessesCount = useAnimatedCounter(50, 1500);
 
   useEffect(() => {
     if (location.state?.email) {
       setEmail(location.state.email);
-      addToast('¡Registro completado! Inicia sesión con tus credenciales', 'success');
+      addToast('¡Registro completado! Inicia sesión con tus credenciales.', 'success');
     }
   }, [location.state, addToast]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTestimonialIdx(i => (i + 1) % TESTIMONIALS.length);
-    }, 5000);
+    const timer = setInterval(() => setTestimonialIdx(i => (i + 1) % TESTIMONIALS.length), 5500);
     return () => clearInterval(timer);
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) return;
-
     setLoading(true);
     try {
       const session = await signIn(email, password);
       setSession(session);
-      addToast('Sesión iniciada correctamente', 'success');
+      addToast('¡Bienvenido de nuevo!', 'success');
       navigate('/admin');
     } catch (err) {
-      console.error('Login error:', err);
-      addToast('Credenciales incorrectas o usuario no encontrado', 'error');
+      const msg = (err.message || '').toLowerCase();
+      if (msg.includes('confirm') || msg.includes('not confirmed')) {
+        addToast('Debes confirmar tu correo o desactivar "Confirm email" en Supabase.', 'error');
+      } else {
+        addToast('Correo o contraseña incorrectos.', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -63,167 +59,183 @@ export default function LoginPage() {
   const testimonial = TESTIMONIALS[testimonialIdx];
 
   return (
-    <div className="min-h-screen bg-bg-alt flex items-center justify-center p-4 sm:p-6 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-brand/10 via-bg-alt to-bg-alt lg:p-0 relative">
-      <Link 
-        to="/" 
-        className="absolute top-4 sm:top-6 left-4 sm:left-6 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted hover:text-dark transition-colors z-20 pt-safe"
-      >
-        <ArrowLeft size={16} /> Volver al Inicio
-      </Link>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 relative">
+      
+      {/* Top back navigation */}
+      <div className="w-full max-w-4xl mx-auto mb-4">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-gray-200/60"
+        >
+          <ArrowLeft size={16} /> Volver al inicio
+        </Link>
+      </div>
 
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 premium-card !p-0 shadow-2xl shadow-brand/15 animate-fade-in-up">
+      <div className="w-full max-w-4xl mx-auto card overflow-hidden shadow-xl border-gray-200/80 bg-white grid grid-cols-1 lg:grid-cols-12 animate-fade-in-up">
         
-        {/* ── LEFT PANEL ── */}
-        <div className="hidden lg:flex flex-col justify-between p-12 bg-dark text-white relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none select-none">
-            <div className="absolute top-1/4 -right-20 w-80 h-80 bg-brand rounded-full blur-[120px] opacity-40 animate-orb" />
-            <div className="absolute bottom-1/4 -left-20 w-60 h-60 bg-accent rounded-full blur-[100px] opacity-30 animate-orb" style={{ animationDelay: '-4s' }} />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-brand/20 via-transparent to-transparent" />
-          </div>
+        {/* ── LEFT PANEL (Branding & Trust) ── */}
+        <div className="hidden lg:flex lg:col-span-5 bg-gray-900 text-white p-8 sm:p-10 flex-col justify-between relative overflow-hidden">
+          <div>
+            <div className="mb-8">
+              <SaaSLogo className="h-8 text-white" />
+            </div>
 
-          <div className="relative z-10">
-            <SaaSLogo className="h-16 mb-10 text-white" />
-            <h2 className="text-5xl font-black leading-none tracking-tighter uppercase italic mb-6">
-              ADMINISTRA TU <span className="gradient-text">TIENDA DIGITAL.</span>
+            <p className="text-xs font-bold uppercase tracking-wider text-orange-400 mb-3">
+              Panel Administrativo
+            </p>
+
+            <h2 className="text-2xl font-black tracking-tight text-white leading-snug mb-3">
+              Administra tu tienda digital desde un solo lugar.
             </h2>
-            <p className="text-lg text-white/50 font-medium leading-relaxed max-w-md">
-              Controla tus pedidos de WhatsApp, actualiza tu menú y haz seguimiento a tus repartidores desde un solo lugar.
+            <p className="text-sm text-gray-400 leading-relaxed">
+              Controla pedidos de WhatsApp, actualiza tu menú en tiempo real y asigna entregas sin enredos.
             </p>
+
+            <div className="mt-7 space-y-3 text-xs text-gray-300">
+              <div className="flex items-center gap-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
+                <span>Notificaciones de nuevos pedidos en vivo</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
+                <span>Ubicación GPS de cada cliente en un clic</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
+                <span>Estadísticas de ventas diarias y mensuales</span>
+              </div>
+            </div>
           </div>
 
-          {/* Rotating testimonial */}
-          <div className="relative z-10 glass-dark rounded-2xl p-6 transition-all duration-500">
-            <Quote size={20} className="text-brand/40 mb-3" />
-            <p className="text-sm font-medium text-white/80 italic leading-relaxed mb-4 transition-opacity duration-300">
-              "{testimonial.quote}"
-            </p>
-            <div>
-              <p className="text-xs font-black text-white uppercase tracking-widest">{testimonial.author}</p>
-              <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">{testimonial.role}</p>
+          {/* Testimonial slider with editorial left border */}
+          <div className="mt-8 pt-6 border-t border-gray-800">
+            <div className="border-l-2 border-orange-500 pl-3.5 py-1">
+              <p className="text-xs text-gray-300 italic leading-relaxed mb-2">
+                "{testimonial.quote}"
+              </p>
+              <div>
+                <p className="text-xs font-bold text-white">{testimonial.author}</p>
+                <p className="text-[11px] text-gray-400">{testimonial.role}</p>
+              </div>
             </div>
-            <div className="flex gap-1.5 mt-4">
+
+            <div className="flex gap-1.5 mt-4 justify-start pl-3.5">
               {TESTIMONIALS.map((_, i) => (
-                <div key={i} className={`h-1 rounded-full transition-all duration-300 ${i === testimonialIdx ? 'w-6 bg-brand' : 'w-2 bg-white/20'}`} />
+                <button
+                  key={i}
+                  onClick={() => setTestimonialIdx(i)}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === testimonialIdx ? 'w-5 bg-orange-500' : 'w-1.5 bg-white/20'
+                  }`}
+                  aria-label={`Testimonio ${i + 1}`}
+                />
               ))}
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="relative z-10 border-t border-white/10 pt-8 grid grid-cols-2 gap-6">
-            <div>
-              <p className="text-3xl font-black text-brand tracking-tighter">{ordersCount}+</p>
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Pedidos procesados</p>
-            </div>
-            <div>
-              <p className="text-3xl font-black text-accent tracking-tighter">{businessesCount}+</p>
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Negocios activos</p>
             </div>
           </div>
         </div>
 
-        {/* ── RIGHT: Form ── */}
-        <div className="p-8 sm:p-12 lg:p-16 flex flex-col justify-center bg-white relative">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-brand/5 rounded-full blur-3xl lg:hidden" />
+        {/* ── RIGHT PANEL: Form ── */}
+        <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-center">
           
-          <div className="mb-10 text-center lg:text-left">
-            <div className="flex justify-center lg:justify-start mb-6 lg:hidden">
-              <SaaSLogo className="h-12" />
-            </div>
-            <h3 className="text-3xl font-black text-dark tracking-tighter uppercase italic">INICIAR SESIÓN</h3>
-            <p className="text-sm text-muted font-bold tracking-widest uppercase mt-1">Ingresa a tu panel de administración</p>
+          {/* Mobile SaaS Logo */}
+          <div className="flex justify-center mb-6 lg:hidden">
+            <SaaSLogo className="h-8" />
           </div>
 
+          <div className="mb-6">
+            <h1 className="text-2xl font-black text-gray-900 tracking-tight">
+              Iniciar sesión
+            </h1>
+            <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+              Ingresa tus credenciales para acceder a tu panel de control.
+            </p>
+          </div>
+
+          {/* Alert if newly registered */}
           {location.state?.email && (
-            <div className="mb-6 p-4 bg-success/10 border border-success/20 rounded-2xl flex items-center gap-3 text-success animate-fade-in-down">
-              <ShieldCheck className="shrink-0" size={20} />
-              <div className="text-xs font-bold uppercase tracking-wider leading-relaxed">
-                ¡Cuenta creada! Introduce tu contraseña para acceder.
-              </div>
+            <div className="mb-5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2.5 text-xs text-emerald-800 animate-fade-in-down">
+              <ShieldCheck size={18} className="text-emerald-600 shrink-0" />
+              <span>¡Cuenta creada con éxito! Ingresa tu contraseña para acceder.</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-1">
-              <label className={`text-[10px] font-black uppercase tracking-widest ml-1 transition-all duration-200 ${focusedField === 'email' ? 'text-brand' : 'text-muted'}`}>
-                Email Registrado
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                Correo electrónico
               </label>
               <div className="relative">
-                <Mail size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${focusedField === 'email' ? 'text-brand' : 'text-muted'}`} />
-                <input 
-                  type="email" 
-                  placeholder="admin@tunegocio.com" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)}
-                  onFocus={() => setFocusedField('email')}
-                  onBlur={() => setFocusedField(null)}
-                  className="w-full pl-12 pr-4 py-3.5 bg-bg-alt border border-border rounded-2xl input-glow font-bold text-sm"
-                  required 
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input
+                  type="email"
+                  placeholder="admin@tunegocio.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="input-field pl-10 pr-3"
+                  required
+                  autoComplete="email"
                 />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className={`text-[10px] font-black uppercase tracking-widest ml-1 transition-all duration-200 ${focusedField === 'password' ? 'text-brand' : 'text-muted'}`}>
-                Contraseña
-              </label>
+            {/* Password */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Contraseña
+                </label>
+              </div>
               <div className="relative">
-                <Lock size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${focusedField === 'password' ? 'text-brand' : 'text-muted'}`} />
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  placeholder="••••••••" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => setFocusedField('password')}
-                  onBlur={() => setFocusedField(null)}
-                  className="w-full pl-12 pr-12 py-3.5 bg-bg-alt border border-border rounded-2xl input-glow font-bold text-sm"
-                  required 
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="input-field pl-10 pr-10"
+                  required
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-dark transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 rounded"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
-            <div className="relative">
-              <button 
-                type="submit" 
-                disabled={loading} 
-                className="w-full btn-primary !py-5 shadow-2xl shadow-brand/20 mt-6 !rounded-2xl group relative overflow-hidden"
-              >
-                {loading ? (
-                  <div className="flex flex-col items-center gap-2 w-full">
-                    <Loader2 size={24} className="animate-spin" />
-                    <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
-                      <div className="h-full bg-white/60 rounded-full animate-[shimmer_1s_ease_infinite]" style={{ width: '60%', backgroundSize: '200% 100%' }} />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 uppercase font-black tracking-widest text-xs">
-                    ACCEDER AL PANEL <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                  </div>
-                )}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full py-3 text-sm font-semibold mt-2 shadow-sm"
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : null}
+              <span>{loading ? 'Comprobando acceso...' : 'Entrar a mi panel'}</span>
+            </button>
           </form>
 
-          <p className="mt-8 text-center text-sm text-muted font-medium">
-            ¿No tienes una cuenta comercial? <Link to="/registro" className="text-brand font-black hover:underline">Crear mi tienda</Link>
-          </p>
-
-          <div className="mt-10 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-muted pulse-new rounded-full px-3 py-1.5">
-              <ShieldCheck size={16} className="text-success" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Conexión Segura SSL</span>
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted/40">
-              Powered by Camly
-            </span>
+          {/* Footer switcher */}
+          <div className="mt-6 pt-5 border-t border-gray-100 text-center">
+            <p className="text-xs sm:text-sm text-gray-600">
+              ¿Aún no tienes una tienda?{' '}
+              <Link to="/registro" className="font-semibold text-orange-600 hover:text-orange-700 hover:underline">
+                Crear tienda gratis
+              </Link>
+            </p>
           </div>
+
+          <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
+            <ShieldCheck size={13} className="text-emerald-600" />
+            <span>Conexión segura SSL · Datos 100% protegidos</span>
+          </div>
+
         </div>
+
       </div>
     </div>
   );

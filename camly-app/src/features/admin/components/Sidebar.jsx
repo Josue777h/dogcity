@@ -1,115 +1,134 @@
-import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike, Sparkles, Tag, DollarSign } from 'lucide-react';
+import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike, Sparkles, Tag, DollarSign, ExternalLink } from 'lucide-react';
 import { useBusinessStore } from '../../../stores';
+import SaaSLogo from '../../../components/common/SaaSLogo';
 
 const MAIN_TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: Store },
-  { id: 'orders', label: 'Pedidos', icon: ShoppingBag },
-  { id: 'revenue', label: 'Ingresos', icon: DollarSign },
+  { id: 'orders',   label: 'Pedidos en vivo', icon: ShoppingBag },
+  { id: 'revenue',  label: 'Ingresos y ventas', icon: DollarSign },
   { id: 'products', label: 'Productos', icon: Package },
 ];
 
 const MANAGE_TABS = [
   { id: 'categories', label: 'Categorías', icon: Tag },
-  { id: 'drivers', label: 'Domiciliarios', icon: Bike },
-  { id: 'settings', label: 'Configuración', icon: Settings },
+  { id: 'drivers',    label: 'Domiciliarios', icon: Bike },
+  { id: 'settings',   label: 'Configuración', icon: Settings },
 ];
 
 export default function Sidebar({ activeTab, setActiveTab, business, onSignOut, isOpen, onClose }) {
   const isPro = useBusinessStore(s => s.isPro);
+  const storeUrl = `/${business?.nombre || ''}`;
 
-  const renderTab = (tab) => (
-    <button
-      key={tab.id}
-      onClick={() => {
-        setActiveTab(tab.id);
-        if (window.innerWidth < 1024) onClose();
-      }}
-      title={tab.label}
-      className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-bold transition-all relative group
-        ${activeTab === tab.id 
-          ? 'bg-brand/15 text-white' 
-          : 'text-white/50 hover:bg-white/5 hover:text-white'}`}
-    >
-      {activeTab === tab.id && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-brand rounded-r-full shadow-lg shadow-brand/50 transition-all" />
-      )}
-      <tab.icon size={20} className={activeTab === tab.id ? 'text-brand' : ''} />
-      {tab.label}
-    </button>
-  );
+  const renderTab = (tab) => {
+    const isActive = activeTab === tab.id;
+    return (
+      <button
+        key={tab.id}
+        onClick={() => { setActiveTab(tab.id); if (window.innerWidth < 1024) onClose(); }}
+        title={tab.label}
+        className={`sidebar-item flex items-center justify-between w-full py-2.5 px-3 rounded-xl transition-all text-xs font-semibold ${
+          isActive 
+            ? 'active bg-white/10 text-white font-bold' 
+            : 'text-gray-400 hover:text-white hover:bg-white/5'
+        }`}
+      >
+        <div className="flex items-center gap-2.5">
+          <tab.icon size={17} strokeWidth={isActive ? 2.2 : 1.8} className={isActive ? 'text-orange-500' : 'text-gray-400'} />
+          <span>{tab.label}</span>
+        </div>
+      </button>
+    );
+  };
 
   return (
     <>
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-dark/60 backdrop-blur-sm z-[110] lg:hidden"
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[110] lg:hidden animate-fade-in"
           onClick={onClose}
         />
       )}
 
-      <aside className={`
-        fixed lg:static inset-y-0 left-0 w-72 z-[120] flex flex-col 
-        transition-transform duration-300 ease-in-out
-        bg-gradient-to-b from-[#1a2332] via-dark to-[#151c28]
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-brand/5 via-transparent to-transparent pointer-events-none" />
-
-        <div className="p-8 relative">
-          <div className="flex items-center justify-between mb-10 lg:block">
-            <div className="flex items-center gap-4">
-              <div className="relative shrink-0">
-                <div className="w-14 h-14 bg-brand rounded-2xl flex items-center justify-center shadow-lg shadow-brand/50 overflow-hidden border-2 border-white/10">
-                  {business?.logo_url ? (
-                    <img src={business.logo_url} className="w-full h-full object-contain p-1.5" alt={business.nombre_visible} loading="lazy" decoding="async" />
-                  ) : (
-                    <Store size={28} className="text-white" />
-                  )}
-                </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-success rounded-full border-2 border-dark shadow-sm" title="En línea" />
-              </div>
-              <div className="overflow-hidden">
-                <h2 className="text-lg font-black tracking-tighter truncate uppercase leading-none text-white">
-                  {business?.nombre_visible || 'ADMIN'}
-                </h2>
-                <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">Panel Control</span>
-              </div>
+      <aside
+        className={`
+          fixed lg:static inset-y-0 left-0 w-64 z-[120] flex flex-col bg-gray-950 text-white border-r border-gray-800/80
+          transition-transform duration-200 ease-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+      >
+        {/* Brand / Logo */}
+        <div className="p-4 sm:p-5 flex items-center justify-between border-b border-gray-800/70">
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-xs"
+              style={{ backgroundColor: business?.theme_color || '#EA580C' }}
+            >
+              {business?.logo_url ? (
+                <img src={business.logo_url} className="w-full h-full object-contain p-1" alt={business.nombre_visible} />
+              ) : (
+                <Store size={18} className="text-white" />
+              )}
             </div>
-            <button onClick={onClose} className="lg:hidden text-white/40 hover:text-white">
-              <X size={24} />
-            </button>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-white truncate leading-tight">
+                {business?.nombre_visible || 'Mi Negocio'}
+              </p>
+              <p className="text-[10px] text-gray-400 truncate mt-0.5">Panel de administración</p>
+            </div>
           </div>
-
-          <nav className="space-y-1">
-            <p className="text-[9px] font-black text-white/25 uppercase tracking-[0.25em] px-4 mb-3">Principal</p>
-            {MAIN_TABS.map(renderTab)}
-
-            <div className="my-4 mx-4 border-t border-white/5" />
-
-            <p className="text-[9px] font-black text-white/25 uppercase tracking-[0.25em] px-4 mb-3">Gestión</p>
-            {MANAGE_TABS.map(renderTab)}
-          </nav>
+          <button
+            onClick={onClose}
+            className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10"
+            aria-label="Cerrar menú"
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        <div className="mt-auto p-8 border-t border-white/5 relative">
-          <button 
-            onClick={onSignOut}
-            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-bold text-error/60 hover:bg-error/10 hover:text-error transition-all"
+        {/* Navigation Tabs */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-3 mb-2">
+            Principal
+          </p>
+          {MAIN_TABS.map(renderTab)}
+
+          <div className="my-4 mx-2 border-t border-gray-800/70" />
+
+          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-3 mb-2">
+            Gestión
+          </p>
+          {MANAGE_TABS.map(renderTab)}
+        </nav>
+
+        {/* Store Link & Plan Upgrade */}
+        <div className="p-3 border-t border-gray-800/70 space-y-2">
+          <a
+            href={storeUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 transition-colors"
           >
-            <LogOut size={20} /> Cerrar Sesión
-          </button>
-          
+            <span>Ver mi tienda online</span>
+            <ExternalLink size={14} />
+          </a>
+
           {!isPro && (
-            <button 
+            <button
               onClick={() => window.dispatchEvent(new CustomEvent('open-billing-modal'))}
-              className="mt-6 w-full flex flex-col items-center justify-center p-4 rounded-2xl bg-gradient-to-tr from-brand to-accent shadow-xl shadow-brand/20 relative overflow-hidden group hover:scale-105 transition-transform"
+              className="btn-primary w-full py-2.5 px-3 text-xs font-semibold justify-center shadow-xs"
             >
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-              <Sparkles size={24} className="text-white mb-2 animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Prueba PRO Total</span>
-              <span className="text-xs font-bold text-white/80">Desbloquear todo</span>
+              <Sparkles size={14} />
+              <span>Activar Plan Pro</span>
             </button>
           )}
+
+          <button
+            onClick={onSignOut}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          >
+            <LogOut size={16} />
+            <span>Cerrar sesión</span>
+          </button>
         </div>
       </aside>
     </>

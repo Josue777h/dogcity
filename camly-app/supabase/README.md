@@ -1,55 +1,26 @@
-# Seed de Base de Datos — CAMLY
+# Base de Datos — CAMLY SaaS
 
-Scripts para poblar las 6 tablas con datos completos de demo.
+Archivo único de inicialización y estructura completa de la base de datos para Supabase.
 
-## Estado actual (después del seed automático)
+## Archivo Principal
 
-| Tabla | Contenido |
-|-------|-----------|
-| `negocios` | 2 negocios con perfil completo (dirección, redes, pagos, GPS, logo) |
-| `categorias` | 10 categorías (5 por negocio) |
-| `productos` | 22 productos nuevos + datos legacy |
-| `pedidos` | ~25 pedidos por negocio con items, estados, domicilio, pagos |
-| `suscripciones` | Pizza Liberty (activo) + Imperio del Postre (trial 7 días) |
-| `domiciliarios` | ⚠️ Requiere SQL manual (RLS bloquea inserts desde la app) |
+- [`schema.sql`](file:///c:/Users/josue/Documents/ventas/camly-app/supabase/schema.sql): Script único DDL que crea y configura toda la base de datos en limpio (sin datos de prueba).
 
-## Negocios configurados
+## Tablas del Sistema
 
-1. **Pizza Liberty** — `/pizzaliberty` — Pizzería con 12 productos, domicilio automático
-2. **Imperio del Postre** — `/imperiodelpostre` — Postres con 10 productos, domicilio fijo $4.500
+| Tabla | Descripción |
+|---|---|
+| `negocios` | Perfiles de restaurantes/negocios (slug único, colores de marca, WhatsApp, pagos, coordenadas GPS) |
+| `categorias` | Categorías de productos por negocio con restricción única |
+| `productos` | Catálogo de productos con imágenes, precios, descripción y disponibilidad |
+| `domiciliarios` | Repartidores asignados por negocio |
+| `suscripciones` | Planes SaaS (Trial 7 días / Pro activo) vinculados al negocio |
+| `pedidos` | Historial de pedidos con items JSON, estados, tokens de tracking, coordenadas y método de entrega |
 
 ## Cómo ejecutar
 
-### Opción A — Scripts Node (recomendado para la mayoría)
-
-```bash
-cd camly-app
-node scripts/seed-database.mjs   # negocios, categorías, productos
-node scripts/seed-pedidos.mjs    # pedidos de ejemplo
-```
-
-### Opción B — SQL en Supabase Dashboard
-
-Para **domiciliarios** (y re-ejecutar todo de forma idempotente):
-
-1. Abre [Supabase Dashboard](https://supabase.com/dashboard) → tu proyecto → **SQL Editor**
-2. Pega y ejecuta el contenido de `supabase/seed-completo.sql`
-
-O solo domiciliarios:
-
-```bash
-# Ejecutar supabase/seed-domiciliarios.sql en SQL Editor
-```
-
-## Archivos
-
-- `scripts/seed-database.mjs` — Seed principal (negocios, categorías, productos)
-- `scripts/seed-pedidos.mjs` — Pedidos con datos realistas
-- `supabase/seed-completo.sql` — SQL idempotente para las 6 tablas
-- `scripts/inspect-db.mjs` — Inspeccionar columnas y conteos
-
-## Notas
-
-- Los scripts son **idempotentes**: no duplican productos/categorías si ya existen
-- Los pedidos incluyen: `items` (JSON), estados variados, método de entrega, pago, GPS, tokens de tracking
-- Algunos productos están marcados como `disponible: false` para probar el badge "Agotado"
+1. Abre tu proyecto en el **[Dashboard de Supabase](https://supabase.com/dashboard)**.
+2. Ve a **SQL Editor** en el menú lateral.
+3. Haz clic en **New query**.
+4. Copia y pega el contenido completo de [`schema.sql`](file:///c:/Users/josue/Documents/ventas/camly-app/supabase/schema.sql).
+5. Haz clic en **Run** (o presiona `Ctrl + Enter`).

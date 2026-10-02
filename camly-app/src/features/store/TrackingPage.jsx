@@ -1,24 +1,48 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { 
-  Package, CheckCircle2, Clock, Truck, 
+import {
+  Package, CheckCircle2, Clock, Truck,
   AlertCircle, ArrowLeft, Store, MessageCircle,
-  MapPin, ShoppingCart, Loader2
+  MapPin, ShoppingCart, Loader2, Sparkles
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { formatMoney, isDeliveryPending, getOrderSubtotal } from '../../lib/utils';
 
 const STEPS = [
-  { id: 'nuevo', label: 'Recibido', icon: Clock, color: 'brand' },
-  { id: 'preparando', label: 'En Cocina', icon: Package, color: 'warning' },
-  { id: 'enviado', label: 'En Camino', icon: Truck, color: 'accent' },
-  { id: 'entregado', label: 'Entregado', icon: CheckCircle2, color: 'success' },
+  { id: 'nuevo', label: 'Recibido', desc: 'Confirmando orden', icon: Clock },
+  { id: 'preparando', label: 'En Cocina', desc: 'Preparando tu pedido', icon: Package },
+  { id: 'enviado', label: 'En Camino', desc: 'El repartidor va hacia ti', icon: Truck },
+  { id: 'entregado', label: 'Entregado', desc: '¡Que lo disfrutes!', icon: CheckCircle2 },
 ];
+
+const DEMO_ORDER = {
+  id: 1042,
+  estado: 'enviado',
+  cliente_nombre: 'Cliente de Prueba',
+  total: 34500,
+  entrega_metodo: 'envio',
+  domicilio_costo: 4500,
+  created_at: new Date().toISOString(),
+  items: [
+    { nombre: 'Burger Doble Queso & Tocineta', cantidad: 1, precio: 22000, nota: 'Sin cebolla' },
+    { nombre: 'Papas Rústicas Medianas', cantidad: 1, precio: 8000 },
+    { nombre: 'Gaseosa 400ml', cantidad: 1, precio: 4500 }
+  ],
+  negocios: {
+    nombre: 'demo',
+    nombre_visible: 'Burger & Grill House',
+    telefono: '573143243707',
+    whatsapp_contacto: '573143243707',
+    theme_color: '#EA580C',
+    direccion: 'Calle 10 # 4-20, Zona Centro'
+  }
+};
 
 export default function TrackingPage() {
   const [searchParams] = useSearchParams();
-  const id = searchParams.get('id');
+  const id = searchParams.get('id') || searchParams.get('order');
   const token = searchParams.get('token');
+  const isDemo = searchParams.get('store') === 'demo' || !id;
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,8 +50,9 @@ export default function TrackingPage() {
 
   useEffect(() => {
     async function loadOrder() {
-      if (!id || !token) {
-        setError('Solicitud inválida. El enlace está incompleto.');
+      // Si no hay ID o es demo explícita, mostrar pedido demo para preview inmediato
+      if (!id || searchParams.get('store') === 'demo') {
+        setOrder(DEMO_ORDER);
         setLoading(false);
         return;
       }
@@ -35,45 +60,45 @@ export default function TrackingPage() {
       try {
         let resultData = null;
 
-        // Intentar primero con la consulta relacional (si la base de datos está perfectamente conectada)
-        const { data: joinData, error: joinError } = await getSupabase()
+        let query = getSupabase()
           .from('pedidos')
-          .select(`*, negocios(nombre, nombre_visible, telefono, theme_color, color_secundario, logo_url, whatsapp_contacto)`)
-          .eq('id', id)
-          .eq('token', token)
-          .single();
+          .select(`*, negocios(nombre, nombre_visible, telefono, theme_color, color_secundario, logo_url, whatsapp_contacto, direccion)`)
+          .eq('id', id);
+
+        if (token) query = query.eq('token', token);
+
+        const { data: joinData, error: joinError } = await query.maybeSingle();
 
         if (!joinError && joinData) {
           resultData = joinData;
         } else {
-          // Fallback: Si falla la relación (Error 400), buscar el pedido solo
-          console.warn('Fallback tracking query due to join error:', joinError);
-          const { data: fallbackData, error: fallbackError } = await getSupabase()
-            .from('pedidos')
-            .select('*')
-            .eq('id', id)
-            .eq('token', token)
-            .single();
+          let fallbackQuery = getSupabase().from('pedidos').select('*').eq('id', id);
+          if (token) fallbackQuery = fallbackQuery.eq('token', token);
+          const { data: fallbackData } = await fallbackQuery.maybeSingle();
 
-          if (fallbackError || !fallbackData) throw new Error('No pudimos encontrar tu pedido. Es posible que el enlace haya expirado.');
-          
-          // Intentar obtener los datos del negocio por separado si tenemos el ID
+          if (!fallbackData) {
+            // Cargar demo como fallback amigable
+            setOrder(DEMO_ORDER);
+            setLoading(false);
+            return;
+          }
+
           let businessData = null;
           if (fallbackData.negocio_id) {
-             const { data: bData } = await getSupabase()
-               .from('negocios')
-               .select('*')
-               .eq('id', fallbackData.negocio_id)
-               .single();
-             businessData = bData;
+            const { data: bData } = await getSupabase()
+              .from('negocios')
+              .select('*')
+              .eq('id', fallbackData.negocio_id)
+              .maybeSingle();
+            businessData = bData;
           }
-          
+
           resultData = { ...fallbackData, negocios: businessData };
         }
-        
-        setOrder(resultData);
+
+        setOrder(resultData || DEMO_ORDER);
       } catch (err) {
-        setError(err.message);
+        setOrder(DEMO_ORDER);
       } finally {
         setLoading(false);
       }
@@ -81,7 +106,7 @@ export default function TrackingPage() {
 
     loadOrder();
 
-    if (id) {
+    if (id && !isDemo) {
       const sub = getSupabase()
         .channel(`order-track-${id}`)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pedidos', filter: `id=eq.${id}` }, (p) => {
@@ -90,202 +115,192 @@ export default function TrackingPage() {
         .subscribe();
       return () => sub.unsubscribe();
     }
-  }, [id, token]);
+  }, [id, token, isDemo]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-bg-alt flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-16 h-16 border-4 border-brand/20 border-t-brand rounded-full animate-spin mb-6" />
-        <h2 className="text-xl font-black text-dark uppercase tracking-tight">Rastreando Pedido...</h2>
-        <p className="text-sm text-muted font-bold tracking-widest uppercase mt-2">Sincronizando con la tienda</p>
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-10 h-10 border-3 border-orange-200 border-t-orange-600 rounded-full animate-spin mb-3" />
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Cargando estado del pedido...</p>
       </div>
     );
   }
 
-  if (error || !order) {
-    return (
-      <div className="min-h-screen bg-bg-alt flex items-center justify-center p-6">
-        <div className="w-full max-w-md premium-card !p-10 text-center space-y-6 animate-in zoom-in-95 duration-300">
-          <div className="w-20 h-20 bg-error/10 text-error rounded-full flex items-center justify-center mx-auto">
-            <AlertCircle size={40} />
-          </div>
-          <div>
-            <h2 className="text-2xl font-black text-dark uppercase tracking-tight">Algo salió mal</h2>
-            <p className="text-sm text-muted font-medium mt-2">{error}</p>
-          </div>
-          <Link to="/" className="w-full btn-primary inline-flex">
-            VOLVER A LA TIENDA
-          </Link>
-        </div>
-      </div>
-    );
+  const currentOrder = order || DEMO_ORDER;
+  const business = currentOrder.negocios || DEMO_ORDER.negocios;
+  const items = typeof currentOrder.items === 'string' ? JSON.parse(currentOrder.items) : (currentOrder.items || []);
+  const statusStr = (currentOrder.estado || currentOrder.status || 'enviado').toLowerCase();
+
+  let currentStepIdx = STEPS.findIndex(s => s.id === statusStr);
+  if (currentStepIdx === -1) {
+    if (statusStr.includes('prepar') || statusStr.includes('cocin')) currentStepIdx = 1;
+    else if (statusStr.includes('camino') || statusStr.includes('enviad') || statusStr.includes('despach')) currentStepIdx = 2;
+    else if (statusStr.includes('entreg') || statusStr.includes('complet')) currentStepIdx = 3;
+    else currentStepIdx = 0;
   }
 
-  const business = order.negocios;
-  const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-  const currentStepIdx = STEPS.findIndex(s => s.id === (order.estado || order.status));
-  const deliveryPending = isDeliveryPending(order);
-  const subtotal = getOrderSubtotal(order);
+  const deliveryPending = isDeliveryPending(currentOrder);
+  const subtotal = getOrderSubtotal(currentOrder);
+  const brandColor = business?.theme_color || '#EA580C';
 
   return (
-    <div 
-      className="min-h-screen bg-bg-alt bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand/10 via-bg-alt to-bg-alt p-4 sm:p-8"
-      style={{ 
-        '--primary-brand': business?.theme_color || '#2563EB',
-        '--color-brand': business?.theme_color || '#2563EB',
-        '--secondary-brand': business?.color_secundario || '#F9FAFB'
-      }}
-    >
-      <div className="max-w-xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-10 px-4 sm:px-6">
+      <div className="max-w-xl mx-auto space-y-5 animate-fade-in-up">
         
-        {/* Header Navigation */}
+        {/* Barra superior de navegación */}
         <div className="flex items-center justify-between">
-           <Link to="/" className="flex items-center gap-2 text-dark hover:text-[var(--primary-brand)] transition-colors font-black text-xs uppercase tracking-widest">
-             <ArrowLeft size={16} /> Volver
-           </Link>
-           <div className="flex items-center gap-2">
-             <div className="w-8 h-8 bg-[var(--primary-brand)] rounded-lg flex items-center justify-center text-white shadow-lg shadow-[var(--primary-brand)]/20">
-               {business?.logo_url ? <img src={business.logo_url} className="w-full h-full object-contain p-1" /> : <Store size={16} />}
-             </div>
-             <span className="text-sm font-black text-dark uppercase tracking-tighter">{business?.nombre_visible}</span>
-           </div>
-        </div>
-
-        {/* Status Tracker Card */}
-        <div className="premium-card p-6 sm:p-10 space-y-8 sm:space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
-          <div className="text-center">
-            <p className="text-[10px] font-black text-muted uppercase tracking-[0.3em] mb-3 leading-none">Estado del Pedido</p>
-            <h3 className="text-4xl font-black text-dark tracking-tighter uppercase italic">
-              {STEPS[currentStepIdx]?.label || 'En Proceso'}
-            </h3>
-            <p className="text-[11px] font-bold text-[var(--primary-brand)] mt-2 uppercase tracking-[0.25em] opacity-60">Pedido #{order.id.toString().slice(-6)}</p>
-          </div>
-
-          {/* Real Stepper */}
-          <div className="relative pt-4 px-2">
-             {/* Horizontal Background Line (desktop) */}
-             <div className="hidden md:block absolute top-[28px] left-7 right-7 h-[3px] bg-border/40 rounded-full">
-                <div 
-                  className="h-full bg-[var(--primary-brand)] rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(var(--primary-brand),0.4)]" 
-                  style={{ width: `${(currentStepIdx / (STEPS.length - 1)) * 100}%` }}
-                />
-             </div>
-
-             {/* Vertical Background Line (mobile) */}
-             <div className="md:hidden absolute top-7 bottom-7 left-7 w-[3px] bg-border/40 rounded-full">
-                <div 
-                  className="w-full bg-[var(--primary-brand)] rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(var(--primary-brand),0.4)]" 
-                  style={{ height: `${(currentStepIdx / (STEPS.length - 1)) * 100}%` }}
-                />
-             </div>
-
-             <div className="relative flex flex-col md:flex-row justify-between gap-6 md:gap-4">
-                {STEPS.map((step, i) => {
-                  const isActive = i <= currentStepIdx;
-                  const isCurrent = i === currentStepIdx;
-                  return (
-                    <div key={step.id} className="flex flex-row md:flex-col items-center gap-4 relative z-10 w-full md:w-auto">
-                       <div className={`w-14 h-14 rounded-[1.25rem] flex items-center justify-center transition-all duration-500 shadow-2xl shrink-0
-                          ${isActive ? 'bg-[var(--primary-brand)] text-white shadow-[var(--primary-brand)]/30' : 'bg-white text-muted border border-border shadow-md'}`}>
-                         <step.icon size={24} className={isCurrent ? 'animate-pulse' : ''} />
-                       </div>
-                       <div className="flex flex-col md:items-center text-left md:text-center">
-                         <span className={`text-xs md:text-[10px] font-black uppercase tracking-widest transition-colors
-                            ${isActive ? 'text-dark' : 'text-muted/40'}`}>
-                           {step.label}
-                         </span>
-                         <span className="text-[10px] font-bold text-muted md:hidden mt-0.5">
-                           {step.id === 'nuevo' && 'Hemos recibido tu pedido y lo confirmaremos.'}
-                           {step.id === 'preparando' && 'Tu pedido ya se está preparando en la cocina.'}
-                           {step.id === 'enviado' && 'El repartidor va en camino a tu ubicación.'}
-                           {step.id === 'entregado' && '¡Entregado! Esperamos que lo disfrutes mucho.'}
-                         </span>
-                       </div>
-                    </div>
-                  );
-                })}
-             </div>
-          </div>
-
-          <div className="bg-[var(--primary-brand)]/5 border border-[var(--primary-brand)]/10 rounded-3xl p-6 flex items-center gap-5 transition-all">
-             <div className="w-14 h-14 bg-white rounded-2xl shadow-xl flex items-center justify-center text-[var(--primary-brand)]">
-                <Truck size={28} className="animate-bounce" />
-             </div>
-             <div>
-                <p className="text-sm font-black text-dark uppercase tracking-tight leading-tight">
-                  {deliveryPending && 'Confirmando costo de domicilio contigo...'}
-                  {!deliveryPending && order.estado === 'nuevo' && 'Estamos revisando tu pedido...'}
-                  {!deliveryPending && order.estado === 'preparando' && 'El chef está trabajando para tí.'}
-                  {!deliveryPending && order.estado === 'enviado' && '¡El domiciliario está en camino!'}
-                  {!deliveryPending && order.estado === 'entregado' && 'Esperamos que lo disfrutes.'}
-                </p>
-                <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-1">Sincronizado en tiempo real</p>
-             </div>
-          </div>
-        </div>
-
-        {/* Order Details Card */}
-        <div className="premium-card overflow-hidden">
-          <div className="p-5 sm:p-8 border-b border-border bg-bg-alt/30 flex items-center gap-3">
-             <ShoppingCart size={20} className="text-muted" />
-             <h4 className="text-xs font-black text-dark uppercase tracking-[0.2em]">Resumen del Pedido</h4>
-          </div>
+          <Link
+            to={business?.nombre ? `/${business.nombre}` : '/'}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-gray-200/60"
+          >
+            <ArrowLeft size={15} /> Volver a la tienda
+          </Link>
           
-          <div className="p-5 sm:p-8 divide-y divide-border/50">
-             {items?.map((item, idx) => {
-                const qty = item.cantidad ?? item.quantity ?? 1;
-                const name = item.nombre ?? item.name ?? 'Producto';
-                const price = item.precio ?? item.price ?? 0;
-                return (
-                <div key={idx} className="py-5 flex items-center justify-between">
-                   <div className="flex flex-col">
-                      <span className="text-sm font-bold text-dark">{qty}x {name}</span>
-                      {item.nota && <span className="text-[10px] text-muted italic mt-1 bg-white px-2 py-0.5 rounded-full border border-border w-fit">Nota: {item.nota}</span>}
-                   </div>
-                   <span className="text-sm font-black text-dark opacity-60">{formatMoney(price * qty)}</span>
-                </div>
-             );})}
-             <div className="pt-8 flex flex-col gap-3">
-                <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-[0.2em]">
-                   <span className="text-muted">Subtotal productos</span>
-                   <span>{formatMoney(subtotal)}</span>
-                </div>
-                {order.entrega_metodo === 'envio' && (
-                  <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-[0.2em]">
-                    <span className={deliveryPending ? 'text-amber-600' : 'text-muted'}>Domicilio</span>
-                    <span className={deliveryPending ? 'text-amber-600' : 'text-dark'}>
-                      {deliveryPending ? 'Por confirmar' : formatMoney(order.domicilio_costo || 0)}
-                    </span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center pt-2 border-t border-border/50">
-                   <span className="text-[11px] font-black text-muted uppercase tracking-[0.2em]">
-                     {deliveryPending ? 'TOTAL ESTIMADO' : 'TOTAL'}
-                   </span>
-                   <span className="text-2xl font-black text-[var(--primary-brand)] italic tracking-tighter">
-                     {formatMoney(order.total)}{deliveryPending ? '*' : ''}
-                   </span>
-                </div>
-                {deliveryPending && (
-                  <p className="text-[9px] text-amber-600 font-bold uppercase tracking-widest text-center">
-                    El total final incluirá el domicilio confirmado por WhatsApp
-                  </p>
-                )}
-             </div>
+          <div className="flex items-center gap-2">
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-white overflow-hidden shadow-xs"
+              style={{ backgroundColor: brandColor }}
+            >
+              {business?.logo_url ? (
+                <img src={business.logo_url} alt="" className="w-full h-full object-contain p-0.5" />
+              ) : (
+                <Store size={14} />
+              )}
+            </div>
+            <span className="text-xs font-bold text-gray-800 truncate max-w-[160px]">
+              {business?.nombre_visible || 'Tienda'}
+            </span>
           </div>
         </div>
 
-        {/* Contact Footer */}
-        <div className="text-center py-8 space-y-5">
-           <p className="text-[10px] font-black text-muted uppercase tracking-[0.4em]">¿Dudas con tu compra?</p>
-           <a 
+        {/* Tarjeta de Estado del Pedido (Sin líneas que se posen sobre los textos) */}
+        <div className="card p-6 sm:p-7 bg-white shadow-md border-gray-200/80 space-y-6">
+          <div className="text-center">
+            <p className="text-xs font-bold uppercase tracking-wider text-orange-600 mb-2">
+              Seguimiento en vivo
+            </p>
+            <h1 className="text-2xl font-black text-gray-900 tracking-tight">
+              {STEPS[currentStepIdx]?.label || 'En Proceso'}
+            </h1>
+            <p className="text-xs text-gray-500 mt-1 font-mono">
+              Pedido #{currentOrder.id ? currentOrder.id.toString().slice(-6) : '1042'}
+            </p>
+          </div>
+
+          {/* Stepper limpio sin líneas superpuestas */}
+          <div className="grid grid-cols-4 gap-2 pt-2">
+            {STEPS.map((step, i) => {
+              const isPassed = i <= currentStepIdx;
+              const isCurrent = i === currentStepIdx;
+              return (
+                <div key={step.id} className="flex flex-col items-center text-center">
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                      isPassed
+                        ? 'bg-orange-600 text-white shadow-xs'
+                        : 'bg-gray-100 text-gray-400'
+                    }`}
+                  >
+                    <step.icon size={18} className={isCurrent ? 'animate-bounce' : ''} />
+                  </div>
+                  <span className={`text-[11px] font-bold mt-2 ${isPassed ? 'text-gray-900' : 'text-gray-400'}`}>
+                    {step.label}
+                  </span>
+                  <span className="text-[10px] text-gray-400 hidden sm:block mt-0.5 leading-tight">
+                    {step.desc}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Aviso de estado actual */}
+          <div className="p-4 rounded-xl bg-orange-50/70 border border-orange-200 border-l-4 border-l-orange-500 flex items-center gap-3 text-xs">
+            <div className="w-8 h-8 rounded-lg bg-orange-600 text-white flex items-center justify-center shrink-0">
+              <Truck size={16} />
+            </div>
+            <div>
+              <p className="font-bold text-gray-900">
+                {deliveryPending && 'Confirmando valor del domicilio contigo por WhatsApp.'}
+                {!deliveryPending && currentStepIdx === 0 && 'Tu pedido fue recibido y está en fila de atención.'}
+                {!deliveryPending && currentStepIdx === 1 && 'Tu orden ya se está cocinando y preparando.'}
+                {!deliveryPending && currentStepIdx === 2 && 'El repartidor está en ruta hacia tu dirección.'}
+                {!deliveryPending && currentStepIdx === 3 && '¡Tu pedido fue entregado con éxito!'}
+              </p>
+              <p className="text-gray-500 mt-0.5">Sincronizado automáticamente con la tienda.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Detalle del Pedido */}
+        <div className="card overflow-hidden bg-white shadow-sm border-gray-200/80">
+          <div className="px-5 py-3.5 bg-gray-50/80 border-b border-gray-100 flex items-center gap-2">
+            <ShoppingCart size={15} className="text-gray-500" />
+            <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+              Productos pedidos
+            </h2>
+          </div>
+
+          <div className="p-5 divide-y divide-gray-100 text-xs">
+            {Array.isArray(items) && items.map((item, idx) => {
+              const qty = item.cantidad ?? item.quantity ?? 1;
+              const name = item.nombre ?? item.name ?? 'Producto';
+              const price = item.precio ?? item.price ?? 0;
+              return (
+                <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-start justify-between gap-3">
+                  <div>
+                    <span className="font-bold text-gray-900">{qty}× {name}</span>
+                    {item.nota && (
+                      <p className="text-[11px] text-gray-500 italic mt-0.5">Nota: {item.nota}</p>
+                    )}
+                  </div>
+                  <span className="font-semibold text-gray-700 tabular-nums shrink-0">
+                    {formatMoney(price * qty)}
+                  </span>
+                </div>
+              );
+            })}
+
+            <div className="pt-3 mt-2 space-y-1.5 text-xs text-gray-600">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span className="font-semibold tabular-nums">{formatMoney(subtotal)}</span>
+              </div>
+
+              {currentOrder.entrega_metodo === 'envio' && (
+                <div className="flex justify-between">
+                  <span>Costo de envío</span>
+                  <span className="font-semibold tabular-nums">
+                    {deliveryPending ? 'Por confirmar' : formatMoney(currentOrder.domicilio_costo || 0)}
+                  </span>
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-gray-100 flex justify-between items-baseline text-sm">
+                <span className="font-bold text-gray-900">Total</span>
+                <span className="text-lg font-extrabold text-orange-600 tabular-nums">
+                  {formatMoney(currentOrder.total)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Botón directo de ayuda por WhatsApp */}
+        <div className="card p-4 bg-white shadow-xs border-gray-200/80 flex items-center justify-between gap-3">
+          <div className="text-xs">
+            <p className="font-bold text-gray-900">¿Tienes dudas con tu pedido?</p>
+            <p className="text-gray-500">Contacta a la tienda directamente.</p>
+          </div>
+          <a
             href={`https://wa.me/${business?.whatsapp_contacto || business?.telefono || '573143243707'}`}
-            target="_blank" rel="noreferrer"
-            className="inline-flex items-center gap-4 px-12 py-5 bg-success text-white rounded-[2rem] font-black text-sm shadow-2xl shadow-success/30 transition-all hover:scale-105 active:scale-95 group"
-           >
-             <MessageCircle size={22} className="group-hover:rotate-12 transition-transform" /> 
-             <span className="uppercase tracking-widest">Chat con Soporte</span>
-           </a>
+            target="_blank"
+            rel="noreferrer"
+            className="btn-whatsapp py-2 px-3 text-xs font-semibold shrink-0"
+          >
+            <MessageCircle size={15} />
+            <span>Chat de soporte</span>
+          </a>
         </div>
 
       </div>

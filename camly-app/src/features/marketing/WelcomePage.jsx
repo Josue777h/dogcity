@@ -1,71 +1,124 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PartyPopper, ArrowRight, Store, LayoutDashboard, Share2, Smartphone } from 'lucide-react';
-import { useBusinessStore } from '../../stores';
+import {
+  PartyPopper, ArrowRight, LayoutDashboard, Share2,
+  Smartphone, Copy, CheckCircle2, Sparkles, Store, ExternalLink
+} from 'lucide-react';
+import { useBusinessStore, useToastStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
 
 export default function WelcomePage() {
   const { business } = useBusinessStore();
-  const slug = business?.nombre || 'tu-tienda';
+  const addToast = useToastStore(s => s.addToast);
+  const [copied, setCopied] = useState(false);
+
+  const slug = business?.nombre || 'mi-tienda';
+  const businessName = business?.nombre_visible || 'tu negocio';
+  const storeUrl = `${window.location.origin}/${slug}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(storeUrl);
+    setCopied(true);
+    addToast('¡Enlace de tu tienda copiado al portapapeles!', 'success');
+    setTimeout(() => setCopied(false), 2500);
+  };
 
   return (
-    <div className="min-h-screen bg-bg-alt flex items-center justify-center p-6 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand/5 via-bg-alt to-bg-alt">
-      <div className="w-full max-w-2xl text-center space-y-12 animate-in zoom-in-95 duration-700">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-2xl mx-auto space-y-6 animate-fade-in-up">
         
-        <div className="space-y-6">
-           <SaaSLogo className="w-full flex justify-center h-20 mb-8" />
-           <div className="w-24 h-24 bg-brand rounded-3xl flex items-center justify-center text-white mx-auto shadow-2xl shadow-brand/30 animate-bounce">
-              <PartyPopper size={48} />
-           </div>
-           <h2 className="text-4xl md:text-5xl font-black text-dark tracking-tighter uppercase italic">
-             ¡BIENVENIDO A <span className="text-brand">CAMLY!</span>
-           </h2>
-           <p className="text-lg text-muted font-bold tracking-widest uppercase opacity-60">
-             Tu negocio ya está en línea y listo para vender.
-           </p>
+        {/* Top SaaS Logo */}
+        <div className="flex justify-center">
+          <SaaSLogo className="h-8" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-           <Link 
-            to="/admin" 
-            className="premium-card !p-8 flex flex-col items-center gap-6 group hover:border-brand/40 hover:-translate-y-2"
-           >
-              <div className="w-16 h-16 bg-brand/10 text-brand rounded-2xl flex items-center justify-center group-hover:bg-brand group-hover:text-white transition-all">
-                 <LayoutDashboard size={32} />
-              </div>
-              <div>
-                 <h3 className="text-xl font-black text-dark uppercase tracking-tight">Administrar Panel</h3>
-                 <p className="text-sm text-muted mt-2">Configura tus productos, mira tus pedidos y más.</p>
-              </div>
-              <div className="text-brand font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2">
-                 ENTRAR AHORA <ArrowRight size={14} />
-              </div>
-           </Link>
+        {/* Main Card */}
+        <div className="card p-6 sm:p-10 shadow-xl border-gray-200/80 bg-white text-center relative overflow-hidden">
+          {/* Subtle top celebration accent */}
+          <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600" />
+          
+          <div className="w-16 h-16 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-5 shadow-sm">
+            <PartyPopper size={32} />
+          </div>
 
-           <Link 
-            to={`/${slug}`} 
-            className="premium-card !p-8 flex flex-col items-center gap-6 group hover:border-accent/40 hover:-translate-y-2"
-           >
-              <div className="w-16 h-16 bg-accent/10 text-accent rounded-2xl flex items-center justify-center group-hover:bg-accent group-hover:text-white transition-all">
-                 <Smartphone size={32} />
-              </div>
-              <div>
-                 <h3 className="text-xl font-black text-dark uppercase tracking-tight">Ver mi Tienda</h3>
-                 <p className="text-sm text-muted mt-2">Mira cómo tus clientes verán el catálogo.</p>
-              </div>
-              <div className="text-accent font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2">
-                 EXPLORAR <ArrowRight size={14} />
-              </div>
-           </Link>
-        </div>
+          <p className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-2">
+            Tienda creada exitosamente
+          </p>
 
-        <div className="pt-12 border-t border-border flex flex-col sm:flex-row items-center justify-center gap-8">
-           <div className="flex items-center gap-3 text-muted">
-              <Share2 size={18} />
-              <span className="text-xs font-black uppercase tracking-widest">Comparte tu link:</span>
-              <span className="bg-white border border-border px-3 py-1 rounded-lg text-xs font-bold text-dark">
-                camly.app/{slug}
-              </span>
-           </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+            ¡Felicitaciones! {businessName} está en línea
+          </h1>
+          <p className="text-sm text-gray-600 max-w-lg mx-auto mt-2 leading-relaxed">
+            Tu catálogo digital ya está listo para recibir pedidos con ubicación GPS y enviarlos directo a tu WhatsApp.
+          </p>
+
+          {/* Public Link Box */}
+          <div className="mt-8 p-4 rounded-xl bg-gray-50 border border-gray-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+            <div className="min-w-0 w-full sm:w-auto">
+              <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Tu enlace público para clientes</p>
+              <p className="text-sm font-semibold text-gray-900 truncate font-mono mt-0.5">
+                {storeUrl}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+              <button
+                onClick={handleCopy}
+                className="btn-secondary py-2 px-3 text-xs w-full sm:w-auto justify-center font-semibold"
+              >
+                {copied ? <CheckCircle2 size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                <span>{copied ? 'Copiado' : 'Copiar enlace'}</span>
+              </button>
+              <a
+                href={storeUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-ghost p-2 text-gray-500 hover:text-gray-900"
+                title="Abrir en pestaña nueva"
+              >
+                <ExternalLink size={16} />
+              </a>
+            </div>
+          </div>
+
+          {/* Quick steps to start */}
+          <div className="mt-8 text-left border-t border-gray-100 pt-6">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Primeros pasos recomendados</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3.5 rounded-xl bg-white border border-gray-200 border-l-2 border-l-orange-500 text-xs space-y-1">
+                <span className="font-bold text-gray-900">1. Sube productos</span>
+                <p className="text-gray-500">Agrega fotos, precios y descripciones de tu menú.</p>
+              </div>
+              <div className="p-3.5 rounded-xl bg-white border border-gray-200 border-l-2 border-l-orange-500 text-xs space-y-1">
+                <span className="font-bold text-gray-900">2. Personaliza</span>
+                <p className="text-gray-500">Ajusta tu logo, banner y colores de marca.</p>
+              </div>
+              <div className="p-3.5 rounded-xl bg-white border border-gray-200 border-l-2 border-l-orange-500 text-xs space-y-1">
+                <span className="font-bold text-gray-900">3. Comparte tu link</span>
+                <p className="text-gray-500">Pégalo en tu bio de Instagram y estados de WhatsApp.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Navigation Buttons */}
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <Link
+              to="/admin"
+              className="btn-primary py-3 px-5 text-sm font-semibold justify-center shadow-md"
+            >
+              <LayoutDashboard size={18} />
+              <span>Ir al Panel de Administración</span>
+              <ArrowRight size={16} />
+            </Link>
+
+            <Link
+              to={`/${slug}`}
+              className="btn-secondary py-3 px-5 text-sm font-semibold justify-center"
+            >
+              <Smartphone size={18} />
+              <span>Ver mi catálogo en vivo</span>
+            </Link>
+          </div>
+
         </div>
 
       </div>

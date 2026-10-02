@@ -5,47 +5,95 @@ export default function StoreFooter({ business }) {
   if (!business) return null;
 
   return (
-    <footer className="bg-dark text-white pt-10 pb-6 mt-12">
-      <div className="fluid-container">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 pb-8 border-b border-white/10">
+    <footer className="border-t mt-16" style={{ backgroundColor: 'var(--color-sidebar)', borderColor: 'rgba(255,255,255,0.08)' }}>
+      <div className="fluid-container py-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 pb-8 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
           
           {/* Logo & About */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
              <div className="flex items-center gap-3">
-               <div className="w-10 h-10 bg-brand rounded-xl flex items-center justify-center text-white">
-                 <ShoppingBag size={20} />
+               <div
+                 className="w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0"
+                 style={{ backgroundColor: 'var(--color-brand)' }}
+               >
+                 <ShoppingBag size={18} />
                </div>
-               <h3 className="text-xl font-black italic tracking-tighter uppercase">{business.nombre_visible}</h3>
+               <h3 className="text-base font-semibold text-white tracking-tight">{business.nombre_visible}</h3>
              </div>
-             <p className="text-white/40 text-xs font-medium max-w-sm">
+             <p className="text-xs leading-relaxed max-w-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
                {business.footer_message || 'El sabor que te mereces, directo a tu puerta.'}
              </p>
           </div>
 
           {/* Contact & Social */}
           <div className="flex flex-wrap items-center gap-6">
-             <div className="flex gap-4">
+             <div className="flex items-center gap-4">
                 {business.instagram && (
-                  <a href={`https://instagram.com/${business.instagram.replace('@', '')}`} target="_blank" rel="noreferrer" className="text-white/40 hover:text-brand transition-colors"><Instagram size={20} /></a>
+                  <a
+                    href={`https://instagram.com/${business.instagram.replace('@', '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="transition-colors"
+                    style={{ color: 'rgba(255,255,255,0.5)' }}
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--color-brand)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+                    aria-label="Instagram"
+                  >
+                    <Instagram size={18} />
+                  </a>
                 )}
                 {business.facebook && (
-                  <a href={`https://facebook.com/${business.facebook}`} target="_blank" rel="noreferrer" className="text-white/40 hover:text-brand transition-colors"><Facebook size={20} /></a>
+                  <a
+                    href={`https://facebook.com/${business.facebook}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="transition-colors"
+                    style={{ color: 'rgba(255,255,255,0.5)' }}
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--color-brand)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+                    aria-label="Facebook"
+                  >
+                    <Facebook size={18} />
+                  </a>
                 )}
                 {business.tiktok && (
-                  <a href={`https://tiktok.com/@${business.tiktok.replace('@', '')}`} target="_blank" rel="noreferrer" className="text-white/40 hover:text-brand transition-colors"><Music2 size={20} /></a>
+                  <a
+                    href={`https://tiktok.com/@${business.tiktok.replace('@', '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="transition-colors"
+                    style={{ color: 'rgba(255,255,255,0.5)' }}
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--color-brand)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+                    aria-label="TikTok"
+                  >
+                    <Music2 size={18} />
+                  </a>
                 )}
              </div>
              
-             <div className="hidden sm:flex gap-4 text-xs font-bold text-white/60">
-                 <span className="flex items-center gap-1"><Phone size={14} className="text-brand"/> {business.telefono}</span>
-                 {business.direccion && <span className="flex items-center gap-1"><MapPin size={14} className="text-brand"/> {business.direccion}</span>}
+             <div className="flex flex-wrap gap-4 text-xs font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                 {business.telefono && (
+                   <span className="flex items-center gap-1.5">
+                     <Phone size={13} style={{ color: 'var(--color-brand)' }} />
+                     {business.telefono}
+                   </span>
+                 )}
+                 {business.direccion && (
+                   <span className="flex items-center gap-1.5">
+                     <MapPin size={13} style={{ color: 'var(--color-brand)' }} />
+                     {business.direccion}
+                   </span>
+                 )}
              </div>
           </div>
         </div>
 
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[9px] font-black text-white/20 uppercase tracking-[0.2em] text-center sm:text-left">
-           <p>© {new Date().getFullYear()} {business.nombre_visible}. Todos los derechos.</p>
-           <p>Powered by <span className="text-white/40">CAMLY SaaS</span></p>
+        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+           <p>© {new Date().getFullYear()} {business.nombre_visible}. Todos los derechos reservados.</p>
+           <p className="flex items-center gap-1">
+             Desarrollado con <span className="font-semibold text-white/60">CAMLY</span>
+           </p>
         </div>
       </div>
     </footer>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Search, Plus, Edit, Trash2, Tag, Package, LayoutGrid, List } from 'lucide-react';
 import { formatMoney } from '../../../lib/utils';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
@@ -6,14 +6,14 @@ import { useBusinessStore } from '../../../stores';
 
 function ProductSkeleton() {
   return (
-    <div className="bg-white border border-border rounded-[2rem] p-4 animate-pulse">
-      <div className="flex gap-5">
-        <div className="w-24 h-24 skeleton rounded-2xl shrink-0" />
-        <div className="flex-1 space-y-3 py-1">
-          <div className="h-3 skeleton w-20" />
+    <div className="card p-4 animate-pulse">
+      <div className="flex gap-4">
+        <div className="w-20 h-20 skeleton rounded-lg shrink-0" />
+        <div className="flex-1 space-y-2 py-1">
+          <div className="h-3 skeleton w-16" />
           <div className="h-4 skeleton w-3/4" />
           <div className="h-3 skeleton w-1/2" />
-          <div className="h-5 skeleton w-16" />
+          <div className="h-4 skeleton w-20" />
         </div>
       </div>
     </div>
@@ -23,133 +23,160 @@ function ProductSkeleton() {
 export default function ProductsView({ products, onAdd, onEdit, onDelete, loading }) {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
+  const [searchTerm, setSearchTerm] = useState('');
   const { categories } = useBusinessStore();
 
   const getCategoryName = (id, fallbackName) => {
-    if (!id) return fallbackName || 'Sin Categoría';
+    if (!id) return fallbackName || 'General';
     const cat = categories.find(c => c.id === id);
-    return cat ? cat.nombre : (fallbackName || 'Sin Categoría');
+    return cat ? cat.nombre : (fallbackName || 'General');
   };
+
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      const q = searchTerm.toLowerCase();
+      const matchName = (p.name || '').toLowerCase().includes(q);
+      const matchCat = getCategoryName(p.categoria_id, p.categoria).toLowerCase().includes(q);
+      return matchName || matchCat;
+    });
+  }, [products, searchTerm, categories]);
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative w-full sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
+      {/* Top Bar: Search + Actions */}
+      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           <input 
             type="text" 
-            placeholder="Buscar productos..." 
-            className="w-full pl-10 pr-4 py-3 bg-white border border-border rounded-xl text-sm font-bold outline-none focus:border-brand input-glow shadow-sm transition-all" 
+            placeholder="Buscar productos o categorías..." 
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="input-field pl-9" 
           />
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="flex bg-white border border-border rounded-xl p-1">
+
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex bg-white border border-border rounded-lg p-0.5">
             <button 
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-dark'}`}
-              title="Vista grid"
+              className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-gray-500 hover:text-gray-800'}`}
+              title="Vista en cuadrícula"
             >
               <LayoutGrid size={16} />
             </button>
             <button 
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-dark'}`}
-              title="Vista lista"
+              className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-gray-500 hover:text-gray-800'}`}
+              title="Vista en lista"
             >
               <List size={16} />
             </button>
           </div>
+
           <button 
             onClick={onAdd}
-            className="flex-1 sm:flex-none btn-primary !py-3 !px-6 shadow-xl shadow-brand/20 flex items-center justify-center gap-2"
+            className="btn-primary py-2 px-4 text-sm"
           >
-            <Plus size={20} /> NUEVO PRODUCTO
+            <Plus size={16} /> Nuevo producto
           </button>
         </div>
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3, 4, 5, 6].map(i => <ProductSkeleton key={i} />)}
         </div>
       ) : (
         <div className={viewMode === 'grid' 
-          ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6' 
-          : 'space-y-3'
+          ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' 
+          : 'space-y-2'
         }>
-          {products.map(p => (
+          {filteredProducts.map(p => (
             <div 
               key={p.id} 
-              className={`card-3d bg-white border border-border group transition-all duration-300 hover:shadow-xl hover:shadow-brand/5
-                ${viewMode === 'grid' ? 'rounded-[2rem] p-4' : 'rounded-2xl p-4 flex items-center gap-4'}`}
+              className={`card p-4 transition-all duration-150 hover:border-gray-300
+                ${viewMode === 'grid' ? 'flex flex-col justify-between' : 'flex items-center justify-between gap-4'}`}
             >
-              <div className={`flex gap-5 ${viewMode === 'list' ? 'flex-1 items-center' : ''}`}>
-                <div className={`bg-bg-alt rounded-2xl overflow-hidden relative shrink-0 ${viewMode === 'grid' ? 'w-24 h-24' : 'w-16 h-16'}`}>
+              <div className={`flex gap-3.5 ${viewMode === 'list' ? 'flex-1 items-center min-w-0' : ''}`}>
+                <div className={`bg-gray-50 rounded-lg border border-border overflow-hidden relative shrink-0 ${viewMode === 'grid' ? 'w-20 h-20' : 'w-14 h-14'}`}>
                   <img 
                     src={p.image} 
                     alt={p.name} 
                     loading="lazy"
                     decoding="async"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                    onError={e => { e.target.src = '/images/taza.svg'; }}
+                    className="w-full h-full object-cover" 
                   />
-                  {!p.disponible ? (
-                    <div className="absolute inset-0 bg-error/80 backdrop-blur-[2px] flex items-center justify-center">
-                      <span className="text-[8px] font-black text-white uppercase tracking-widest px-2 py-1 rounded bg-error/50">Agotado</span>
+                  {!p.disponible && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex items-center justify-center">
+                      <span className="text-[10px] font-semibold text-white px-1.5 py-0.5 rounded bg-red-600">Agotado</span>
                     </div>
-                  ) : (
-                    <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-success rounded-full border border-white shadow-sm" title="Disponible" />
                   )}
                 </div>
                 
-                <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Tag size={10} className="text-brand" />
-                      <span className="text-[9px] font-black text-muted uppercase tracking-widest truncate">
-                        {getCategoryName(p.categoria_id, p.categoria)}
-                      </span>
-                      {p.disponible && (
-                        <span className="text-[8px] font-black text-success bg-success/10 px-1.5 py-0.5 rounded uppercase tracking-widest">Disponible</span>
-                      )}
-                    </div>
-                    <h4 className="text-sm font-black text-dark truncate leading-tight group-hover:text-brand transition-colors">{p.name}</h4>
-                    {viewMode === 'grid' && (
-                      <p className="text-[10px] text-muted font-medium line-clamp-1 mt-1">{p.description || 'Sin descripción'}</p>
+                <div className="flex-1 min-w-0 py-0.5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                      <Tag size={10} className="text-gray-400" />
+                      {getCategoryName(p.categoria_id, p.categoria)}
+                    </span>
+                    {p.disponible ? (
+                      <span className="badge badge-success text-[10px]">Disponible</span>
+                    ) : (
+                      <span className="badge badge-error text-[10px]">Agotado</span>
                     )}
                   </div>
-                  <p className="text-lg font-black text-dark tracking-tighter">{formatMoney(p.price)}</p>
+                  <h4 className="text-sm font-bold text-gray-900 truncate leading-tight">
+                    {p.name}
+                  </h4>
+                  {viewMode === 'grid' && p.description && (
+                    <p className="text-xs text-gray-500 line-clamp-1 mt-1 leading-relaxed">
+                      {p.description}
+                    </p>
+                  )}
+                  <p className="text-sm font-black text-gray-900 mt-1.5 tabular-nums">
+                    {formatMoney(p.price)}
+                  </p>
                 </div>
+              </div>
 
-                <div className="flex flex-col justify-between py-1 gap-1">
-                  <button 
-                    onClick={() => onEdit(p)}
-                    className="p-2.5 text-muted hover:text-brand hover:bg-brand/5 rounded-xl transition-all"
-                    title="Editar"
-                  >
-                    <Edit size={18} />
-                  </button>
-                  <button 
-                    onClick={() => setItemToDelete(p)}
-                    className="p-2.5 text-muted hover:text-error hover:bg-error/5 rounded-xl transition-all"
-                    title="Eliminar"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+              <div className={`flex items-center gap-1 ${viewMode === 'grid' ? 'border-t border-border pt-3 mt-3 justify-end' : 'shrink-0'}`}>
+                <button 
+                  onClick={() => onEdit(p)}
+                  className="btn-ghost p-1.5 tap-target text-gray-500 hover:text-gray-900"
+                  title="Editar producto"
+                >
+                  <Edit size={16} />
+                </button>
+                <button 
+                  onClick={() => setItemToDelete(p)}
+                  className="btn-ghost p-1.5 tap-target text-gray-500 hover:text-red-600"
+                  title="Eliminar producto"
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
             </div>
           ))}
 
-          {products.length === 0 && (
-            <div className="col-span-full py-20 text-center bg-white border border-dashed border-border rounded-[2.5rem]">
-              <div className="w-16 h-16 bg-bg-alt rounded-full flex items-center justify-center mx-auto mb-4">
-                <Package size={24} className="text-muted" />
+          {filteredProducts.length === 0 && (
+            <div className="col-span-full py-16 text-center card border-dashed p-8">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Package size={22} className="text-gray-400" />
               </div>
-              <h5 className="text-sm font-black text-dark uppercase tracking-widest">Catálogo Vacío</h5>
-              <p className="text-xs text-muted font-bold uppercase tracking-widest mt-1">Empieza creando tu primer producto</p>
-              <button onClick={onAdd} className="mt-6 text-brand text-xs font-black uppercase tracking-widest hover:underline">
-                Crear Producto Ahora
-              </button>
+              <h5 className="text-sm font-semibold text-gray-800">
+                {searchTerm ? 'No se encontraron productos' : 'Catálogo vacío'}
+              </h5>
+              <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">
+                {searchTerm ? 'Prueba con otro término de búsqueda' : 'Comienza agregando tu primer producto para vender'}
+              </p>
+              {!searchTerm && (
+                <button onClick={onAdd} className="btn-primary mt-4 py-2 px-4 text-xs">
+                  <Plus size={14} /> Agregar primer producto
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -159,7 +186,10 @@ export default function ProductsView({ products, onAdd, onEdit, onDelete, loadin
         isOpen={!!itemToDelete}
         title="Eliminar Producto"
         message={`¿Seguro que deseas eliminar "${itemToDelete?.name}"? Esta acción no se puede deshacer.`}
-        onConfirm={() => onDelete(itemToDelete.id)}
+        onConfirm={() => {
+          onDelete(itemToDelete.id);
+          setItemToDelete(null);
+        }}
         onCancel={() => setItemToDelete(null)}
       />
     </div>

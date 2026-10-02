@@ -283,7 +283,7 @@ export async function registerBusiness({ email, password, businessName, phone })
     console.error("Error creando/actualizando la suscripción:", subError);
   }
 
-  return { user: authData.user, negocio };
+  return { user: authData.user, session: authData.session, negocio };
 }
 
 // ── Storage ──

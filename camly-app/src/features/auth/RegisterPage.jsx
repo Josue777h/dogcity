@@ -1,248 +1,317 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Store, Phone, Mail, Lock, ArrowRight, Loader2, CheckCircle2, ShoppingBag, Truck, BarChart3, ShieldCheck, UserPlus, MessageCircle, Check } from 'lucide-react';
+import { Store, Phone, Mail, Lock, ArrowRight, Loader2, CheckCircle2, ShoppingBag, Truck, BarChart3, ShieldCheck, MessageCircle, Check, ArrowLeft, Sparkles } from 'lucide-react';
 import { registerBusiness, signOut } from '../../lib/supabase';
-import { useToastStore } from '../../stores';
+import { useToastStore, useAuthStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
 import { getPasswordStrength } from '../../lib/utils';
 
 const FEATURES = [
-  { icon: ShoppingBag, text: 'CATÁLOGO EN LÍNEA' },
-  { icon: MessageCircle, text: 'PEDIDOS POR WHATSAPP' },
-  { icon: BarChart3, text: 'PANEL DE CONTROL' },
-  { icon: Truck, text: 'DESPACHO A DOMICILIO' },
+  { icon: ShoppingBag,   text: 'Menú digital responsive' },
+  { icon: MessageCircle, text: 'Pedidos directos con GPS' },
+  { icon: BarChart3,     text: 'Panel de ventas en vivo' },
+  { icon: Truck,         text: 'Gestión de domiciliarios' },
 ];
 
 const STEPS = [
-  { num: 1, label: 'Regístrate', desc: 'Crea tu cuenta en segundos' },
-  { num: 2, label: 'Configura', desc: 'Personaliza tu tienda' },
-  { num: 3, label: 'Vende', desc: 'Comparte y recibe pedidos' },
+  { num: 1, label: 'Negocio',   desc: 'Nombre comercial' },
+  { num: 2, label: 'Contacto',  desc: 'WhatsApp y correo' },
+  { num: 3, label: 'Seguridad', desc: 'Contraseña de acceso' },
 ];
 
 export default function RegisterPage() {
-  const navigate = useNavigate();
-  const addToast = useToastStore((s) => s.addToast);
+  const navigate   = useNavigate();
+  const addToast   = useToastStore(s => s.addToast);
+  const setSession = useAuthStore(s => s.setSession);
+
   const [loading, setLoading] = useState(false);
-  const [focusedField, setFocusedField] = useState(null);
   const [form, setForm] = useState({
-    email: '',
-    password: '',
-    businessName: '',
-    phone: '',
+    businessName: '', phone: '', email: '', password: '',
   });
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
-  const completedSteps = [
-    form.businessName.length > 2,
-    form.phone.length > 5 && form.email.includes('@'),
-    form.password.length >= 8,
-  ];
+  // Correct step completion logic
+  const isStep1Complete = form.businessName.trim().length >= 2;
+  const isStep2Complete = form.phone.trim().length >= 7 && form.email.includes('@') && form.email.includes('.');
+  const isStep3Complete = form.password.length >= 8;
+
+  const completedSteps = [isStep1Complete, isStep2Complete, isStep3Complete];
   const progress = (completedSteps.filter(Boolean).length / 3) * 100;
   const passwordStrength = getPasswordStrength(form.password);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isStep1Complete || !isStep2Complete || !isStep3Complete) {
+      addToast('Por favor completa todos los campos requeridos.', 'warning');
+      return;
+    }
     setLoading(true);
     try {
-      await registerBusiness(form);
-      await signOut();
-      addToast('¡Cuenta de negocio creada con éxito!', 'success');
-      navigate('/login', { state: { email: form.email } });
+      const res = await registerBusiness(form);
+      if (res?.session) {
+        setSession(res?.session);
+        addToast('¡Cuenta y negocio creados con éxito!', 'success');
+        navigate('/bienvenido');
+      } else {
+        await signOut();
+        addToast('¡Cuenta creada! Si tienes confirmación activa, revisa tu correo.', 'success');
+        navigate('/login', { state: { email: form.email } });
+      }
     } catch (err) {
-      addToast(err.message, 'error');
+      addToast(err.message || 'Error al crear la tienda', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const isValid = (field) => {
-    switch (field) {
-      case 'businessName': return form.businessName.length > 2;
-      case 'phone': return form.phone.length > 5;
-      case 'email': return form.email.includes('@') && form.email.includes('.');
-      case 'password': return form.password.length >= 8;
-      default: return false;
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-bg-alt flex items-center justify-center p-6 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-accent/20 via-bg-alt to-bg-alt lg:p-0">
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 premium-card !p-0 shadow-2xl shadow-brand/20 animate-fade-in-up">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 relative">
+      
+      {/* Top back navigation */}
+      <div className="w-full max-w-4xl mx-auto mb-4">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-gray-200/60"
+        >
+          <ArrowLeft size={16} /> Volver al inicio
+        </Link>
+      </div>
+
+      <div className="w-full max-w-4xl mx-auto card overflow-hidden shadow-xl border-gray-200/80 bg-white grid grid-cols-1 lg:grid-cols-12 animate-fade-in-up">
         
-        {/* ── LEFT PANEL ── */}
-        <div className="hidden lg:flex flex-col justify-between p-12 bg-dark text-white relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none select-none">
-            <div className="absolute top-1/4 -right-20 w-80 h-80 bg-brand rounded-full blur-[120px] opacity-40 animate-orb" />
-            <div className="absolute bottom-1/4 -left-20 w-60 h-60 bg-accent rounded-full blur-[100px] opacity-30 animate-orb" style={{ animationDelay: '-4s' }} />
+        {/* ── LEFT PANEL: Steps & Value Props ── */}
+        <div className="hidden lg:flex lg:col-span-5 bg-gray-900 text-white p-8 sm:p-10 flex-col justify-between relative overflow-hidden">
+          <div>
+            <div className="mb-8">
+              <SaaSLogo className="h-8 text-white" />
+            </div>
+
+            <p className="text-xs font-bold uppercase tracking-wider text-orange-400 mb-3">
+              Prueba gratis por 7 días
+            </p>
+
+            <h2 className="text-2xl font-black tracking-tight text-white leading-snug mb-3">
+              Lleva tu negocio al <span className="text-orange-500">siguiente nivel</span>.
+            </h2>
+            <p className="text-sm text-gray-400 leading-relaxed">
+              Crea tu catálogo en línea y comienza a recibir pedidos con GPS directamente en tu WhatsApp.
+            </p>
+
+            {/* Steps indicator */}
+            <div className="space-y-4 my-8">
+              {STEPS.map((step, i) => {
+                const isDone = completedSteps[i];
+                return (
+                  <div key={step.num} className="flex items-center gap-3">
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 transition-all ${
+                        isDone 
+                          ? 'bg-orange-600 text-white shadow-xs' 
+                          : 'bg-white/10 text-gray-400'
+                      }`}
+                    >
+                      {isDone ? <Check size={14} strokeWidth={3} /> : step.num}
+                    </div>
+                    <div>
+                      <p className={`text-xs font-semibold ${isDone ? 'text-white' : 'text-gray-400'}`}>
+                        {step.label}
+                      </p>
+                      <p className="text-[11px] text-gray-500">{step.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="relative z-10">
-            <SaaSLogo className="h-16 mb-10 text-white" />
-            <h2 className="text-5xl font-black leading-none tracking-tighter uppercase italic mb-6">
-              LLEVA TU NEGOCIO AL <span className="gradient-text">SIGUIENTE NIVEL.</span>
-            </h2>
-            <p className="text-lg text-white/50 font-medium leading-relaxed max-w-md">
-              La plataforma definitiva para gestionar pedidos por WhatsApp de forma profesional, rápida y escalable.
+          {/* Features grid */}
+          <div className="pt-6 border-t border-gray-800 grid grid-cols-2 gap-3 text-xs text-gray-300">
+            {FEATURES.map((feat, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <feat.icon size={14} className="text-orange-500 shrink-0" />
+                <span className="truncate">{feat.text}</span>
+              </div>
+            ))}
+          </div>
+
+        </div>
+
+        {/* ── RIGHT PANEL: Registration Form ── */}
+        <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-center">
+          
+          {/* Mobile Logo */}
+          <div className="flex justify-center mb-6 lg:hidden">
+            <SaaSLogo className="h-8" />
+          </div>
+
+          <div className="mb-5">
+            <h1 className="text-2xl font-black text-gray-900 tracking-tight">
+              Crear mi tienda digital
+            </h1>
+            <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+              Comienza en menos de 2 minutos. No requieres tarjeta de crédito.
             </p>
           </div>
 
-          {/* Steps visual */}
-          <div className="relative z-10 space-y-4">
-            {STEPS.map((step, i) => (
-              <div key={step.num} className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 transition-all duration-300 ${completedSteps[i] ? 'bg-brand text-white shadow-lg shadow-brand/30' : 'bg-white/10 text-white/40'}`}>
-                  {completedSteps[i] ? <Check size={18} /> : step.num}
-                </div>
-                <div>
-                  <p className={`text-xs font-black uppercase tracking-widest ${completedSteps[i] ? 'text-white' : 'text-white/40'}`}>{step.label}</p>
-                  <p className="text-[10px] text-white/30 font-medium">{step.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="relative z-10 grid grid-cols-2 gap-6 border-t border-white/10 pt-10">
-            {FEATURES.map((feat, i) => (
-              <div key={i} className="flex items-center gap-3 group">
-                <div className="p-2 bg-white/5 rounded-lg text-brand group-hover:scale-110 transition-transform">
-                  <feat.icon size={18} />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/60">{feat.text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── RIGHT: Form ── */}
-        <div className="p-8 sm:p-12 lg:p-16 flex flex-col justify-center bg-white">
-          <div className="mb-8 text-center lg:text-left">
-            <h3 className="text-3xl font-black text-dark tracking-tighter uppercase">COMENZAR AHORA</h3>
-            <p className="text-sm text-muted font-bold tracking-widest uppercase mt-1">Crea tu cuenta en menos de 2 minutos</p>
-          </div>
-
           {/* Progress bar */}
-          <div className="mb-8">
-            <div className="flex justify-between mb-2">
-              <span className="text-[10px] font-black text-muted uppercase tracking-widest">Progreso</span>
-              <span className="text-[10px] font-black text-brand uppercase tracking-widest">{Math.round(progress)}%</span>
+          <div className="mb-5 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+            <div className="flex justify-between items-center mb-1.5 text-xs font-semibold">
+              <span className="text-gray-500">Completando datos</span>
+              <span className="text-orange-600">{Math.round(progress)}%</span>
             </div>
-            <div className="w-full h-2 bg-bg-alt rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-brand to-accent rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-orange-600 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <label className={`text-[10px] font-black uppercase tracking-widest ml-1 transition-colors ${focusedField === 'businessName' ? 'text-brand' : 'text-muted'}`}>Nombre Comercial</label>
+          <form onSubmit={handleSubmit} className="space-y-3.5">
+            {/* Business name */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                Nombre de tu negocio
+              </label>
               <div className="relative">
-                <Store size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${focusedField === 'businessName' ? 'text-brand' : 'text-muted'}`} />
-                <input 
-                  type="text" placeholder="Ej: Pizza Hut Gourmet" 
-                  value={form.businessName} onChange={set('businessName')}
-                  onFocus={() => setFocusedField('businessName')}
-                  onBlur={() => setFocusedField(null)}
-                  className="w-full pl-12 pr-10 py-3.5 bg-bg-alt border border-border rounded-2xl input-glow font-bold text-sm"
-                  required 
+                <Store size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Ej: Burger House o Café Gourmet"
+                  value={form.businessName}
+                  onChange={set('businessName')}
+                  className="input-field pl-10 pr-9 text-sm"
+                  required
                 />
-                {isValid('businessName') && <CheckCircle2 size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-success" />}
+                {isStep1Complete && (
+                  <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600" />
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className={`text-[10px] font-black uppercase tracking-widest ml-1 transition-colors ${focusedField === 'phone' ? 'text-brand' : 'text-muted'}`}>WhatsApp Negocio</label>
+            {/* Phone + Email */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                  WhatsApp del negocio
+                </label>
                 <div className="relative">
-                  <Phone size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${focusedField === 'phone' ? 'text-brand' : 'text-muted'}`} />
-                  <input 
-                    type="tel" placeholder="573..." 
-                    value={form.phone} onChange={set('phone')}
-                    onFocus={() => setFocusedField('phone')}
-                    onBlur={() => setFocusedField(null)}
-                    className="w-full pl-12 pr-10 py-3.5 bg-bg-alt border border-border rounded-2xl input-glow font-bold text-sm"
-                    required 
+                  <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input
+                    type="tel"
+                    placeholder="Ej: 573001234567"
+                    value={form.phone}
+                    onChange={set('phone')}
+                    className="input-field pl-10 pr-9 text-sm"
+                    required
                   />
-                  {isValid('phone') && <CheckCircle2 size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-success" />}
+                  {form.phone.trim().length >= 7 && (
+                    <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600" />
+                  )}
                 </div>
               </div>
-              <div className="space-y-1">
-                <label className={`text-[10px] font-black uppercase tracking-widest ml-1 transition-colors ${focusedField === 'email' ? 'text-brand' : 'text-muted'}`}>Email Acceso</label>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                  Correo electrónico
+                </label>
                 <div className="relative">
-                  <Mail size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${focusedField === 'email' ? 'text-brand' : 'text-muted'}`} />
-                  <input 
-                    type="email" placeholder="tu@empresa.com" 
-                    value={form.email} onChange={set('email')}
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
-                    className="w-full pl-12 pr-10 py-3.5 bg-bg-alt border border-border rounded-2xl input-glow font-bold text-sm"
-                    required 
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input
+                    type="email"
+                    placeholder="tu@negocio.com"
+                    value={form.email}
+                    onChange={set('email')}
+                    className="input-field pl-10 pr-9 text-sm"
+                    required
                   />
-                  {isValid('email') && <CheckCircle2 size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-success" />}
+                  {form.email.includes('@') && form.email.includes('.') && (
+                    <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600" />
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className={`text-[10px] font-black uppercase tracking-widest ml-1 transition-colors ${focusedField === 'password' ? 'text-brand' : 'text-muted'}`}>Contraseña de Seguridad</label>
+            {/* Password */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                Contraseña (mínimo 8 caracteres)
+              </label>
               <div className="relative">
-                <Lock size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${focusedField === 'password' ? 'text-brand' : 'text-muted'}`} />
-                <input 
-                  type="password" placeholder="Mínimo 8 caracteres" 
-                  value={form.password} onChange={set('password')}
-                  onFocus={() => setFocusedField('password')}
-                  onBlur={() => setFocusedField(null)}
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={set('password')}
                   minLength={8}
-                  className="w-full pl-12 pr-10 py-3.5 bg-bg-alt border border-border rounded-2xl input-glow font-bold text-sm"
-                  required 
+                  className="input-field pl-10 pr-9 text-sm"
+                  required
                 />
-                {isValid('password') && <CheckCircle2 size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-success" />}
+                {isStep3Complete && (
+                  <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600" />
+                )}
               </div>
+
               {form.password && (
-                <div className="space-y-1.5 px-1">
+                <div className="mt-2 space-y-1">
                   <div className="flex gap-1">
                     {[1, 2, 3].map(i => (
-                      <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= passwordStrength.score ? passwordStrength.color : 'bg-border'}`} />
+                      <div
+                        key={i}
+                        className={`h-1 flex-1 rounded-full transition-all duration-200 ${
+                          i <= passwordStrength.score
+                            ? passwordStrength.score === 3
+                              ? 'bg-emerald-500'
+                              : passwordStrength.score === 2
+                              ? 'bg-amber-500'
+                              : 'bg-red-500'
+                            : 'bg-gray-200'
+                        }`}
+                      />
                     ))}
                   </div>
-                  <p className={`text-[10px] font-black uppercase tracking-widest ${passwordStrength.score === 3 ? 'text-success' : passwordStrength.score === 2 ? 'text-warning' : 'text-error'}`}>
+                  <p className="text-[11px] font-medium text-gray-500">
                     Seguridad: {passwordStrength.label}
                   </p>
                 </div>
               )}
             </div>
 
-            <button 
-              type="submit" 
-              disabled={loading} 
-              className="w-full btn-primary !py-5 shadow-2xl shadow-brand/20 mt-6 !rounded-2xl group"
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full py-3.5 text-sm font-semibold mt-3 shadow-sm"
             >
-              {loading ? <Loader2 size={24} className="animate-spin" /> : (
-                <div className="flex items-center gap-2 uppercase font-black tracking-widest text-xs">
-                  CREAR MI TIENDA <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                </div>
+              {loading ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <>
+                  <span>Crear mi tienda gratis</span>
+                  <ArrowRight size={16} />
+                </>
               )}
             </button>
           </form>
 
-          <p className="mt-8 text-center text-sm text-muted font-medium">
-            ¿Ya tienes una cuenta? <Link to="/login" className="text-brand font-black hover:underline">Acceder al panel</Link>
-          </p>
-          
-          <div className="mt-10 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-muted">
-              <ShieldCheck size={16} className="text-success" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Protección GDPR</span>
-            </div>
-            <div className="flex -space-x-3">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-bg-alt overflow-hidden animate-fade-in-up" style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}>
-                  <img src={`https://i.pravatar.cc/100?u=${i}`} alt="user" />
-                </div>
-              ))}
-              <div className="w-8 h-8 rounded-full border-2 border-white bg-dark flex items-center justify-center text-[10px] font-bold text-white z-10 animate-fade-in-up" style={{ animationDelay: '320ms', animationFillMode: 'both' }}>+50</div>
-            </div>
+          {/* Footer switcher */}
+          <div className="mt-5 pt-4 border-t border-gray-100 text-center">
+            <p className="text-xs sm:text-sm text-gray-600">
+              ¿Ya tienes una cuenta creada?{' '}
+              <Link to="/login" className="font-semibold text-orange-600 hover:text-orange-700 hover:underline">
+                Iniciar sesión
+              </Link>
+            </p>
           </div>
+
+          <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
+            <ShieldCheck size={13} className="text-emerald-600" />
+            <span>Sin tarjeta de crédito · Cancela cuando quieras</span>
+          </div>
+
         </div>
+
       </div>
     </div>
   );

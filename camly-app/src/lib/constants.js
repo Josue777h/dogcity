@@ -1,7 +1,28 @@
-// CAMLY SaaS — Supabase Configuration
-export const SUPABASE_URL = 'https://diaphikeanfkapoeynae.supabase.co';
-export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpYXBoaWtlYW5ma2Fwb2V5bmFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1OTc1NDEsImV4cCI6MjA5MTE3MzU0MX0.eVAPQ7py4bfu3mTtzqv1dng5Czd2S_oGUxSOm3UOC58';
-export const SUPABASE_PRODUCT_BUCKET = 'product-images';
+// CAMLY SaaS — Supabase Configuration (Lee de .env.local con fallback)
+const getEnv = (key, fallback) => {
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) {
+    return import.meta.env[key];
+  }
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    return process.env[key];
+  }
+  return fallback;
+};
+
+export const SUPABASE_URL = getEnv(
+  'VITE_SUPABASE_URL',
+  'https://euubmrswreyaxckgadpc.supabase.co'
+);
+
+export const SUPABASE_ANON_KEY = getEnv(
+  'VITE_SUPABASE_ANON_KEY',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1dWJtcnN3cmV5YXhja2dhZHBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0NDMxNjcsImV4cCI6MjEwNjAxOTE2N30.E1SoyxBgFwn_jaVzGEC6aGj1U6_rVrwrPdl74vkCAyI'
+);
+
+export const SUPABASE_PRODUCT_BUCKET = getEnv(
+  'VITE_SUPABASE_PRODUCT_BUCKET',
+  'product-images'
+);
 
 export const DEFAULT_IMAGE = '/images/placeholder.svg';
 export const WHATSAPP_FALLBACK_PHONE = '573143243707';

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   UserPlus, Phone, Trash2, Loader2, Save, 
-  Bike, CheckCircle2, XCircle 
+  Bike, CheckCircle2, X
 } from 'lucide-react';
 import { getSupabase } from '../../../lib/supabase';
 import { useToastStore } from '../../../stores';
@@ -56,7 +56,7 @@ export default function DriversView({ businessId }) {
       fetchDrivers();
     } catch (err) {
       console.error(err);
-      addToast('Error al registrar. Verifica el SQL.', 'error');
+      addToast('Error al registrar domiciliario', 'error');
     } finally {
       setLoading(false);
     }
@@ -94,120 +94,122 @@ export default function DriversView({ businessId }) {
   if (loading && !drivers.length) {
     return (
       <div className="py-20 flex justify-center">
-        <Loader2 className="animate-spin text-brand" size={32} />
+        <Loader2 className="animate-spin text-orange-600" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-white p-6 rounded-[2rem] border border-border">
+    <div className="space-y-6 animate-fade-in-up">
+      {/* Header bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-           <h4 className="text-xl font-black text-dark uppercase tracking-tight">Gestión de Repartidores</h4>
-           <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-1">Controla tu equipo de entregas</p>
+           <h3 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Repartidores</h3>
+           <p className="text-sm text-gray-600 mt-1 leading-relaxed">Gestiona tu equipo de entregas y despacha pedidos con un clic</p>
         </div>
         <button 
           onClick={() => setIsAdding(!isAdding)}
-          className="btn-primary !py-3 !px-6 shadow-lg shadow-brand/20 w-full sm:w-auto"
+          className="btn-primary py-2 px-4 text-xs font-semibold"
         >
-          {isAdding ? <XCircle size={18} /> : <><UserPlus size={18} /> NUEVO REPARTIDOR</>}
+          {isAdding ? <><X size={14} /> Cancelar</> : <><UserPlus size={14} /> Nuevo repartidor</>}
         </button>
       </div>
 
       <PremiumLock featureName="Gestión de Equipo de Repartidores">
-        <div className="space-y-8 mt-8">
+        <div className="space-y-5">
+          {/* Add form */}
           {isAdding && (
-        <form onSubmit={handleAddDriver} className="bg-brand/5 border border-brand/20 p-8 rounded-[2.5rem] animate-in zoom-in-95 duration-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted uppercase tracking-widest ml-1">Nombre Completo</label>
-              <input 
-                type="text" 
-                value={newDriver.nombre}
-                onChange={e => setNewDriver({...newDriver, nombre: e.target.value})}
-                placeholder="Ej: Juan Pérez"
-                className="w-full p-4 bg-white border border-border rounded-2xl font-bold text-dark outline-none focus:border-brand" 
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted uppercase tracking-widest ml-1">WhatsApp</label>
-              <input 
-                type="tel" 
-                value={newDriver.telefono}
-                onChange={e => setNewDriver({...newDriver, telefono: e.target.value})}
-                placeholder="573000000000"
-                className="w-full p-4 bg-white border border-border rounded-2xl font-bold text-dark outline-none focus:border-brand" 
-                required
-              />
-            </div>
-            <div className="flex items-end">
-              <button type="submit" className="w-full btn-primary !py-4 shadow-xl shadow-brand/20">
-                <Save size={18} /> GUARDAR AHORA
-              </button>
-            </div>
-          </div>
-        </form>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {drivers.map(driver => (
-          <div key={driver.id} className="bg-white border border-border rounded-[2.5rem] p-6 hover:shadow-xl transition-all group">
-            <div className="flex justify-between items-start mb-4">
-              <div className={`p-3 rounded-2xl flex items-center justify-center transition-colors
-                ${driver.activo ? 'bg-success/10 text-success' : 'bg-muted/10 text-muted'}`}>
-                <Bike size={24} />
+            <form onSubmit={handleAddDriver} className="card p-4 border-orange-200 bg-orange-50/40 animate-fade-in">
+              <p className="text-xs font-semibold text-gray-800 mb-2">Registrar repartidor</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <input 
+                    type="text" 
+                    value={newDriver.nombre}
+                    onChange={e => setNewDriver({...newDriver, nombre: e.target.value})}
+                    placeholder="Nombre completo"
+                    className="input-field text-sm" 
+                    required
+                  />
+                </div>
+                <div>
+                  <input 
+                    type="tel" 
+                    value={newDriver.telefono}
+                    onChange={e => setNewDriver({...newDriver, telefono: e.target.value})}
+                    placeholder="Teléfono / WhatsApp"
+                    className="input-field text-sm" 
+                    required
+                  />
+                </div>
+                <div>
+                  <button type="submit" disabled={loading} className="btn-primary w-full py-2 px-4 text-xs font-semibold">
+                    {loading ? <Loader2 size={14} className="animate-spin" /> : <><Save size={14} /> Guardar</>}
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
-                  onClick={() => setItemToDelete(driver)}
-                  className="p-2 text-error/40 hover:text-error hover:bg-error/10 rounded-lg transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
+            </form>
+          )}
+
+          {/* Drivers Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {drivers.map(driver => (
+              <div key={driver.id} className="card p-4 transition-all hover:border-gray-300 flex flex-col justify-between">
+                <div className="flex justify-between items-start mb-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${driver.activo ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                    <Bike size={16} />
+                  </div>
+                  <button 
+                    onClick={() => setItemToDelete(driver)}
+                    className="btn-ghost p-1 text-gray-400 hover:text-red-600"
+                    title="Eliminar"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 truncate">{driver.nombre}</h4>
+                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
+                    <Phone size={11} className="text-orange-600" /> {driver.telefono}
+                  </p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
+                  <span className={driver.activo ? 'badge badge-success text-[10px]' : 'badge badge-neutral text-[10px]'}>
+                    {driver.activo ? 'Activo' : 'Inactivo'}
+                  </span>
+                  <button 
+                    onClick={() => toggleStatus(driver.id, driver.activo)}
+                    className="text-xs font-medium text-orange-600 hover:text-orange-700 hover:underline"
+                  >
+                    {driver.activo ? 'Desactivar' : 'Activar'}
+                  </button>
+                </div>
               </div>
-            </div>
-            
-            <div className="space-y-1">
-              <h5 className="text-lg font-black text-dark tracking-tight uppercase leading-none">{driver.nombre}</h5>
-              <p className="text-xs font-bold text-muted flex items-center gap-2">
-                <Phone size={12} className="text-brand" /> {driver.telefono}
-              </p>
-            </div>
+            ))}
 
-            <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
-              <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full
-                ${driver.activo ? 'bg-success/10 text-success' : 'bg-muted/10 text-muted'}`}>
-                {driver.activo ? 'Activo' : 'Inactivo'}
-              </span>
-              <button 
-                onClick={() => toggleStatus(driver.id, driver.activo)}
-                className="text-[10px] font-black text-brand uppercase tracking-widest hover:underline"
-              >
-                {driver.activo ? 'Desactivar' : 'Reactivar'}
-              </button>
-            </div>
+            {!drivers.length && !loading && !isAdding && (
+              <div className="col-span-full py-16 text-center card border-dashed p-8">
+                 <Bike className="mx-auto text-gray-300 mb-2" size={32} />
+                 <p className="text-sm font-semibold text-gray-800">No hay domiciliarios registrados</p>
+                 <p className="text-xs text-gray-500 mt-1">Agrega repartidores para asignarlos a tus pedidos y enviarles los datos directo a WhatsApp.</p>
+              </div>
+            )}
           </div>
-        ))}
+        </div>
+      </PremiumLock>
 
-        {!drivers.length && !loading && (
-          <div className="sm:col-span-2 lg:col-span-3 py-16 text-center border-2 border-dashed border-border rounded-[2.5rem]">
-             <Bike className="mx-auto text-muted mb-4 opacity-20" size={48} />
-             <p className="text-sm font-black text-muted uppercase tracking-widest leading-none">No hay domiciliarios registrados</p>
-             <p className="text-[10px] text-muted font-bold uppercase mt-2">Agrega repartidores para asignar pedidos.</p>
-          </div>
-        )}
-      </div>
-     </div>
-    </PremiumLock>
-
-    <ConfirmModal 
-      isOpen={!!itemToDelete}
-      title="Desvincular Repartidor"
-      message={`¿Estás seguro de eliminar a "${itemToDelete?.nombre}"?`}
-      onConfirm={() => deleteDriver(itemToDelete.id)}
-      onCancel={() => setItemToDelete(null)}
-    />
+      <ConfirmModal 
+        isOpen={!!itemToDelete}
+        title="Desvincular Repartidor"
+        message={`¿Estás seguro de eliminar a "${itemToDelete?.nombre}"?`}
+        onConfirm={() => {
+          deleteDriver(itemToDelete.id);
+          setItemToDelete(null);
+        }}
+        onCancel={() => setItemToDelete(null)}
+      />
     </div>
   );
 }

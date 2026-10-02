@@ -1,106 +1,116 @@
-import { Copy, ExternalLink, Menu, Zap, AlertTriangle, CheckCircle2, Search, Bell, ChevronRight, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { Copy, ExternalLink, Menu, Zap, AlertTriangle, Sparkles, Check } from 'lucide-react';
 import { useToastStore, useBusinessStore, useAuthStore } from '../../../stores';
 
 const TAB_LABELS = {
-  dashboard: 'Dashboard',
-  orders: 'Pedidos',
-  products: 'Productos',
-  categories: 'Categorías',
-  drivers: 'Domiciliarios',
-  settings: 'Configuración',
+  dashboard:  'Dashboard General',
+  orders:     'Gestión de Pedidos',
+  products:   'Catálogo de Productos',
+  categories: 'Categorías del Menú',
+  drivers:    'Repartidores y Domicilios',
+  settings:   'Configuración de la Tienda',
+  revenue:    'Reportes e Ingresos',
 };
 
 export default function AdminHeader({ title, business, onOpenMenu }) {
-  const addToast = useToastStore(s => s.addToast);
-  const session = useAuthStore(s => s.session);
+  const addToast  = useToastStore(s => s.addToast);
+  const session   = useAuthStore(s => s.session);
   const { isPro, isExpired, trialDaysLeft, subscription } = useBusinessStore();
-  const storeUrl = `${window.location.origin}/${business?.nombre}`;
+  const [copied, setCopied] = useState(false);
 
-  const getProDaysLeft = () => {
-    if (!subscription || !subscription.fecha_fin || subscription.estado === 'trial') return null;
-    const diff = new Date(subscription.fecha_fin) - new Date();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-  };
-
-  const proDaysLeft = getProDaysLeft();
-  const tabLabel = TAB_LABELS[title] || title;
+  const storeUrl  = `${window.location.origin}/${business?.nombre || ''}`;
+  const tabLabel  = TAB_LABELS[title] || title;
   const userEmail = session?.user?.email || '';
   const userInitial = userEmail.charAt(0).toUpperCase() || 'U';
 
+  const proDaysLeft = (() => {
+    if (!subscription?.fecha_fin || subscription.estado === 'trial') return null;
+    const diff = new Date(subscription.fecha_fin) - new Date();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  })();
+
   const copyLink = () => {
     navigator.clipboard.writeText(storeUrl);
-    addToast('Link copiado al portapapeles', 'success');
+    setCopied(true);
+    addToast('Enlace de la tienda copiado', 'success');
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <header className="bg-white border-b border-border sticky top-0 z-[80] px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4 pt-safe">
+    <header className="bg-white border-b border-gray-200/80 sticky top-0 z-[80] px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 pt-safe shadow-2xs">
+      
+      {/* Left: Mobile hamburger + Tab title */}
       <div className="flex items-center gap-3 min-w-0">
-        <button 
+        <button
           onClick={onOpenMenu}
-          className="lg:hidden p-2 bg-bg-alt text-dark rounded-lg hover:bg-border transition-colors shrink-0"
+          className="lg:hidden p-2 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors shrink-0 tap-target"
+          aria-label="Abrir menú de navegación"
         >
           <Menu size={20} />
         </button>
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-widest">
-            <span className="truncate">{business?.nombre_visible}</span>
-            <ChevronRight size={10} className="shrink-0" />
-            <span className="text-brand truncate">{tabLabel}</span>
-          </div>
-          <h3 className="text-lg sm:text-xl font-black text-dark uppercase tracking-tight truncate">
+          <h1 className="text-sm sm:text-base font-bold text-gray-900 truncate leading-tight">
             {tabLabel}
-          </h3>
+          </h1>
+          {business?.nombre_visible && (
+            <p className="text-[11px] text-gray-500 truncate hidden sm:block">
+              {business.nombre_visible} · {business.direccion || 'Tienda activa'}
+            </p>
+          )}
         </div>
       </div>
-      
+
+      {/* Right: Plan badge + Store Actions + User Profile */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* Plan badge — visible en todos los tamaños */}
-        <div className="flex shrink-0">
-          {isExpired ? (
-            <div className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-error/10 text-error rounded-lg border border-error/20">
-              <AlertTriangle size={12} className="sm:w-3.5 sm:h-3.5" />
-              <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Vencido</span>
-            </div>
-          ) : subscription?.estado === 'trial' ? (
-            <div className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-orange-500/10 text-orange-600 rounded-lg border border-orange-500/20">
-              <Zap size={12} className="fill-orange-600 sm:w-3.5 sm:h-3.5" />
-              <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest whitespace-nowrap">{trialDaysLeft}d</span>
-            </div>
-          ) : isPro ? (
-            <div className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-success/10 text-success rounded-lg border border-success/20 relative overflow-hidden">
-              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[shimmer_3s_infinite] hidden sm:block" style={{ backgroundSize: '200% 100%' }} />
-              <Sparkles size={12} className="relative sm:w-3.5 sm:h-3.5" />
-              <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest relative whitespace-nowrap">
-                Pro{proDaysLeft !== null ? ` ${proDaysLeft}d` : ''}
-              </span>
-            </div>
-          ) : null}
-        </div>
         
-        <div className="flex items-center bg-bg-alt border border-border rounded-xl p-1 gap-1">
-          <button 
+        {/* Subscription Status Pill */}
+        {isExpired ? (
+          <span className="badge badge-error text-[11px]">
+            <AlertTriangle size={11} /> Plan Vencido
+          </span>
+        ) : subscription?.estado === 'trial' ? (
+          <span className="badge badge-warning text-[11px]">
+            <Zap size={11} />
+            Prueba · {trialDaysLeft}d
+          </span>
+        ) : isPro ? (
+          <span className="badge badge-success text-[11px]">
+            <Sparkles size={11} />
+            Plan Pro{proDaysLeft !== null ? ` · ${proDaysLeft}d` : ''}
+          </span>
+        ) : null}
+
+        {/* Store link actions */}
+        <div className="flex items-center gap-1.5 bg-gray-100/80 p-1 rounded-xl border border-gray-200/60">
+          <button
             onClick={copyLink}
-            title="Copiar link"
-            className="p-2 text-muted hover:text-brand hover:bg-brand/5 rounded-lg transition-all"
+            title="Copiar link de tienda para clientes"
+            className="p-1.5 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-white transition-all tap-target flex items-center gap-1 text-xs font-semibold"
           >
-            <Copy size={16} />
+            {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+            <span className="hidden md:inline">{copied ? 'Copiado' : 'Copiar link'}</span>
           </button>
-          <a 
-            href={`/${business?.nombre}`} 
-            target="_blank" 
+          
+          <a
+            href={storeUrl}
+            target="_blank"
             rel="noreferrer"
-            title="Abrir tienda"
-            className="flex items-center gap-2 bg-brand text-white px-3 sm:px-4 py-2 rounded-lg text-[10px] font-black transition-all hover:bg-brand/90 shadow-lg shadow-brand/20"
+            className="p-1.5 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-white transition-all tap-target flex items-center gap-1 text-xs font-semibold"
+            title="Ver catálogo público"
           >
-            <span className="hidden sm:inline">VER TIENDA</span>
-            <ExternalLink size={14} />
+            <span className="hidden sm:inline">Ver tienda</span>
+            <ExternalLink size={13} />
           </a>
         </div>
 
-        {/* User avatar */}
-        <div className="hidden sm:flex w-9 h-9 rounded-xl bg-gradient-to-br from-brand to-accent items-center justify-center text-white text-sm font-black shadow-md shadow-brand/20" title={userEmail}>
+        {/* User Avatar */}
+        <div
+          className="w-8 h-8 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center shadow-2xs shrink-0"
+          title={userEmail}
+        >
           {userInitial}
         </div>
+
       </div>
     </header>
   );

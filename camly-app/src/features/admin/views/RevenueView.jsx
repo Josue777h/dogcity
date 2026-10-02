@@ -40,7 +40,7 @@ export default function RevenueView({ orders, business }) {
     if (bizId) {
       localStorage.setItem(hiddenKey, JSON.stringify(updated));
     }
-    addToast('Registro depurado de la interfaz', 'info');
+    addToast('Registro ocultado de la tabla', 'info');
   };
 
   const handleResetFilters = () => {
@@ -50,35 +50,28 @@ export default function RevenueView({ orders, business }) {
       localStorage.setItem(hiddenKey, JSON.stringify([]));
       localStorage.setItem(retentionKey, 'all');
     }
-    addToast('Filtros y registros restaurados', 'success');
+    addToast('Registros restaurados', 'success');
   };
 
-  // Filtered orders & calculations based on retention & manual deletion
+  // Filtered orders & calculations
   const { filteredOrders, stats } = useMemo(() => {
     const now = new Date();
     
-    // Helper to calculate date diff in days
     const getDaysDiff = (dateStr) => {
       const d = new Date(dateStr);
       const diffTime = Math.abs(now - d);
       return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     };
 
-    // Filter out hidden and out-of-retention orders
     const visibleOrders = orders.filter((o) => {
-      // 1. Filter out hidden
       if (hiddenOrderIds.includes(o.id)) return false;
-      
-      // 2. Filter out based on conservation policy
       if (retention !== 'all') {
         const days = Number(retention);
         if (getDaysDiff(o.created_at) > days) return false;
       }
-      
       return true;
     });
 
-    // Calculate metrics
     let daySales = 0;
     let weekSales = 0;
     let monthSales = 0;
@@ -87,17 +80,12 @@ export default function RevenueView({ orders, business }) {
       const daysDiff = getDaysDiff(o.created_at);
       const oDate = new Date(o.created_at);
       
-      // Sales of the day (today)
       if (oDate.toDateString() === now.toDateString()) {
         daySales += o.total || 0;
       }
-      
-      // Sales of the week (last 7 days)
       if (daysDiff <= 7) {
         weekSales += o.total || 0;
       }
-
-      // Sales of the month (last 30 days)
       if (daysDiff <= 30) {
         monthSales += o.total || 0;
       }
@@ -109,7 +97,7 @@ export default function RevenueView({ orders, business }) {
     };
   }, [orders, hiddenOrderIds, retention]);
 
-  // Export to Excel-compatible CSV
+  // Export CSV
   const handleExportCSV = () => {
     if (filteredOrders.length === 0) {
       addToast('No hay datos para exportar', 'warning');
@@ -147,112 +135,112 @@ export default function RevenueView({ orders, business }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `reporte_rendimiento_${business?.nombre_visible || 'negocio'}.csv`);
+    link.setAttribute('download', `reporte_ventas_${business?.nombre_visible || 'negocio'}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    addToast('Reporte descargado con éxito', 'success');
+    addToast('Reporte descargado', 'success');
   };
 
   return (
-    <div className="space-y-8 animate-fade-in-up">
+    <div className="space-y-6 animate-fade-in-up">
       {/* Header + Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-black text-dark tracking-tighter uppercase">
-            Rendimiento y <span className="text-brand">Ventas</span>
-          </h2>
-          <p className="text-sm text-muted font-medium mt-1">
-            Visualiza el historial financiero de tu negocio, administra la retención y descarga reportes.
+          <h3 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+            Ingresos y Rendimiento
+          </h3>
+          <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+            Historial de ventas, filtros de conservación y reportes para contabilidad.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           {hiddenOrderIds.length > 0 && (
             <button 
               onClick={handleResetFilters} 
-              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-border rounded-xl text-[10px] font-black uppercase tracking-widest text-dark hover:border-brand/40 hover:text-brand transition-all shadow-sm"
+              className="btn-secondary py-2 px-3 text-xs"
             >
               Restaurar ({hiddenOrderIds.length})
             </button>
           )}
           <button 
             onClick={handleExportCSV} 
-            className="flex items-center gap-2 px-4 py-2.5 bg-brand text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand/90 transition-all shadow-lg shadow-brand/20"
+            className="btn-primary py-2 px-3 text-xs font-semibold"
           >
-            <Download size={14} /> Descargar Excel
+            <Download size={14} /> Exportar CSV
           </button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="card-3d bg-white border border-border p-6 rounded-[2.5rem] shadow-sm group">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-12 h-12 bg-brand/5 text-brand rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
-              <DollarSign size={24} />
-            </div>
-            <div className="flex items-center gap-1 text-[10px] font-black text-success bg-success/10 px-2 py-1 rounded-lg">
-              <ArrowUpRight size={12} /> Hoy
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div className="card p-5 bg-white border-gray-200/80 shadow-xs">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Ingresos hoy</p>
+            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+              <DollarSign size={16} />
             </div>
           </div>
-          <p className="text-[10px] font-black text-muted uppercase tracking-widest">Ingresos del Día</p>
-          <h3 className="text-2xl font-black text-dark tracking-tighter mt-1">{formatMoney(stats.daySales)}</h3>
+          <h4 className="text-2xl sm:text-3xl font-black text-gray-900 tabular-nums tracking-tight">
+            {formatMoney(stats.daySales)}
+          </h4>
+          <span className="text-xs text-emerald-600 font-semibold flex items-center gap-0.5 mt-2">
+            <ArrowUpRight size={13} /> Facturación del día
+          </span>
         </div>
 
-        <div className="card-3d bg-white border border-border p-6 rounded-[2.5rem] shadow-sm group">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-12 h-12 bg-amber-500/5 text-amber-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
-              <TrendingUp size={24} />
-            </div>
-            <div className="flex items-center gap-1 text-[10px] font-black text-success bg-success/10 px-2 py-1 rounded-lg">
-              <ArrowUpRight size={12} /> Semanal
+        <div className="card p-5 bg-white border-gray-200/80 shadow-xs">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Últimos 7 días</p>
+            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+              <TrendingUp size={16} />
             </div>
           </div>
-          <p className="text-[10px] font-black text-muted uppercase tracking-widest">Últimos 7 días</p>
-          <h3 className="text-2xl font-black text-dark tracking-tighter mt-1">{formatMoney(stats.weekSales)}</h3>
+          <h4 className="text-2xl sm:text-3xl font-black text-gray-900 tabular-nums tracking-tight">
+            {formatMoney(stats.weekSales)}
+          </h4>
+          <span className="text-xs text-gray-500 flex items-center gap-0.5 mt-2">
+            Semana en curso
+          </span>
         </div>
 
-        <div className="card-3d bg-white border border-border p-6 rounded-[2.5rem] shadow-sm group">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-12 h-12 bg-success/5 text-success rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
-              <BarChart3 size={24} />
-            </div>
-            <div className="flex items-center gap-1 text-[10px] font-black text-success bg-success/10 px-2 py-1 rounded-lg">
-              <ArrowUpRight size={12} /> Mensual
+        <div className="card p-5 bg-white border-gray-200/80 shadow-xs">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Últimos 30 días</p>
+            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+              <BarChart3 size={16} />
             </div>
           </div>
-          <p className="text-[10px] font-black text-muted uppercase tracking-widest">Últimos 30 días</p>
-          <h3 className="text-2xl font-black text-dark tracking-tighter mt-1">{formatMoney(stats.monthSales)}</h3>
+          <h4 className="text-2xl sm:text-3xl font-black text-gray-900 tabular-nums tracking-tight">
+            {formatMoney(stats.monthSales)}
+          </h4>
+          <span className="text-xs text-gray-500 flex items-center gap-0.5 mt-2">
+            {stats.totalCount} {stats.totalCount === 1 ? 'pedido registrado' : 'pedidos registrados'}
+          </span>
         </div>
       </div>
 
-      {/* Configuration + Table Panel */}
-      <div className="bg-white border border-border rounded-[2.5rem] shadow-sm overflow-hidden">
-        {/* Top Control Bar */}
-        <div className="p-6 border-b border-border/50 bg-bg-alt/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-brand/10 text-brand rounded-xl flex items-center justify-center">
-              <Clock size={16} />
-            </div>
-            <div>
-              <h4 className="text-xs font-black text-dark uppercase tracking-wider">Historial de Ventas</h4>
-              <p className="text-[9px] text-muted font-bold uppercase tracking-widest mt-0.5">Filtros aplicados en tiempo real</p>
-            </div>
+      {/* Table Panel */}
+      <div className="card overflow-hidden">
+        {/* Table Control Bar */}
+        <div className="p-4 border-b border-border bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Clock size={15} className="text-gray-400" />
+            <span className="text-xs font-semibold text-gray-800">Historial de pedidos</span>
           </div>
 
-          {/* Retention Setting */}
-          <div className="flex items-center gap-3 bg-white px-4 py-2 border border-border rounded-xl">
-            <label className="text-[10px] font-black text-muted uppercase tracking-widest">Conservar registros:</label>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-500">Período:</label>
             <select
               value={retention}
               onChange={(e) => setRetention(e.target.value)}
-              className="bg-transparent text-[10px] font-black text-dark outline-none cursor-pointer"
+              className="input-field text-xs py-1.5 w-auto"
             >
               <option value="7">Últimos 7 días</option>
               <option value="15">Últimos 15 días</option>
               <option value="30">Últimos 30 días</option>
               <option value="90">Últimos 90 días</option>
-              <option value="all">Histórico Completo</option>
+              <option value="all">Todo el historial</option>
             </select>
           </div>
         </div>
@@ -260,55 +248,53 @@ export default function RevenueView({ orders, business }) {
         {/* Table List */}
         <div className="overflow-x-auto">
           {filteredOrders.length > 0 ? (
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-border/60 bg-bg-alt/10 text-[9px] font-black text-muted uppercase tracking-widest">
-                  <th className="py-4 px-6">Pedido</th>
-                  <th className="py-4 px-6">Fecha y Hora</th>
-                  <th className="py-4 px-6">Cliente</th>
-                  <th className="py-4 px-6 text-center">Entrega</th>
-                  <th className="py-4 px-6 text-center">Pago</th>
-                  <th className="py-4 px-6 text-right">Envío</th>
-                  <th className="py-4 px-6 text-right">Total</th>
-                  <th className="py-4 px-6 text-center">Acción</th>
+                <tr className="border-b border-border bg-gray-50 text-gray-500 font-medium">
+                  <th className="py-3 px-4">Pedido</th>
+                  <th className="py-3 px-4">Fecha y hora</th>
+                  <th className="py-3 px-4">Cliente</th>
+                  <th className="py-3 px-4 text-center">Entrega</th>
+                  <th className="py-3 px-4 text-center">Pago</th>
+                  <th className="py-3 px-4 text-right">Envío</th>
+                  <th className="py-3 px-4 text-right">Total</th>
+                  <th className="py-3 px-4 text-center"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/30">
+              <tbody className="divide-y divide-gray-100">
                 {filteredOrders.map((o) => (
-                  <tr key={o.id} className="text-xs text-dark hover:bg-bg-alt/20 transition-colors">
-                    <td className="py-4 px-6">
-                      <span className="px-2 py-1 bg-brand/10 text-brand rounded-md font-black text-[9px] tracking-wider">
-                        #{o.id.toString().slice(-4).toUpperCase()}
-                      </span>
+                  <tr key={o.id} className="hover:bg-gray-50/80 transition-colors">
+                    <td className="py-3 px-4 font-mono font-medium text-gray-700">
+                      #{o.id.toString().slice(-4).toUpperCase()}
                     </td>
-                    <td className="py-4 px-6 font-medium text-muted">
-                      {new Date(o.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })} -{' '}
+                    <td className="py-3 px-4 text-gray-500">
+                      {new Date(o.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })} ·{' '}
                       {new Date(o.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                     </td>
-                    <td className="py-4 px-6 font-bold">{o.nombre}</td>
-                    <td className="py-4 px-6 text-center">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider
-                        ${o.entrega_metodo === 'envio' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}>
+                    <td className="py-3 px-4 font-medium text-gray-900">{o.nombre}</td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={o.entrega_metodo === 'envio' ? 'badge badge-info text-[10px]' : 'badge badge-neutral text-[10px]'}>
                         {o.entrega_metodo === 'envio' ? 'Domicilio' : 'Local'}
                       </span>
                     </td>
-                    <td className="py-4 px-6 text-center">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider
-                        ${o.pago_metodo === 'transferencia' ? 'bg-success/10 text-success' : 'bg-slate-100 text-slate-600'}`}>
+                    <td className="py-3 px-4 text-center">
+                      <span className={o.pago_metodo === 'transferencia' ? 'badge badge-success text-[10px]' : 'badge badge-neutral text-[10px]'}>
                         {o.pago_metodo === 'transferencia' ? 'Transferencia' : 'Efectivo'}
                       </span>
                     </td>
-                    <td className="py-4 px-6 text-right font-black text-muted opacity-80">
+                    <td className="py-3 px-4 text-right tabular-nums text-gray-500">
                       {o.entrega_metodo === 'envio' ? formatMoney(o.domicilio_costo || 0) : '—'}
                     </td>
-                    <td className="py-4 px-6 text-right font-black text-brand text-sm">{formatMoney(o.total)}</td>
-                    <td className="py-4 px-6 text-center">
+                    <td className="py-3 px-4 text-right font-semibold text-gray-900 tabular-nums">
+                      {formatMoney(o.total)}
+                    </td>
+                    <td className="py-3 px-4 text-center">
                       <button
                         onClick={() => handleHideOrder(o.id)}
-                        className="p-2 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-full transition-all"
-                        title="Ocultar de la interfaz"
+                        className="btn-ghost p-1 text-gray-400 hover:text-gray-700"
+                        title="Ocultar de la tabla"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={13} />
                       </button>
                     </td>
                   </tr>
@@ -316,11 +302,11 @@ export default function RevenueView({ orders, business }) {
               </tbody>
             </table>
           ) : (
-            <div className="py-16 text-center text-muted space-y-3">
-              <AlertCircle className="mx-auto text-muted/30" size={32} />
-              <p className="text-xs font-black uppercase tracking-widest">No hay registros de ventas visibles</p>
-              <p className="text-[10px] text-muted max-w-xs mx-auto">
-                Es posible que no se hayan generado ventas en el rango configurado o que se hayan depurado todos los registros.
+            <div className="py-12 text-center text-gray-500 space-y-2">
+              <AlertCircle className="mx-auto text-gray-300" size={24} />
+              <p className="text-xs font-semibold text-gray-700">No hay registros en este período</p>
+              <p className="text-xs text-gray-400 max-w-xs mx-auto">
+                Las órdenes procesadas aparecerán aquí para control de ingresos.
               </p>
             </div>
           )}

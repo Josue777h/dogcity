@@ -1,61 +1,95 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { User, Phone, MapPin, Loader2, Navigation, MessageCircle, Copy, Trash2, X, CreditCard, Wallet, ShoppingBag, Truck, CheckCircle2, Smartphone, ShoppingCart, Minus, Plus } from 'lucide-react';
+import {
+  User, Phone, MapPin, Loader2, Navigation, MessageCircle,
+  Copy, Check, Trash2, X, Wallet, ShoppingBag, Truck,
+  CheckCircle2, ShoppingCart, Minus, Plus, CreditCard
+} from 'lucide-react';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
 import { formatMoney, openWhatsApp, reverseGeocode } from '../../lib/utils';
 import { saveOrder } from '../../lib/supabase';
 import { WHATSAPP_FALLBACK_PHONE } from '../../lib/constants';
 
-// Función para calcular distancia entre dos puntos (Haversine)
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a = 
+  const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 const LocationPickerMap = lazy(() => import('./components/LocationPickerMap'));
 
-export default function OrderDrawer({ isOpen, onClose }) {
-  const business = useBusinessStore((s) => s.business);
-  const products = useBusinessStore((s) => s.products);
-  const bid = business?.id;
-  const addToast = useToastStore((s) => s.addToast);
+// ── WhatsApp icon SVG ──
+function WhatsAppIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+  );
+}
 
-  const { 
+export default function OrderDrawer({ isOpen, onClose }) {
+  const business  = useBusinessStore(s => s.business);
+  const products  = useBusinessStore(s => s.products);
+  const bid       = business?.id;
+  const addToast  = useToastStore(s => s.addToast);
+
+  const {
     carts, customerName, customerPhone, customerAddress,
     locationLink, setCustomer, setLocation, setComment,
-    getSelectedItems, clearCart, increment, decrement 
+    getSelectedItems, clearCart, increment, decrement
   } = useCartStore();
 
-  const [deliveryMethod, setDeliveryMethod] = useState('envio');
-  const [paymentMethod, setPaymentMethod] = useState('efectivo');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderResult, setOrderResult] = useState(null);
-  
-  // Estados para domicilio inteligente
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [mapCoords, setMapCoords] = useState(null);
-  const [deliveryFee, setDeliveryFee] = useState(0);
-  const [distanceKm, setDistanceKm] = useState(null);
-  const [addressSuggestions, setAddressSuggestions] = useState([]);
-  const [isSearchingSuggestions, setIsSearchingSuggestions] = useState(false);
-  
-  // Reiniciar ubicación cada vez que se abre el pedido (Requisito: GPS Fresco)
+  const [deliveryMethod, setDeliveryMethod] = useState('');
+  const [paymentMethod,  setPaymentMethod]  = useState('');
+  const [isSubmitting,   setIsSubmitting]   = useState(false);
+  const [orderResult,    setOrderResult]    = useState(null);
+  const [hasCopiedAccount, setHasCopiedAccount] = useState(false);
+  const [isCalculating,  setIsCalculating]  = useState(false);
+  const [mapCoords,      setMapCoords]      = useState(null);
+  const [deliveryFee,    setDeliveryFee]    = useState(0);
+  const [distanceKm,     setDistanceKm]     = useState(null);
+
+  const tipoDom        = business?.tipo_domicilio || 'automatico';
+  const cart           = carts[bid] || { quantities: {}, notes: {}, comment: '' };
+  const selectedItems  = getSelectedItems(bid, products);
+  const subtotal       = selectedItems.reduce((s, i) => s + i.quantity * i.price, 0);
+  const total          = deliveryMethod === 'envio' ? subtotal + deliveryFee : subtotal;
+  const whatsappPhone  = (business?.whatsapp_contacto || business?.telefono || WHATSAPP_FALLBACK_PHONE).replace(/\D/g, '');
+
+  const handleClose = () => {
+    setOrderResult(null);
+    setLocation('', '');
+    setDeliveryMethod('');
+    setPaymentMethod('');
+    setMapCoords(null);
+    onClose();
+  };
+
   useEffect(() => {
-    if (isOpen) {
-      setCustomer('customerAddress', '');
-      setLocation(null, '');
-      setDistanceKm(null);
-      setDeliveryFee(0);
+    if (!isOpen) {
+      setOrderResult(null);
+      setLocation('', '');
+      setDeliveryMethod('');
+      setPaymentMethod('');
+      setMapCoords(null);
     }
   }, [isOpen]);
 
-  // Bloquear scroll del body cuando el drawer está abierto
+  useEffect(() => {
+    if (isOpen) {
+      setDeliveryMethod('');
+      setPaymentMethod('');
+      setDeliveryFee(0);
+      setDistanceKm(null);
+      setMapCoords(null);
+      setLocation('', '');
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (isOpen) {
       const prev = document.body.style.overflow;
@@ -66,134 +100,129 @@ export default function OrderDrawer({ isOpen, onClose }) {
 
   if (!bid) return null;
 
-  const cart = carts[bid] || { quantities: {}, notes: {}, comment: '' };
-  const selectedItems = getSelectedItems(bid, products);
-  const subtotal = selectedItems.reduce((s, i) => s + i.quantity * i.price, 0);
-  const total = deliveryMethod === 'envio' ? subtotal + deliveryFee : subtotal;
-  const whatsappPhone = (business?.whatsapp_contacto || business?.telefono || WHATSAPP_FALLBACK_PHONE).replace(/\D/g, '');
-  const tipoDom = business?.tipo_domicilio || 'automatico';
-
   function buildMessage(orderId, token) {
-    const rawName = business?.nombre_visible || 'la tienda';
-    const formattedBusinessName = rawName.trim().toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-
-    const itemsLines = selectedItems.map((i) => {
+    const bizName    = (business?.nombre_visible || 'la tienda').trim();
+    const itemsLines = selectedItems.map(i => {
       const note = (cart.notes[i.id] || '').trim();
-      return `🛒 ${i.quantity} x ${i.name}${note ? ` (${note})` : ''}`;
+      return `• ${i.quantity}× ${i.name}${note ? ` (${note})` : ''}`;
     }).join('\n');
 
-    const trackingUrl = `${window.location.origin}/tracking?id=${orderId}&token=${token}`;
-    
-    let envioString = '';
+    const trackingUrl  = `${window.location.origin}/tracking?id=${orderId}&token=${token}`;
+    const addressLine  = customerAddress?.trim() || (locationLink ? 'Ver ubicación GPS en el mapa' : 'No especificada');
+    let envioLine = '';
     if (deliveryMethod === 'envio') {
-      if (tipoDom === 'manual') envioString = '🚚 Domicilio: *Te confirmamos el costo en este chat*';
-      else if (tipoDom === 'fijo') envioString = `🚚 Domicilio: ${formatMoney(deliveryFee)}`;
-      else envioString = `🚚 Domicilio: ${formatMoney(deliveryFee)}${distanceKm ? ` (${distanceKm.toFixed(1)} km)` : ''}`;
+      if (tipoDom === 'manual') envioLine = 'Domicilio: por confirmar en chat';
+      else if (tipoDom === 'fijo') envioLine = `Domicilio: ${formatMoney(deliveryFee)}`;
+      else envioLine = `Domicilio: ${formatMoney(deliveryFee)}${distanceKm ? ` (${distanceKm.toFixed(1)} km)` : ''}`;
     }
 
-    const addressLine = customerAddress?.trim()
-      || (locationLink ? '📍 Ubicación GPS capturada (ver mapa)' : '📍 Dirección no especificada');
-
-    const parts = [
-      `🛍️ ¡Nuevo pedido en *${formattedBusinessName}*!`,
+    return [
+      `🛍️ Nuevo pedido en *${bizName}*`,
       '',
       itemsLines,
       '',
-      (tipoDom === 'manual' && deliveryMethod === 'envio') 
-        ? `💰 Subtotal productos: ${formatMoney(subtotal)}\n${envioString}`
-        : `💰 Total: ${formatMoney(total)}\n${deliveryMethod === 'envio' ? `${envioString}` : ''}`,
+      deliveryMethod === 'envio'
+        ? `📍 Entrega en: ${addressLine}\n🗺️ ${locationLink || ''}\n${envioLine}`
+        : '🏪 Retiro en local',
       '',
-      deliveryMethod === 'envio' 
-        ? `📍 Ubicación de entrega\n${addressLine}\n🗺️ Ver en mapa → ${locationLink || ''}` 
-        : '🏪 Recoger en local',
+      tipoDom === 'manual' && deliveryMethod === 'envio'
+        ? `💰 Subtotal: ${formatMoney(subtotal)}`
+        : `💰 Total: ${formatMoney(total)}`,
       '',
-      `👤 ${customerName} - 📱 ${customerPhone}`,
-      '',
-      `💳 Pago: ${paymentMethod === 'transferencia' ? '🏦 Transferencia' : '💵 Efectivo'}`,
+      `👤 ${customerName} · 📱 ${customerPhone}`,
+      `💳 Pago: ${paymentMethod === 'transferencia'
+        ? `Transferencia (${business?.pago_banco || 'Nequi'}) — comprobante adjunto`
+        : 'Efectivo'}`,
       cart.comment ? `\n📝 Nota: ${cart.comment}` : '',
       '',
-      `🔢 Pedido #${orderId.toString().slice(-6).toUpperCase()}`,
-      `🔗 Ver pedido → ${trackingUrl}`
-    ].filter(Boolean);
-
-    return parts.join('\n');
+      `#${orderId.toString().slice(-6).toUpperCase()} · Seguir pedido → ${trackingUrl}`,
+    ].filter(s => s !== null && s !== undefined && s !== false).join('\n');
   }
 
-  async function handleAddressUpdate(address) {
-    setCustomer('customerAddress', address);
-    if (!address || address.length < 5 || deliveryMethod !== 'envio') return;
-
-    // Solo calcular si el negocio tiene Lat/Lng configurados
-    if (!business?.lat || !business?.lng) return;
-
-    setIsCalculating(true);
-    try {
-      // Usar Photon para obtener coordenadas de la dirección final
-      const response = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(address)}&limit=1`);
-      const data = await response.json();
-
-      if (data && data.features && data.features.length > 0) {
-        const feature = data.features[0];
-        const clientLat = feature.geometry.coordinates[1];
-        const clientLng = feature.geometry.coordinates[0];
-        
-        const dist = calculateDistance(
-          parseFloat(business.lat), 
-          parseFloat(business.lng), 
-          clientLat, 
-          clientLng
-        );
-        
-        setDistanceKm(dist);
-        setDistanceKm(dist);
-        
-        if (tipoDom === 'fijo') {
-          setDeliveryFee(Number(business.precio_domicilio) || 0);
-          addToast(`Tarifa Fija de Envio Aplicada`, 'success');
-        } else if (tipoDom === 'manual') {
-          setDeliveryFee(0);
-          addToast(`Ubicación capturada para confirmación`, 'success');
-        } else {
-          // Lógica de cobro Automático: costo_por_km (def: 1000) o minimo (def: 3000)
-          const costPerKm = business.costo_por_km || 1000;
-          const minFee = business.domicilio_minimo || 3000;
-          const calculatedFee = Math.max(minFee, Math.round(dist * costPerKm / 100) * 100);
-          setDeliveryFee(calculatedFee);
-          addToast(`Envío calculado: ${formatMoney(calculatedFee)} (${dist.toFixed(1)} km)`, 'success');
-        }
+  function updateLocationFromCoords(lat, lng, label = 'Ubicación ajustada') {
+    setLocation(`https://maps.google.com/?q=${lat},${lng}`, label);
+    setMapCoords({ lat, lng });
+    if (!customerAddress?.trim()) {
+      reverseGeocode(lat, lng).then(addr => { if (addr) setCustomer('customerAddress', addr); });
+    }
+    const bizLat = parseFloat(business?.lat);
+    const bizLng = parseFloat(business?.lng);
+    if (tipoDom === 'fijo') {
+      setDeliveryFee(Number(business?.precio_domicilio) || 0);
+    } else if (tipoDom === 'manual') {
+      setDeliveryFee(0);
+    } else {
+      let dist = 1.0;
+      if (bizLat && bizLng && !isNaN(bizLat) && !isNaN(bizLng)) {
+        dist = calculateDistance(bizLat, bizLng, lat, lng);
       }
-    } catch (err) {
-      console.error("Geocoding error:", err);
-    } finally {
-      setIsCalculating(false);
+      setDistanceKm(dist);
+      const costPerKm   = Number(business?.costo_por_km) || 1200;
+      const minFee      = Number(business?.domicilio_minimo) || 3000;
+      const calculatedFee = Math.max(minFee, Math.round((dist * costPerKm) / 100) * 100);
+      setDeliveryFee(calculatedFee);
     }
   }
 
+  function requestGps() {
+    if (!navigator.geolocation) {
+      addToast('GPS no disponible en este dispositivo o navegador', 'error');
+      return;
+    }
+    setIsCalculating(true);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        updateLocationFromCoords(pos.coords.latitude, pos.coords.longitude, 'GPS capturado');
+        addToast('Ubicación GPS capturada con éxito', 'success');
+        setIsCalculating(false);
+      },
+      err => {
+        let msg = 'No se pudo acceder al GPS. Asegúrate de permitir el acceso a tu ubicación.';
+        if (err.code === 1) msg = 'Permiso de ubicación denegado. Actívalo en tu navegador para continuar.';
+        addToast(msg, 'warning');
+        setIsCalculating(false);
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  }
+
+  function handleCopyAccount() {
+    const val = (business?.pago_alias || business?.pago_banco || '').trim();
+    if (!val) { addToast('No hay datos bancarios configurados', 'warning'); return; }
+    navigator.clipboard.writeText(val);
+    setHasCopiedAccount(true);
+    addToast('Número copiado', 'success');
+    setTimeout(() => setHasCopiedAccount(false), 2500);
+  }
+
   async function handleSubmit() {
-    if (selectedItems.length === 0) { addToast('Selecciona al menos un producto', 'warning'); return; }
-    if (!customerName.trim()) { addToast('Ingresa tu nombre', 'warning'); return; }
-    if (!customerPhone.trim()) { addToast('Ingresa tu teléfono', 'warning'); return; }
-    if (deliveryMethod === 'envio' && !locationLink) { addToast('Por favor captura tu ubicación GPS', 'warning'); return; }
+    if (selectedItems.length === 0)  { addToast('Agrega al menos un producto', 'warning'); return; }
+    if (!deliveryMethod)             { addToast('Elige cómo recibir tu pedido (A domicilio o Recoger en local)', 'warning'); return; }
+    if (!customerName.trim())        { addToast('¿Cuál es tu nombre?', 'warning'); return; }
+    if (!customerPhone.trim())       { addToast('¿Cuál es tu teléfono?', 'warning'); return; }
+    if (deliveryMethod === 'envio' && !locationLink) {
+      addToast('Debes leer tu ubicación por GPS antes de hacer el pedido', 'warning');
+      requestGps();
+      return;
+    }
+    if (!paymentMethod)              { addToast('Selecciona la forma de pago (Efectivo o Transferencia)', 'warning'); return; }
 
     setIsSubmitting(true);
     try {
-      const token = Math.random().toString(36).substring(2, 15);
+      const token   = Math.random().toString(36).substring(2, 15);
       const payload = {
         nombre: customerName.trim(),
         telefono: customerPhone.trim(),
-        direccion: deliveryMethod === 'envio' ? customerAddress : 'Recogida en local',
+        direccion: deliveryMethod === 'envio' ? customerAddress : 'Retiro en local',
         ubicacion_link: locationLink,
         comentarios: (cart.comment || '').trim(),
         total,
         domicilio_costo: deliveryMethod === 'envio' ? deliveryFee : 0,
         distancia_km: distanceKm,
         status: 'nuevo',
-        items: selectedItems.map((i) => ({ 
-          id: i.id, 
-          nombre: i.name, 
-          cantidad: i.quantity, 
-          precio: i.price, 
-          nota: cart.notes[i.id] || '' 
+        items: selectedItems.map(i => ({
+          id: i.id, nombre: i.name, cantidad: i.quantity, precio: i.price,
+          nota: cart.notes[i.id] || ''
         })),
         entrega_metodo: deliveryMethod,
         pago_metodo: paymentMethod,
@@ -206,33 +235,19 @@ export default function OrderDrawer({ isOpen, onClose }) {
 
       const message = buildMessage(orderId, token);
       setOrderResult({ id: orderId, message, token });
-      
       addToast(`Pedido #${orderId.toString().slice(-6).toUpperCase()} generado`, 'success');
-
-      if (business?.theme_color) {
-        document.documentElement.style.setProperty('--primary-brand', business.theme_color);
-      }
-
-      // Experiencia Pro: Vibración hápitca si está disponible
-      if (navigator.vibrate) navigator.vibrate(100);
-
-      // Limpiar carrito local inmediatamente después del éxito
+      if (navigator.vibrate) navigator.vibrate(80);
       clearCart(bid);
+      setLocation('', '');
 
-      // Auto-redirección tras 1 segundo EXACTO
       setTimeout(() => {
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         const url = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`;
-        
-        if (isMobile) {
-          // En móvil, forzar redirección en la misma pestaña para evitar bloqueos de popup
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
           window.location.href = url;
         } else {
-          // En desktop usamos la utilidad que maneja pestañas nuevas
           openWhatsApp(whatsappPhone, message);
         }
-      }, 1000);
-
+      }, 800);
     } catch (err) {
       addToast(`Error: ${err.message}`, 'error');
     } finally {
@@ -240,417 +255,510 @@ export default function OrderDrawer({ isOpen, onClose }) {
     }
   }
 
-  function updateLocationFromCoords(lat, lng, actionText = 'Ubicación Ajustada') {
-    setLocation(`https://maps.google.com/?q=${lat},${lng}`, actionText);
-    setMapCoords({ lat, lng });
-
-    // Autocompletar dirección desde GPS si el campo está vacío
-    if (!customerAddress?.trim()) {
-      reverseGeocode(lat, lng).then((addr) => {
-        if (addr) setCustomer('customerAddress', addr);
-      });
-    }
-    
-    if (business?.lat && business?.lng) {
-      const dist = calculateDistance(
-        parseFloat(business.lat), 
-        parseFloat(business.lng), 
-        lat, 
-        lng
-      );
-      setDistanceKm(dist);
-      
-      if (tipoDom === 'fijo') {
-        setDeliveryFee(Number(business.precio_domicilio) || 0);
-      } else if (tipoDom === 'manual') {
-        setDeliveryFee(0);
-      } else {
-        const costPerKm = business.costo_por_km || 1000;
-        const minFee = business.domicilio_minimo || 3000;
-        const calculatedFee = Math.max(minFee, Math.round(dist * costPerKm / 100) * 100);
-        setDeliveryFee(calculatedFee);
-      }
-    }
-  }
-
-  function requestLocation() {
-    if (!navigator.geolocation) { addToast('GPS no soportado en este navegador', 'error'); return; }
-    
-    setIsCalculating(true);
-    
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        updateLocationFromCoords(lat, lng, 'Ubicación GPS capturada');
-        
-        addToast('Ubicación fijada con éxito', 'success');
-        setIsCalculating(false);
-      },
-      (err) => {
-        console.error("GPS Error:", err);
-        let msg = 'Error al obtener ubicación.';
-        if (err.code === 1) msg = 'Permiso denegado. Activa el GPS en ajustes.';
-        if (err.code === 3) msg = 'Tiempo agotado. Intenta de nuevo.';
-        
-        addToast(msg, 'error');
-        setIsCalculating(false);
-      },
-      { 
-        enableHighAccuracy: true, 
-        timeout: 15000, 
-        maximumAge: 0 
-      }
-    );
-  }
+  const enabledPayments = Array.isArray(business?.metodos_pago) ? business.metodos_pago : ['efectivo', 'transferencia'];
 
   return (
-    <aside className={`fixed inset-0 z-[100] transition-visibility ${isOpen ? 'visible' : 'invisible'}`}>
-      <div 
-        className={`absolute inset-0 bg-dark/60 backdrop-blur-sm transition-opacity duration-500 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
-        onClick={onClose}
+    <aside className={`fixed inset-0 z-[100] ${isOpen ? 'visible' : 'invisible'}`}>
+      {/* Backdrop */}
+      <div
+        className={`absolute inset-0 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+        style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)' }}
+        onClick={handleClose}
       />
-      
-      <div className={`fixed bottom-0 left-0 right-0 h-[85vh] w-full rounded-t-[2.5rem] lg:rounded-none bg-surface shadow-2xl transition-transform duration-500 transform lg:top-0 lg:bottom-0 lg:right-0 lg:left-auto lg:h-full lg:max-w-lg z-20
-        ${isOpen 
-          ? 'translate-y-0 lg:translate-y-0 lg:translate-x-0' 
-          : 'translate-y-full lg:translate-y-0 lg:translate-x-full'
-        }
-      `}>
-        <div className="flex flex-col h-full">
-          {/* Drag handle for mobile */}
-          <div className="w-12 h-1 bg-border/60 rounded-full mx-auto mt-3 mb-1 shrink-0 lg:hidden" />
 
-          {/* Header */}
-          <div className="p-3 sm:p-4 border-b border-border flex items-center justify-between bg-surface sticky top-0 z-10">
-             <div className="flex items-center gap-3">
-               <div className="w-8 h-8 sm:w-9 sm:h-9 bg-brand/10 rounded-xl flex items-center justify-center text-brand">
-                 <ShoppingBag size={16} className="sm:w-[18px] sm:h-[18px]" />
-               </div>
-               <div>
-                 <h2 className="text-sm sm:text-base font-black text-dark uppercase tracking-tight">Finalizar Pedido</h2>
-                 <p className="text-[10px] sm:text-[11px] font-bold text-muted uppercase tracking-widest leading-none mt-0.5">Sigue los pasos para ordenar</p>
-               </div>
-             </div>
-             <button onClick={onClose} className="p-2 hover:bg-bg-alt rounded-full transition-colors text-muted hover:text-dark">
-               <X size={18} className="sm:w-5 sm:h-5" />
-             </button>
+      {/* Panel */}
+      <div
+        className={`
+          fixed bottom-0 left-0 right-0 rounded-t-2xl lg:rounded-none
+          lg:top-0 lg:bottom-0 lg:right-0 lg:left-auto lg:w-[440px]
+          flex flex-col z-10 transition-transform duration-300
+          ${isOpen
+            ? 'translate-y-0 lg:translate-x-0'
+            : 'translate-y-full lg:translate-y-0 lg:translate-x-full'
+          }
+        `}
+        style={{
+          backgroundColor: 'var(--color-surface)',
+          boxShadow: 'var(--shadow-overlay)',
+          maxHeight: '92vh',
+          height: '92vh',
+        }}
+      >
+        {/* Drag handle (mobile) */}
+        <div
+          className="w-10 h-1 rounded-full mx-auto mt-2.5 mb-1 shrink-0 lg:hidden"
+          style={{ backgroundColor: 'var(--color-border)' }}
+        />
+
+        {/* Header */}
+        <div
+          className="px-5 py-4 border-b flex items-center justify-between shrink-0"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <div className="flex items-center gap-2.5">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: 'var(--color-brand)', color: '#fff' }}
+            >
+              <ShoppingBag size={16} />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold" style={{ color: 'var(--color-text-1)' }}>
+                Finalizar pedido
+              </h2>
+              <p className="text-xs" style={{ color: 'var(--color-text-2)' }}>
+                Se enviará por WhatsApp
+              </p>
+            </div>
           </div>
+          <button onClick={handleClose} className="btn-ghost p-2" aria-label="Cerrar">
+            <X size={18} />
+          </button>
+        </div>
 
-          <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 sm:space-y-5 hide-scrollbar">
-            {orderResult ? (
-              <div className="flex flex-col items-center justify-center py-6 sm:py-10 text-center animate-in zoom-in-95 duration-500">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-success/10 rounded-full flex items-center justify-center text-success mb-4 sm:mb-6 relative">
-                  <CheckCircle2 size={40} className="sm:w-12 sm:h-12 animate-in fade-in zoom-in duration-700" />
-                  <div className="absolute inset-0 bg-success/20 rounded-full animate-ping" />
-                </div>
-                
-                <h2 className="text-xl sm:text-2xl font-black text-dark uppercase tracking-tight mb-1 sm:mb-2">¡Pedido Generado!</h2>
-                <p className="text-xs sm:text-sm font-bold text-muted uppercase tracking-widest mb-4 sm:mb-8">
-                  Pedido #{orderResult.id.toString().slice(-6).toUpperCase()}
-                </p>
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5 hide-scrollbar">
 
-                <div className="bg-bg-alt p-4 sm:p-6 rounded-2xl border border-border w-full space-y-3 sm:space-y-4 mb-4 sm:mb-8">
-                  <div className="flex items-center justify-center gap-2 sm:gap-3 text-brand">
-                    <Loader2 size={16} className="sm:w-[18px] sm:h-[18px] animate-spin" />
-                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">Redirigiendo a WhatsApp...</span>
-                  </div>
-                  <p className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-tighter">
-                    Si no se abre automáticamente en un momento, usa el botón de abajo.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2 sm:gap-3 w-full">
-                  <button 
-                    onClick={() => openWhatsApp(whatsappPhone, orderResult.message)}
-                    className="w-full btn-primary !bg-success !border-success py-3 sm:!py-5 shadow-xl shadow-success/20 flex items-center justify-center gap-2 sm:gap-3"
-                  >
-                    <MessageCircle size={20} className="sm:w-6 sm:h-6" /> <span className="text-base sm:text-lg">ABRIR WHATSAPP</span>
-                  </button>
-                  
-                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                    <button 
-                      onClick={() => { navigator.clipboard.writeText(orderResult.message); addToast('Mensaje copiado', 'success'); }} 
-                      className="py-3 sm:py-4 bg-dark text-white rounded-xl text-[10px] sm:text-xs font-black uppercase flex items-center justify-center gap-2 hover:bg-dark/90 transition-colors"
-                    >
-                      <Copy size={14} className="sm:w-4 sm:h-4" /> Copiar
-                    </button>
-                    <button 
-                      onClick={() => { clearCart(bid); setOrderResult(null); onClose(); }} 
-                      className="py-3 sm:py-4 border-2 border-brand text-brand rounded-xl text-[10px] sm:text-xs font-black uppercase transition-all hover:bg-brand hover:text-white"
-                    >
-                      Nuevo Pedido
-                    </button>
-                  </div>
-                </div>
+          {/* ── SUCCESS STATE ── */}
+          {orderResult ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center animate-scale-in">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+                style={{ backgroundColor: 'var(--color-success-bg)' }}
+              >
+                <CheckCircle2 size={32} style={{ color: 'var(--color-success)' }} />
               </div>
-            ) : (
-              <>
-                {/* Items Summary */}
-                <div className="space-y-3">
-                  <h3 className="text-[10px] font-black text-muted uppercase tracking-[0.15em] flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-brand rounded-full" /> Resumen de Compra
-                  </h3>
-                  <div className="bg-bg-alt rounded-2xl border border-border overflow-hidden">
-                    {selectedItems.length === 0 ? (
-                      <div className="p-6 text-center text-muted text-xs font-medium">El carrito está vacío</div>
-                    ) : (
-                      <div className="divide-y divide-border">
-                        {selectedItems.map((item) => (
-                          <div key={item.id} className="p-3 flex items-center justify-between gap-4">
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <span className="text-xs font-bold text-dark truncate">{item.name}</span>
-                              {cart.notes[item.id] && <span className="text-[9px] text-muted italic mt-0.5 bg-white px-2 py-0.5 rounded-full border border-border w-fit truncate max-w-full">{cart.notes[item.id]}</span>}
+              <h3 className="text-xl font-semibold mb-1" style={{ color: 'var(--color-text-1)' }}>
+                ¡Pedido enviado!
+              </h3>
+              <p className="text-sm mb-1" style={{ color: 'var(--color-text-2)' }}>
+                Pedido #{orderResult.id.toString().slice(-6).toUpperCase()}
+              </p>
+              <p className="text-sm mb-6" style={{ color: 'var(--color-text-3)' }}>
+                Abriendo WhatsApp en un momento…
+              </p>
+
+              <div className="space-y-2.5 w-full">
+                <button
+                  onClick={() => openWhatsApp(whatsappPhone, orderResult.message)}
+                  className="btn-whatsapp w-full py-3"
+                >
+                  <WhatsAppIcon size={20} />
+                  Abrir WhatsApp
+                </button>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(orderResult.message); addToast('Mensaje copiado', 'success'); }}
+                  className="btn-secondary w-full py-2.5 text-sm"
+                >
+                  <Copy size={15} /> Copiar mensaje
+                </button>
+                <button
+                  onClick={handleClose}
+                  className="btn-primary w-full py-2.5 text-xs font-bold justify-center mt-2"
+                >
+                  Hacer otro pedido / Volver al menú
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* ── ITEMS SUMMARY ── */}
+              <div>
+                <p className="caps-label mb-2">Tu pedido</p>
+                <div
+                  className="rounded-lg overflow-hidden border"
+                  style={{ borderColor: 'var(--color-border)' }}
+                >
+                  {selectedItems.length === 0 ? (
+                    <p className="p-4 text-sm text-center" style={{ color: 'var(--color-text-2)' }}>
+                      El carrito está vacío
+                    </p>
+                  ) : (
+                    <>
+                      <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
+                        {selectedItems.map(item => (
+                          <div key={item.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text-1)' }}>
+                                {item.name}
+                              </p>
+                              {cart.notes[item.id] && (
+                                <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--color-text-3)' }}>
+                                  {cart.notes[item.id]}
+                                </p>
+                              )}
                             </div>
-                            
-                            <div className="flex items-center gap-3">
-                              {/* Mini Contador Compacto */}
-                              <div className="flex items-center bg-white rounded-lg border border-border overflow-hidden p-0.5 shadow-sm">
-                                <button 
+                            <div className="flex items-center gap-3 shrink-0">
+                              {/* Stepper */}
+                              <div
+                                className="flex items-center rounded-lg border overflow-hidden"
+                                style={{ borderColor: 'var(--color-border)' }}
+                              >
+                                <button
                                   onClick={() => decrement(bid, item.id)}
-                                  className="w-6 h-6 flex items-center justify-center text-muted hover:text-brand hover:bg-brand/5 transition-colors"
+                                  className="w-7 h-7 flex items-center justify-center transition-colors hover:bg-gray-50"
+                                  style={{ color: 'var(--color-text-2)' }}
                                 >
                                   <Minus size={12} />
                                 </button>
-                                <span className="w-6 text-center text-[11px] font-black text-dark">{item.quantity}</span>
-                                <button 
+                                <span
+                                  className="w-6 text-center text-sm font-medium tabular-nums"
+                                  style={{ color: 'var(--color-text-1)' }}
+                                >
+                                  {item.quantity}
+                                </span>
+                                <button
                                   onClick={() => increment(bid, item.id)}
-                                  className="w-6 h-6 flex items-center justify-center text-muted hover:text-brand hover:bg-brand/5 transition-colors"
+                                  className="w-7 h-7 flex items-center justify-center transition-colors hover:bg-gray-50"
+                                  style={{ color: 'var(--color-brand)' }}
                                 >
                                   <Plus size={12} />
                                 </button>
                               </div>
-                              
-                              <span className="text-xs font-black text-dark min-w-[60px] text-right">{formatMoney(item.quantity * item.price)}</span>
+                              <span className="text-sm font-medium tabular-nums" style={{ color: 'var(--color-text-2)' }}>
+                                {formatMoney(item.quantity * item.price)}
+                              </span>
                             </div>
                           </div>
                         ))}
-                        <div className="p-4 bg-brand text-white flex items-center justify-between">
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-black uppercase tracking-widest opacity-80">Total a pagar</span>
-                            <span className="text-xl font-black italic tracking-tighter">{formatMoney(total)}</span>
-                          </div>
-                          <ShoppingCart size={20} className="opacity-40" />
-                        </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Customer Form */}
-                <div className="space-y-4">
-                  <h3 className="text-[10px] font-black text-muted uppercase tracking-[0.15em] flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-brand rounded-full" /> Tus Datos
-                  </h3>
-                  
-                <div className="grid gap-2 sm:gap-3">
-                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                    <button 
-                      onClick={() => setDeliveryMethod('envio')} 
-                      className={`p-2 sm:p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${deliveryMethod === 'envio' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
-                    >
-                      <Truck size={18} className={deliveryMethod === 'envio' ? 'text-brand' : 'text-muted'} />
-                      <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest">A Domicilio</span>
-                    </button>
-                    <button 
-                      onClick={() => { setDeliveryMethod('recogida'); setLocation(null, ''); setDeliveryFee(0); setDistanceKm(null); setMapCoords(null); }} 
-                      className={`p-2 sm:p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${deliveryMethod === 'recogida' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
-                    >
-                      <ShoppingBag size={18} className={deliveryMethod === 'recogida' ? 'text-brand' : 'text-muted'} />
-                      <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest">Recoger</span>
-                    </button>
-                  </div>
-
-                  <div className="relative group">
-                    <User className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <input 
-                      type="text" placeholder="Tu Nombre" 
-                      value={customerName} onChange={(e) => setCustomer('customerName', e.target.value)} 
-                      className="w-full pl-9 sm:pl-12 pr-4 py-2 sm:py-3 bg-white border border-border rounded-xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-[11px] sm:text-xs font-bold shadow-sm"
-                    />
-                  </div>
-                  
-                  <div className="relative group">
-                    <Phone className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <input 
-                      type="tel" placeholder="WhatsApp" 
-                      value={customerPhone} onChange={(e) => setCustomer('customerPhone', e.target.value)} 
-                      className="w-full pl-9 sm:pl-12 pr-4 py-2 sm:py-3 bg-white border border-border rounded-xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-[11px] sm:text-xs font-bold shadow-sm"
-                    />
-                  </div>
-
-                  {deliveryMethod === 'envio' && (
-                    <div className="relative group animate-in slide-in-from-top-2 duration-300">
-                      <MapPin className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <input 
-                        type="text" placeholder="Dirección / Punto de referencia" 
-                        value={customerAddress} onChange={(e) => setCustomer('customerAddress', e.target.value)} 
-                        className="w-full pl-9 sm:pl-12 pr-4 py-2 sm:py-3 bg-white border border-border rounded-xl focus:ring-4 focus:ring-brand/10 focus:border-brand transition-all outline-none text-[11px] sm:text-xs font-bold shadow-sm"
-                      />
-                    </div>
+                      {/* Subtotal row */}
+                      <div
+                        className="px-4 py-3 flex items-center justify-between"
+                        style={{ backgroundColor: 'var(--color-bg)', borderTop: `1px solid var(--color-border)` }}
+                      >
+                        <span className="text-sm" style={{ color: 'var(--color-text-2)' }}>Subtotal</span>
+                        <span className="text-sm font-semibold tabular-nums" style={{ color: 'var(--color-text-1)' }}>
+                          {formatMoney(subtotal)}
+                        </span>
+                      </div>
+                    </>
                   )}
+                </div>
+              </div>
 
-                    {mapCoords && deliveryMethod === 'envio' && (
-                      <div className="animate-in fade-in zoom-in-95 duration-500">
-                        <Suspense fallback={
-                          <div className="h-40 bg-bg-alt rounded-2xl flex items-center justify-center border border-border">
-                            <Loader2 size={24} className="animate-spin text-brand" />
+              {/* ── DELIVERY + DATA ── */}
+              <div>
+                <p className="caps-label mb-2">Datos de entrega</p>
+                <div className="space-y-3">
+                  {/* Method selector */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'envio', label: 'A domicilio', icon: Truck },
+                      { id: 'recogida', label: 'Recoger en local', icon: ShoppingBag },
+                    ].map(m => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => {
+                          setDeliveryMethod(m.id);
+                          if (m.id === 'recogida') {
+                            setLocation('', '');
+                            setDeliveryFee(0);
+                            setDistanceKm(null);
+                            setMapCoords(null);
+                          }
+                        }}
+                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-sm font-semibold transition-all ${
+                          deliveryMethod === m.id
+                            ? 'border-orange-500 bg-orange-50/70 text-orange-600 shadow-2xs'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <m.icon size={18} strokeWidth={1.5} />
+                        <span>{m.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Name */}
+                  <div className="relative">
+                    <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-3)' }} />
+                    <input
+                      type="text"
+                      placeholder="Tu nombre"
+                      value={customerName}
+                      onChange={e => setCustomer('customerName', e.target.value)}
+                      className="input-field pl-9"
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div className="relative">
+                    <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-3)' }} />
+                    <input
+                      type="tel"
+                      placeholder="Tu teléfono / WhatsApp"
+                      value={customerPhone}
+                      onChange={e => setCustomer('customerPhone', e.target.value)}
+                      className="input-field pl-9"
+                    />
+                  </div>
+
+                  {/* Address + map (envio only) */}
+                  {deliveryMethod === 'envio' && (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-3)' }} />
+                        <input
+                          type="text"
+                          placeholder="Dirección, barrio o punto de referencia"
+                          value={customerAddress}
+                          onChange={e => setCustomer('customerAddress', e.target.value)}
+                          className="input-field pl-9"
+                        />
+                      </div>
+
+                      {/* GPS Banner Status */}
+                      {!locationLink ? (
+                        <div className="p-3 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-between gap-2.5">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
+                              <MapPin size={16} className="animate-pulse" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-gray-900 leading-tight">GPS obligatorio para envío</p>
+                              <p className="text-[11px] text-gray-600 truncate">Lee tu ubicación para habilitar el pedido</p>
+                            </div>
                           </div>
-                        }>
-                          <LocationPickerMap 
-                            lat={mapCoords.lat} 
-                            lng={mapCoords.lng} 
-                            onLocationChange={(newLat, newLng) => updateLocationFromCoords(newLat, newLng, 'Pin Ajustado')} 
+                          <button
+                            type="button"
+                            onClick={requestGps}
+                            disabled={isCalculating}
+                            className="btn-primary py-1.5 px-3 text-xs font-bold gap-1 rounded-lg shrink-0 shadow-xs"
+                          >
+                            {isCalculating ? <Loader2 size={12} className="animate-spin" /> : <Navigation size={12} />}
+                            <span>{isCalculating ? 'Leyendo...' : 'Activar GPS'}</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-2 text-xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                            <span className="font-semibold text-emerald-800 truncate">Ubicación GPS confirmada</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={requestGps}
+                            disabled={isCalculating}
+                            className="text-[11px] text-emerald-700 hover:text-emerald-900 font-bold underline shrink-0"
+                          >
+                            Actualizar GPS
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Map header */}
+                      {locationLink && (
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-medium" style={{ color: 'var(--color-text-2)' }}>
+                            Punto de entrega en el mapa
+                          </p>
+                          <button
+                            type="button"
+                            onClick={requestGps}
+                            disabled={isCalculating}
+                            className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors"
+                            style={{
+                              backgroundColor: 'var(--color-brand-light)',
+                              color: 'var(--color-brand)',
+                            }}
+                          >
+                            {isCalculating ? <Loader2 size={12} className="animate-spin" /> : <Navigation size={12} />}
+                            Recalcular GPS
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Map - rendered ONLY when customer GPS is captured */}
+                      {mapCoords && locationLink && (
+                        <Suspense
+                          fallback={
+                            <div
+                              className="h-48 rounded-lg flex items-center justify-center"
+                              style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
+                            >
+                              <Loader2 size={20} className="animate-spin" style={{ color: 'var(--color-brand)' }} />
+                            </div>
+                          }
+                        >
+                          <LocationPickerMap
+                            lat={mapCoords.lat}
+                            lng={mapCoords.lng}
+                            onLocationChange={(lat, lng) => updateLocationFromCoords(lat, lng, 'Pin ajustado')}
+                            onGpsClick={requestGps}
                           />
                         </Suspense>
-                      </div>
-                    )}
+                      )}
 
-                    {deliveryMethod === 'envio' && !locationLink && (
-                      <button 
-                        onClick={requestLocation} 
-                        disabled={isCalculating}
-                        className="w-full py-4 sm:py-5 bg-success text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-xl shadow-success/20 active:scale-95 transition-all mt-2 ring-2 ring-success/30"
+                      {/* Delivery fee */}
+                      <div
+                        className="flex items-center justify-between px-3 py-2.5 rounded-lg"
+                        style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
                       >
-                        {isCalculating ? (
-                          <Loader2 size={24} className="animate-spin" />
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-2 font-black text-sm">
-                              <Navigation size={18} /> FIJAR MI UBICACIÓN GPS
-                            </div>
-                            <span className="text-[9px] font-bold uppercase opacity-80">Requerido para el domicilio</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-
-                    {locationLink && deliveryMethod === 'envio' && (
-                      <div className="bg-success/5 border border-success/20 p-4 rounded-2xl flex items-center justify-between animate-in zoom-in-95 duration-200 mt-2">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-success/20 rounded-xl flex items-center justify-center text-success">
-                            <CheckCircle2 size={20} />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-black text-success uppercase tracking-widest">Ubicación Precisa</p>
-                            <p className="text-[9px] font-bold text-muted uppercase mt-0.5">Capturada y ajustada en GPS</p>
-                          </div>
+                        <div className="flex items-center gap-1.5">
+                          <Truck size={14} style={{ color: 'var(--color-brand)' }} />
+                          <span className="text-sm" style={{ color: 'var(--color-text-2)' }}>Costo de envío</span>
+                          {tipoDom === 'automatico' && distanceKm && (
+                            <span className="text-xs" style={{ color: 'var(--color-text-3)' }}>
+                              · {distanceKm.toFixed(1)} km
+                            </span>
+                          )}
                         </div>
-                        <button onClick={requestLocation} className="text-[9px] font-black text-success underline uppercase tracking-widest">Re-centrar</button>
-                      </div>
-                    )}
-
-                    {deliveryFee >= 0 && deliveryMethod === 'envio' && (
-                      <div className="p-4 bg-brand/5 border border-brand/10 rounded-2xl flex items-center justify-between">
-                        <span className="text-[10px] font-black text-brand uppercase tracking-widest flex items-center gap-2">
-                           <Truck size={14} /> Domicilio
+                        <span className="text-sm font-semibold tabular-nums" style={{ color: 'var(--color-text-1)' }}>
+                          {tipoDom === 'manual'
+                            ? 'A confirmar'
+                            : !locationLink
+                              ? 'Pendiente de GPS'
+                              : formatMoney(deliveryFee)
+                          }
                         </span>
-                        <div className="flex flex-col items-end">
-                          <span className="text-[10px] text-muted tracking-widest uppercase mb-1">
-                            {tipoDom === 'manual' ? 'Costo de envío' : (distanceKm && tipoDom === 'automatico') ? `${distanceKm.toFixed(1)} km` : 'Envío Local'}
-                          </span>
-                          <span className="text-sm font-black text-brand">
-                            {tipoDom === 'manual' ? 'Por confirmar' : formatMoney(deliveryFee)}
-                          </span>
-                        </div>
                       </div>
-                    )}
-                  </div>
-                  
-                  {tipoDom === 'manual' && deliveryMethod === 'envio' && (
-                    <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl mt-3 animate-fade-in">
-                       <p className="text-[9px] font-black text-amber-700 uppercase tracking-widest text-center leading-relaxed">
-                         El negocio te confirmará el costo del domicilio por WhatsApp según tu ubicación
-                       </p>
-                    </div>
-                  )}
-                </div>
 
-                {/* Methods */}
-                <div className="space-y-3">
-                  <h3 className="text-[10px] font-black text-muted uppercase tracking-[0.15em] flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-brand rounded-full" /> Forma de Pago
-                  </h3>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <button 
-                      onClick={() => setPaymentMethod('efectivo')} 
-                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${paymentMethod === 'efectivo' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
-                    >
-                      <Wallet size={20} className={paymentMethod === 'efectivo' ? 'text-brand' : 'text-muted'} />
-                      <span className="text-[9px] font-black uppercase tracking-widest">Efectivo</span>
-                    </button>
-                    <button 
-                      onClick={() => setPaymentMethod('transferencia')} 
-                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${paymentMethod === 'transferencia' ? 'border-brand bg-brand/5 shadow-lg shadow-brand/10' : 'border-border opacity-50'}`}
-                    >
-                      <CreditCard size={20} className={paymentMethod === 'transferencia' ? 'text-brand' : 'text-muted'} />
-                      <span className="text-[9px] font-black uppercase tracking-widest">Transferencia</span>
-                    </button>
-                  </div>
-
-                  {paymentMethod === 'transferencia' && (
-                    <div className="p-4 bg-brand/5 border-2 border-dashed border-brand/20 rounded-xl animate-in zoom-in-95 duration-200">
-                      <p className="text-[9px] font-black text-muted uppercase tracking-widest mb-2">Datos para el pago:</p>
-                      <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-border shadow-sm">
-                        <div>
-                          <p className="text-[8px] font-black text-brand uppercase leading-none mb-1">{business?.pago_banco || 'Nequi'}</p>
-                          <p className="text-base font-black text-dark tracking-tight">{business?.pago_alias || 'Favor Consultar'}</p>
-                        </div>
-                        <button 
-                          onClick={() => { 
-                            const alias = business?.pago_alias || '';
-                            const banco = business?.pago_banco || '';
-                            const aliasDigits = (alias.match(/\d/g) || []).length;
-                            const bancoDigits = (banco.match(/\d/g) || []).length;
-                            const toCopy = aliasDigits >= bancoDigits ? alias : banco;
-                            navigator.clipboard.writeText(toCopy); 
-                            addToast('Número copiado', 'success'); 
-                          }}
-                          className="p-2.5 bg-brand text-white rounded-lg hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand/20"
+                      {tipoDom === 'manual' && (
+                        <p
+                          className="text-xs px-1"
+                          style={{ color: 'var(--color-text-3)' }}
                         >
-                          <Copy size={16} />
-                        </button>
-                      </div>
+                          El negocio te confirmará el costo exacto por WhatsApp.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
+              </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-muted uppercase tracking-widest pl-2">Comentarios Adicionales</label>
-                  <textarea 
-                    value={cart.comment} onChange={(e) => setComment(bid, e.target.value)} 
-                    className="w-full p-3 bg-white border border-border rounded-xl text-xs font-medium outline-none min-h-[80px] focus:border-brand" 
-                    placeholder="Ej: Traer cambio de 50mil..."
-                  />
+              {/* ── PAYMENT ── */}
+              <div>
+                <p className="caps-label mb-2">Forma de pago</p>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {[
+                    { id: 'efectivo', label: 'Efectivo', icon: Wallet, show: enabledPayments.includes('efectivo') },
+                    { id: 'transferencia', label: 'Transferencia', icon: CreditCard, show: enabledPayments.includes('transferencia') },
+                  ].filter(m => m.show).map(m => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setPaymentMethod(m.id)}
+                      className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-sm font-semibold transition-all ${
+                        paymentMethod === m.id
+                          ? 'border-orange-500 bg-orange-50/70 text-orange-600 shadow-2xs'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <m.icon size={18} strokeWidth={1.5} />
+                      <span>{m.label}</span>
+                    </button>
+                  ))}
                 </div>
-              </>
-            )}
-          </div>
 
-          {/* Footer Actions */}
-          <div className="p-3 sm:p-4 border-t border-border bg-bg-alt sticky bottom-0 z-10 pb-safe">
-            {!orderResult ? (
-              <button 
-                onClick={handleSubmit} 
-                disabled={isSubmitting || selectedItems.length === 0} 
-                className="w-full group btn-primary py-4 sm:!py-5 shadow-2xl shadow-brand/20 disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <Loader2 size={24} className="animate-spin" />
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-2">
-                      <MessageCircle size={18} className="sm:w-5 sm:h-5" />
-                      <span className="text-base sm:text-lg">REALIZAR PEDIDO</span>
+                {/* Transfer details */}
+                {paymentMethod === 'transferencia' && (
+                  <div
+                    className="rounded-lg p-4 space-y-3 animate-fade-in"
+                    style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs mb-0.5" style={{ color: 'var(--color-text-3)' }}>
+                          {business?.pago_banco || 'Nequi'} — Número para transferir:
+                        </p>
+                        <p className="text-base font-semibold tabular-nums truncate" style={{ color: 'var(--color-text-1)' }}>
+                          {business?.pago_alias || 'Consultar en chat'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleCopyAccount}
+                        className={`btn-primary py-1.5 px-3 text-xs shrink-0 ${hasCopiedAccount ? '!bg-green-600' : ''}`}
+                      >
+                        {hasCopiedAccount ? <Check size={13} /> : <Copy size={13} />}
+                        {hasCopiedAccount ? 'Copiado' : 'Copiar'}
+                      </button>
                     </div>
-                    <span className="text-[10px] sm:text-[11px] font-bold opacity-60 uppercase tracking-[0.2em] mt-1 italic">Vía WhatsApp Automatizado</span>
+                    <ol className="space-y-1.5">
+                      {[
+                        'Copia el número con el botón de arriba.',
+                        `Transfiere ${formatMoney(total)} desde tu banco o app.`,
+                        'Adjunta el comprobante al confirmar por WhatsApp.',
+                      ].map((step, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs" style={{ color: 'var(--color-text-2)' }}>
+                          <span
+                            className="w-4 h-4 rounded-full flex items-center justify-center text-white font-semibold shrink-0 mt-0.5"
+                            style={{ backgroundColor: 'var(--color-brand)', fontSize: '10px' }}
+                          >
+                            {i + 1}
+                          </span>
+                          {step}
+                        </li>
+                      ))}
+                    </ol>
                   </div>
                 )}
-              </button>
-            ) : null}
-          </div>
+              </div>
+
+              {/* ── COMMENT ── */}
+              <div>
+                <p className="caps-label mb-2">Comentarios (opcional)</p>
+                <textarea
+                  value={cart.comment}
+                  onChange={e => setComment(bid, e.target.value)}
+                  className="input-field resize-none"
+                  rows={2}
+                  placeholder="Ej: Cambio, instrucciones especiales..."
+                />
+              </div>
+            </>
+          )}
         </div>
+
+        {/* Footer sticky */}
+        {!orderResult && (
+          <div
+            className="px-5 py-4 border-t shrink-0 pb-safe"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
+          >
+            {/* Total */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm" style={{ color: 'var(--color-text-2)' }}>
+                Total{deliveryMethod === 'envio' && tipoDom !== 'manual' ? ' (con envío)' : ''}
+              </span>
+              <span className="text-xl font-semibold tabular-nums" style={{ color: 'var(--color-text-1)' }}>
+                {tipoDom === 'manual' && deliveryMethod === 'envio'
+                  ? formatMoney(subtotal)
+                  : formatMoney(total)
+                }
+              </span>
+            </div>
+
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting || selectedItems.length === 0}
+              className="btn-whatsapp w-full py-3"
+            >
+              {isSubmitting
+                ? <Loader2 size={18} className="animate-spin" />
+                : (
+                  <>
+                    <WhatsAppIcon size={18} />
+                    <span>
+                      {!deliveryMethod
+                        ? 'Selecciona cómo recibir tu pedido'
+                        : deliveryMethod === 'envio' && !locationLink
+                          ? 'Activar GPS para enviar pedido'
+                          : !paymentMethod
+                            ? 'Selecciona la forma de pago'
+                            : 'Enviar pedido por WhatsApp'
+                      }
+                    </span>
+                  </>
+                )
+              }
+            </button>
+            <p className="text-center text-xs mt-2" style={{ color: 'var(--color-text-3)' }}>
+              Se abrirá WhatsApp con tu pedido listo
+            </p>
+          </div>
+        )}
       </div>
     </aside>
   );

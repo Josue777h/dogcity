@@ -159,9 +159,13 @@ function orderTotal(items, domicilio = 0) {
 
 async function upsertNegocio(key) {
   const biz = NEGOCIOS[key];
-  const { error } = await supabase.from('negocios').update(biz.update).eq('id', biz.id);
+  const { error } = await supabase.from('negocios').upsert({
+    id: biz.id,
+    nombre: biz.slug,
+    ...biz.update
+  }, { onConflict: 'id' });
   if (error) throw new Error(`negocios ${key}: ${error.message}`);
-  console.log(`✓ Negocio actualizado: ${biz.update.nombre_visible}`);
+  console.log(`✓ Negocio actualizado/creado: ${biz.update.nombre_visible}`);
 }
 
 async function seedCategorias(key) {

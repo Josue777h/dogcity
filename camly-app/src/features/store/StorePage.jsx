@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
-import { Menu, X, Settings, Home, ShoppingBag, ShoppingCart, Info, Phone, MessageCircle, Clock, Search } from 'lucide-react';
+import { ShoppingCart, Search, MessageCircle, Store, Clock, MapPin, Sparkles, X, ChevronRight, Phone } from 'lucide-react';
 import { useBusinessStore, useCartStore, useToastStore } from '../../stores';
-import { fetchBusiness, fetchProducts, subscribeToProducts, fetchSubscription, fetchCategories } from '../../lib/supabase';
+import { fetchBusiness, fetchProducts, fetchSubscription, fetchCategories } from '../../lib/supabase';
 import { formatMoney } from '../../lib/utils';
 import ProductCard from './ProductCard';
 import OrderDrawer from './OrderDrawer';
@@ -15,74 +15,65 @@ export default function StorePage() {
   const { business, products, categories, isLoading, setBusiness, setProducts, setCategories, setLoading, setError } = useBusinessStore();
   const bid = business?.id;
 
-  const totalItems = useCartStore((s) => s.getTotalItems(bid));
-  const totalPrice = useCartStore((s) => s.getTotalPrice(bid, products));
-  const addToast = useToastStore((s) => s.addToast);
+  const totalItems = useCartStore(s => s.getTotalItems(bid));
+  const totalPrice = useCartStore(s => s.getTotalPrice(bid, products));
+  const addToast   = useToastStore(s => s.addToast);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [currentCategory, setCurrentCategory] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Load business + products
   useEffect(() => {
     async function load() {
       setLoading(true);
       try {
         const biz = await fetchBusiness(slug);
-        setBusiness(biz);
         if (biz) {
           const [prods, sub, cats] = await Promise.all([
             fetchProducts(biz.id),
-            fetchSubscription(biz.id),
-            fetchCategories(biz.id)
+            fetchSubscription ? fetchSubscription(biz.id).catch(() => null) : Promise.resolve(null),
+            fetchCategories ? fetchCategories(biz.id).catch(() => []) : Promise.resolve([]),
           ]);
-          setProducts(prods);
           setBusiness(biz, sub);
-          setCategories(cats);
+          setProducts(prods || []);
+          setCategories(cats || []);
+        } else {
+          setBusiness(null);
+          setLoading(false);
         }
       } catch (err) {
         setError(err.message);
         addToast('No pudimos conectar con la tienda', 'error');
-      } finally {
-        setLoading(false);
       }
     }
     load();
-
-    const sub = subscribeToProducts(async () => {
-      const biz = useBusinessStore.getState().business;
-      if (biz) {
-        const prods = await fetchProducts(biz.id);
-        setProducts(prods);
-      }
-    });
-
-    return () => sub?.unsubscribe();
   }, [slug]);
 
+  // Apply brand color
+  useEffect(() => {
+    const color = useBusinessStore.getState().isPro ? (business?.theme_color || '#EA580C') : '#EA580C';
+    document.documentElement.style.setProperty('--color-brand', color);
+    document.documentElement.style.setProperty('--color-brand-dark', color);
+  }, [business?.theme_color]);
+
   const visibleCategories = useMemo(() => {
-    if (categories && categories.length > 0) {
-      // Priorizar tabla relacional
-      const sorted = [...categories].sort((a,b) => a.nombre.localeCompare(b.nombre)).map(c => c.nombre);
+    if (categories?.length > 0) {
+      const sorted = [...categories].sort((a, b) => a.nombre.localeCompare(b.nombre)).map(c => c.nombre);
       return ['Todos', ...sorted];
     }
-    // Fallback legacy
-    const cats = [...new Set(products.map((p) => p.categoria).filter(Boolean))];
-    const sorted = cats.sort((a,b) => a.localeCompare(b));
-    return ['Todos', ...sorted];
+    const cats = [...new Set(products.map(p => p.categoria).filter(Boolean))].sort();
+    return ['Todos', ...cats];
   }, [categories, products]);
 
   const visible = useMemo(() => {
-    return products.filter((p) => {
+    return products.filter(p => {
       if (!p.disponible) return false;
-      
       let pCatName = p.categoria;
       if (p.categoria_id && categories?.length > 0) {
         const found = categories.find(c => c.id === p.categoria_id);
         if (found) pCatName = found.nombre;
       }
-      
-      const matchesCat = currentCategory === 'Todos' || (pCatName || '').trim() === currentCategory.trim();
+      const matchesCat    = currentCategory === 'Todos' || (pCatName || '').trim() === currentCategory.trim();
       const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesCat && matchesSearch;
     });
@@ -90,113 +81,185 @@ export default function StorePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg-alt flex flex-col items-center justify-center gap-4">
-        <div className="w-12 h-12 border-4 border-brand/20 border-t-brand rounded-full animate-spin" />
-        <p className="text-sm font-bold text-muted animate-pulse uppercase tracking-widest">Cargando experiencia...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-gray-50">
+        <div className="w-10 h-10 rounded-full border-3 border-orange-200 border-t-orange-600 animate-spin" />
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Cargando catálogo...</p>
       </div>
     );
   }
 
+  const brandColor = business?.theme_color || '#EA580C';
+
   return (
-    <div
-      className="min-h-screen bg-white"
-      style={{
-        '--primary-brand': useBusinessStore.getState().isPro ? (business?.theme_color || '#2563EB') : '#2563EB',
-        '--secondary-brand': useBusinessStore.getState().isPro ? (business?.color_secundario || '#F9FAFB') : '#F9FAFB'
-      }}
-    >
-      {/* ── TOP NAV ────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 w-full bg-white/80 backdrop-blur-md z-[80] border-b border-border pt-safe">
-        <div className="fluid-container h-14 sm:h-16 flex items-center justify-between gap-2">
-          <Link to="/" className="flex items-center gap-2 sm:gap-4 decoration-0 min-w-0 flex-1">
-            <div className="w-11 h-11 sm:w-14 sm:h-14 bg-brand rounded-2xl flex items-center justify-center text-white shadow-xl shadow-brand/20 overflow-hidden border-2 border-white/50 shrink-0">
+    <div className="min-h-screen bg-gray-50 text-gray-900 selection:bg-orange-500 selection:text-white">
+      
+      {/* ── TOP NAV ── */}
+      <nav className="sticky top-0 z-[80] bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-xs pt-safe">
+        <div className="fluid-container flex items-center justify-between gap-3 h-14 sm:h-16">
+          
+          {/* Business identity */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-xs border border-black/5"
+              style={{ backgroundColor: brandColor }}
+            >
               {business?.logo_url ? (
-                <img src={business.logo_url} className="w-full h-full object-contain p-1.5" alt={business.nombre_visible} loading="lazy" />
+                <img src={business.logo_url} className="w-full h-full object-contain p-1" alt={business.nombre_visible} loading="lazy" />
               ) : (
-                <ShoppingBag size={24} className="sm:w-7 sm:h-7" />
+                <Store size={20} className="text-white" />
               )}
             </div>
             <div className="min-w-0">
-              <h1 className="text-sm sm:text-lg font-black text-dark uppercase tracking-tight leading-none truncate">{business?.nombre_visible || 'CAMLY'}</h1>
+              <h1 className="text-sm sm:text-base font-bold text-gray-900 truncate leading-tight">
+                {business?.nombre_visible || 'Tienda Digital'}
+              </h1>
+              <div className="flex items-center gap-2 text-[11px] text-gray-500 truncate mt-0.5">
+                <span className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Abierto ahora
+                </span>
+                {business?.direccion && (
+                  <span className="hidden sm:inline-block truncate">
+                    · {business.direccion}
+                  </span>
+                )}
+              </div>
             </div>
-          </Link>
+          </div>
 
-          <div className="flex items-center gap-2 sm:gap-6">
-            <div className="hidden md:flex items-center gap-2 text-success bg-success/5 px-3 py-1.5 rounded-full border border-success/10">
-              <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-              <span className="text-[11px] font-bold uppercase tracking-wider">Negocio Abierto</span>
-            </div>
+          {/* Cart button */}
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setDrawerOpen(true)}
-              className="relative p-2 text-dark hover:text-brand transition-colors bg-brand/5 rounded-xl border border-brand/10 hover:bg-brand hover:text-white"
+              className={`flex items-center gap-2 py-2 px-3.5 rounded-xl border transition-all shadow-xs tap-target ${
+                totalItems > 0
+                  ? 'bg-orange-600 border-orange-600 text-white shadow-orange-600/20'
+                  : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
+              aria-label="Abrir carrito"
             >
-              <ShoppingCart size={22} />
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-error text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                  {totalItems}
-                </span>
-              )}
+              <ShoppingCart size={18} />
+              <span className="text-xs sm:text-sm font-bold">
+                {totalItems > 0 ? (
+                  <span className="flex items-center gap-1.5">
+                    <span>{totalItems}</span>
+                    <span className="hidden sm:inline">· {formatMoney(totalPrice)}</span>
+                  </span>
+                ) : (
+                  <span className="hidden sm:inline font-semibold">Mi Pedido</span>
+                )}
+              </span>
             </button>
-
           </div>
+
         </div>
       </nav>
 
-      <main className="pt-20 sm:pt-24 pb-28 sm:pb-32">
-        <div className="fluid-container">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* ── MAIN CONTENT ── */}
+      <main className="pb-28 sm:pb-20">
+        <div className="fluid-container pt-5">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-            {/* ── LEFT COL: Categories (Sticky) ─────────────────── */}
-            <aside className="lg:col-span-2 space-y-6">
-              <div className="sticky top-24">
-                <h3 className="text-xs font-black text-muted uppercase tracking-[0.2em] mb-4 pl-1">Categorías</h3>
-                <nav className="flex lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 hide-scrollbar scroll-fade-x -mx-1 px-1">
-                  {visibleCategories.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setCurrentCategory(cat)}
-                      className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-sm font-bold transition-all
-                        ${currentCategory === cat
-                          ? 'bg-brand text-white shadow-lg shadow-brand/20 translate-x-1'
-                          : 'bg-bg-alt text-dark hover:bg-border'}`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </nav>
-              </div>
-            </aside>
-
-            {/* ── CENTER COL: Products Grid ─────────────────────── */}
-            <section className="lg:col-span-7 space-y-8">
-              {/* Hero / Filter Bar */}
-              <div className="premium-card !p-4 sm:!p-6 bg-gradient-to-br from-brand to-accent text-white flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
-                <div className="text-center md:text-left">
-                  <h2 className="text-2xl sm:text-3xl font-black italic tracking-tighter">¡EL MEJOR MENÚ!</h2>
-                  <p className="text-white/70 text-sm font-medium mt-1 uppercase tracking-widest">Encuentra tus favoritos hoy mismo</p>
-                </div>
-                <div className="relative w-full md:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
+            {/* ── LEFT: Categories Sidebar (Desktop) / Horizontal pills (Mobile) ── */}
+            <aside className="lg:col-span-3">
+              <div className="lg:sticky lg:top-20 space-y-4">
+                
+                {/* Search Bar */}
+                <div className="relative w-full">
+                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Buscar producto..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-sm font-bold outline-none placeholder:text-white/40 focus:bg-white/20 transition-all"
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 shadow-2xs"
                   />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Categories */}
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1 mb-2 hidden lg:block">
+                    Categorías
+                  </p>
+                  
+                  {/* Horizontal Scroll on Mobile / Vertical on Desktop */}
+                  <div className="flex lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0 hide-scrollbar">
+                    {visibleCategories.map(cat => {
+                      const isActive = currentCategory === cat;
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => setCurrentCategory(cat)}
+                          className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all text-center lg:text-left shrink-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 ${
+                            isActive
+                              ? 'bg-orange-600 text-white shadow-xs'
+                              : 'bg-transparent text-gray-700 hover:bg-gray-200/60 hover:text-gray-900'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Quick Info Box (Desktop) */}
+                <div className="hidden lg:block card p-4 bg-white text-xs space-y-2 border-gray-200 border-l-2 border-l-orange-500">
+                  <div className="flex items-center gap-2 text-gray-700 font-semibold">
+                    <Clock size={15} className="text-orange-600" />
+                    <span>Entrega estimada: 30–45 min</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <MessageCircle size={15} className="text-emerald-600" />
+                    <span>Pedidos directos a WhatsApp con GPS</span>
+                  </div>
+                </div>
+
+              </div>
+            </aside>
+
+            {/* ── CENTER: Products Grid ── */}
+            <section className="lg:col-span-6 space-y-4">
+              
+              {/* Active Filter Title */}
+              <div className="flex items-center justify-between px-1">
+                <div>
+                  <h2 className="text-lg font-black text-gray-900 tracking-tight">
+                    {currentCategory === 'Todos' ? 'Todos los productos' : currentCategory}
+                  </h2>
+                  <p className="text-xs text-gray-500">
+                    {visible.length} producto{visible.length !== 1 ? 's' : ''} disponible{visible.length !== 1 ? 's' : ''}
+                  </p>
                 </div>
               </div>
 
+              {/* Grid */}
               {visible.length === 0 ? (
-                <div className="py-20 text-center space-y-4">
-                  <div className="w-20 h-20 bg-bg-alt rounded-full flex items-center justify-center mx-auto text-muted">
-                    <Search size={40} />
+                <div className="card py-16 px-4 text-center bg-white border-dashed border-gray-300">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-400">
+                    <Search size={22} />
                   </div>
-                  <h3 className="text-lg font-black text-dark">No hay resultados</h3>
-                  <p className="text-sm text-muted">Intenta con otra categoría o término de búsqueda.</p>
+                  <h3 className="text-sm font-bold text-gray-800">No encontramos productos</h3>
+                  <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">
+                    No hay productos que coincidan con "{searchTerm}" en esta categoría.
+                  </p>
+                  <button
+                    onClick={() => { setSearchTerm(''); setCurrentCategory('Todos'); }}
+                    className="btn-secondary py-2 px-4 text-xs font-semibold mt-4"
+                  >
+                    Ver todo el catálogo
+                  </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-4">
                   {visible.map((p, i) => (
                     <ProductCard key={p.id} product={p} index={i} />
                   ))}
@@ -204,83 +267,127 @@ export default function StorePage() {
               )}
             </section>
 
-            {/* ── RIGHT COL: Order Summary (Sticky Desktop) ─────── */}
+            {/* ── RIGHT: Order Summary Card (Desktop) ── */}
             <aside className="hidden lg:block lg:col-span-3">
-              <div className="sticky top-24 space-y-6">
-                <div className="premium-card !p-0">
-                  <div className="bg-dark text-white p-5 flex items-center justify-between">
+              <div className="sticky top-20 space-y-3">
+                <div className="card bg-white border-gray-200/80 shadow-sm overflow-hidden">
+                  
+                  {/* Header */}
+                  <div className="px-4 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gray-50/70">
                     <div className="flex items-center gap-2">
-                      <ShoppingBag size={18} className="text-brand" />
-                      <h3 className="font-black text-sm uppercase tracking-widest">Tu Pedido</h3>
+                      <ShoppingCart size={16} className="text-orange-600" />
+                      <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                        Tu Pedido
+                      </h3>
                     </div>
-                    <span className="bg-brand px-2 py-0.5 rounded text-[10px] font-black">{totalItems}</span>
+                    {totalItems > 0 && (
+                      <span className="badge badge-success text-[10px]">
+                        {totalItems} item{totalItems > 1 ? 's' : ''}
+                      </span>
+                    )}
                   </div>
 
-                  <div className="p-5 space-y-4 min-h-[300px] flex flex-col">
+                  {/* Body */}
+                  <div className="p-4">
                     {totalItems === 0 ? (
-                      <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30 grayscale">
-                        <ShoppingBag size={48} className="mb-4" />
-                        <p className="text-xs font-bold uppercase tracking-widest">Carrito vacío</p>
+                      <div className="text-center py-8 space-y-2">
+                        <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto">
+                          <ShoppingCart size={20} />
+                        </div>
+                        <p className="text-xs font-semibold text-gray-700">Tu canasta está vacía</p>
+                        <p className="text-[11px] text-gray-400 max-w-[180px] mx-auto">
+                          Selecciona los productos que deseas pedir para agregarlos.
+                        </p>
                       </div>
                     ) : (
-                      <>
-                        <div className="flex-1 space-y-3">
+                      <div className="space-y-4">
+                        <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
                           {useCartStore.getState().getSelectedItems(bid, products).map(item => (
-                            <div key={item.id} className="flex justify-between items-start text-xs">
-                              <span className="font-bold text-dark">{item.quantity}x {item.name}</span>
-                              <span className="font-black text-muted">{formatMoney(item.quantity * item.price)}</span>
+                            <div key={item.id} className="flex justify-between items-start gap-2 text-xs">
+                              <div className="min-w-0">
+                                <p className="font-semibold text-gray-800 truncate">
+                                  <span className="text-orange-600 font-bold">{item.quantity}×</span> {item.name}
+                                </p>
+                              </div>
+                              <span className="font-semibold text-gray-700 tabular-nums shrink-0">
+                                {formatMoney(item.quantity * item.price)}
+                              </span>
                             </div>
                           ))}
                         </div>
-                        <div className="pt-4 border-t border-border">
-                          <div className="flex justify-between items-center mb-4">
-                            <span className="text-xs font-black text-muted uppercase tracking-widest">Total Estimado</span>
-                            <span className="text-xl font-black text-brand tracking-tighter">{formatMoney(totalPrice)}</span>
+
+                        <div className="pt-3 border-t border-gray-100 space-y-3">
+                          <div className="flex justify-between items-baseline text-sm">
+                            <span className="text-xs font-bold text-gray-500 uppercase">Subtotal</span>
+                            <span className="text-lg font-black text-gray-900 tabular-nums">
+                              {formatMoney(totalPrice)}
+                            </span>
                           </div>
-                          <button onClick={() => setDrawerOpen(true)} className="w-full btn-primary !py-4">
-                            CONTINUAR PEDIDO <MessageCircle size={18} />
+
+                          <button
+                            onClick={() => setDrawerOpen(true)}
+                            className="btn-primary w-full py-3 text-xs font-bold justify-center shadow-md gap-1.5"
+                          >
+                            <MessageCircle size={15} />
+                            <span>Confirmar pedido</span>
                           </button>
                         </div>
-                      </>
+                      </div>
                     )}
+                  </div>
+
+                </div>
+
+                {/* WhatsApp Help badge */}
+                <div className="p-3 bg-white card border-gray-200 text-xs flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Phone size={14} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-gray-800 leading-tight">¿Preguntas sobre el menú?</p>
+                    <a
+                      href={`https://wa.me/${business?.whatsapp_contacto || business?.telefono || '573143243707'}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] text-emerald-600 hover:underline font-semibold"
+                    >
+                      Escríbenos por WhatsApp
+                    </a>
                   </div>
                 </div>
 
-                <div className="premium-card !p-4 bg-bg-alt border-dashed">
-                  <div className="flex items-center gap-3 text-muted">
-                    <Clock size={16} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Entrega estimada: 30-45 min</span>
-                  </div>
-                </div>
               </div>
             </aside>
+
           </div>
         </div>
       </main>
 
-      {/* ── MOBILE BAR ─────────────────────────────────────── */}
+      {/* ── MOBILE: Floating Cart Bar ── */}
       {!drawerOpen && totalItems > 0 && (
-        <div className="lg:hidden fixed bottom-safe left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md z-[90] animate-in fade-in slide-in-from-bottom-5 duration-500 pb-safe">
+        <div className="lg:hidden fixed bottom-safe left-3 right-3 z-[90] animate-slide-up">
           <button
             onClick={() => setDrawerOpen(true)}
-            className="w-full bg-dark text-white p-2 rounded-2xl flex items-center justify-between shadow-2xl overflow-hidden active:scale-95 transition-transform"
+            className="w-full flex items-center justify-between p-3.5 rounded-2xl shadow-xl text-white bg-orange-600 active:scale-[0.99] transition-transform"
           >
-            <div className="bg-brand h-12 w-12 rounded-xl flex items-center justify-center font-black text-lg">
-              {totalItems}
+            <div className="flex items-center gap-2.5">
+              <span className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-xs font-bold">
+                {totalItems}
+              </span>
+              <span className="text-sm font-bold">Ver mi pedido</span>
             </div>
-            <div className="flex-1 px-4 text-left">
-              <p className="text-[10px] font-black opacity-60 uppercase tracking-widest leading-none">Total Pedido</p>
-              <p className="text-xl font-black tracking-tighter leading-none mt-1">{formatMoney(totalPrice)}</p>
-            </div>
-            <div className="bg-white/10 px-4 h-12 flex items-center rounded-xl text-xs font-black uppercase tracking-widest gap-2">
-              REVISAR <ShoppingBag size={14} />
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-extrabold tabular-nums">{formatMoney(totalPrice)}</span>
+              <ChevronRight size={18} />
             </div>
           </button>
         </div>
       )}
 
+      {/* Order Drawer and Footer */}
       <OrderDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
       <StoreFooter business={business} />
+
     </div>
   );
 }

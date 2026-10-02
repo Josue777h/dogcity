@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Tag, Plus, Edit, Trash2, Loader2, Save, X } from 'lucide-react';
 import { getSupabase, updateCategory, createCategory, deleteCategory } from '../../../lib/supabase';
 import { useToastStore, useBusinessStore } from '../../../stores';
@@ -29,7 +29,7 @@ export default function CategoriesView({ businessId }) {
       setCategories(data || []);
     } catch (err) {
       console.error(err);
-      addToast('Error actualizando categorías. Verifica SQL.', 'error');
+      addToast('Error actualizando categorías.', 'error');
     } finally {
        setLoading(false);
     }
@@ -50,7 +50,7 @@ export default function CategoriesView({ businessId }) {
       if(err.code === '23505') {
          addToast('Esta categoría ya existe', 'error');
       } else {
-         addToast('Error al crear. ¿Corriste el Script SQL en Supabase?', 'error');
+         addToast('Error al crear categoría', 'error');
       }
     } finally {
       setLoading(false);
@@ -81,11 +81,11 @@ export default function CategoriesView({ businessId }) {
     setLoading(true);
     try {
       await deleteCategory(id);
-      addToast('Categoría eliminada limpiamente', 'info');
+      addToast('Categoría eliminada', 'info');
       fetchCategoriasLocally();
     } catch (err) {
       console.error(err);
-      addToast('No se puede eliminar porque hay productos usándola', 'error');
+      addToast('No se puede eliminar porque hay productos vinculados', 'error');
     } finally {
       setLoading(false);
     }
@@ -96,71 +96,72 @@ export default function CategoriesView({ businessId }) {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-white p-6 rounded-[2rem] border border-border">
+    <div className="space-y-6 animate-fade-in-up">
+      {/* Header bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-           <h4 className="text-xl font-black text-dark uppercase tracking-tight">Gestor de Categorías</h4>
-           <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-1">Organiza tu catálogo sin duplicados</p>
+           <h3 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Categorías</h3>
+           <p className="text-sm text-gray-600 mt-1 leading-relaxed">Organiza los productos de tu menú por grupos claros</p>
         </div>
         <button 
           onClick={() => setIsAdding(!isAdding)}
-          className="btn-primary !py-3 !px-6 shadow-lg shadow-brand/20 w-full sm:w-auto flex justify-center"
+          className="btn-primary py-2 px-4 text-xs font-semibold"
         >
-          {isAdding ? <X size={18} /> : <><Plus size={18} /> NUEVA CATEGORÍA</>}
+          {isAdding ? <><X size={14} /> Cancelar</> : <><Plus size={14} /> Nueva categoría</>}
         </button>
       </div>
 
       <PremiumLock featureName="Gestión de Categorías Relacionales">
-        <div className="space-y-8 mt-8">
+        <div className="space-y-5">
+          {/* Add Category Form */}
           {isAdding && (
-            <form onSubmit={handleAdd} className="bg-brand/5 border border-brand/20 p-8 rounded-[2.5rem] animate-in zoom-in-95 duration-200">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full lg:w-2/3">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted uppercase tracking-widest ml-1">Nombre</label>
-                  <input 
-                    autoFocus
-                    type="text" 
-                    value={newCatName}
-                    onChange={e => setNewCatName(e.target.value)}
-                    placeholder="Ej: Snacks, Bebidas..."
-                    className="w-full p-4 bg-white border border-border rounded-2xl font-bold text-dark outline-none focus:border-brand" 
-                    required
-                  />
-                </div>
-                <div className="flex items-end">
-                  <button type="submit" disabled={loading} className="w-full btn-primary !py-4 shadow-xl shadow-brand/20">
-                    {loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> GUARDAR</>}
-                  </button>
-                </div>
+            <form onSubmit={handleAdd} className="card p-4 border-orange-200 bg-orange-50/40 animate-fade-in">
+              <p className="text-xs font-semibold text-gray-800 mb-2">Crear nueva categoría</p>
+              <div className="flex flex-col sm:flex-row gap-2 max-w-md">
+                <input 
+                  autoFocus
+                  type="text" 
+                  value={newCatName}
+                  onChange={e => setNewCatName(e.target.value)}
+                  placeholder="Ej: Hamburguesas, Bebidas, Postres..."
+                  className="input-field text-sm flex-1" 
+                  required
+                />
+                <button type="submit" disabled={loading} className="btn-primary py-2 px-4 text-xs font-semibold">
+                  {loading ? <Loader2 size={14} className="animate-spin" /> : <><Save size={14} /> Guardar</>}
+                </button>
               </div>
             </form>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Grid of categories */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {categories.map(cat => (
-              <div key={cat.id} className="bg-white border border-border rounded-[2.5rem] p-6 hover:shadow-xl transition-all group flex flex-col justify-between">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-3 rounded-2xl flex items-center justify-center bg-brand/10 text-brand">
-                    <Tag size={24} />
+              <div key={cat.id} className="card p-4 transition-all hover:border-gray-300 flex flex-col justify-between">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-orange-50 text-orange-600">
+                    <Tag size={16} />
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-1">
                     <button 
                       onClick={() => { setEditingId(cat.id); setEditingName(cat.nombre); }}
-                      className="p-2 text-muted hover:text-brand hover:bg-brand/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                      className="btn-ghost p-1 text-gray-400 hover:text-gray-800"
+                      title="Editar"
                     >
-                      <Edit size={16} />
+                      <Edit size={14} />
                     </button>
                     <button 
                       onClick={() => setItemToDelete(cat)}
-                      className="p-2 text-error/40 hover:text-error hover:bg-error/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                      className="btn-ghost p-1 text-gray-400 hover:text-red-600"
+                      title="Eliminar"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
 
                 {editingId === cat.id ? (
-                  <div className="flex gap-2 w-full mt-2">
+                  <div className="flex gap-1.5 w-full mt-1">
                     <input 
                       autoFocus
                       type="text" 
@@ -170,17 +171,20 @@ export default function CategoriesView({ businessId }) {
                          if (e.key === 'Enter') handleUpdate(cat.id);
                          if (e.key === 'Escape') setEditingId(null);
                       }}
-                      className="flex-1 bg-bg-alt border border-brand/50 rounded-xl px-3 py-2 text-sm font-bold w-full outline-none"
+                      className="input-field text-xs py-1 flex-1"
                     />
-                    <button onClick={() => handleUpdate(cat.id)} className="bg-brand text-white px-3 py-2 rounded-xl">
-                       <Save size={14}/>
+                    <button onClick={() => handleUpdate(cat.id)} className="btn-primary p-1.5 text-xs">
+                       <Save size={13}/>
+                    </button>
+                    <button onClick={() => setEditingId(null)} className="btn-secondary p-1.5 text-xs">
+                       <X size={13}/>
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-1">
-                    <h5 className="text-xl font-black text-dark tracking-tight leading-none break-words pr-2">{cat.nombre}</h5>
-                    <p className="text-[10px] font-bold text-muted uppercase tracking-widest flex items-center gap-1">
-                       <span className="text-brand font-black">{getProductCount(cat.id)}</span> Productos
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 truncate">{cat.nombre}</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      <span className="font-medium text-orange-600">{getProductCount(cat.id)}</span> {getProductCount(cat.id) === 1 ? 'producto' : 'productos'}
                     </p>
                   </div>
                 )}
@@ -188,10 +192,10 @@ export default function CategoriesView({ businessId }) {
             ))}
 
             {!categories.length && !loading && !isAdding && (
-              <div className="md:col-span-2 lg:col-span-3 py-16 text-center border-2 border-dashed border-border rounded-[2.5rem]">
-                 <Tag className="mx-auto text-muted mb-4 opacity-20" size={48} />
-                 <p className="text-sm font-black text-muted uppercase tracking-widest leading-none">No hay categorías relacionales</p>
-                 <p className="text-[10px] text-muted font-bold uppercase mt-2">Verifica haber corrido la migración SQL o añade una nueva.</p>
+              <div className="col-span-full py-16 text-center card border-dashed p-8">
+                 <Tag className="mx-auto text-gray-300 mb-2" size={32} />
+                 <p className="text-sm font-semibold text-gray-800">No hay categorías creadas</p>
+                 <p className="text-xs text-gray-500 mt-1">Crea categorías para organizar mejor tu catálogo.</p>
               </div>
             )}
           </div>
@@ -202,7 +206,10 @@ export default function CategoriesView({ businessId }) {
         isOpen={!!itemToDelete}
         title="Eliminar Categoría"
         message={`¿Seguro que deseas eliminar "${itemToDelete?.nombre}"? Esta acción no afectará tus productos, pero se desvincularán.`}
-        onConfirm={() => handleDelete(itemToDelete.id)}
+        onConfirm={() => {
+          handleDelete(itemToDelete.id);
+          setItemToDelete(null);
+        }}
         onCancel={() => setItemToDelete(null)}
       />
     </div>

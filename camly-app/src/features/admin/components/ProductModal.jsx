@@ -49,7 +49,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
   const processFile = async (file) => {
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      addToast('La imagen es muy pesada (max 2MB)', 'error');
+      addToast('La imagen es muy pesada (máx 2MB)', 'error');
       return;
     }
     setUploading(true);
@@ -77,7 +77,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.price) {
-      addToast('Nombre y Precio son requeridos', 'error');
+      addToast('Nombre y precio son requeridos', 'error');
       return;
     }
     setLoading(true);
@@ -94,26 +94,39 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-dark/80 backdrop-blur-md modal-backdrop" onClick={onClose} />
-      <div className="relative bg-white w-full max-w-xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh] modal-content">
-        <div className="bg-gradient-to-r from-brand to-brand/80 p-6 sm:p-8 text-white relative shrink-0">
-          <h3 className="text-2xl font-black italic tracking-tighter uppercase">
-            {product?.id ? 'Editar Producto' : 'Nuevo Producto'}
-          </h3>
-          <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">
-            Completa los detalles para actualizar el catálogo
-          </p>
-          <button onClick={onClose} className="absolute top-8 right-8 text-white/40 hover:text-white transition-colors">
-            <X size={28} />
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
+        onClick={onClose} 
+      />
+
+      {/* Modal Dialog */}
+      <div className="relative bg-white w-full max-w-lg rounded-xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh] border border-border animate-fade-in-up">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between shrink-0">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">
+              {product?.id ? 'Editar Producto' : 'Nuevo Producto'}
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Completa los datos de tu producto en el menú
+            </p>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="btn-ghost p-1.5 text-gray-400 hover:text-gray-800"
+          >
+            <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6 overflow-y-auto flex-1">
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
           {/* Drag & Drop Image Zone */}
           <div 
-            className={`relative rounded-3xl border-2 border-dashed transition-all duration-300 overflow-hidden
-              ${dragOver ? 'border-brand bg-brand/5 scale-[1.01]' : 'border-border hover:border-brand/40'}
-              ${formData.image ? 'border-solid border-brand/20' : ''}`}
+            className={`relative rounded-lg border-2 border-dashed transition-colors overflow-hidden
+              ${dragOver ? 'border-orange-500 bg-orange-50/50' : 'border-gray-200 hover:border-gray-300'}
+              ${formData.image ? 'border-solid border-border' : ''}`}
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
@@ -121,37 +134,37 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
           >
             {formData.image ? (
               <div className="relative group">
-                <img src={formData.image} className="w-full h-48 object-cover" alt="Preview" />
-                <div className="absolute inset-0 bg-dark/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                <img src={formData.image} className="w-full h-40 object-cover" alt="Preview" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <button 
                     type="button"
                     onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                    className="p-3 bg-white/20 backdrop-blur-sm rounded-xl text-white hover:bg-white/30 transition-colors"
+                    className="p-2 bg-white rounded-lg text-gray-800 hover:bg-gray-100 transition-colors shadow"
                     title="Cambiar imagen"
                   >
-                    <Upload size={20} />
+                    <Upload size={16} />
                   </button>
                   <button 
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setFormData(prev => ({ ...prev, image: '' })); }}
-                    className="p-3 bg-error/80 backdrop-blur-sm rounded-xl text-white hover:bg-error transition-colors"
+                    className="p-2 bg-red-600 rounded-lg text-white hover:bg-red-700 transition-colors shadow"
                     title="Eliminar imagen"
                   >
-                    <Trash2 size={20} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>
             ) : (
-              <div className={`flex flex-col items-center justify-center py-12 px-6 cursor-pointer ${uploading ? 'opacity-50' : ''}`}>
+              <div className={`flex flex-col items-center justify-center py-8 px-4 cursor-pointer ${uploading ? 'opacity-50' : ''}`}>
                 {uploading ? (
-                  <Loader2 size={32} className="animate-spin text-brand mb-3" />
+                  <Loader2 size={24} className="animate-spin text-orange-600 mb-2" />
                 ) : (
                   <>
-                    <div className="w-16 h-16 bg-brand/10 rounded-2xl flex items-center justify-center mb-4">
-                      <ImageIcon size={28} className="text-brand" />
+                    <div className="w-10 h-10 bg-gray-50 border border-border rounded-lg flex items-center justify-center mb-2 text-gray-400">
+                      <ImageIcon size={18} />
                     </div>
-                    <p className="text-sm font-black text-dark uppercase tracking-widest">Arrastra tu imagen aquí</p>
-                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-1">o haz clic para seleccionar · Max 2MB</p>
+                    <p className="text-xs font-medium text-gray-700">Arrastra una imagen o haz clic para subir</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">PNG, JPG hasta 2MB</p>
                   </>
                 )}
               </div>
@@ -160,65 +173,82 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
 
           <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1 sm:col-span-2">
-              <label className="text-[10px] font-black text-muted uppercase tracking-widest">Nombre del Producto</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre del producto *</label>
               <input 
                 type="text" 
                 value={formData.name}
                 onChange={e => setFormData({...formData, name: e.target.value})}
-                placeholder="Ej: Hamburguesa Especial"
-                className="w-full p-3 bg-bg-alt border border-border rounded-xl font-bold text-sm outline-none input-glow"
+                placeholder="Ej: Hamburguesa Artesanal Clásica"
+                className="input-field text-sm"
+                required
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-muted uppercase tracking-widest">Precio</label>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Precio ($) *</label>
               <input 
                 type="number" 
                 value={formData.price}
                 onChange={e => setFormData({...formData, price: e.target.value})}
                 placeholder="0.00"
-                className="w-full p-3 bg-brand/5 border border-brand/20 rounded-xl font-black text-brand text-sm outline-none focus:bg-brand/10 input-glow"
+                className="input-field text-sm font-semibold tabular-nums"
+                required
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-muted uppercase tracking-widest">Disponibilidad</label>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Disponibilidad</label>
               <select 
                 value={formData.disponible ? 'true' : 'false'}
                 onChange={e => setFormData({...formData, disponible: e.target.value === 'true'})}
-                className="w-full p-3 bg-bg-alt border border-border rounded-xl font-bold text-sm outline-none input-glow"
+                className="input-field text-sm"
               >
-                <option value="true">Disponible</option>
-                <option value="false">Agotado</option>
+                <option value="true">Disponible para pedir</option>
+                <option value="false">Agotado temporalmente</option>
               </select>
             </div>
           </div>
 
-          <div className="space-y-1 relative">
-            <div className="flex justify-between items-center h-4">
-              <label className="text-[10px] font-black text-muted uppercase tracking-widest">Categoría</label>
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-xs font-semibold text-gray-700">Categoría</label>
               {!isAddingCat && (
-                <button type="button" onClick={() => setIsAddingCat(true)} className="text-[9px] font-black text-brand uppercase flex items-center gap-1 hover:underline">
-                  <Plus size={10} /> Nueva
+                <button 
+                  type="button" 
+                  onClick={() => setIsAddingCat(true)} 
+                  className="text-xs font-medium text-orange-600 hover:text-orange-700 flex items-center gap-1"
+                >
+                  <Plus size={12} /> Nueva categoría
                 </button>
               )}
             </div>
             
             {isAddingCat ? (
-              <div className="flex items-center gap-2 bg-brand/5 p-2 rounded-xl border border-brand/20">
+              <div className="flex items-center gap-2 p-2 bg-orange-50/50 rounded-lg border border-orange-200">
                 <input 
                   autoFocus
                   type="text" 
                   value={newCatName}
                   onChange={e => setNewCatName(e.target.value)}
-                  placeholder="Nombre Categoría"
-                  className="flex-1 bg-white border border-border px-3 py-1.5 rounded-lg text-xs font-bold outline-none focus:border-brand"
+                  placeholder="Nombre de la nueva categoría"
+                  className="input-field text-xs flex-1"
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleQuickAddCat(e); } }}
                 />
-                <button type="button" onClick={handleQuickAddCat} disabled={savingCat} className="bg-brand text-white p-1.5 rounded-lg shadow-md">
-                  {savingCat ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                <button 
+                  type="button" 
+                  onClick={handleQuickAddCat} 
+                  disabled={savingCat} 
+                  className="btn-primary py-1 px-3 text-xs"
+                >
+                  {savingCat ? <Loader2 size={12} className="animate-spin" /> : 'Crear'}
                 </button>
-                <button type="button" onClick={() => setIsAddingCat(false)} className="text-muted hover:text-error p-1">
+                <button 
+                  type="button" 
+                  onClick={() => setIsAddingCat(false)} 
+                  className="btn-ghost p-1 text-gray-400"
+                >
                   <X size={14} />
                 </button>
               </div>
@@ -233,7 +263,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
                     categoria: matchedCat ? matchedCat.nombre : ''
                   });
                 }}
-                className="w-full p-3 bg-bg-alt border border-border rounded-xl font-bold text-sm outline-none input-glow"
+                className="input-field text-sm"
                 required
               >
                 <option value="" disabled>Selecciona una categoría</option>
@@ -244,30 +274,31 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
             )}
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-black text-muted uppercase tracking-widest">Descripción (Opcional)</label>
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">Descripción e ingredientes</label>
             <textarea 
               value={formData.description}
               onChange={e => setFormData({...formData, description: e.target.value})}
-              placeholder="Ingredientes, detalles importantes..."
-              className="w-full p-3 bg-bg-alt border border-border rounded-xl font-medium text-xs outline-none input-glow min-h-[80px]"
+              placeholder="Ej: 180g de carne de res, queso cheddar fundido, tocineta crujiente y salsa de la casa."
+              className="input-field text-xs resize-none" 
+              rows={3}
             />
           </div>
 
-          <div className="flex gap-4 pt-2">
+          <div className="flex gap-2 pt-2">
             <button 
               type="submit"
               disabled={loading || uploading}
-              className="flex-1 btn-primary !py-4 shadow-xl shadow-brand/20 disabled:opacity-50"
+              className="btn-primary py-2.5 px-4 text-xs font-semibold flex-1 justify-center disabled:opacity-50"
             >
-              {loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> GUARDAR PRODUCTO</>}
+              {loading ? <Loader2 size={15} className="animate-spin" /> : <><Save size={15} /> Guardar producto</>}
             </button>
             <button 
               type="button"
               onClick={onClose} 
-              className="px-6 border-2 border-border text-muted rounded-xl hover:bg-bg-alt transition-colors font-black text-xs"
+              className="btn-secondary py-2.5 px-4 text-xs font-semibold"
             >
-              CANCELAR
+              Cancelar
             </button>
           </div>
         </form>
