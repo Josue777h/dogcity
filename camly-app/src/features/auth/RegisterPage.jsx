@@ -4,6 +4,7 @@ import { Store, Phone, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, ArrowLeft, 
 import { registerBusiness, signOut } from '../../lib/supabase';
 import { useToastStore, useAuthStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
+import SEO from '../../components/common/SEO';
 import { getPasswordStrength } from '../../lib/utils';
 
 export default function RegisterPage() {
@@ -51,7 +52,13 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F4EF] text-gray-900 flex flex-col justify-center items-center py-10 px-4 sm:px-6 relative overflow-x-hidden selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-[#F6F4EF] text-gray-900 flex flex-col justify-center items-center py-10 px-4 sm:px-6 relative overflow-x-hidden selection:bg-cyan-500 selection:text-white">
+      <SEO 
+        title="Crear cuenta gratis | NEGU"
+        description="Regístrate en NEGU y prueba 7 días gratis el menú digital interactivo y pedidos por WhatsApp."
+        canonical="https://negu.pro/registro"
+        noindex={true}
+      />
       
       {/* Background ambient radial gradients (Wenú style) */}
       <div 

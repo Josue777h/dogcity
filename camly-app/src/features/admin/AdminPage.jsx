@@ -20,6 +20,7 @@ import AdminHeader from './components/AdminHeader';
 import ProductModal from './components/ProductModal';
 import BillingModal from '../../components/ui/BillingModal';
 import AiAssistantModal from './components/AiAssistantModal';
+import SEO from '../../components/common/SEO';
 
 // Views (lazy-loaded para mejor rendimiento)
 const DashboardView = lazy(() => import('./views/DashboardView'));
@@ -175,10 +176,16 @@ export default function AdminPage() {
     <div 
       className="h-screen max-h-screen overflow-hidden bg-[#F6F4EF] flex flex-col lg:flex-row"
       style={{ 
-        '--primary-brand': business?.theme_color || '#2563EB',
+        '--primary-brand': business?.theme_color || '#0284C7',
         '--secondary-brand': business?.color_secundario || '#F9FAFB'
       }}
     >
+      <SEO 
+        title="Panel de Administración | NEGU"
+        description="Panel de administración de pedidos, catálogo y productos para tu negocio en NEGU."
+        canonical="https://negu.pro/admin"
+        noindex={true}
+      />
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 

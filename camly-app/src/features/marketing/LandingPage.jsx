@@ -12,6 +12,9 @@ import {
 } from 'lucide-react';
 import camlyPreview from '../../assets/ejemplo.jpeg';
 import SaaSLogo from '../../components/common/SaaSLogo';
+import SEO from '../../components/common/SEO';
+import MarketingNavbar from './components/MarketingNavbar';
+import MarketingFooter from './components/MarketingFooter';
 import { useAnimatedCounter } from '../../lib/utils';
 
 const BUSINESS_TYPES = [
@@ -72,128 +75,13 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen overflow-x-clip bg-[#FBFBFC] text-gray-900 selection:bg-cyan-500 selection:text-white font-sans">
+      <SEO 
+        title="NEGU | Gestión para tu negocio"
+        description="NEGU simplifica la gestión de tu negocio con menú digital, pedidos, clientes y WhatsApp en un solo lugar."
+        canonical="https://negu.pro/"
+      />
 
-      {/* ═══════════ TOP ANNOUNCEMENT BAR ═══════════ */}
-      <div className="bg-gray-950 text-white text-xs py-2 px-3 sm:px-4 border-b border-gray-800/80 relative z-50">
-        <div className="max-w-6xl mx-auto flex items-center justify-center sm:justify-between gap-2.5">
-          <div className="flex items-center gap-2 text-center sm:text-left">
-            <span className="w-2 h-2 rounded-full bg-[#11CEFC] animate-pulse shrink-0" />
-            <span className="font-medium text-gray-300 text-[11px] sm:text-xs">
-              Prueba <strong className="text-white font-bold">7 días gratis</strong> · Sin tarjeta · Pagos directos a tu Nequi o cuenta
-            </span>
-          </div>
-          <Link to="/registro" className="hidden sm:inline-flex items-center gap-1 text-[#11CEFC] hover:text-cyan-300 font-bold transition-colors shrink-0 text-xs">
-            <span>Crear catálogo</span><ArrowRight size={12} />
-          </Link>
-        </div>
-      </div>
-
-      {/* ═══════════ STICKY NAVBAR ═══════════ */}
-      <header className="sticky top-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-xs transition-all duration-200">
-        <div className="max-w-6xl mx-auto px-3.5 sm:px-6">
-          <nav className="h-16 sm:h-20 flex items-center justify-between" aria-label="Navegación principal">
-            
-            {/* Logo Negu */}
-            <Link to="/" className="flex items-center gap-2 shrink-0 py-1" aria-label="Ir al inicio de Negu">
-              <SaaSLogo className="h-10 sm:h-12 md:h-14" />
-            </Link>
-
-            {/* Desktop Navigation Links */}
-            <div className="hidden md:flex items-center gap-6 lg:gap-8 text-sm font-semibold text-gray-600">
-              <a href="#como-funciona" className="hover:text-cyan-600 transition-colors">Cómo funciona</a>
-              <a href="#solucion"      className="hover:text-cyan-600 transition-colors">Ventajas</a>
-              <a href="#comparativa"   className="hover:text-cyan-600 transition-colors">Antes vs Negu</a>
-              <a href="#precios"       className="hover:text-cyan-600 transition-colors">Planes</a>
-              <a href="#faq"           className="hover:text-cyan-600 transition-colors">Preguntas</a>
-            </div>
-
-            {/* Actions / CTA */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Link 
-                to="/login" 
-                className="hidden sm:inline-flex text-xs sm:text-sm font-semibold text-gray-700 hover:text-gray-950 px-3 py-2 rounded-full transition-colors"
-              >
-                Entrar
-              </Link>
-
-              <Link 
-                to="/registro" 
-                className="inline-flex items-center gap-2 bg-gray-950 hover:bg-black text-white hover:text-[#11CEFC] text-xs sm:text-sm font-bold px-4 sm:px-5 py-2.5 rounded-full border border-gray-800 shadow-sm active:scale-95 transition-all duration-150"
-              >
-                <span>Probar gratis</span>
-                <ArrowRight size={14} className="shrink-0 text-[#11CEFC]" />
-              </Link>
-
-              {/* Hamburger Button for Mobile */}
-              <button 
-                onClick={() => setMenuOpen(!menuOpen)} 
-                className="md:hidden w-10 h-10 flex items-center justify-center rounded-xl text-gray-700 hover:bg-gray-100 transition-colors"
-                aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
-              >
-                {menuOpen ? <X size={20} /> : <Menu size={20} />}
-              </button>
-            </div>
-          </nav>
-
-          {/* Mobile Menu Dropdown */}
-          {menuOpen && (
-            <div className="pb-4 pt-1 flex flex-col gap-1 text-sm font-semibold text-gray-700 md:hidden animate-fade-in-down border-t border-gray-100">
-              <a 
-                href="#como-funciona" 
-                onClick={() => setMenuOpen(false)}
-                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
-              >
-                Cómo funciona
-              </a>
-              <a 
-                href="#solucion" 
-                onClick={() => setMenuOpen(false)}
-                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
-              >
-                Ventajas de Negu
-              </a>
-              <a 
-                href="#comparativa" 
-                onClick={() => setMenuOpen(false)}
-                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
-              >
-                Antes vs Con Negu
-              </a>
-              <a 
-                href="#precios" 
-                onClick={() => setMenuOpen(false)}
-                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
-              >
-                Planes y Precios
-              </a>
-              <a 
-                href="#faq" 
-                onClick={() => setMenuOpen(false)}
-                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
-              >
-                Preguntas frecuentes
-              </a>
-              <div className="pt-2 border-t border-gray-100 flex flex-col gap-2">
-                <Link 
-                  to="/login" 
-                  onClick={() => setMenuOpen(false)} 
-                  className="w-full text-center py-2.5 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-                >
-                  Iniciar sesión
-                </Link>
-                <Link 
-                  to="/registro" 
-                  onClick={() => setMenuOpen(false)} 
-                  className="w-full text-center py-2.5 text-sm font-bold text-white bg-gray-950 hover:bg-black rounded-xl border border-gray-800 transition-colors flex items-center justify-center gap-2"
-                >
-                  <span>Crear tienda gratis</span>
-                  <ArrowRight size={14} className="text-[#11CEFC]" />
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
+      <MarketingNavbar />
 
       {/* ═══════════ HERO SECTION ═══════════ */}
       <section className="relative pt-8 sm:pt-14 lg:pt-18 pb-16 sm:pb-24 overflow-hidden gradient-soft-cyan border-b border-gray-200/70">
@@ -883,27 +771,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══════════ FOOTER MINIMALISTA ═══════════ */}
-      <footer className="py-10 bg-black text-gray-400 text-sm border-t border-gray-900">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <SaaSLogo className="h-8 text-white" />
-            <span className="text-xs text-gray-500 hidden md:inline">
-              · Catálogo digital y pedidos WhatsApp
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs sm:text-sm font-semibold">
-            <Link to="/login"    className="hover:text-white transition-colors">Iniciar sesión</Link>
-            <Link to="/registro" className="hover:text-white transition-colors">Crear tienda</Link>
-            <Link to="/tracking" className="hover:text-white transition-colors">Rastreo de pedido</Link>
-          </div>
-
-          <p className="text-gray-500 text-xs text-center sm:text-right">
-            © {new Date().getFullYear()} Negu. Todos los derechos reservados.
-          </p>
-        </div>
-      </footer>
+      {/* ═══════════ FOOTER COMPONENT ═══════════ */}
+      <MarketingFooter />
 
     </div>
   );

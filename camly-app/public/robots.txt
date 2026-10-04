@@ -1,0 +1,22 @@
+# Robots.txt — NEGU (https://negu.pro)
+# Permite el rastreo de páginas públicas e indexables.
+# Bloquea el rastreo de rutas privadas y utilitarias.
+
+User-agent: *
+Allow: /
+Allow: /menu-digital
+Allow: /pedidos-whatsapp
+Allow: /gestion-de-pedidos
+Allow: /para-restaurantes
+Allow: /para-negocios
+
+# Rutas privadas, administrativas y de tracking privado
+Disallow: /admin
+Disallow: /admin/
+Disallow: /tracking
+Disallow: /tracking/
+Disallow: /bienvenido
+Disallow: /bienvenido/
+
+# Sitemap oficial
+Sitemap: https://negu.pro/sitemap.xml

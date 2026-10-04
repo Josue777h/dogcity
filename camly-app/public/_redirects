@@ -1,1 +1,4 @@
+https://www.negu.pro/* https://negu.pro/:splat 301!
+http://www.negu.pro/* https://negu.pro/:splat 301!
+http://negu.pro/* https://negu.pro/:splat 301!
 /* /index.html 200

@@ -4,6 +4,7 @@ import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, ArrowRight, ShieldCheck, H
 import { signIn } from '../../lib/supabase';
 import { useAuthStore, useToastStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
+import SEO from '../../components/common/SEO';
 
 export default function LoginPage() {
   const navigate   = useNavigate();
@@ -46,7 +47,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F4EF] text-gray-900 flex flex-col justify-center items-center py-10 px-4 sm:px-6 relative overflow-x-hidden selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-[#F6F4EF] text-gray-900 flex flex-col justify-center items-center py-10 px-4 sm:px-6 relative overflow-x-hidden selection:bg-cyan-500 selection:text-white">
+      <SEO 
+        title="Iniciar sesión | NEGU"
+        description="Acceso a la plataforma administrativa de NEGU para tu negocio."
+        canonical="https://negu.pro/login"
+        noindex={true}
+      />
       
       {/* Background ambient radial gradients (Wenú style) */}
       <div 

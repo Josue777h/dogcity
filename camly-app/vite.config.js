@@ -9,24 +9,25 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'saas-logo.webp'],
+      includeAssets: ['favicon.ico', 'favicon.png', 'icono.png', 'og-image.png'],
       manifest: {
-        name: 'Camly SaaS',
-        short_name: 'Camly',
-        description: 'Vende por WhatsApp en segundos.',
-        theme_color: '#2563EB',
-        background_color: '#ffffff',
+        name: 'NEGU',
+        short_name: 'NEGU',
+        description: 'Gestión para tu negocio con menú digital y pedidos por WhatsApp.',
+        theme_color: '#0284C7',
+        background_color: '#090D16',
         display: 'standalone',
+        start_url: '/',
         icons: [
           {
-            src: 'saas-logo.webp',
+            src: '/icono.png',
             sizes: '192x192',
-            type: 'image/webp'
+            type: 'image/png'
           },
           {
-            src: 'saas-logo.webp',
+            src: '/icono.png',
             sizes: '512x512',
-            type: 'image/webp'
+            type: 'image/png'
           }
         ]
       }

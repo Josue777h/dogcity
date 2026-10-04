@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { formatMoney, isDeliveryPending, getOrderSubtotal } from '../../lib/utils';
+import SEO from '../../components/common/SEO';
 
 const STEPS = [
   { id: 'nuevo', label: 'Recibido', desc: 'Confirmando orden', icon: Clock },
@@ -145,6 +146,12 @@ export default function TrackingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 sm:py-10 px-4 sm:px-6">
+      <SEO 
+        title="Rastreo de pedido | NEGU"
+        description="Consulta el estado en vivo de tu comanda y entrega a domicilio."
+        canonical="https://negu.pro/tracking"
+        noindex={true}
+      />
       <div className="max-w-xl mx-auto space-y-5 animate-fade-in-up">
         
         {/* Barra superior de navegación */}

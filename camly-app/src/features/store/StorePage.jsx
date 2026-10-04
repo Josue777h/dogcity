@@ -7,6 +7,7 @@ import { formatMoney, checkBusinessSchedule } from '../../lib/utils';
 import ProductCard from './ProductCard';
 import OrderDrawer from './OrderDrawer';
 import StoreFooter from './components/StoreFooter';
+import SEO from '../../components/common/SEO';
 
 export default function StorePage() {
   const [searchParams] = useSearchParams();
@@ -93,6 +94,12 @@ export default function StorePage() {
   if (!business) {
     return (
       <div className="min-h-screen bg-[#F6F4EF] flex flex-col items-center justify-center p-6 text-center">
+        <SEO 
+          title="Tienda no encontrada | NEGU"
+          description="El catálogo que buscas no existe o el enlace está incompleto."
+          canonical={`https://negu.pro/${slug}`}
+          noindex={true}
+        />
         <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-4 border border-blue-100">
           <Store size={32} />
         </div>
@@ -104,7 +111,7 @@ export default function StorePage() {
           <Link to="/" className="inline-flex items-center justify-center gap-2 bg-white text-gray-700 hover:text-gray-950 font-bold px-5 py-2.5 rounded-full text-sm border border-gray-200 shadow-xs transition">
             Volver al inicio
           </Link>
-          <Link to="/registro" className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-full text-sm shadow-glow-blue transition">
+          <Link to="/registro" className="inline-flex items-center justify-center gap-2 bg-gray-950 hover:bg-black text-white hover:text-[#11CEFC] font-bold px-5 py-2.5 rounded-full text-sm border border-gray-800 transition">
             Crear mi propio catálogo gratis
           </Link>
         </div>
@@ -116,6 +123,21 @@ export default function StorePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 selection:bg-orange-500 selection:text-white">
+      <SEO 
+        title={`${business.nombre_visible || business.nombre} | Menú digital en NEGU`}
+        description={business.descripcion || `Explora el catálogo interactivo de ${business.nombre_visible || business.nombre}. Haz tu pedido para domicilio con GPS o recogida en local por WhatsApp.`}
+        canonical={`https://negu.pro/${slug}`}
+        ogImage={business.logo_url || 'https://negu.pro/og-image.png'}
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "Restaurant",
+          "name": business.nombre_visible || business.nombre,
+          "url": `https://negu.pro/${slug}`,
+          "image": business.logo_url || "https://negu.pro/og-image.png",
+          "description": business.descripcion || "Menú digital interactivo en NEGU",
+          ...(business.direccion ? { "address": { "@type": "PostalAddress", "streetAddress": business.direccion } } : {})
+        }}
+      />
       
       {/* ── TOP NAV ── */}
       <nav className="sticky top-0 z-[80] bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-xs pt-safe">
