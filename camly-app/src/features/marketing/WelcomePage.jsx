@@ -35,9 +35,9 @@ export default function WelcomePage() {
         {/* Main Card */}
         <div className="card p-6 sm:p-10 shadow-xl border-gray-200/80 bg-white text-center relative overflow-hidden">
           {/* Subtle top celebration accent */}
-          <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600" />
+          <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600" />
           
-          <div className="w-16 h-16 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-5 shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-5 shadow-sm">
             <PartyPopper size={32} />
           </div>
 
@@ -84,15 +84,15 @@ export default function WelcomePage() {
           <div className="mt-8 text-left border-t border-gray-100 pt-6">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Primeros pasos recomendados</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-xl bg-white border border-gray-200 border-l-2 border-l-orange-500 text-xs space-y-1">
+              <div className="p-3.5 rounded-xl bg-white border border-gray-200 border-l-2 border-l-blue-600 text-xs space-y-1">
                 <span className="font-bold text-gray-900">1. Sube productos</span>
                 <p className="text-gray-500">Agrega fotos, precios y descripciones de tu menú.</p>
               </div>
-              <div className="p-3.5 rounded-xl bg-white border border-gray-200 border-l-2 border-l-orange-500 text-xs space-y-1">
+              <div className="p-3.5 rounded-xl bg-white border border-gray-200 border-l-2 border-l-blue-600 text-xs space-y-1">
                 <span className="font-bold text-gray-900">2. Personaliza</span>
                 <p className="text-gray-500">Ajusta tu logo, banner y colores de marca.</p>
               </div>
-              <div className="p-3.5 rounded-xl bg-white border border-gray-200 border-l-2 border-l-orange-500 text-xs space-y-1">
+              <div className="p-3.5 rounded-xl bg-white border border-gray-200 border-l-2 border-l-blue-600 text-xs space-y-1">
                 <span className="font-bold text-gray-900">3. Comparte tu link</span>
                 <p className="text-gray-500">Pégalo en tu bio de Instagram y estados de WhatsApp.</p>
               </div>

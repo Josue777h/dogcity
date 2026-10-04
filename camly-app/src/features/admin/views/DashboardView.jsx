@@ -24,7 +24,7 @@ function StatCard({ label, value, rawValue, isMoney, icon: Icon, trend, trendPos
             <Icon size={16} strokeWidth={2} />
           </div>
         </div>
-        <p className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight tabular-nums">
+        <p className="text-xl sm:text-2xl lg:text-3xl font-black text-gray-900 tracking-tight tabular-nums truncate">
           {display}
         </p>
       </div>
@@ -133,10 +133,10 @@ export default function DashboardView({ orders, products, business, onNavigate }
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
           <button
             onClick={() => onNavigate('products')}
-            className="btn-primary py-2 px-3.5 text-xs font-semibold"
+            className="btn-primary py-2.5 px-3.5 text-xs font-semibold flex-1 sm:flex-initial justify-center"
           >
             <PackagePlus size={15} />
             <span>Nuevo producto</span>
@@ -145,7 +145,7 @@ export default function DashboardView({ orders, products, business, onNavigate }
             href={`/${business?.nombre || ''}`}
             target="_blank"
             rel="noreferrer"
-            className="btn-secondary py-2 px-3 text-xs font-semibold"
+            className="btn-secondary py-2.5 px-3 text-xs font-semibold flex-1 sm:flex-initial justify-center"
           >
             <span>Ver mi tienda</span>
             <ExternalLink size={13} />

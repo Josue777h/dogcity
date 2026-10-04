@@ -3,7 +3,7 @@ import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { ShoppingCart, Search, MessageCircle, Store, Clock, MapPin, Sparkles, X, ChevronRight, Phone } from 'lucide-react';
 import { useBusinessStore, useCartStore, useToastStore } from '../../stores';
 import { fetchBusiness, fetchProducts, fetchSubscription, fetchCategories } from '../../lib/supabase';
-import { formatMoney } from '../../lib/utils';
+import { formatMoney, checkBusinessSchedule } from '../../lib/utils';
 import ProductCard from './ProductCard';
 import OrderDrawer from './OrderDrawer';
 import StoreFooter from './components/StoreFooter';
@@ -22,6 +22,8 @@ export default function StorePage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [currentCategory, setCurrentCategory] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
+
+  const scheduleStatus = useMemo(() => checkBusinessSchedule(business), [business]);
 
   useEffect(() => {
     async function load() {
@@ -88,6 +90,28 @@ export default function StorePage() {
     );
   }
 
+  if (!business) {
+    return (
+      <div className="min-h-screen bg-[#F6F4EF] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-4 border border-blue-100">
+          <Store size={32} />
+        </div>
+        <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Tienda no encontrada</h2>
+        <p className="text-sm text-gray-500 max-w-sm mb-6">
+          El catálogo <strong className="text-gray-800">/{slug}</strong> no existe o el enlace está incompleto.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Link to="/" className="inline-flex items-center justify-center gap-2 bg-white text-gray-700 hover:text-gray-950 font-bold px-5 py-2.5 rounded-full text-sm border border-gray-200 shadow-xs transition">
+            Volver al inicio
+          </Link>
+          <Link to="/registro" className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-full text-sm shadow-glow-blue transition">
+            Crear mi propio catálogo gratis
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const brandColor = business?.theme_color || '#EA580C';
 
   return (
@@ -114,9 +138,9 @@ export default function StorePage() {
                 {business?.nombre_visible || 'Tienda Digital'}
               </h1>
               <div className="flex items-center gap-2 text-[11px] text-gray-500 truncate mt-0.5">
-                <span className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Abierto ahora
+                <span className={`flex items-center gap-1 font-medium ${scheduleStatus.isOpen ? 'text-emerald-700' : 'text-amber-700'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${scheduleStatus.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                  {scheduleStatus.message || (scheduleStatus.isOpen ? 'Abierto ahora' : 'Cerrado ahora')}
                 </span>
                 {business?.direccion && (
                   <span className="hidden sm:inline-block truncate">
@@ -155,6 +179,14 @@ export default function StorePage() {
         </div>
       </nav>
 
+      {/* ── AVISO DE COMERCIO CERRADO ── */}
+      {!scheduleStatus.isOpen && (
+        <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-900 px-4 py-2 text-xs font-semibold flex items-center justify-center gap-2 text-center animate-fade-in">
+          <Clock size={14} className="shrink-0 text-amber-700" />
+          <span>Comercio en pausa o cerrado: {scheduleStatus.message}. Puedes ver el menú pero no se están procesando pedidos.</span>
+        </div>
+      )}
+
       {/* ── MAIN CONTENT ── */}
       <main className="pb-28 sm:pb-20">
         <div className="fluid-container pt-5">
@@ -191,7 +223,7 @@ export default function StorePage() {
                   </p>
                   
                   {/* Horizontal Scroll on Mobile / Vertical on Desktop */}
-                  <div className="flex lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0 hide-scrollbar">
+                  <div className="flex lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0 hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
                     {visibleCategories.map(cat => {
                       const isActive = currentCategory === cat;
                       return (
@@ -385,7 +417,7 @@ export default function StorePage() {
       )}
 
       {/* Order Drawer and Footer */}
-      <OrderDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <OrderDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} scheduleStatus={scheduleStatus} />
       <StoreFooter business={business} />
 
     </div>

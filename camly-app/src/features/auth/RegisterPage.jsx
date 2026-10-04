@@ -1,49 +1,34 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Store, Phone, Mail, Lock, ArrowRight, Loader2, CheckCircle2, ShoppingBag, Truck, BarChart3, ShieldCheck, MessageCircle, Check, ArrowLeft, Sparkles } from 'lucide-react';
+import { Store, Phone, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, ArrowLeft, Users, CheckCircle2 } from 'lucide-react';
 import { registerBusiness, signOut } from '../../lib/supabase';
 import { useToastStore, useAuthStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
 import { getPasswordStrength } from '../../lib/utils';
-
-const FEATURES = [
-  { icon: ShoppingBag,   text: 'Menú digital responsive' },
-  { icon: MessageCircle, text: 'Pedidos directos con GPS' },
-  { icon: BarChart3,     text: 'Panel de ventas en vivo' },
-  { icon: Truck,         text: 'Gestión de domiciliarios' },
-];
-
-const STEPS = [
-  { num: 1, label: 'Negocio',   desc: 'Nombre comercial' },
-  { num: 2, label: 'Contacto',  desc: 'WhatsApp y correo' },
-  { num: 3, label: 'Seguridad', desc: 'Contraseña de acceso' },
-];
 
 export default function RegisterPage() {
   const navigate   = useNavigate();
   const addToast   = useToastStore(s => s.addToast);
   const setSession = useAuthStore(s => s.setSession);
 
-  const [loading, setLoading] = useState(false);
+  const [loading,      setLoading]      = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
-    businessName: '', phone: '', email: '', password: '',
+    businessName: '',
+    phone: '',
+    email: '',
+    password: '',
   });
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
-  // Correct step completion logic
-  const isStep1Complete = form.businessName.trim().length >= 2;
-  const isStep2Complete = form.phone.trim().length >= 7 && form.email.includes('@') && form.email.includes('.');
-  const isStep3Complete = form.password.length >= 8;
-
-  const completedSteps = [isStep1Complete, isStep2Complete, isStep3Complete];
-  const progress = (completedSteps.filter(Boolean).length / 3) * 100;
   const passwordStrength = getPasswordStrength(form.password);
+  const isPasswordValid = form.password.length >= 8;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isStep1Complete || !isStep2Complete || !isStep3Complete) {
-      addToast('Por favor completa todos los campos requeridos.', 'warning');
+    if (!form.businessName.trim() || !form.phone.trim() || !form.email.trim() || !isPasswordValid) {
+      addToast('Por favor completa todos los campos (contraseña mínimo 8 caracteres).', 'warning');
       return;
     }
     setLoading(true);
@@ -66,201 +51,168 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 relative">
+    <div className="min-h-screen bg-[#F6F4EF] text-gray-900 flex flex-col justify-center items-center py-10 px-4 sm:px-6 relative overflow-x-hidden selection:bg-blue-600 selection:text-white">
       
-      {/* Top back navigation */}
-      <div className="w-full max-w-4xl mx-auto mb-4">
+      {/* Background ambient radial gradients (Wenú style) */}
+      <div 
+        className="fixed inset-0 pointer-events-none -z-10"
+        style={{
+          background: `
+            radial-gradient(1000px 500px at 85% -5%, rgba(239, 246, 255, 0.9) 0%, transparent 60%),
+            radial-gradient(900px 550px at -5% 35%, rgba(254, 243, 199, 0.45) 0%, transparent 55%),
+            radial-gradient(800px 450px at 50% 100%, rgba(243, 244, 246, 0.7) 0%, transparent 50%)
+          `
+        }}
+      />
+
+      {/* Floating Back Button (Wenú style pill) */}
+      <div className="fixed top-4 left-4 sm:top-6 sm:left-6 z-40">
         <Link
           to="/"
-          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-gray-200/60"
+          className="inline-flex items-center gap-2 bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 px-4 py-2 rounded-full text-xs sm:text-sm font-semibold border border-gray-200/80 shadow-xs hover:shadow-warm transition-all duration-150 backdrop-blur-sm"
         >
-          <ArrowLeft size={16} /> Volver al inicio
+          <ArrowLeft size={15} strokeWidth={2.5} />
+          <span>Regresar</span>
         </Link>
       </div>
 
-      <div className="w-full max-w-4xl mx-auto card overflow-hidden shadow-xl border-gray-200/80 bg-white grid grid-cols-1 lg:grid-cols-12 animate-fade-in-up">
+      <div className="w-full max-w-[440px] mx-auto flex flex-col items-center">
         
-        {/* ── LEFT PANEL: Steps & Value Props ── */}
-        <div className="hidden lg:flex lg:col-span-5 bg-gray-900 text-white p-8 sm:p-10 flex-col justify-between relative overflow-hidden">
-          <div>
-            <div className="mb-8">
-              <SaaSLogo className="h-8 text-white" />
-            </div>
+        {/* Header with Centered Logo & Display Title */}
+        <div className="text-center mb-6 sm:mb-8 flex flex-col items-center">
+          <Link to="/" className="inline-block transition-transform hover:scale-[1.02] mb-4">
+            <SaaSLogo className="h-9 sm:h-10" />
+          </Link>
 
-            <p className="text-xs font-bold uppercase tracking-wider text-orange-400 mb-3">
-              Prueba gratis por 7 días
-            </p>
+          <span className="inline-block text-[11px] font-extrabold uppercase tracking-[0.22em] text-blue-600 mb-1.5">
+            Crear Cuenta
+          </span>
 
-            <h2 className="text-2xl font-black tracking-tight text-white leading-snug mb-3">
-              Lleva tu negocio al <span className="text-orange-500">siguiente nivel</span>.
-            </h2>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              Crea tu catálogo en línea y comienza a recibir pedidos con GPS directamente en tu WhatsApp.
-            </p>
-
-            {/* Steps indicator */}
-            <div className="space-y-4 my-8">
-              {STEPS.map((step, i) => {
-                const isDone = completedSteps[i];
-                return (
-                  <div key={step.num} className="flex items-center gap-3">
-                    <div
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 transition-all ${
-                        isDone 
-                          ? 'bg-orange-600 text-white shadow-xs' 
-                          : 'bg-white/10 text-gray-400'
-                      }`}
-                    >
-                      {isDone ? <Check size={14} strokeWidth={3} /> : step.num}
-                    </div>
-                    <div>
-                      <p className={`text-xs font-semibold ${isDone ? 'text-white' : 'text-gray-400'}`}>
-                        {step.label}
-                      </p>
-                      <p className="text-[11px] text-gray-500">{step.desc}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Features grid */}
-          <div className="pt-6 border-t border-gray-800 grid grid-cols-2 gap-3 text-xs text-gray-300">
-            {FEATURES.map((feat, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <feat.icon size={14} className="text-orange-500 shrink-0" />
-                <span className="truncate">{feat.text}</span>
-              </div>
-            ))}
-          </div>
-
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-950 tracking-tight">
+            ¡Únete a Move!
+          </h1>
+          
+          <p className="text-xs sm:text-sm text-gray-500 mt-1.5 font-medium">
+            Crea tu cuenta y empieza a digitalizar tu negocio.
+          </p>
         </div>
 
-        {/* ── RIGHT PANEL: Registration Form ── */}
-        <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-center">
+        {/* Auth Form Card */}
+        <div className="w-full bg-white rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-200/80 transition-all">
           
-          {/* Mobile Logo */}
-          <div className="flex justify-center mb-6 lg:hidden">
-            <SaaSLogo className="h-8" />
-          </div>
-
-          <div className="mb-5">
-            <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-              Crear mi tienda digital
-            </h1>
-            <p className="text-sm text-gray-600 mt-1 leading-relaxed">
-              Comienza en menos de 2 minutos. No requieres tarjeta de crédito.
-            </p>
-          </div>
-
-          {/* Progress bar */}
-          <div className="mb-5 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-            <div className="flex justify-between items-center mb-1.5 text-xs font-semibold">
-              <span className="text-gray-500">Completando datos</span>
-              <span className="text-orange-600">{Math.round(progress)}%</span>
-            </div>
-            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-orange-600 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-3.5">
-            {/* Business name */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* Business Name Field */}
             <div>
-              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-gray-900 mb-1.5">
                 Nombre de tu negocio
               </label>
-              <div className="relative">
-                <Store size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <div className="relative flex items-center">
+                <Store size={17} className="absolute left-3.5 text-gray-400 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Ej: Burger House o Café Gourmet"
                   value={form.businessName}
                   onChange={set('businessName')}
-                  className="input-field pl-10 pr-9 text-sm"
+                  className="w-full pl-10 pr-10 py-3 bg-[#FAFAF8] hover:bg-white focus:bg-white text-gray-900 text-sm font-medium rounded-2xl border border-gray-200 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-500/15 transition-all placeholder:text-gray-400 placeholder:font-normal"
                   required
                 />
-                {isStep1Complete && (
-                  <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600" />
+                {form.businessName.trim().length >= 2 && (
+                  <CheckCircle2 size={16} className="absolute right-3.5 text-emerald-600 pointer-events-none" />
                 )}
               </div>
             </div>
 
-            {/* Phone + Email */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
-                  WhatsApp del negocio
-                </label>
-                <div className="relative">
-                  <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                  <input
-                    type="tel"
-                    placeholder="Ej: 573001234567"
-                    value={form.phone}
-                    onChange={set('phone')}
-                    className="input-field pl-10 pr-9 text-sm"
-                    required
-                  />
-                  {form.phone.trim().length >= 7 && (
-                    <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600" />
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
-                  Correo electrónico
-                </label>
-                <div className="relative">
-                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                  <input
-                    type="email"
-                    placeholder="tu@negocio.com"
-                    value={form.email}
-                    onChange={set('email')}
-                    className="input-field pl-10 pr-9 text-sm"
-                    required
-                  />
-                  {form.email.includes('@') && form.email.includes('.') && (
-                    <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600" />
-                  )}
-                </div>
+            {/* WhatsApp Phone Field */}
+            <div>
+              <label className="block text-xs font-bold text-gray-900 mb-1.5">
+                WhatsApp del negocio
+              </label>
+              <div className="relative flex items-center">
+                <Phone size={17} className="absolute left-3.5 text-gray-400 pointer-events-none" />
+                <input
+                  type="tel"
+                  placeholder="Ej: 573001234567"
+                  value={form.phone}
+                  onChange={set('phone')}
+                  className="w-full pl-10 pr-10 py-3 bg-[#FAFAF8] hover:bg-white focus:bg-white text-gray-900 text-sm font-medium rounded-2xl border border-gray-200 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-500/15 transition-all placeholder:text-gray-400 placeholder:font-normal"
+                  required
+                />
+                {form.phone.trim().length >= 7 && (
+                  <CheckCircle2 size={16} className="absolute right-3.5 text-emerald-600 pointer-events-none" />
+                )}
               </div>
             </div>
 
-            {/* Password */}
+            {/* Email Field */}
             <div>
-              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
-                Contraseña (mínimo 8 caracteres)
+              <label className="block text-xs font-bold text-gray-900 mb-1.5">
+                Correo electrónico
               </label>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <div className="relative flex items-center">
+                <Mail size={17} className="absolute left-3.5 text-gray-400 pointer-events-none" />
                 <input
-                  type="password"
-                  placeholder="••••••••"
+                  type="email"
+                  placeholder="tu@correo.com"
+                  value={form.email}
+                  onChange={set('email')}
+                  className="w-full pl-10 pr-10 py-3 bg-[#FAFAF8] hover:bg-white focus:bg-white text-gray-900 text-sm font-medium rounded-2xl border border-gray-200 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-500/15 transition-all placeholder:text-gray-400 placeholder:font-normal"
+                  required
+                  autoComplete="email"
+                />
+                {form.email.includes('@') && form.email.includes('.') && (
+                  <CheckCircle2 size={16} className="absolute right-3.5 text-emerald-600 pointer-events-none" />
+                )}
+              </div>
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label className="block text-xs font-bold text-gray-900 mb-1.5">
+                Contraseña
+              </label>
+              <div className="relative flex items-center">
+                <Lock size={17} className="absolute left-3.5 text-gray-400 pointer-events-none" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Crea una contraseña segura"
                   value={form.password}
                   onChange={set('password')}
                   minLength={8}
-                  className="input-field pl-10 pr-9 text-sm"
+                  className="w-full pl-10 pr-10 py-3 bg-[#FAFAF8] hover:bg-white focus:bg-white text-gray-900 text-sm font-medium rounded-2xl border border-gray-200 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-500/15 transition-all placeholder:text-gray-400 placeholder:font-normal"
                   required
+                  autoComplete="new-password"
                 />
-                {isStep3Complete && (
-                  <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600" />
-                )}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 text-gray-400 hover:text-gray-600 p-1.5 rounded-lg transition-colors cursor-pointer"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
 
-              {form.password && (
-                <div className="mt-2 space-y-1">
-                  <div className="flex gap-1">
+              {/* Password Helper & Strength Meter */}
+              <div className="mt-2 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] text-gray-500">
+                  <span className={form.password.length > 0 && !isPasswordValid ? 'text-amber-600 font-semibold' : ''}>
+                    Mínimo 8 caracteres
+                  </span>
+                  {form.password && (
+                    <span className="font-semibold text-gray-600">
+                      {passwordStrength.label}
+                    </span>
+                  )}
+                </div>
+
+                {form.password && (
+                  <div className="flex gap-1.5">
                     {[1, 2, 3].map(i => (
                       <div
                         key={i}
-                        className={`h-1 flex-1 rounded-full transition-all duration-200 ${
+                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${
                           i <= passwordStrength.score
                             ? passwordStrength.score === 3
                               ? 'bg-emerald-500'
@@ -272,44 +224,56 @@ export default function RegisterPage() {
                       />
                     ))}
                   </div>
-                  <p className="text-[11px] font-medium text-gray-500">
-                    Seguridad: {passwordStrength.label}
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full py-3.5 text-sm font-semibold mt-3 shadow-sm"
+              className="w-full mt-3 py-3.5 px-6 rounded-full font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all duration-150 shadow-glow-blue flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? (
-                <Loader2 size={16} className="animate-spin" />
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Creando tu tienda...</span>
+                </>
               ) : (
                 <>
-                  <span>Crear mi tienda gratis</span>
-                  <ArrowRight size={16} />
+                  <span>Crear mi cuenta</span>
+                  <ArrowRight size={15} strokeWidth={2.5} />
                 </>
               )}
             </button>
           </form>
 
-          {/* Footer switcher */}
-          <div className="mt-5 pt-4 border-t border-gray-100 text-center">
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200/80" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-white px-3 font-semibold text-gray-400">o</span>
+            </div>
+          </div>
+
+          {/* Switch to Login */}
+          <div className="text-center">
             <p className="text-xs sm:text-sm text-gray-600">
-              ¿Ya tienes una cuenta creada?{' '}
-              <Link to="/login" className="font-semibold text-orange-600 hover:text-orange-700 hover:underline">
-                Iniciar sesión
+              ¿Ya tienes cuenta?{' '}
+              <Link to="/login" className="font-bold text-blue-600 hover:text-blue-700 hover:underline">
+                Inicia sesión aquí
               </Link>
             </p>
           </div>
 
-          <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
-            <ShieldCheck size={13} className="text-emerald-600" />
-            <span>Sin tarjeta de crédito · Cancela cuando quieras</span>
-          </div>
+        </div>
 
+        {/* Footer Brand Note (Wenú style) */}
+        <div className="mt-6 flex items-center justify-center gap-2 text-xs font-medium text-gray-500">
+          <Users size={14} className="text-blue-500 shrink-0" />
+          <span>Miles de emprendedores ya usan Move.</span>
         </div>
 
       </div>

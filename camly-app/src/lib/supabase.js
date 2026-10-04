@@ -30,28 +30,56 @@ function buildRecord(product, schema) {
   const record = {};
   if (schema.fields.name) record[schema.fields.name] = product.name;
   if (schema.fields.price) record[schema.fields.price] = Number(product.price);
-  if (schema.fields.description) record[schema.fields.description] = product.description;
+
+  // Serializar opciones limpiamente en la descripción si hay grupos configurados
+  let finalDescription = (product.description || '').trim();
+  const opciones = Array.isArray(product.opciones) ? product.opciones : [];
+  if (opciones.length > 0) {
+    finalDescription = `${finalDescription}\n<!--CAMLY_OPTIONS:${JSON.stringify(opciones)}-->`;
+  }
+  if (schema.fields.description) record[schema.fields.description] = finalDescription;
+
   if (schema.fields.unit) record[schema.fields.unit] = product.unit || 'unidad';
   if (schema.fields.image) record[schema.fields.image] = product.image || DEFAULT_IMAGE;
   if (schema.fields.category) record[schema.fields.category] = product.categoria || 'Varios';
   if (schema.fields.available) record[schema.fields.available] = product.disponible !== false;
   if (product.negocio_id) record.negocio_id = product.negocio_id;
   if (product.categoria_id) record.categoria_id = product.categoria_id;
+  if (schema.fields.opciones) record[schema.fields.opciones] = opciones;
   return record;
 }
 
 function normalizeProduct(row) {
+  let description = row.descripcion || row.description || '';
+  let opciones = [];
+
+  if (row.opciones && Array.isArray(row.opciones)) {
+    opciones = row.opciones;
+  } else if (typeof description === 'string' && description.includes('<!--CAMLY_OPTIONS:')) {
+    try {
+      const match = description.match(/<!--CAMLY_OPTIONS:(.*?)-->/s);
+      if (match && match[1]) {
+        opciones = JSON.parse(match[1]);
+        description = description.replace(/<!--CAMLY_OPTIONS:(.*?)-->/s, '').trim();
+      }
+    } catch (e) {
+      console.warn('Error parsing product options:', e);
+    }
+  }
+
   return {
     id: Number(row.id),
     name: row.nombre || row.name || 'Producto',
     price: Number(row.precio ?? row.price ?? 0),
-    description: row.descripcion || row.description || '',
+    description,
+    raw_description: row.descripcion || row.description || '',
     unit: row.unidad || row.unit || 'unidad',
     image: row.imagen || row.image || DEFAULT_IMAGE,
     categoria: row.categoria || row.category || 'Varios',
     categoria_id: row.categoria_id || null,
     disponible: row.disponible ?? row.available ?? true,
     negocio_id: row.negocio_id,
+    opciones: Array.isArray(opciones) ? opciones : [],
   };
 }
 

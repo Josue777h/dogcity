@@ -99,15 +99,15 @@ export default function CategoriesView({ businessId }) {
     <div className="space-y-6 animate-fade-in-up">
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
            <h3 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Categorías</h3>
-           <p className="text-sm text-gray-600 mt-1 leading-relaxed">Organiza los productos de tu menú por grupos claros</p>
+           <p className="text-xs sm:text-sm text-gray-600 mt-1 leading-relaxed">Organiza los productos de tu menú por grupos claros</p>
         </div>
         <button 
           onClick={() => setIsAdding(!isAdding)}
-          className="btn-primary py-2 px-4 text-xs font-semibold"
+          className="btn-primary w-full sm:w-auto py-2.5 px-4 text-xs font-semibold shrink-0 justify-center"
         >
-          {isAdding ? <><X size={14} /> Cancelar</> : <><Plus size={14} /> Nueva categoría</>}
+          {isAdding ? <><X size={15} /> Cancelar</> : <><Plus size={15} /> Nueva categoría</>}
         </button>
       </div>
 
@@ -115,9 +115,9 @@ export default function CategoriesView({ businessId }) {
         <div className="space-y-5">
           {/* Add Category Form */}
           {isAdding && (
-            <form onSubmit={handleAdd} className="card p-4 border-orange-200 bg-orange-50/40 animate-fade-in">
-              <p className="text-xs font-semibold text-gray-800 mb-2">Crear nueva categoría</p>
-              <div className="flex flex-col sm:flex-row gap-2 max-w-md">
+            <form onSubmit={handleAdd} className="card p-4 sm:p-5 border-orange-200 bg-orange-50/40 animate-fade-in">
+              <p className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-2.5">Crear nueva categoría</p>
+              <div className="flex flex-col sm:flex-row gap-2.5 max-w-lg">
                 <input 
                   autoFocus
                   type="text" 
@@ -127,41 +127,47 @@ export default function CategoriesView({ businessId }) {
                   className="input-field text-sm flex-1" 
                   required
                 />
-                <button type="submit" disabled={loading} className="btn-primary py-2 px-4 text-xs font-semibold">
-                  {loading ? <Loader2 size={14} className="animate-spin" /> : <><Save size={14} /> Guardar</>}
+                <button 
+                  type="submit" 
+                  disabled={loading} 
+                  className="btn-primary w-full sm:w-auto py-2.5 px-4 text-xs font-semibold shrink-0 justify-center h-[42px]"
+                >
+                  {loading ? <Loader2 size={15} className="animate-spin" /> : <><Save size={15} /> Guardar</>}
                 </button>
               </div>
             </form>
           )}
 
           {/* Grid of categories */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {categories.map(cat => (
               <div key={cat.id} className="card p-4 transition-all hover:border-gray-300 flex flex-col justify-between">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-orange-50 text-orange-600">
-                    <Tag size={16} />
+                <div className="flex justify-between items-start mb-3 gap-2">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-orange-50 text-orange-600 shrink-0">
+                    <Tag size={18} />
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button 
                       onClick={() => { setEditingId(cat.id); setEditingName(cat.nombre); }}
-                      className="btn-ghost p-1 text-gray-400 hover:text-gray-800"
-                      title="Editar"
+                      className="btn-ghost p-1.5 text-gray-400 hover:text-gray-800 tap-target"
+                      title="Editar categoría"
+                      aria-label="Editar categoría"
                     >
-                      <Edit size={14} />
+                      <Edit size={15} />
                     </button>
                     <button 
                       onClick={() => setItemToDelete(cat)}
-                      className="btn-ghost p-1 text-gray-400 hover:text-red-600"
-                      title="Eliminar"
+                      className="btn-ghost p-1.5 -mr-1 text-gray-400 hover:text-red-600 tap-target"
+                      title="Eliminar categoría"
+                      aria-label="Eliminar categoría"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
 
                 {editingId === cat.id ? (
-                  <div className="flex gap-1.5 w-full mt-1">
+                  <div className="flex items-center gap-1.5 w-full mt-1">
                     <input 
                       autoFocus
                       type="text" 
@@ -171,20 +177,20 @@ export default function CategoriesView({ businessId }) {
                          if (e.key === 'Enter') handleUpdate(cat.id);
                          if (e.key === 'Escape') setEditingId(null);
                       }}
-                      className="input-field text-xs py-1 flex-1"
+                      className="input-field text-xs py-1.5 flex-1 min-w-0"
                     />
-                    <button onClick={() => handleUpdate(cat.id)} className="btn-primary p-1.5 text-xs">
-                       <Save size={13}/>
+                    <button onClick={() => handleUpdate(cat.id)} className="btn-primary p-2 text-xs shrink-0" title="Guardar">
+                       <Save size={14}/>
                     </button>
-                    <button onClick={() => setEditingId(null)} className="btn-secondary p-1.5 text-xs">
-                       <X size={13}/>
+                    <button onClick={() => setEditingId(null)} className="btn-secondary p-2 text-xs shrink-0" title="Cancelar">
+                       <X size={14}/>
                     </button>
                   </div>
                 ) : (
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-900 truncate">{cat.nombre}</h4>
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-bold text-gray-900 truncate">{cat.nombre}</h4>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      <span className="font-medium text-orange-600">{getProductCount(cat.id)}</span> {getProductCount(cat.id) === 1 ? 'producto' : 'productos'}
+                      <span className="font-semibold text-orange-600">{getProductCount(cat.id)}</span> {getProductCount(cat.id) === 1 ? 'producto' : 'productos'}
                     </p>
                   </div>
                 )}

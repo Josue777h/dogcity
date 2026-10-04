@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { Store, Loader2, ChevronRight, LogOut, Bike } from 'lucide-react';
+import { Store, Loader2, ChevronRight, LogOut, Bike, Sparkles } from 'lucide-react';
 import { 
   getSupabase, 
   fetchProducts, 
@@ -11,6 +11,7 @@ import {
   fetchSubscription,
   fetchCategories
 } from '../../lib/supabase';
+import { playNewOrderSound } from '../../lib/utils';
 import { useAuthStore, useToastStore, useBusinessStore } from '../../stores';
 
 // Modular Components
@@ -18,6 +19,7 @@ import Sidebar from './components/Sidebar';
 import AdminHeader from './components/AdminHeader';
 import ProductModal from './components/ProductModal';
 import BillingModal from '../../components/ui/BillingModal';
+import AiAssistantModal from './components/AiAssistantModal';
 
 // Views (lazy-loaded para mejor rendimiento)
 const DashboardView = lazy(() => import('./views/DashboardView'));
@@ -42,6 +44,7 @@ export default function AdminPage() {
   const { business, setBusiness, isExpired, setCategories, setProducts: setGlobalProducts } = useBusinessStore();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const addToast = useToastStore((s) => s.addToast);
 
   // Data States
@@ -64,8 +67,22 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (business?.id && session?.user?.id) {
-      const sub = subscribeToOrders(() => {
+      const sub = subscribeToOrders((payload) => {
         loadData(session.user.id, false); // Reload without full loading state
+
+        // Alerta sonora y visual ante nuevo pedido
+        if (!payload || payload.eventType === 'INSERT') {
+          const soundOn = localStorage.getItem('camly_order_sound') !== 'false';
+          if (soundOn) {
+            playNewOrderSound();
+          }
+          const prevTitle = document.title;
+          document.title = '🔔 (1) ¡Nuevo Pedido! - Camly';
+          setTimeout(() => {
+            document.title = prevTitle;
+          }, 8000);
+          addToast('🔔 ¡Tienes un nuevo pedido entrante!', 'success');
+        }
       });
       return () => { sub.unsubscribe(); };
     }
@@ -147,7 +164,7 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-bg-alt flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-[#F6F4EF] flex flex-col items-center justify-center p-4">
         <Loader2 className="animate-spin text-brand mb-4" size={48} />
         <p className="text-xs font-black text-muted uppercase tracking-[0.3em]">Cargando Negocio...</p>
       </div>
@@ -156,7 +173,7 @@ export default function AdminPage() {
 
   return (
     <div 
-      className="min-h-screen bg-bg-alt flex flex-col lg:flex-row"
+      className="h-screen max-h-screen overflow-hidden bg-[#F6F4EF] flex flex-col lg:flex-row"
       style={{ 
         '--primary-brand': business?.theme_color || '#2563EB',
         '--secondary-brand': business?.color_secundario || '#F9FAFB'
@@ -171,14 +188,15 @@ export default function AdminPage() {
         onClose={() => setIsMenuOpen(false)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 relative">
+      <div className="flex-1 flex flex-col min-w-0 h-full max-h-screen overflow-hidden relative">
         <AdminHeader 
           title={activeTab} 
           business={business} 
           onOpenMenu={() => setIsMenuOpen(true)}
+          onOpenAssistant={() => setIsAssistantOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-8 overflow-y-auto relative">
+        <main className="flex-1 min-h-0 px-3 pb-8 pt-3 sm:px-6 sm:pt-4 lg:px-8 overflow-y-auto relative">
           {isExpired && (
             <Suspense fallback={null}>
               <PlanExpiredView onOpenBilling={() => window.dispatchEvent(new CustomEvent('open-billing-modal'))} />
@@ -243,6 +261,26 @@ export default function AdminPage() {
       )}
       
       <BillingModal />
+
+      {/* Floating Movia Trigger */}
+      <button
+        onClick={() => setIsAssistantOpen(true)}
+        className="fixed bottom-5 right-5 z-[70] px-3.5 py-2 rounded-full bg-gray-950 hover:bg-black text-white shadow-lg active:scale-95 transition-all flex items-center gap-2 cursor-pointer border border-gray-800 text-xs font-medium"
+        title="Consultar a Movia"
+        aria-label="Abrir asistente Movia"
+      >
+        <Sparkles size={13} className="text-gray-300" />
+        <span>Movia</span>
+      </button>
+
+      {/* AI Assistant Modal */}
+      <AiAssistantModal 
+        isOpen={isAssistantOpen}
+        onClose={() => setIsAssistantOpen(false)}
+        business={business}
+        productsCount={products.length}
+        onNavigateTab={(tab) => setActiveTab(tab)}
+      />
     </div>
   );
 }

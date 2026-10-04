@@ -3,7 +3,7 @@ import {
   Save, User, Phone, MapPin, Globe, Loader2, 
   Instagram, Facebook, MessageSquare, Palette,
   CheckCircle2, CreditCard, Upload, Smartphone, Check, Settings,
-  Music2, Wallet, Truck, Navigation, Search
+  Music2, Wallet, Truck, Navigation, Search, Clock
 } from 'lucide-react';
 import { getSupabase, uploadImage } from '../../../lib/supabase';
 import { useToastStore } from '../../../stores';
@@ -50,7 +50,37 @@ export default function SettingsView({ business, onUpdate }) {
     costo_por_km: business?.costo_por_km || 1000,
     domicilio_minimo: business?.domicilio_minimo || 3000,
   });
-  
+
+  const [scheduleData, setScheduleData] = useState(() => {
+    const base = {
+      abierto_manual: true,
+      dias: {
+        lunes: { activo: true, abre: '11:00', cierra: '23:00' },
+        martes: { activo: true, abre: '11:00', cierra: '23:00' },
+        miercoles: { activo: true, abre: '11:00', cierra: '23:00' },
+        jueves: { activo: true, abre: '11:00', cierra: '23:00' },
+        viernes: { activo: true, abre: '11:00', cierra: '23:59' },
+        sabado: { activo: true, abre: '11:00', cierra: '23:59' },
+        domingo: { activo: true, abre: '12:00', cierra: '22:00' }
+      }
+    };
+    if (business?.horario && typeof business.horario === 'object') {
+      return { ...base, ...business.horario, dias: { ...base.dias, ...(business.horario.dias || {}) } };
+    }
+    if (typeof business?.footer_message === 'string' && business.footer_message.includes('CAMLY_SCHEDULE:')) {
+      try {
+        const match = business.footer_message.match(/<!--CAMLY_SCHEDULE:(.*?)-->/);
+        if (match && match[1]) {
+          const parsed = JSON.parse(match[1]);
+          return { ...base, ...parsed, dias: { ...base.dias, ...(parsed.dias || {}) } };
+        }
+      } catch (err) {
+        console.warn('Error parsing schedule:', err);
+      }
+    }
+    return base;
+  });
+
   const [isUploading, setIsUploading] = useState(false);
   const [isLocatingGps, setIsLocatingGps] = useState(false);
   const addToast = useToastStore(s => s.addToast);
@@ -86,6 +116,10 @@ export default function SettingsView({ business, onUpdate }) {
     e.preventDefault();
     setLoading(true);
     try {
+      const cleanFooter = (formData.footer_message || '').replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '').trim();
+      const scheduleTag = `<!--CAMLY_SCHEDULE:${JSON.stringify(scheduleData)}-->`;
+      const combinedFooter = cleanFooter ? `${cleanFooter}\n${scheduleTag}` : scheduleTag;
+
       const payload = {
         nombre_visible: formData.nombre_visible || '',
         telefono: formData.telefono || '',
@@ -93,7 +127,7 @@ export default function SettingsView({ business, onUpdate }) {
         instagram: formData.instagram || '',
         facebook: formData.facebook || '',
         tiktok: formData.tiktok || '',
-        footer_message: formData.footer_message || '',
+        footer_message: combinedFooter,
         theme_color: formData.theme_color || '#EA580C',
         logo_url: formData.logo_url || '',
         whatsapp_contacto: formData.whatsapp_contacto || '',
@@ -237,10 +271,11 @@ export default function SettingsView({ business, onUpdate }) {
   return (
     <div className="space-y-6 animate-fade-in-up">
       {/* Tabs Header */}
-      <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+      <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
         {[
           { id: 'perfil', label: 'General', icon: User },
           { id: 'marca', label: 'Marca y Logo', icon: Palette },
+          { id: 'horario', label: 'Horarios y Estado', icon: Clock },
           { id: 'pagos', label: 'Formas de Pago', icon: CreditCard },
           { id: 'logistica', label: 'Domicilios y GPS', icon: Truck },
           { id: 'redes', label: 'Redes Sociales', icon: Instagram },
@@ -260,7 +295,7 @@ export default function SettingsView({ business, onUpdate }) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="card p-6 sm:p-8 bg-white border-gray-200/80 shadow-xs rounded-2xl">
+        <div className="card p-4 sm:p-6 lg:p-8 bg-white border-gray-200/80 shadow-xs rounded-2xl">
           
           {/* ── PERFIL ── */}
           {activeTab === 'perfil' && (
@@ -576,6 +611,145 @@ export default function SettingsView({ business, onUpdate }) {
             </div>
           )}
 
+          {/* ── HORARIOS Y ESTADO DE LA TIENDA ── */}
+          {activeTab === 'horario' && (
+            <div className="space-y-6 max-w-2xl animate-fade-in">
+              {/* Switch Maestro: Abierto / Cerrado */}
+              <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-gray-50/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-3 h-3 rounded-full ${scheduleData.abierto_manual !== false ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+                    <h3 className="text-sm font-bold text-gray-900">
+                      {scheduleData.abierto_manual !== false ? 'Tu tienda está ABIERTA' : 'Tu tienda está en PAUSA (Cerrada temporalmente)'}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {scheduleData.abierto_manual !== false 
+                      ? 'Tus clientes pueden consultar el menú y realizar pedidos por WhatsApp con normalidad.'
+                      : 'El catálogo mostrará un aviso de tienda cerrada y no permitirá finalizar pedidos temporalmente.'}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setScheduleData(prev => ({ ...prev, abierto_manual: prev.abierto_manual === false ? true : false }))}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 shadow-2xs cursor-pointer ${
+                    scheduleData.abierto_manual !== false
+                      ? 'bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300'
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                >
+                  {scheduleData.abierto_manual !== false ? 'Pausar tienda ahora' : 'Reanudar y abrir tienda'}
+                </button>
+              </div>
+
+              {/* Horario Semanal */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Horario semanal de atención</h4>
+                    <p className="text-xs text-gray-500">Configura tus horas de apertura y cierre para cada día.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const lun = scheduleData.dias?.lunes || { activo: true, abre: '11:00', cierra: '23:00' };
+                      setScheduleData(prev => {
+                        const newDias = { ...prev.dias };
+                        ['martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'].forEach(d => {
+                          newDias[d] = { ...lun };
+                        });
+                        return { ...prev, dias: newDias };
+                      });
+                      addToast('Horario del Lunes replicado a toda la semana', 'success');
+                    }}
+                    className="text-xs text-orange-600 font-semibold hover:underline cursor-pointer"
+                  >
+                    Replicar Lunes a toda la semana
+                  </button>
+                </div>
+
+                <div className="space-y-2 border border-gray-200 rounded-xl divide-y divide-gray-100 bg-white overflow-hidden">
+                  {[
+                    { id: 'lunes', label: 'Lunes' },
+                    { id: 'martes', label: 'Martes' },
+                    { id: 'miercoles', label: 'Miércoles' },
+                    { id: 'jueves', label: 'Jueves' },
+                    { id: 'viernes', label: 'Viernes' },
+                    { id: 'sabado', label: 'Sábado' },
+                    { id: 'domingo', label: 'Domingo' },
+                  ].map(day => {
+                    const config = scheduleData.dias?.[day.id] || { activo: true, abre: '11:00', cierra: '23:00' };
+                    return (
+                      <div key={day.id} className="p-3 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 w-36">
+                          <input
+                            type="checkbox"
+                            id={`day-${day.id}`}
+                            checked={config.activo}
+                            onChange={(e) => {
+                              const val = e.target.checked;
+                              setScheduleData(prev => ({
+                                ...prev,
+                                dias: {
+                                  ...prev.dias,
+                                  [day.id]: { ...(prev.dias?.[day.id] || {}), activo: val }
+                                }
+                              }));
+                            }}
+                            className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 border-gray-300"
+                          />
+                          <label htmlFor={`day-${day.id}`} className={`text-xs font-semibold select-none cursor-pointer ${config.activo ? 'text-gray-900' : 'text-gray-400 line-through'}`}>
+                            {day.label}
+                          </label>
+                        </div>
+
+                        {config.activo ? (
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="text-gray-500">De:</span>
+                            <input
+                              type="time"
+                              value={config.abre || '11:00'}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setScheduleData(prev => ({
+                                  ...prev,
+                                  dias: {
+                                    ...prev.dias,
+                                    [day.id]: { ...(prev.dias?.[day.id] || {}), abre: val }
+                                  }
+                                }));
+                              }}
+                              className="input-field py-1 px-2 text-xs w-28 text-center font-mono"
+                            />
+                            <span className="text-gray-500">A:</span>
+                            <input
+                              type="time"
+                              value={config.cierra || '23:00'}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setScheduleData(prev => ({
+                                  ...prev,
+                                  dias: {
+                                    ...prev.dias,
+                                    [day.id]: { ...(prev.dias?.[day.id] || {}), cierra: val }
+                                  }
+                                }));
+                              }}
+                              className="input-field py-1 px-2 text-xs w-28 text-center font-mono"
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">Cerrado todo el día</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── REDES SOCIALES ── */}
           {activeTab === 'redes' && (
             <div className="space-y-4 max-w-xl">
@@ -624,7 +798,7 @@ export default function SettingsView({ business, onUpdate }) {
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Mensaje en el pie de página de la tienda</label>
                 <textarea 
-                  value={formData.footer_message} 
+                  value={(formData.footer_message || '').replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '').trim()} 
                   onChange={e => setFormData({...formData, footer_message: e.target.value})} 
                   placeholder="Ej: Las mejores hamburguesas artesanales de la ciudad."
                   className="input-field text-xs resize-none" 
@@ -638,7 +812,7 @@ export default function SettingsView({ business, onUpdate }) {
             <button 
               type="submit"
               disabled={loading}
-              className="btn-primary py-2.5 px-6 text-sm font-semibold"
+              className="btn-primary w-full sm:w-auto py-2.5 px-6 text-sm font-semibold justify-center"
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : <><Save size={16} /> Guardar cambios</>}
             </button>

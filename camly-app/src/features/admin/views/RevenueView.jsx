@@ -3,7 +3,7 @@ import {
   DollarSign, TrendingUp, Calendar, Trash2, 
   Download, Clock, ArrowUpRight, BarChart3, AlertCircle 
 } from 'lucide-react';
-import { formatMoney } from '../../../lib/utils';
+import { formatMoney, exportOrdersToCSV } from '../../../lib/utils';
 import { useToastStore } from '../../../stores';
 
 export default function RevenueView({ orders, business }) {
@@ -103,69 +103,36 @@ export default function RevenueView({ orders, business }) {
       addToast('No hay datos para exportar', 'warning');
       return;
     }
-
-    const headers = [
-      'ID Pedido', 
-      'Fecha', 
-      'Cliente', 
-      'Teléfono', 
-      'Método Entrega', 
-      'Método Pago', 
-      'Costo Domicilio', 
-      'Total'
-    ];
-    
-    const rows = filteredOrders.map(o => [
-      `#${o.id.toString().slice(-6).toUpperCase()}`,
-      new Date(o.created_at).toLocaleString('es-ES'),
-      o.nombre,
-      o.telefono,
-      o.entrega_metodo === 'envio' ? 'Domicilio' : 'Recogida',
-      o.pago_metodo === 'transferencia' ? 'Transferencia' : 'Efectivo',
-      o.domicilio_costo || 0,
-      o.total
-    ]);
-
-    const csvContent = [
-      headers.join(';'),
-      ...rows.map(r => r.join(';'))
-    ].join('\n');
-
-    const blob = new Blob(['\uFEFF' + 'sep=;\n' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `reporte_ventas_${business?.nombre_visible || 'negocio'}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    addToast('Reporte descargado', 'success');
+    const ok = exportOrdersToCSV(filteredOrders, business?.nombre_visible);
+    if (ok) {
+      addToast('Reporte detallado de ventas exportado con éxito', 'success');
+    }
   };
 
   return (
     <div className="space-y-6 animate-fade-in-up">
       {/* Header + Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <h3 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
             Ingresos y Rendimiento
           </h3>
-          <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+          <p className="text-xs sm:text-sm text-gray-600 mt-1 leading-relaxed">
             Historial de ventas, filtros de conservación y reportes para contabilidad.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full sm:w-auto shrink-0">
           {hiddenOrderIds.length > 0 && (
             <button 
               onClick={handleResetFilters} 
-              className="btn-secondary py-2 px-3 text-xs"
+              className="btn-secondary py-2.5 px-3 text-xs font-semibold flex-1 sm:flex-initial justify-center"
             >
               Restaurar ({hiddenOrderIds.length})
             </button>
           )}
           <button 
             onClick={handleExportCSV} 
-            className="btn-primary py-2 px-3 text-xs font-semibold"
+            className="btn-primary py-2.5 px-3 text-xs font-semibold flex-1 sm:flex-initial justify-center"
           >
             <Download size={14} /> Exportar CSV
           </button>
@@ -248,7 +215,7 @@ export default function RevenueView({ orders, business }) {
         {/* Table List */}
         <div className="overflow-x-auto">
           {filteredOrders.length > 0 ? (
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-xs min-w-[620px]">
               <thead>
                 <tr className="border-b border-border bg-gray-50 text-gray-500 font-medium">
                   <th className="py-3 px-4">Pedido</th>

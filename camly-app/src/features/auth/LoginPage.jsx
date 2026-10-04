@@ -1,27 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, ShieldCheck, CheckCircle2, Sparkles } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, ArrowRight, ShieldCheck, Heart } from 'lucide-react';
 import { signIn } from '../../lib/supabase';
 import { useAuthStore, useToastStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
 
-const TESTIMONIALS = [
-  { quote: 'CAMLY transformó completamente nuestra operación de delivery. Ahora los pedidos entran sin errores.', author: 'María Lopera', role: 'Restaurante El Sabor Colombiano' },
-  { quote: 'Mis clientes hacen sus pedidos mucho más rápido y mis repartidores ya no se pierden con la dirección.', author: 'Carlos Restrepo', role: 'Pizza Express & Burger' },
-  { quote: 'El panel de control es tan intuitivo que capacitamos al equipo en menos de 10 minutos.', author: 'Ana Sofía Pérez', role: 'Café & Bistro Central' },
-];
-
 export default function LoginPage() {
-  const navigate      = useNavigate();
-  const location      = useLocation();
-  const setSession    = useAuthStore(s => s.setSession);
-  const addToast      = useToastStore(s => s.addToast);
+  const navigate   = useNavigate();
+  const location   = useLocation();
+  const setSession = useAuthStore(s => s.setSession);
+  const addToast   = useToastStore(s => s.addToast);
 
-  const [email,         setEmail]         = useState('');
-  const [password,      setPassword]      = useState('');
-  const [showPassword,  setShowPassword]  = useState(false);
-  const [loading,       setLoading]       = useState(false);
-  const [testimonialIdx, setTestimonialIdx] = useState(0);
+  const [email,        setEmail]        = useState('');
+  const [password,     setPassword]     = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe,   setRememberMe]   = useState(true);
+  const [loading,      setLoading]      = useState(false);
 
   useEffect(() => {
     if (location.state?.email) {
@@ -29,11 +23,6 @@ export default function LoginPage() {
       addToast('¡Registro completado! Inicia sesión con tus credenciales.', 'success');
     }
   }, [location.state, addToast]);
-
-  useEffect(() => {
-    const timer = setInterval(() => setTestimonialIdx(i => (i + 1) % TESTIMONIALS.length), 5500);
-    return () => clearInterval(timer);
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -56,151 +45,118 @@ export default function LoginPage() {
     }
   };
 
-  const testimonial = TESTIMONIALS[testimonialIdx];
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 relative">
+    <div className="min-h-screen bg-[#F6F4EF] text-gray-900 flex flex-col justify-center items-center py-10 px-4 sm:px-6 relative overflow-x-hidden selection:bg-blue-600 selection:text-white">
       
-      {/* Top back navigation */}
-      <div className="w-full max-w-4xl mx-auto mb-4">
+      {/* Background ambient radial gradients (Wenú style) */}
+      <div 
+        className="fixed inset-0 pointer-events-none -z-10"
+        style={{
+          background: `
+            radial-gradient(1000px 500px at 85% -5%, rgba(239, 246, 255, 0.9) 0%, transparent 60%),
+            radial-gradient(900px 550px at -5% 35%, rgba(254, 243, 199, 0.45) 0%, transparent 55%),
+            radial-gradient(800px 450px at 50% 100%, rgba(243, 244, 246, 0.7) 0%, transparent 50%)
+          `
+        }}
+      />
+
+      {/* Floating Back Button (Wenú style pill) */}
+      <div className="fixed top-4 left-4 sm:top-6 sm:left-6 z-40">
         <Link
           to="/"
-          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-gray-200/60"
+          className="inline-flex items-center gap-2 bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 px-4 py-2 rounded-full text-xs sm:text-sm font-semibold border border-gray-200/80 shadow-xs hover:shadow-warm transition-all duration-150 backdrop-blur-sm"
         >
-          <ArrowLeft size={16} /> Volver al inicio
+          <ArrowLeft size={15} strokeWidth={2.5} />
+          <span>Regresar</span>
         </Link>
       </div>
 
-      <div className="w-full max-w-4xl mx-auto card overflow-hidden shadow-xl border-gray-200/80 bg-white grid grid-cols-1 lg:grid-cols-12 animate-fade-in-up">
+      <div className="w-full max-w-[430px] mx-auto flex flex-col items-center">
         
-        {/* ── LEFT PANEL (Branding & Trust) ── */}
-        <div className="hidden lg:flex lg:col-span-5 bg-gray-900 text-white p-8 sm:p-10 flex-col justify-between relative overflow-hidden">
-          <div>
-            <div className="mb-8">
-              <SaaSLogo className="h-8 text-white" />
-            </div>
+        {/* Header with Centered Logo & Display Title */}
+        <div className="text-center mb-6 sm:mb-8 flex flex-col items-center">
+          <Link to="/" className="inline-block transition-transform hover:scale-[1.02] mb-4">
+            <SaaSLogo className="h-9 sm:h-10" />
+          </Link>
 
-            <p className="text-xs font-bold uppercase tracking-wider text-orange-400 mb-3">
-              Panel Administrativo
-            </p>
+          <span className="inline-block text-[11px] font-extrabold uppercase tracking-[0.22em] text-blue-600 mb-1.5">
+            Acceso Clientes
+          </span>
 
-            <h2 className="text-2xl font-black tracking-tight text-white leading-snug mb-3">
-              Administra tu tienda digital desde un solo lugar.
-            </h2>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              Controla pedidos de WhatsApp, actualiza tu menú en tiempo real y asigna entregas sin enredos.
-            </p>
-
-            <div className="mt-7 space-y-3 text-xs text-gray-300">
-              <div className="flex items-center gap-2.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
-                <span>Notificaciones de nuevos pedidos en vivo</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
-                <span>Ubicación GPS de cada cliente en un clic</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
-                <span>Estadísticas de ventas diarias y mensuales</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Testimonial slider with editorial left border */}
-          <div className="mt-8 pt-6 border-t border-gray-800">
-            <div className="border-l-2 border-orange-500 pl-3.5 py-1">
-              <p className="text-xs text-gray-300 italic leading-relaxed mb-2">
-                "{testimonial.quote}"
-              </p>
-              <div>
-                <p className="text-xs font-bold text-white">{testimonial.author}</p>
-                <p className="text-[11px] text-gray-400">{testimonial.role}</p>
-              </div>
-            </div>
-
-            <div className="flex gap-1.5 mt-4 justify-start pl-3.5">
-              {TESTIMONIALS.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setTestimonialIdx(i)}
-                  className={`h-1.5 rounded-full transition-all ${
-                    i === testimonialIdx ? 'w-5 bg-orange-500' : 'w-1.5 bg-white/20'
-                  }`}
-                  aria-label={`Testimonio ${i + 1}`}
-                />
-              ))}
-            </div>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-950 tracking-tight">
+            ¡Bienvenido de vuelta!
+          </h1>
+          
+          <p className="text-xs sm:text-sm text-gray-500 mt-1.5 font-medium">
+            Tu negocio no para, y nosotros tampoco.
+          </p>
         </div>
 
-        {/* ── RIGHT PANEL: Form ── */}
-        <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-center">
+        {/* Auth Form Card */}
+        <div className="w-full bg-white rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-200/80 transition-all">
           
-          {/* Mobile SaaS Logo */}
-          <div className="flex justify-center mb-6 lg:hidden">
-            <SaaSLogo className="h-8" />
-          </div>
-
-          <div className="mb-6">
-            <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-              Iniciar sesión
-            </h1>
-            <p className="text-sm text-gray-600 mt-1 leading-relaxed">
-              Ingresa tus credenciales para acceder a tu panel de control.
-            </p>
-          </div>
-
-          {/* Alert if newly registered */}
+          {/* Notification if newly registered */}
           {location.state?.email && (
-            <div className="mb-5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2.5 text-xs text-emerald-800 animate-fade-in-down">
+            <div className="mb-5 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center gap-2.5 text-xs font-semibold text-emerald-800">
               <ShieldCheck size={18} className="text-emerald-600 shrink-0" />
               <span>¡Cuenta creada con éxito! Ingresa tu contraseña para acceder.</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
+            
+            {/* Email Field */}
             <div>
-              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-gray-900 mb-1.5">
                 Correo electrónico
               </label>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <div className="relative flex items-center">
+                <Mail size={17} className="absolute left-3.5 text-gray-400 pointer-events-none" />
                 <input
                   type="email"
-                  placeholder="admin@tunegocio.com"
+                  placeholder="tu@correo.com"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="input-field pl-10 pr-3"
+                  className="w-full pl-10 pr-4 py-3 bg-[#FAFAF8] hover:bg-white focus:bg-white text-gray-900 text-sm font-medium rounded-2xl border border-gray-200 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-500/15 transition-all placeholder:text-gray-400 placeholder:font-normal"
                   required
                   autoComplete="email"
                 />
               </div>
             </div>
 
-            {/* Password */}
+            {/* Password Field */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <label className="block text-xs font-bold text-gray-900">
                   Contraseña
                 </label>
+                <a
+                  href="#olvido"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    addToast('Para restablecer tu contraseña, por favor contacta al soporte de Move.', 'info');
+                  }}
+                  className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  ¿Olvidaste tu contraseña?
+                </a>
               </div>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+
+              <div className="relative flex items-center">
+                <Lock size={17} className="absolute left-3.5 text-gray-400 pointer-events-none" />
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="Tu contraseña"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="input-field pl-10 pr-10"
+                  className="w-full pl-10 pr-10 py-3 bg-[#FAFAF8] hover:bg-white focus:bg-white text-gray-900 text-sm font-medium rounded-2xl border border-gray-200 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-500/15 transition-all placeholder:text-gray-400 placeholder:font-normal"
                   required
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 rounded"
+                  className="absolute right-3 text-gray-400 hover:text-gray-600 p-1.5 rounded-lg transition-colors cursor-pointer"
                   tabIndex={-1}
                   aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
@@ -209,31 +165,66 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Remember Me */}
+            <div className="flex items-center gap-2 pt-0.5">
+              <input
+                id="remember"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded-md border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+              <label htmlFor="remember" className="text-xs font-medium text-gray-600 cursor-pointer select-none">
+                Recordarme en este equipo
+              </label>
+            </div>
+
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full py-3 text-sm font-semibold mt-2 shadow-sm"
+              className="w-full mt-2 py-3.5 px-6 rounded-full font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all duration-150 shadow-glow-blue flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-              <span>{loading ? 'Comprobando acceso...' : 'Entrar a mi panel'}</span>
+              {loading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Comprobando acceso...</span>
+                </>
+              ) : (
+                <>
+                  <span>Iniciar Sesión</span>
+                  <ArrowRight size={15} strokeWidth={2.5} />
+                </>
+              )}
             </button>
           </form>
 
-          {/* Footer switcher */}
-          <div className="mt-6 pt-5 border-t border-gray-100 text-center">
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200/80" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-white px-3 font-semibold text-gray-400">o</span>
+            </div>
+          </div>
+
+          {/* Switch to Register */}
+          <div className="text-center">
             <p className="text-xs sm:text-sm text-gray-600">
-              ¿Aún no tienes una tienda?{' '}
-              <Link to="/registro" className="font-semibold text-orange-600 hover:text-orange-700 hover:underline">
-                Crear tienda gratis
+              ¿Nuevo en Move?{' '}
+              <Link to="/registro" className="font-bold text-blue-600 hover:text-blue-700 hover:underline">
+                Crea tu cuenta aquí
               </Link>
             </p>
           </div>
 
-          <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
-            <ShieldCheck size={13} className="text-emerald-600" />
-            <span>Conexión segura SSL · Datos 100% protegidos</span>
-          </div>
+        </div>
 
+        {/* Footer Brand Note (Wenú style) */}
+        <div className="mt-6 flex items-center justify-center gap-2 text-xs font-medium text-gray-500">
+          <Heart size={14} className="text-blue-500 fill-blue-500/20 shrink-0" />
+          <span>Tu parcero digital · te acompañamos en cada paso.</span>
         </div>
 
       </div>

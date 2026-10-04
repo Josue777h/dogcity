@@ -56,19 +56,19 @@ export default function ProductsView({ products, onAdd, onEdit, onDelete, loadin
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           {/* View toggle */}
-          <div className="flex bg-white border border-border rounded-lg p-0.5">
+          <div className="flex bg-white border border-border rounded-lg p-0.5 shrink-0">
             <button 
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-gray-500 hover:text-gray-800'}`}
+              className={`p-2 rounded transition-colors ${viewMode === 'grid' ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-gray-500 hover:text-gray-800'}`}
               title="Vista en cuadrícula"
             >
               <LayoutGrid size={16} />
             </button>
             <button 
               onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-gray-500 hover:text-gray-800'}`}
+              className={`p-2 rounded transition-colors ${viewMode === 'list' ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-gray-500 hover:text-gray-800'}`}
               title="Vista en lista"
             >
               <List size={16} />
@@ -77,9 +77,9 @@ export default function ProductsView({ products, onAdd, onEdit, onDelete, loadin
 
           <button 
             onClick={onAdd}
-            className="btn-primary py-2 px-4 text-sm"
+            className="btn-primary py-2.5 px-4 text-xs sm:text-sm font-semibold flex-1 sm:flex-initial justify-center"
           >
-            <Plus size={16} /> Nuevo producto
+            <Plus size={16} /> <span>Nuevo producto</span>
           </button>
         </div>
       </div>

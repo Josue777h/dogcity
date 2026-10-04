@@ -2,7 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import {
   User, Phone, MapPin, Loader2, Navigation, MessageCircle,
   Copy, Check, Trash2, X, Wallet, ShoppingBag, Truck,
-  CheckCircle2, ShoppingCart, Minus, Plus, CreditCard
+  CheckCircle2, ShoppingCart, Minus, Plus, CreditCard, AlertCircle
 } from 'lucide-react';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
 import { formatMoney, openWhatsApp, reverseGeocode } from '../../lib/utils';
@@ -31,7 +31,7 @@ function WhatsAppIcon({ size = 20 }) {
   );
 }
 
-export default function OrderDrawer({ isOpen, onClose }) {
+export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
   const business  = useBusinessStore(s => s.business);
   const products  = useBusinessStore(s => s.products);
   const bid       = business?.id;
@@ -104,7 +104,9 @@ export default function OrderDrawer({ isOpen, onClose }) {
     const bizName    = (business?.nombre_visible || 'la tienda').trim();
     const itemsLines = selectedItems.map(i => {
       const note = (cart.notes[i.id] || '').trim();
-      return `• ${i.quantity}× ${i.name}${note ? ` (${note})` : ''}`;
+      const opts = (i.opciones_texto || '').trim();
+      const extra = [opts, note].filter(Boolean).join(' · ');
+      return `• ${i.quantity}× ${i.name}${extra ? ` (${extra})` : ''} — ${formatMoney(i.price * i.quantity)}`;
     }).join('\n');
 
     const trackingUrl  = `${window.location.origin}/tracking?id=${orderId}&token=${token}`;
@@ -222,7 +224,9 @@ export default function OrderDrawer({ isOpen, onClose }) {
         status: 'nuevo',
         items: selectedItems.map(i => ({
           id: i.id, nombre: i.name, cantidad: i.quantity, precio: i.price,
-          nota: cart.notes[i.id] || ''
+          nota: cart.notes[i.id] || '',
+          opciones_texto: i.opciones_texto || '',
+          opciones: i.options || []
         })),
         entrega_metodo: deliveryMethod,
         pago_metodo: paymentMethod,
@@ -241,12 +245,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
       setLocation('', '');
 
       setTimeout(() => {
-        const url = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`;
-        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-          window.location.href = url;
-        } else {
-          openWhatsApp(whatsappPhone, message);
-        }
+        openWhatsApp(whatsappPhone, message);
       }, 800);
     } catch (err) {
       addToast(`Error: ${err.message}`, 'error');
@@ -269,8 +268,9 @@ export default function OrderDrawer({ isOpen, onClose }) {
       {/* Panel */}
       <div
         className={`
-          fixed bottom-0 left-0 right-0 rounded-t-2xl lg:rounded-none
-          lg:top-0 lg:bottom-0 lg:right-0 lg:left-auto lg:w-[440px]
+          fixed bottom-0 left-0 right-0 rounded-t-3xl lg:rounded-none
+          lg:top-0 lg:bottom-0 lg:right-0 lg:left-auto lg:w-[450px]
+          h-[92dvh] max-h-[92dvh] lg:h-full lg:max-h-none
           flex flex-col z-10 transition-transform duration-300
           ${isOpen
             ? 'translate-y-0 lg:translate-x-0'
@@ -279,9 +279,7 @@ export default function OrderDrawer({ isOpen, onClose }) {
         `}
         style={{
           backgroundColor: 'var(--color-surface)',
-          boxShadow: 'var(--shadow-overlay)',
-          maxHeight: '92vh',
-          height: '92vh',
+          boxShadow: 'var(--shadow-overlay)'
         }}
       >
         {/* Drag handle (mobile) */}
@@ -382,9 +380,14 @@ export default function OrderDrawer({ isOpen, onClose }) {
                               <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text-1)' }}>
                                 {item.name}
                               </p>
+                              {item.opciones_texto && (
+                                <p className="text-xs text-blue-600 font-medium truncate">
+                                  {item.opciones_texto}
+                                </p>
+                              )}
                               {cart.notes[item.id] && (
-                                <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--color-text-3)' }}>
-                                  {cart.notes[item.id]}
+                                <p className="text-xs mt-0.5 truncate text-gray-500 italic">
+                                  Nota: {cart.notes[item.id]}
                                 </p>
                               )}
                             </div>
@@ -730,32 +733,49 @@ export default function OrderDrawer({ isOpen, onClose }) {
               </span>
             </div>
 
+            {scheduleStatus?.isOpen === false && (
+              <div className="mb-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2 animate-fade-in">
+                <AlertCircle size={15} className="shrink-0 text-amber-600 mt-0.5" />
+                <div>
+                  <p className="font-bold">Comercio cerrado en este momento</p>
+                  <p className="text-[11px] text-amber-800 mt-0.5">
+                    {scheduleStatus?.message || 'El negocio no está recibiendo pedidos por ahora.'}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <button
               onClick={handleSubmit}
-              disabled={isSubmitting || selectedItems.length === 0}
-              className="btn-whatsapp w-full py-3"
+              disabled={isSubmitting || selectedItems.length === 0 || scheduleStatus?.isOpen === false}
+              className={`btn-whatsapp w-full py-3 ${
+                scheduleStatus?.isOpen === false ? '!bg-gray-400 !border-gray-400 !cursor-not-allowed opacity-75' : ''
+              }`}
             >
-              {isSubmitting
-                ? <Loader2 size={18} className="animate-spin" />
-                : (
-                  <>
-                    <WhatsAppIcon size={18} />
-                    <span>
-                      {!deliveryMethod
-                        ? 'Selecciona cómo recibir tu pedido'
-                        : deliveryMethod === 'envio' && !locationLink
-                          ? 'Activar GPS para enviar pedido'
-                          : !paymentMethod
-                            ? 'Selecciona la forma de pago'
-                            : 'Enviar pedido por WhatsApp'
-                      }
-                    </span>
-                  </>
-                )
-              }
+              {isSubmitting ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : scheduleStatus?.isOpen === false ? (
+                <span>Tienda cerrada · Pedidos pausados</span>
+              ) : (
+                <>
+                  <WhatsAppIcon size={18} />
+                  <span>
+                    {!deliveryMethod
+                      ? 'Selecciona cómo recibir tu pedido'
+                      : deliveryMethod === 'envio' && !locationLink
+                        ? 'Activar GPS para enviar pedido'
+                        : !paymentMethod
+                          ? 'Selecciona la forma de pago'
+                          : 'Enviar pedido por WhatsApp'
+                    }
+                  </span>
+                </>
+              )}
             </button>
             <p className="text-center text-xs mt-2" style={{ color: 'var(--color-text-3)' }}>
-              Se abrirá WhatsApp con tu pedido listo
+              {scheduleStatus?.isOpen === false 
+                ? 'Podrás enviar tu pedido cuando el comercio abra nuevamente' 
+                : 'Se abrirá WhatsApp con tu pedido listo'}
             </p>
           </div>
         )}

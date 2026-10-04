@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { 
   ChevronRight, User, MapPin, Package, Bike, Trash2, Map,
-  MessageCircle, Loader2, AlertCircle, CheckCircle2, X
+  MessageCircle, Loader2, AlertCircle, CheckCircle2, X, Printer, Volume2, VolumeX, Bluetooth
 } from 'lucide-react';
 import { 
   formatMoney, getOrderSubtotal, isDeliveryPending, 
-  buildDeliveryConfirmationMessage, openWhatsApp 
+  buildDeliveryConfirmationMessage, openWhatsApp,
+  printThermalReceipt, playNewOrderSound
 } from '../../../lib/utils';
+import { isWebBluetoothSupported, printOrderViaBluetooth } from '../../../lib/bluetoothPrinter';
 import { updateOrderStatus, confirmOrderDelivery, getSupabase, deleteOrder } from '../../../lib/supabase';
 import { useBusinessStore, useToastStore } from '../../../stores';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
@@ -57,10 +59,24 @@ function OrderItems({ order }) {
           const qty = p.cantidad ?? p.quantity ?? 1;
           const name = p.nombre ?? p.name ?? 'Producto';
           const price = p.precio ?? p.price ?? 0;
+          const optionsText = p.opciones_texto || (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
+          
           return (
-            <div key={idx} className="flex justify-between items-center text-xs">
-              <span className="font-medium text-gray-800">{qty}× {name}</span>
-              <span className="text-gray-500 tabular-nums">{formatMoney(price * qty)}</span>
+            <div key={idx} className="p-1.5 rounded-md hover:bg-gray-50/80 transition-colors">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-semibold text-gray-800">{qty}× {name}</span>
+                <span className="text-gray-500 tabular-nums font-medium">{formatMoney(price * qty)}</span>
+              </div>
+              {optionsText && (
+                <div className="mt-0.5 text-[11px] font-medium text-orange-700 bg-orange-50 border border-orange-200/60 rounded px-1.5 py-0.5 inline-block">
+                  ▸ {optionsText}
+                </div>
+              )}
+              {p.nota && (
+                <div className="text-[11px] text-gray-500 italic mt-0.5">
+                  Nota: {p.nota}
+                </div>
+              )}
             </div>
           );
         })}
@@ -188,6 +204,30 @@ export default function OrdersView({ orders, onUpdate }) {
   const [activeFilter, setActiveFilter] = useState('all');
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [selectedOrderForDriver, setSelectedOrderForDriver] = useState(null);
+  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('camly_order_sound') !== 'false');
+  const [printingBluetoothId, setPrintingBluetoothId] = useState(null);
+  const addToast = useToastStore(s => s.addToast);
+
+  const handlePrintBluetooth = async (order) => {
+    if (!isWebBluetoothSupported()) {
+      addToast('Tu navegador actual no soporta Web Bluetooth directo. Abriendo comanda estándar para imprimir por Bluetooth del sistema...', 'info');
+      printThermalReceipt(order, business);
+      return;
+    }
+    setPrintingBluetoothId(order.id);
+    addToast('Buscando impresora Bluetooth...', 'info');
+    try {
+      const printerName = await printOrderViaBluetooth(order, business);
+      addToast(`Comanda enviada con éxito a "${printerName}"`, 'success');
+    } catch (err) {
+      console.warn('Bluetooth print error:', err);
+      if (err.name !== 'NotFoundError') {
+        addToast(err.message || 'No se pudo conectar a la impresora Bluetooth', 'error');
+      }
+    } finally {
+      setPrintingBluetoothId(null);
+    }
+  };
 
   useEffect(() => {
     async function loadDrivers() {
@@ -273,40 +313,73 @@ export default function OrdersView({ orders, onUpdate }) {
 
   return (
     <div className="space-y-4 animate-fade-in-up">
-      {/* Filter tabs */}
-      <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
-        {STATUS_TABS.map(tab => {
-          const count = tab.id === 'all' ? orders.length : orders.filter(o => (o.estado || o.status) === tab.id).length;
-          return (
+      {/* Filter tabs & Sound toggle */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 flex-1">
+          {STATUS_TABS.map(tab => {
+            const count = tab.id === 'all' ? orders.length : orders.filter(o => (o.estado || o.status) === tab.id).length;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveFilter(tab.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0
+                  ${activeFilter === tab.id 
+                    ? 'bg-gray-900 text-white' 
+                    : 'bg-white border border-border text-gray-600 hover:text-gray-900'}`}
+              >
+                {tab.label}
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeFilter === tab.id ? 'bg-white/20' : 'bg-gray-100 text-gray-500'}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+          {pendingCount > 0 && (
             <button
-              key={tab.id}
-              onClick={() => setActiveFilter(tab.id)}
+              onClick={() => setActiveFilter('dom_pendiente')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0
-                ${activeFilter === tab.id 
-                  ? 'bg-gray-900 text-white' 
-                  : 'bg-white border border-border text-gray-600 hover:text-gray-900'}`}
+                ${activeFilter === 'dom_pendiente' 
+                  ? 'bg-amber-600 text-white' 
+                  : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100'}`}
             >
-              {tab.label}
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeFilter === tab.id ? 'bg-white/20' : 'bg-gray-100 text-gray-500'}`}>
-                {count}
+              Dom. pendiente
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeFilter === 'dom_pendiente' ? 'bg-white/20' : 'bg-amber-200 text-amber-900'}`}>
+                {pendingCount}
               </span>
             </button>
-          );
-        })}
-        {pendingCount > 0 && (
+          )}
+        </div>
+
+        {/* Timbre de nuevos pedidos */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={() => setActiveFilter('dom_pendiente')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0
-              ${activeFilter === 'dom_pendiente' 
-                ? 'bg-amber-600 text-white' 
-                : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100'}`}
+            type="button"
+            onClick={() => {
+              const next = !soundEnabled;
+              setSoundEnabled(next);
+              localStorage.setItem('camly_order_sound', next ? 'true' : 'false');
+              if (next) playNewOrderSound();
+            }}
+            title={soundEnabled ? 'Silenciar timbre de pedidos' : 'Activar timbre de pedidos'}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              soundEnabled 
+                ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100' 
+                : 'bg-white text-gray-400 border-gray-200 hover:text-gray-600'
+            }`}
           >
-            Dom. pendiente
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeFilter === 'dom_pendiente' ? 'bg-white/20' : 'bg-amber-200 text-amber-900'}`}>
-              {pendingCount}
-            </span>
+            {soundEnabled ? (
+              <>
+                <Volume2 size={14} className="text-orange-600 animate-pulse" />
+                <span>Timbre activo</span>
+              </>
+            ) : (
+              <>
+                <VolumeX size={14} />
+                <span>Timbre mudo</span>
+              </>
+            )}
           </button>
-        )}
+        </div>
       </div>
 
       {/* Orders List */}
@@ -363,8 +436,31 @@ export default function OrdersView({ orders, onUpdate }) {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     {getStatusBadge(status)}
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        printThermalReceipt(order, business);
+                      }}
+                      className="btn-ghost p-1.5 tap-target text-gray-400 hover:text-gray-900"
+                      title="Imprimir comanda térmica (58/80mm)"
+                    >
+                      <Printer size={15} />
+                    </button>
+                    <button 
+                      type="button"
+                      disabled={printingBluetoothId === order.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePrintBluetooth(order);
+                      }}
+                      className="btn-ghost p-1.5 tap-target text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                      title="Imprimir vía Bluetooth directo (POS-58/80)"
+                    >
+                      {printingBluetoothId === order.id ? <Loader2 size={15} className="animate-spin text-blue-600" /> : <Bluetooth size={15} />}
+                    </button>
                     <button 
                       onClick={(e) => handleDeleteClick(e, order)}
                       className="btn-ghost p-1.5 tap-target text-gray-400 hover:text-red-600"
@@ -421,18 +517,18 @@ export default function OrdersView({ orders, onUpdate }) {
                       {/* Repartidor */}
                       <div className="pt-3 border-t border-border">
                         <p className="caps-label mb-2">Repartidor asignado</p>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
                           <button 
                             type="button"
                             disabled={loadingDriver === order.id}
                             onClick={() => setSelectedOrderForDriver(order)}
-                            className="input-field text-xs flex items-center justify-between"
+                            className="input-field text-xs flex items-center justify-between min-w-0 flex-1 truncate py-2"
                           >
-                            <span>{drivers.find(d => d.id === order.domiciliario_id)?.nombre || 'Sin asignar'}</span>
-                            <ChevronRight size={14} className="rotate-90 text-gray-400" />
+                            <span className="truncate">{drivers.find(d => d.id === order.domiciliario_id)?.nombre || 'Sin asignar'}</span>
+                            <ChevronRight size={14} className="rotate-90 text-gray-400 shrink-0 ml-1.5" />
                           </button>
                           {order.domiciliario_id && (
-                            <button onClick={() => handleDispatch(order)} className="btn-secondary text-xs px-3">
+                            <button onClick={() => handleDispatch(order)} className="btn-secondary text-xs px-3.5 shrink-0 h-[38px]">
                               Despachar
                             </button>
                           )}
@@ -446,18 +542,36 @@ export default function OrdersView({ orders, onUpdate }) {
                       <OrderItems order={order} />
 
                       <div className="mt-4 pt-4 border-t border-border flex flex-col sm:flex-row gap-2">
+                        <button
+                          type="button"
+                          onClick={() => printThermalReceipt(order, business)}
+                          className="btn-secondary py-2.5 px-3 text-xs flex items-center justify-center gap-1.5"
+                          title="Imprimir comanda térmica estándar para cocina"
+                        >
+                          <Printer size={15} /> Imprimir Comanda
+                        </button>
+                        <button
+                          type="button"
+                          disabled={printingBluetoothId === order.id}
+                          onClick={() => handlePrintBluetooth(order)}
+                          className="btn-secondary py-2.5 px-3 text-xs flex items-center justify-center gap-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                          title="Imprimir directamente a impresora térmica Bluetooth (POS-58/80)"
+                        >
+                          {printingBluetoothId === order.id ? <Loader2 size={15} className="animate-spin" /> : <Bluetooth size={15} />}
+                          <span>Bluetooth</span>
+                        </button>
                         <a 
                           href={`https://wa.me/${order.telefono?.replace(/\D/g, '')}`} 
                           target="_blank" 
                           rel="noreferrer" 
-                          className="btn-whatsapp py-2 px-3 text-xs flex-1"
+                          className="btn-whatsapp py-2.5 px-3 text-xs flex-1 justify-center"
                         >
-                          <MessageCircle size={14} /> Chatear con cliente
+                          <MessageCircle size={15} /> Chatear con cliente
                         </a>
                         <select 
                           value={status}
                           onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                          className="input-field text-xs py-2 flex-1"
+                          className="input-field text-xs py-2.5 flex-1"
                         >
                           <option value="nuevo">Nuevo</option>
                           <option value="preparando">Preparando</option>

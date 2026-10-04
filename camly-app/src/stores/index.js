@@ -48,14 +48,27 @@ export const useCartStore = create(
       }),
 
       setNote: (bid, productId, note) => set((s) => {
-        const cart = s.carts[bid] || { quantities: {}, notes: {}, comment: '' };
+        const cart = s.carts[bid] || { quantities: {}, notes: {}, itemOptions: {}, comment: '' };
         return {
           carts: { ...s.carts, [bid]: { ...cart, notes: { ...cart.notes, [productId]: note } } }
         };
       }),
 
+      setItemOptions: (bid, productId, options) => set((s) => {
+        const cart = s.carts[bid] || { quantities: {}, notes: {}, itemOptions: {}, comment: '' };
+        return {
+          carts: { 
+            ...s.carts, 
+            [bid]: { 
+              ...cart, 
+              itemOptions: { ...(cart.itemOptions || {}), [productId]: options } 
+            } 
+          }
+        };
+      }),
+
       setComment: (bid, comment) => set((s) => {
-        const cart = s.carts[bid] || { quantities: {}, notes: {}, comment: '' };
+        const cart = s.carts[bid] || { quantities: {}, notes: {}, itemOptions: {}, comment: '' };
         return { carts: { ...s.carts, [bid]: { ...cart, comment } } };
       }),
 
@@ -72,18 +85,39 @@ export const useCartStore = create(
 
       getTotalPrice: (bid, products) => {
         const cart = get()._getCart(bid);
-        return products.reduce((sum, p) => sum + (cart.quantities[p.id] || 0) * p.price, 0);
+        const itemOptions = cart.itemOptions || {};
+        return products.reduce((sum, p) => {
+          const qty = cart.quantities[p.id] || 0;
+          if (qty <= 0) return sum;
+          const optionsCost = (itemOptions[p.id] || []).reduce((acc, opt) => acc + (Number(opt.precio) || 0), 0);
+          return sum + qty * (Number(p.price) + optionsCost);
+        }, 0);
       },
 
       getSelectedItems: (bid, products) => {
         const cart = get()._getCart(bid);
+        const itemOptions = cart.itemOptions || {};
         return products
-          .map((p) => ({ ...p, quantity: cart.quantities[p.id] || 0 }))
+          .map((p) => {
+            const qty = cart.quantities[p.id] || 0;
+            const options = itemOptions[p.id] || [];
+            const optionsCost = options.reduce((acc, opt) => acc + (Number(opt.precio) || 0), 0);
+            const unitPrice = Number(p.price) + optionsCost;
+            const opciones_texto = options.map(o => o.nombre + (Number(o.precio) > 0 ? ` (+$${Number(o.precio).toLocaleString('es-CO')})` : '')).join(', ');
+            return {
+              ...p,
+              quantity: qty,
+              price: unitPrice,
+              base_price: p.price,
+              options,
+              opciones_texto,
+            };
+          })
           .filter((p) => p.quantity > 0);
       },
 
       clearCart: (bid) => set((s) => ({
-        carts: { ...s.carts, [bid]: { quantities: {}, notes: {}, comment: '' } }
+        carts: { ...s.carts, [bid]: { quantities: {}, notes: {}, itemOptions: {}, comment: '' } }
       })),
     }),
     { 

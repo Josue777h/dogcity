@@ -51,13 +51,13 @@ export default function Sidebar({ activeTab, setActiveTab, business, onSignOut, 
 
       <aside
         className={`
-          fixed lg:static inset-y-0 left-0 w-64 z-[120] flex flex-col bg-gray-950 text-white border-r border-gray-800/80
+          fixed lg:sticky top-0 inset-y-0 left-0 w-64 h-screen max-h-screen z-[120] flex flex-col bg-gray-950 text-white border-r border-gray-800/80 shrink-0 select-none
           transition-transform duration-200 ease-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
         {/* Brand / Logo */}
-        <div className="p-4 sm:p-5 flex items-center justify-between border-b border-gray-800/70">
+        <div className="p-4 sm:p-5 flex items-center justify-between border-b border-gray-800/70 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-xs"
@@ -86,7 +86,7 @@ export default function Sidebar({ activeTab, setActiveTab, business, onSignOut, 
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 min-h-0 px-3 py-4 space-y-1 overflow-y-auto hide-scrollbar">
           <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-3 mb-2">
             Principal
           </p>
@@ -100,8 +100,8 @@ export default function Sidebar({ activeTab, setActiveTab, business, onSignOut, 
           {MANAGE_TABS.map(renderTab)}
         </nav>
 
-        {/* Store Link & Plan Upgrade */}
-        <div className="p-3 border-t border-gray-800/70 space-y-2">
+        {/* Store Link & Plan Upgrade & Logout (permanently pinned at bottom) */}
+        <div className="p-3 border-t border-gray-800/70 space-y-2 shrink-0 bg-gray-950">
           <a
             href={storeUrl}
             target="_blank"
@@ -124,7 +124,7 @@ export default function Sidebar({ activeTab, setActiveTab, business, onSignOut, 
 
           <button
             onClick={onSignOut}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
           >
             <LogOut size={16} />
             <span>Cerrar sesión</span>

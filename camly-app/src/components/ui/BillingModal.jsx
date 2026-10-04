@@ -17,7 +17,7 @@ export default function BillingModal() {
   if (!isOpen) return null;
 
   const whatsappNumber = '573143243707'; // User requested this exact number
-  const message = `Hola! Quiero activar mi Plan PRO en CAMLY. Mi ID de tienda es: ${business?.id}`;
+  const message = `Hola! Quiero activar mi Plan PRO en Move. Mi ID de tienda es: ${business?.id}`;
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">

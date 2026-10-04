@@ -5,49 +5,50 @@ import {
   Check, ArrowRight, Menu, X,
   MapPin, Zap, Star, ChevronDown,
   ShoppingBag, Sparkles, DollarSign,
-  Store, ShieldCheck,
+  Store, ShieldCheck, Clock,
   CreditCard, PackageCheck, Pizza, Coffee,
   Shirt, Cake, Fish, PawPrint, Beef, Navigation,
+  ChevronRight, ExternalLink, Play, CheckCircle
 } from 'lucide-react';
 import camlyPreview from '../../assets/ejemplo.jpeg';
 import SaaSLogo from '../../components/common/SaaSLogo';
 import { useAnimatedCounter } from '../../lib/utils';
 
 const BUSINESS_TYPES = [
-  { icon: ShoppingBag, label: 'Comidas Rapidas' },
-  { icon: Pizza,       label: 'Pizzerias' },
-  { icon: Coffee,      label: 'Cafeterias y Panaderias' },
-  { icon: Shirt,       label: 'Tiendas de Ropa' },
-  { icon: Cake,        label: 'Reposterias' },
-  { icon: Fish,        label: 'Sushi y Oriental' },
-  { icon: PawPrint,    label: 'Mascotas' },
-  { icon: Beef,        label: 'Carnes y Frutas' },
+  { icon: ShoppingBag, label: 'Comidas Rápidas' },
+  { icon: Pizza,       label: 'Pizzerías & Pastas' },
+  { icon: Coffee,      label: 'Cafeterías & Panaderías' },
+  { icon: Fish,        label: 'Sushi & Wok' },
+  { icon: Cake,        label: 'Reposterías & Postres' },
+  { icon: Beef,        label: 'Carnicerías & Parrilla' },
+  { icon: Shirt,       label: 'Boutiques & Ropa' },
+  { icon: PawPrint,    label: 'Veterinarias & Mascotas' },
 ];
 
 const FAQS = [
   {
-    q: 'Mis clientes tienen que descargar alguna aplicacion?',
-    a: 'No. CAMLY funciona directamente en el navegador de cualquier celular. Tu cliente abre tu enlace, agrega productos al carrito y el pedido llega a tu WhatsApp en segundos.'
+    q: '¿Mis clientes tienen que descargar alguna aplicación?',
+    a: 'No. Move funciona directamente en el navegador web de cualquier teléfono móvil (Android o iPhone). Tu cliente abre tu enlace o escanea tu QR, arma su carrito y el pedido llega a tu WhatsApp con un solo clic.'
   },
   {
-    q: 'Como funciona la ubicacion GPS para los domicilios?',
-    a: 'Cuando el cliente elige domicilio, el sistema lee su ubicacion GPS. En el WhatsApp que recibes viene el enlace directo para abrir Google Maps o Waze con la ruta exacta para tu repartidor.'
+    q: '¿Cómo funciona la ubicación GPS para los domiciliarios?',
+    a: 'Cuando el cliente selecciona servicio a domicilio, el catálogo interactivo detecta su ubicación GPS exacta y le permite ajustar su pin en el mapa. En el mensaje de WhatsApp que recibes viene el enlace directo que abre Google Maps o Waze en el celular de tu repartidor.'
   },
   {
-    q: 'Que pasa si el cliente prefiere recoger en el local?',
-    a: 'El cliente selecciona Recoger en el punto. El pedido llega a WhatsApp con el detalle completo, permitiendote tenerlo empacado y listo antes de que llegue.'
+    q: '¿Cómo recibo el dinero de mis ventas?',
+    a: 'El 100% de tu dinero entra directamente a tus cuentas (Nequi, Daviplata, Bancolombia, Bre-B o efectivo contraentrega). Move nunca retiene tu dinero ni te cobra porcentajes por transacción.'
   },
   {
-    q: 'Como recibo el dinero de mis ventas?',
-    a: 'El 100% del dinero entra directo a ti. Tus clientes pagan por Nequi, Daviplata, Bancolombia o en efectivo. CAMLY no retiene ni descuenta comision.'
+    q: '¿Puedo actualizar precios o pausar productos en tiempo real?',
+    a: 'Sí. Cuentas con un panel administrativo intuitivo accesible desde tu celular o computador donde puedes cambiar precios, subir fotos o activar/desactivar productos agotados en segundos.'
   },
   {
-    q: 'Que necesito para empezar los 7 dias de prueba gratis?',
-    a: 'Solo el nombre de tu negocio, correo y contrasena. Sin tarjeta de credito. En menos de 5 minutos tienes tu catalogo al aire.'
+    q: '¿Qué necesito para empezar los 7 días de prueba gratis?',
+    a: 'Solo el nombre de tu negocio, tu número de WhatsApp y tu correo electrónico. No solicitamos tarjeta de crédito ni firmas contratos de permanencia.'
   },
   {
-    q: 'Puedo actualizar precios y productos desde mi telefono?',
-    a: 'Si. Tienes un panel donde puedes subir fotos, ajustar precios o pausar productos agotados al instante.'
+    q: '¿Qué pasa si un cliente prefiere recoger en el local?',
+    a: 'El cliente puede seleccionar "Recoger en tienda". El pedido llega con el horario estimado, lo que te permite tenerlo empacado y listo para entregar sin generar filas.'
   }
 ];
 
@@ -70,131 +71,278 @@ export default function LandingPage() {
   }, [menuOpen]);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white text-gray-900 selection:bg-orange-500 selection:text-white font-sans">
+    <div className="min-h-screen overflow-x-hidden bg-[#FBFBFC] text-gray-900 selection:bg-blue-600 selection:text-white font-sans">
 
-      {/* TOP BAR */}
+      {/* ═══════════ TOP ANNOUNCEMENT BAR ═══════════ */}
       <aside className="bg-gray-950 text-white text-xs py-2 px-4 border-b border-gray-800">
-        <div className="fluid-container flex items-center justify-between gap-2">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 mx-auto sm:mx-0">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-medium text-gray-300">
-              Prueba <strong className="text-white font-bold">7 dias gratis</strong> · Sin tarjeta · Pagos directos a tu Nequi o cuenta
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="font-medium text-gray-300 text-[11px] sm:text-xs">
+              Prueba <strong className="text-white font-bold">7 días gratis</strong> · Sin tarjeta de crédito · Pagos directos a tu Nequi o cuenta
             </span>
           </div>
-          <Link to="/registro" className="hidden sm:inline-flex items-center gap-1 text-orange-400 hover:text-orange-300 font-bold transition-colors">
-            <span>Crear catalogo</span><ArrowRight size={12} />
+          <Link to="/registro" className="hidden sm:inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 font-bold transition-colors shrink-0">
+            <span>Crear catálogo</span><ArrowRight size={12} />
           </Link>
         </div>
       </aside>
 
-      {/* NAVBAR */}
-      <nav className={`sticky top-0 left-0 w-full z-[100] transition-all duration-200 border-b ${
-        scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-3 border-gray-200/80' : 'bg-white py-3.5 border-gray-100'
-      }`}>
-        <div className="fluid-container flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-2"><SaaSLogo className="h-7 shrink-0" /></Link>
-          <div className="hidden md:flex items-center gap-7 text-sm font-semibold text-gray-600">
-            <a href="#como-funciona" className="hover:text-orange-600 transition-colors">Como funciona</a>
-            <a href="#entregas"      className="hover:text-orange-600 transition-colors">Envios y Retiros</a>
-            <a href="#beneficios"    className="hover:text-orange-600 transition-colors">Ventajas</a>
-            <a href="#precios"       className="hover:text-orange-600 transition-colors">Planes</a>
-            <a href="#preguntas"     className="hover:text-orange-600 transition-colors">Preguntas</a>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <Link to="/login" className="text-sm font-semibold text-gray-600 hover:text-gray-900 px-3 py-2 rounded-xl transition-colors">Iniciar sesion</Link>
-            <Link to="/registro" className="btn-primary py-2.5 px-4 text-sm font-bold shadow-sm"><span>Empezar gratis</span><ArrowRight size={14} /></Link>
-            <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 text-gray-600 rounded-xl hover:bg-gray-100">
-              {menuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-          </div>
-        </div>
-        {menuOpen && (
-          <div className="md:hidden border-t border-gray-100 bg-white p-5 space-y-1 animate-fade-in-down shadow-xl">
-            {['#como-funciona:Como funciona','#entregas:Envios y Retiros','#beneficios:Ventajas','#precios:Planes','#preguntas:Preguntas'].map(s => {
-              const [href, label] = s.split(':');
-              return <a key={href} href={href} onClick={() => setMenuOpen(false)} className="block py-2.5 text-sm font-bold text-gray-800 border-b border-gray-50">{label}</a>;
-            })}
-            <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
-              <Link to="/login"    onClick={() => setMenuOpen(false)} className="btn-secondary w-full text-center py-2.5 text-sm font-bold">Iniciar sesion</Link>
-              <Link to="/registro" onClick={() => setMenuOpen(false)} className="btn-primary  w-full text-center py-2.5 text-sm font-bold">Crear mi tienda gratis</Link>
-            </div>
-          </div>
-        )}
-      </nav>
+      {/* ═══════════ FLOATING PILL NAVBAR (WENÚ / FRAMER STYLE) ═══════════ */}
+      <header className="fixed top-9 sm:top-10 inset-x-3 sm:inset-x-6 z-50 pointer-events-none">
+        <div className="max-w-6xl mx-auto pointer-events-auto">
+          <nav className={`transition-all duration-300 rounded-full px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between shadow-warm ${
+            scrolled 
+              ? 'bg-white/95 backdrop-blur-md border border-gray-200 shadow-warm-lg' 
+              : 'bg-white/90 backdrop-blur-md border border-gray-200/80 shadow-warm'
+          }`} aria-label="Navegación principal">
+            
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-2 shrink-0">
+              <SaaSLogo className="h-8 sm:h-9 md:h-10" />
+            </Link>
 
-      {/* HERO */}
-      <header className="pt-10 sm:pt-14 pb-12 sm:pb-16 bg-radial from-orange-50/40 via-white to-white border-b border-gray-100">
-        <div className="fluid-container">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
-            <div className="lg:col-span-7 text-center lg:text-left space-y-5">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-100/70 border border-orange-200 text-orange-950 text-xs font-bold">
-                <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
-                <span>Mas de {orderCount.toLocaleString()} pedidos despachados con exito</span>
-              </div>
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight leading-[1.12]">
-                Tu catalogo digital para vender por WhatsApp <span className="text-orange-600">con GPS y sin enredos</span>
-              </h1>
-              <p className="text-base text-gray-600 leading-relaxed max-w-xl mx-auto lg:mx-0">
-                Tus clientes eligen productos desde tu enlace y el pedido llega a tu WhatsApp completamente listo: productos, total y ubicacion GPS para el repartidor.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
-                <Link to="/registro" className="btn-primary py-3.5 px-7 text-sm font-bold w-full sm:w-auto shadow-md gap-2"><span>Probar 7 dias gratis</span><ArrowRight size={16} /></Link>
-                <a href="#como-funciona" className="btn-secondary py-3.5 px-6 text-sm font-bold w-full sm:w-auto">Ver como funciona</a>
-              </div>
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-2 text-sm font-semibold text-gray-600">
-                <div className="flex items-center gap-1.5"><CheckCircle2 size={16} className="text-emerald-600 shrink-0" /><span>Sin descargar apps</span></div>
-                <div className="flex items-center gap-1.5"><CheckCircle2 size={16} className="text-emerald-600 shrink-0" /><span>GPS para Google Maps</span></div>
-                <div className="flex items-center gap-1.5"><CheckCircle2 size={16} className="text-emerald-600 shrink-0" /><span>0% comisiones</span></div>
+            {/* Desktop Navigation Links */}
+            <div className="hidden md:flex items-center gap-6 lg:gap-8 text-sm font-semibold text-gray-600">
+              <a href="#como-funciona" className="hover:text-blue-600 transition-colors">Cómo funciona</a>
+              <a href="#solucion"      className="hover:text-blue-600 transition-colors">Ventajas</a>
+              <a href="#comparativa"   className="hover:text-blue-600 transition-colors">Antes vs Move</a>
+              <a href="#precios"       className="hover:text-blue-600 transition-colors">Planes</a>
+              <a href="#faq"           className="hover:text-blue-600 transition-colors">Preguntas</a>
+            </div>
+
+            {/* Actions / CTA */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Link 
+                to="/login" 
+                className="hidden sm:inline-flex text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 px-3 py-2 rounded-full transition-colors"
+              >
+                Entrar
+              </Link>
+
+              <Link 
+                to="/registro" 
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2.5 rounded-full shadow-glow-blue active:scale-95 transition-all duration-150"
+              >
+                <span>Probar gratis</span>
+                <ArrowRight size={14} className="shrink-0" />
+              </Link>
+
+              {/* Hamburger Button for Mobile */}
+              <button 
+                onClick={() => setMenuOpen(!menuOpen)} 
+                className="md:hidden w-9 h-9 flex items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
+                aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+              >
+                {menuOpen ? <X size={18} /> : <Menu size={18} />}
+              </button>
+            </div>
+          </nav>
+
+          {/* Mobile Menu Card */}
+          {menuOpen && (
+            <div className="mt-2 bg-white rounded-3xl shadow-warm-lg border border-gray-200/80 p-5 flex flex-col gap-2 text-sm font-semibold text-gray-700 md:hidden animate-fade-in-down">
+              <a 
+                href="#como-funciona" 
+                onClick={() => setMenuOpen(false)}
+                className="px-4 py-3 rounded-2xl hover:bg-blue-50/70 hover:text-blue-600 transition-colors"
+              >
+                Cómo funciona
+              </a>
+              <a 
+                href="#solucion" 
+                onClick={() => setMenuOpen(false)}
+                className="px-4 py-3 rounded-2xl hover:bg-blue-50/70 hover:text-blue-600 transition-colors"
+              >
+                Ventajas de Move
+              </a>
+              <a 
+                href="#comparativa" 
+                onClick={() => setMenuOpen(false)}
+                className="px-4 py-3 rounded-2xl hover:bg-blue-50/70 hover:text-blue-600 transition-colors"
+              >
+                Antes vs Con Move
+              </a>
+              <a 
+                href="#precios" 
+                onClick={() => setMenuOpen(false)}
+                className="px-4 py-3 rounded-2xl hover:bg-blue-50/70 hover:text-blue-600 transition-colors"
+              >
+                Planes y Precios
+              </a>
+              <a 
+                href="#faq" 
+                onClick={() => setMenuOpen(false)}
+                className="px-4 py-3 rounded-2xl hover:bg-blue-50/70 hover:text-blue-600 transition-colors"
+              >
+                Preguntas frecuentes
+              </a>
+              <div className="pt-3 border-t border-gray-100 flex flex-col gap-2.5">
+                <Link 
+                  to="/login" 
+                  onClick={() => setMenuOpen(false)} 
+                  className="w-full text-center py-3 text-sm font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-colors"
+                >
+                  Iniciar sesión
+                </Link>
+                <Link 
+                  to="/registro" 
+                  onClick={() => setMenuOpen(false)} 
+                  className="w-full text-center py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-2xl shadow-glow-blue transition-colors"
+                >
+                  Crear tienda gratis
+                </Link>
               </div>
             </div>
-            <div className="lg:col-span-5 flex justify-center">
-              <div className="relative w-full max-w-[320px] sm:max-w-[360px]">
-                <div className="absolute -top-6 -left-3 sm:-left-6 z-20 bg-white shadow-xl rounded-2xl p-3 border border-gray-200/90 max-w-[240px] animate-scale-in">
-                  <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-[10px]">WA</div>
-                    <div><p className="text-[11px] font-extrabold text-gray-900 leading-none">WhatsApp Business</p><p className="text-[9px] text-gray-400">Nuevo pedido recibido</p></div>
-                  </div>
-                  <div className="text-[11px] text-gray-800 font-semibold space-y-1">
-                    <p className="font-bold text-gray-900">Pedido #1042</p>
-                    <p className="text-gray-600">2x Hamburguesa Doble Queso</p>
-                    <p className="text-gray-600">1x Papas Rusticas</p>
-                    <div className="p-1.5 bg-emerald-50 rounded-lg border border-emerald-200 text-[10px] text-emerald-800">GPS: maps.google.com/?q=...</div>
-                    <div className="flex justify-between items-center pt-1 border-t border-gray-100">
-                      <span className="text-[10px] text-gray-500">Nequi / Efectivo</span>
-                      <strong className="text-gray-900 text-xs font-black">$38.000</strong>
-                    </div>
-                  </div>
-                </div>
-                <div className="absolute -bottom-4 -right-2 z-20 bg-gray-950 text-white shadow-xl rounded-xl p-2.5 border border-gray-800 flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-orange-600 flex items-center justify-center shrink-0"><DollarSign size={16} /></div>
-                  <div><p className="text-[11px] font-bold">Cero Comisiones</p><p className="text-[10px] text-gray-400">100% para ti</p></div>
-                </div>
-                <div className="rounded-[2.5rem] p-3 bg-gray-950 shadow-2xl border-4 border-gray-800">
-                  <div className="relative rounded-[2rem] overflow-hidden bg-white aspect-[9/16]">
-                    <img src={camlyPreview} alt="Vista previa catalogo CAMLY" className="w-full h-full object-cover object-top" loading="eager" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </header>
 
-      {/* STRIP MARQUEE */}
-      <div className="bg-gray-950 border-b border-gray-800 py-4 overflow-hidden">
+      {/* ═══════════ HERO SECTION ═══════════ */}
+      <section className="relative pt-32 sm:pt-36 lg:pt-40 pb-16 sm:pb-24 overflow-hidden gradient-soft-blue border-b border-gray-200/70">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+            
+            {/* Left Column: Copy & Value Proposition */}
+            <div className="lg:col-span-7 text-center lg:text-left space-y-6">
+              
+              {/* Eyebrow Pill Badge */}
+              <div className="inline-flex items-center gap-2 bg-white/90 border border-blue-200/80 rounded-full pl-2 pr-3.5 py-1 text-xs font-semibold text-gray-700 shadow-sm mx-auto lg:mx-0">
+                <span className="bg-blue-600 text-white text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full">
+                  GPS & WHATSAPP
+                </span>
+                <span>Tu catálogo digital listo en menos de 3 minutos</span>
+              </div>
+
+              {/* Display Headline */}
+              <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-black text-gray-950 tracking-tight leading-[1.03]">
+                Tu catálogo digital,<br />
+                <span className="text-blue-600">listo en minutos</span><br />
+                <span className="text-gray-600 font-sans text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight block mt-1">
+                  conectado a WhatsApp.
+                </span>
+              </h1>
+
+              {/* Sub-headline */}
+              <p className="text-base sm:text-lg text-gray-600 max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
+                Tus clientes arman su pedido interactivo y lo envían directo a tu WhatsApp con <strong className="text-gray-900 font-semibold">ubicación GPS exacta</strong> para el repartidor o recogida en tienda. Sin programar, sin contratos y con 0% de comisiones.
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-2">
+                <Link 
+                  to="/registro" 
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm sm:text-base px-8 py-4 rounded-full shadow-glow-blue hover:shadow-lg transition-all duration-200 active:scale-95"
+                >
+                  <Sparkles size={18} />
+                  <span>Crear mi tienda gratis</span>
+                  <ArrowRight size={16} />
+                </Link>
+
+                <a 
+                  href="#como-funciona" 
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-800 font-bold text-sm sm:text-base px-7 py-4 rounded-full border border-gray-200/90 shadow-xs hover:border-gray-300 transition-all duration-150"
+                >
+                  <Play size={16} className="text-blue-600 fill-blue-600" />
+                  <span>Ver cómo funciona</span>
+                </a>
+              </div>
+
+              {/* Trust Badges */}
+              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-y-2 gap-x-6 text-xs sm:text-sm font-semibold text-gray-600">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                  <span>Sin tarjeta de crédito</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                  <span>0% comisiones por venta</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                  <span>Ruta GPS para Maps y Waze</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right Column: Realistic Interactive Device Showcase */}
+            <div className="lg:col-span-5 flex justify-center">
+              <div className="relative w-full max-w-[310px] sm:max-w-[340px]">
+                
+                {/* Background Ambient Glow */}
+                <div className="absolute -inset-4 bg-gradient-to-tr from-blue-500/20 via-sky-400/20 to-transparent rounded-[3rem] blur-2xl -z-10" />
+
+                {/* Smartphone Mockup */}
+                <div className="rounded-[2.8rem] p-3 bg-gray-950 shadow-2xl border-4 border-gray-800/90 transition-transform duration-300 hover:rotate-0 -rotate-1">
+                  
+                  {/* Speaker and Camera notch */}
+                  <div className="relative rounded-[2.3rem] overflow-hidden bg-white aspect-[9/16] shadow-inner">
+                    <img 
+                      src={camlyPreview} 
+                      alt="Vista previa catálogo Move" 
+                      className="w-full h-full object-cover object-top" 
+                      loading="eager" 
+                    />
+                  </div>
+                </div>
+
+                {/* Floating Card 1: WhatsApp Incoming Order */}
+                <div className="absolute -top-4 -left-4 sm:-left-8 bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-3.5 shadow-warm-lg border border-gray-200/80 flex items-center gap-3 animate-fade-in-down z-20 max-w-[240px]">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <MessageCircle size={20} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">¡Nuevo Pedido WhatsApp!</p>
+                    <p className="text-xs font-black text-gray-900 truncate">#1048 · 2x Burger Doble</p>
+                    <p className="text-[10px] text-gray-500 font-medium">Total: $42.000 · Pago confirmado</p>
+                  </div>
+                </div>
+
+                {/* Floating Card 2: GPS Location Pin */}
+                <div className="absolute bottom-6 -right-4 sm:-right-8 bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-3.5 shadow-warm-lg border border-gray-200/80 flex items-center gap-3 animate-fade-in-up z-20 max-w-[220px]">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Navigation size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Ruta Directa GPS</p>
+                    <p className="text-xs font-black text-gray-900 truncate">Google Maps & Waze</p>
+                    <p className="text-[10px] text-gray-500 font-medium">El repartidor va sin perderse</p>
+                  </div>
+                </div>
+
+                {/* Floating Badge 3: 0% Commissions */}
+                <div className="absolute -bottom-3 left-4 bg-gray-950 text-white rounded-full px-4 py-1.5 text-xs font-bold shadow-lg flex items-center gap-1.5 border border-gray-800">
+                  <DollarSign size={13} className="text-emerald-400" />
+                  <span>0% comisiones sobre tus ventas</span>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════ CONTINUOUS TICKER MARQUEE ═══════════ */}
+      <div className="bg-white border-b border-gray-200/80 py-4 overflow-hidden">
         <div className="flex items-center">
-          <div className="shrink-0 px-5 border-r border-gray-700">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">Ideal para</span>
+          <div className="shrink-0 px-5 sm:px-8 border-r border-gray-200">
+            <span className="text-xs font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">
+              Creado para
+            </span>
           </div>
           <div className="flex-1 overflow-hidden relative">
-            <div className="absolute left-0 top-0 bottom-0 w-10 bg-gradient-to-r from-gray-950 to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-gray-950 to-transparent z-10 pointer-events-none" />
-            <div className="flex gap-3 pl-4" style={{ animation: 'marquee-slide 32s linear infinite', width: 'max-content' }}>
+            <div className="flex gap-3 pl-4" style={{ animation: 'marquee-slide 34s linear infinite', width: 'max-content' }}>
               {[...BUSINESS_TYPES, ...BUSINESS_TYPES].map((item, i) => {
                 const Icon = item.icon;
                 return (
-                  <span key={i} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700/60 text-gray-300 text-sm font-medium whitespace-nowrap shrink-0">
-                    <Icon size={14} className="text-orange-400 shrink-0" />{item.label}
+                  <span 
+                    key={i} 
+                    className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-gray-50 border border-gray-200/70 text-gray-700 text-xs sm:text-sm font-semibold whitespace-nowrap shrink-0 hover:border-blue-300 hover:bg-blue-50/50 transition-colors"
+                  >
+                    <Icon size={15} className="text-blue-600 shrink-0" />
+                    <span>{item.label}</span>
                   </span>
                 );
               })}
@@ -203,374 +351,560 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* ═══════════ COMO FUNCIONA ═══════════ */}
-      <section id="como-funciona" className="py-14 sm:py-20 bg-white border-b border-gray-100 overflow-hidden">
-        <div className="fluid-container">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-            {/* Left: title block */}
-            <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-28">
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-100/70 border border-orange-200 text-orange-950 text-xs font-bold">
-                <Zap size={12} className="text-orange-600" />
-                <span>Listo en 5 minutos</span>
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight leading-snug">Asi de simple es vender con Camly</h2>
-              <p className="text-sm text-gray-500 leading-relaxed">Tus clientes piden desde su celular y tu recibes todo listo en WhatsApp. Sin apps, sin intermediarios.</p>
-              <Link to="/registro" className="btn-primary py-3 px-5 text-sm font-bold shadow-sm gap-2 mt-2 inline-flex"><span>Probar gratis</span><ArrowRight size={14} /></Link>
+      {/* ═══════════ CÓMO FUNCIONA (THE 3-STEP FLOW) ═══════════ */}
+      <section id="como-funciona" className="py-16 sm:py-24 bg-white border-b border-gray-200/70">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          
+          {/* Header */}
+          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold">
+              <Zap size={13} />
+              <span>Flujo en 3 pasos sencillos</span>
+            </div>
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-gray-950 tracking-tight leading-tight">
+              Así de simple es mover tu negocio con Move
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
+              Tus clientes piden desde su celular en segundos y tú recibes la comanda completa en WhatsApp. Sin apps ni enredos.
+            </p>
+          </div>
+
+          {/* 3 Step Editorial Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+            
+            {/* Step 1 */}
+            <div className="relative p-6 sm:p-8 rounded-3xl bg-gray-50/70 border border-gray-200/80 hover:border-blue-300 hover:shadow-warm transition-all duration-200 space-y-5">
+              <div className="flex items-center justify-between">
+                <span className="font-display text-3xl sm:text-4xl font-black text-blue-600">01</span>
+                <div className="w-12 h-12 rounded-2xl bg-blue-100/60 text-blue-600 flex items-center justify-center">
+                  <Smartphone size={22} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Sube tus productos</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Agrega categorías, fotos, precios y opciones personalizadas en minutos desde tu celular o computador.
+                </p>
+              </div>
             </div>
 
-            {/* Right: steps */}
-            <div className="lg:col-span-8 space-y-4">
-              {[
-                { n: '01', t: 'Sube tus productos', d: 'Agrega categorias, fotos y precios en minutos. Desde tu celular o computador, organizas tu catalogo completo.', icon: Smartphone, color: 'orange' },
-                { n: '02', t: 'Comparte tu enlace', d: 'Ponlo en tu biografia de Instagram, estado de WhatsApp o envialo directo a quien te pregunte que vendes.', icon: MessageCircle, color: 'blue' },
-                { n: '03', t: 'Recibe pedidos listos', d: 'El pedido llega a tu WhatsApp con productos, total, metodo de pago y enlace GPS para el repartidor.', icon: CheckCircle2, color: 'emerald' },
-              ].map(({ n, t, d, icon: Icon, color }) => (
-                <div key={n} className="group relative flex gap-5 p-5 sm:p-6 rounded-2xl border border-gray-200 bg-white hover:border-gray-300 hover:shadow-md transition-all duration-200">
-                  <div className="shrink-0">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${
-                      color === 'orange' ? 'bg-orange-100 text-orange-600' :
-                      color === 'blue' ? 'bg-blue-100 text-blue-600' :
-                      'bg-emerald-100 text-emerald-600'
-                    }`}>
-                      <Icon size={22} />
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1.5">
-                      <span className="text-xs font-black text-gray-300 tracking-widest">{n}</span>
-                      <h3 className="text-base font-bold text-gray-900">{t}</h3>
-                    </div>
-                    <p className="text-sm text-gray-600 leading-relaxed">{d}</p>
-                  </div>
-                  <ArrowRight size={16} className="text-gray-300 group-hover:text-orange-500 shrink-0 mt-1.5 transition-colors" />
+            {/* Step 2 */}
+            <div className="relative p-6 sm:p-8 rounded-3xl bg-gray-50/70 border border-gray-200/80 hover:border-blue-300 hover:shadow-warm transition-all duration-200 space-y-5">
+              <div className="flex items-center justify-between">
+                <span className="font-display text-3xl sm:text-4xl font-black text-blue-600">02</span>
+                <div className="w-12 h-12 rounded-2xl bg-indigo-100/60 text-indigo-600 flex items-center justify-center">
+                  <MessageCircle size={22} />
                 </div>
-              ))}
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Comparte tu enlace</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Pon tu enlace en la biografía de Instagram, estados de WhatsApp o envíalo a quien te pregunte por el menú.
+                </p>
+              </div>
             </div>
+
+            {/* Step 3 */}
+            <div className="relative p-6 sm:p-8 rounded-3xl bg-gray-50/70 border border-gray-200/80 hover:border-blue-300 hover:shadow-warm transition-all duration-200 space-y-5">
+              <div className="flex items-center justify-between">
+                <span className="font-display text-3xl sm:text-4xl font-black text-blue-600">03</span>
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100/60 text-emerald-600 flex items-center justify-center">
+                  <CheckCircle2 size={22} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Recibe pedidos listos</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  El pedido llega a tu WhatsApp con productos, total exacto, método de pago y el enlace GPS para el repartidor.
+                </p>
+              </div>
+            </div>
+
           </div>
+
         </div>
       </section>
 
-      {/* ═══════════ ENTREGAS ═══════════ */}
-      <section id="entregas" className="py-14 sm:py-20 bg-white border-b border-gray-100">
-        <div className="fluid-container">
-          <div className="max-w-xl mb-10 space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Modalidades de entrega</span>
-            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight leading-snug">El pedido llega listo a tu WhatsApp</h2>
+      {/* ═══════════ BENTO GRID: VENTAJAS Y VALOR ═══════════ */}
+      <section id="solucion" className="py-16 sm:py-24 bg-gray-50/60 border-b border-gray-200/70">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          
+          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
+              <CheckCircle size={13} />
+              <span>Diseñado para dueños de negocios</span>
+            </div>
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-gray-950 tracking-tight leading-tight">
+              Todo lo que necesitas para vender más por WhatsApp
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
+              Herramientas precisas para organizar tus ventas sin pagar el 30% a plataformas intermediarias.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Domicilio */}
-            <div className="relative">
-              <div className="border-l-[3px] border-orange-500 pl-6 sm:pl-8 space-y-4">
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-orange-600">Domicilio</span>
-                  <h3 className="text-xl font-bold text-gray-900 mt-1 leading-snug">Tu cliente comparte su ubicacion y el pedido llega con la ruta incluida</h3>
-                </div>
-                <div className="space-y-2">
-                  {['El cliente marca su punto en el mapa desde el celular','La ubicacion GPS llega dentro del pedido a tu WhatsApp','Tu repartidor abre Google Maps directo desde el mensaje','No necesitas preguntar donde queda ni pedir referencias'].map((item, i) => (
-                    <p key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
-                      <span className="w-1 h-1 rounded-full bg-gray-400 shrink-0 mt-2" />
-                      <span>{item}</span>
-                    </p>
-                  ))}
-                </div>
+          {/* Bento Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+            
+            {/* Bento Card 1: GPS y Domicilios (Large) */}
+            <div className="md:col-span-8 p-7 sm:p-9 rounded-3xl bg-white border border-gray-200/90 shadow-warm hover:shadow-warm-lg transition-all duration-200 space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <Navigation size={22} />
               </div>
-              {/* WhatsApp preview */}
-              <div className="mt-5 ml-6 sm:ml-8 p-4 bg-gray-950 rounded-xl border border-gray-800">
-                <div className="flex items-center gap-2 mb-2.5 pb-2 border-b border-gray-800">
-                  <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[8px] font-bold">WA</div>
-                  <span className="text-[11px] font-bold text-gray-300">Nuevo pedido</span>
-                  <span className="text-[10px] text-gray-600 ml-auto">Hace 1 min</span>
-                </div>
-                <div className="text-[11px] text-gray-400 space-y-1.5 font-medium">
-                  <p className="text-white font-bold">Pedido #1042 · Domicilio</p>
-                  <p>2x Hamburguesa Doble · 1x Papas Rusticas</p>
-                  <div className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-900 rounded-lg text-emerald-400 text-[10px] border border-gray-800">
-                    <MapPin size={10} className="shrink-0" /><span className="truncate">maps.google.com/?q=4.6521,-74.0836</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-1.5">
-                    <span className="text-gray-500">Nequi · Efectivo</span>
-                    <span className="text-white font-black text-xs">$38.000</span>
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Cálculo de domicilio con pin GPS en el mapa</h3>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed max-w-2xl">
+                  Tu cliente marca su ubicación exacta en el mapa satelital. El sistema calcula la distancia por kilómetro desde tu local y envía la ruta directa para que tu repartidor abra Google Maps o Waze sin preguntar "¿por dónde queda tu casa?".
+                </p>
+              </div>
+              <div className="pt-2 flex flex-wrap gap-2 text-xs font-bold text-gray-600">
+                <span className="px-3 py-1.5 rounded-full bg-gray-100">Ruta Waze & Maps</span>
+                <span className="px-3 py-1.5 rounded-full bg-gray-100">Cálculo exacto por KM</span>
+                <span className="px-3 py-1.5 rounded-full bg-gray-100">Cero llamadas de repartidores</span>
               </div>
             </div>
 
-            {/* Recoger */}
-            <div className="relative">
-              <div className="border-l-[3px] border-gray-900 pl-6 sm:pl-8 space-y-4">
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Recoger en local</span>
-                  <h3 className="text-xl font-bold text-gray-900 mt-1 leading-snug">Tu cliente pide antes de llegar y recoge cuando este listo</h3>
-                </div>
-                <div className="space-y-2">
-                  {['El pedido llega organizado con cada producto y cantidad','Cada pedido tiene un numero unico de identificacion','Lo preparas con anticipacion, sin esperas en mostrador','El cliente llega, recoge y se va. Sin filas ni confusiones'].map((item, i) => (
-                    <p key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
-                      <span className="w-1 h-1 rounded-full bg-gray-400 shrink-0 mt-2" />
-                      <span>{item}</span>
-                    </p>
-                  ))}
-                </div>
+            {/* Bento Card 2: 0% Comisiones (Small) */}
+            <div className="md:col-span-4 p-7 sm:p-9 rounded-3xl bg-white border border-gray-200/90 shadow-warm hover:shadow-warm-lg transition-all duration-200 space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <DollarSign size={22} />
               </div>
-              {/* WhatsApp preview */}
-              <div className="mt-5 ml-6 sm:ml-8 p-4 bg-gray-950 rounded-xl border border-gray-800">
-                <div className="flex items-center gap-2 mb-2.5 pb-2 border-b border-gray-800">
-                  <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[8px] font-bold">WA</div>
-                  <span className="text-[11px] font-bold text-gray-300">Nuevo pedido</span>
-                  <span className="text-[10px] text-gray-600 ml-auto">Hace 3 min</span>
-                </div>
-                <div className="text-[11px] text-gray-400 space-y-1.5 font-medium">
-                  <p className="text-white font-bold">Pedido #1043 · Recoger en local</p>
-                  <p>1x Pizza Napolitana · 2x Gaseosa 400ml</p>
-                  <div className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-900 rounded-lg text-gray-400 text-[10px] border border-gray-800">
-                    <Store size={10} className="shrink-0" /><span>El cliente pasa a recoger al local</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-1.5">
-                    <span className="text-gray-500">Transferencia Nequi</span>
-                    <span className="text-white font-black text-xs">$42.000</span>
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-gray-900">0% Comisiones</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Tus ventas son 100% tuyas. Los clientes pagan directo a tu cuenta de Nequi, Daviplata o en efectivo.
+                </p>
+              </div>
+              <div className="pt-2 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-xl p-2.5">
+                Conserva todo el margen de tus ventas.
               </div>
             </div>
+
+            {/* Bento Card 3: Recogida en Local (Small) */}
+            <div className="md:col-span-4 p-7 sm:p-9 rounded-3xl bg-white border border-gray-200/90 shadow-warm hover:shadow-warm-lg transition-all duration-200 space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <Store size={22} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-gray-900">Recogida en tienda</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Permite a tus clientes pedir con anticipación para recoger en el local sin hacer filas.
+                </p>
+              </div>
+            </div>
+
+            {/* Bento Card 4: Panel en vivo (Large) */}
+            <div className="md:col-span-8 p-7 sm:p-9 rounded-3xl bg-white border border-gray-200/90 shadow-warm hover:shadow-warm-lg transition-all duration-200 space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <Smartphone size={22} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Control total desde tu celular en tiempo real</h3>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed max-w-2xl">
+                  Actualiza precios, sube fotos, oculta productos agotados y consulta el historial de ventas diarias sin depender de un programador o diseñador gráfico.
+                </p>
+              </div>
+              <div className="pt-2 flex flex-wrap gap-2 text-xs font-bold text-gray-600">
+                <span className="px-3 py-1.5 rounded-full bg-gray-100">Sin reimprimir cartas</span>
+                <span className="px-3 py-1.5 rounded-full bg-gray-100">Gestión de repartidores</span>
+                <span className="px-3 py-1.5 rounded-full bg-gray-100">Reportes de ingresos</span>
+              </div>
+            </div>
+
           </div>
+
         </div>
       </section>
 
-      {/* ═══════════ PRECIOS (moved up for conversion) ═══════════ */}
-      <section id="precios" className="py-14 sm:py-20 bg-white border-b border-gray-100">
-        <div className="fluid-container">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-            {/* Left: copy */}
-            <div className="lg:col-span-5 space-y-5">
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold">
-                <ShieldCheck size={12} />
-                <span>Tarifa plana · 0% comisiones</span>
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight leading-snug">Un solo plan.<br />Todo incluido.</h2>
-              <p className="text-sm text-gray-500 leading-relaxed">Sin letra pequena, sin cobros sorpresa. El 100% de lo que vendes es tuyo. Solo pagas la suscripcion mensual o anual.</p>
-
-              <div className="inline-flex items-center p-1 bg-gray-100 rounded-xl text-sm font-bold">
-                <button onClick={() => setBillingAnnual(false)} className={`px-4 py-2 rounded-lg transition-all ${!billingAnnual ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>Mensual</button>
-                <button onClick={() => setBillingAnnual(true)}  className={`px-4 py-2 rounded-lg transition-all flex items-center gap-1.5 ${billingAnnual ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>
-                  <span>Anual</span><span className="bg-emerald-100 text-emerald-800 text-xs px-1.5 py-0.5 rounded-full font-bold">-25%</span>
-                </button>
-              </div>
-
-              <div className="flex items-baseline gap-2">
-                <span className="text-5xl sm:text-6xl font-black text-gray-900 tracking-tight">{billingAnnual ? '$29.000' : '$39.000'}</span>
-                <div className="text-left">
-                  <span className="block text-sm text-gray-500 font-bold">COP</span>
-                  <span className="block text-xs text-gray-400">por mes</span>
-                </div>
-              </div>
-              <p className="text-sm text-emerald-700 font-bold">{billingAnnual ? 'Facturado anualmente ($348.000/ano)' : 'Cancela cuando quieras · Sin contrato'}</p>
-
-              <Link to="/registro" className="btn-primary py-3.5 px-7 text-sm font-bold shadow-md gap-2 w-full sm:w-auto"><span>Empezar 7 dias gratis</span><ArrowRight size={15} /></Link>
-              <p className="text-xs text-gray-400 font-medium">Sin tarjeta de credito · Activacion en 5 minutos</p>
+      {/* ═══════════ ANTES VS CON MOVE (COMPARATIVA) ═══════════ */}
+      <section id="comparativa" className="py-16 sm:py-24 bg-white border-b border-gray-200/70">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          
+          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold">
+              <span>El antes y después</span>
             </div>
-
-            {/* Right: feature list */}
-            <div className="lg:col-span-7">
-              <div className="rounded-2xl border border-gray-200 bg-gray-50/50 p-6 sm:p-8">
-                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-5">Todo incluido en tu plan</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5">
-                  {[
-                    { t: 'Catalogo con tu logo y colores', sub: 'Personalizable al 100%' },
-                    { t: 'GPS automatico en domicilios', sub: 'Ubicacion exacta del cliente' },
-                    { t: 'Recogida en local', sub: 'Pedido listo antes de llegar' },
-                    { t: '0% comision por pedido', sub: 'El 100% de la venta es tuya' },
-                    { t: 'Nequi, Daviplata, banco, efectivo', sub: 'Tus clientes eligen como pagar' },
-                    { t: 'Productos y categorias ilimitados', sub: 'Sin restricciones de catalogo' },
-                    { t: 'Panel de ventas y metricas', sub: 'Control total en tiempo real' },
-                    { t: 'Soporte directo por WhatsApp', sub: 'Respuesta rapida y personalizada' },
-                  ].map((feat, i) => (
-                    <div key={i} className="flex items-start gap-3 py-2">
-                      <div className="w-5 h-5 rounded-md bg-orange-600 text-white flex items-center justify-center shrink-0 mt-0.5"><Check size={12} strokeWidth={3} /></div>
-                      <div>
-                        <p className="text-sm font-bold text-gray-900">{feat.t}</p>
-                        <p className="text-xs text-gray-500">{feat.sub}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-gray-950 tracking-tight leading-tight">
+              ¿Por qué los negocios eligen Move?
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
+              Compara la diferencia entre atender por chat tradicional y contar con un catálogo automatizado.
+            </p>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
+            
+            {/* Antes: Caos */}
+            <div className="p-7 sm:p-9 rounded-3xl bg-rose-50/40 border border-rose-200/70 space-y-5">
+              <div className="flex items-center gap-2.5 text-rose-700 font-extrabold text-sm uppercase tracking-wider">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                <span>El método tradicional (Caos)</span>
+              </div>
+              <ul className="space-y-3.5 text-sm text-gray-700">
+                <li className="flex items-start gap-3">
+                  <X size={18} className="text-rose-600 shrink-0 mt-0.5" />
+                  <span>10 a 15 mensajes repetitivos por cada cliente preguntando precios y sabores.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <X size={18} className="text-rose-600 shrink-0 mt-0.5" />
+                  <span>Direcciones incompletas que hacen que los domiciliarios se pierdan y tarden el doble.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <X size={18} className="text-rose-600 shrink-0 mt-0.5" />
+                  <span>Fotos borrosas enviadas por chat que saturan la memoria del teléfono.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <X size={18} className="text-rose-600 shrink-0 mt-0.5" />
+                  <span>Comisiones de hasta el 30% en apps de domicilios tradicionales.</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Después: Con Move */}
+            <div className="p-7 sm:p-9 rounded-3xl bg-blue-50/50 border-2 border-blue-600 shadow-warm space-y-5 relative">
+              <div className="absolute -top-3.5 right-6 bg-blue-600 text-white text-[11px] font-extrabold uppercase px-3 py-1 rounded-full shadow-sm">
+                Con Move
+              </div>
+              <div className="flex items-center gap-2.5 text-blue-800 font-extrabold text-sm uppercase tracking-wider">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                <span>La experiencia Move</span>
+              </div>
+              <ul className="space-y-3.5 text-sm text-gray-900 font-medium">
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 size={18} className="text-blue-600 shrink-0 mt-0.5" />
+                  <span>Un solo mensaje de WhatsApp con la comanda lista, precios sumados y método de pago.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 size={18} className="text-blue-600 shrink-0 mt-0.5" />
+                  <span>Pin GPS exacto que abre Waze o Google Maps en 1 toque en el celular del repartidor.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 size={18} className="text-blue-600 shrink-0 mt-0.5" />
+                  <span>Catálogo rápido, elegante y con fotos profesionales que abre sin descargar nada.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 size={18} className="text-blue-600 shrink-0 mt-0.5" />
+                  <span>0% comisiones. El dinero entra completo y directo a tu Nequi, Daviplata o cuenta.</span>
+                </li>
+              </ul>
+            </div>
+
+          </div>
+
         </div>
       </section>
 
-      {/* ═══════════ BENEFICIOS ═══════════ */}
-      <section id="beneficios" className="py-14 sm:py-20 bg-gray-50/80 border-b border-gray-200/80">
-        <div className="fluid-container">
-          <div className="max-w-2xl mb-10 space-y-3">
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-100/70 border border-orange-200 text-orange-950 text-xs font-bold">
-              <Star size={12} className="text-orange-600" />
-              <span>Ventajas de usar Camly</span>
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight leading-snug">Todo lo que necesita tu negocio para vender por WhatsApp</h2>
+      {/* ═══════════ PLANES Y PRECIOS ═══════════ */}
+      <section id="precios" className="py-16 sm:py-24 bg-gray-50/60 border-b border-gray-200/70">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          
+          <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold">
+              <span>Precios claros</span>
+            </div>
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-gray-950 tracking-tight leading-tight">
+              Sin comisiones sorpresa. Paga mes a mes.
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
+              Comienza hoy con 7 días de prueba completa. Cancela cuando quieras sin compromisos.
+            </p>
+
+            {/* Annual Billing Switch */}
+            <div className="pt-4 flex items-center justify-center gap-3">
+              <button
+                onClick={() => setBillingAnnual(false)}
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
+                  !billingAnnual ? 'bg-white shadow-xs text-blue-600 border border-gray-200' : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                Mensual
+              </button>
+              <button
+                onClick={() => setBillingAnnual(true)}
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  billingAnnual ? 'bg-blue-600 text-white shadow-glow-blue' : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                <span>Anual</span>
+                <span className="bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full font-extrabold">Ahorra 2 meses</span>
+              </button>
+            </div>
           </div>
 
-          {/* Feature cards row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            {[
-              { icon: CreditCard, color: 'emerald', t: 'Cobros directos a tu cuenta', d: 'Nequi, Daviplata o Bancolombia. Sin intermediarios.', badge: '0% comisiones', badgeIcon: ShieldCheck },
-              { icon: Smartphone, color: 'orange', t: 'Abre en 1 segundo', d: 'Sin descargar apps. Funciona en cualquier telefono.', badge: 'iPhone y Android', badgeIcon: Zap },
-              { icon: MessageCircle, color: 'blue', t: 'Soporte en espanol', d: 'Atencion directa por WhatsApp para resolver cualquier duda.', badge: 'Respuesta rapida', badgeIcon: CheckCircle2 },
-            ].map(({ icon: Icon, color, t, d, badge, badgeIcon: BadgeIcon }, i) => (
-              <div key={i} className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-4 hover:shadow-md transition-shadow duration-200">
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-sm ${
-                  color === 'emerald' ? 'bg-emerald-600' : color === 'orange' ? 'bg-orange-600' : 'bg-blue-600'
-                }`}><Icon size={20} /></div>
-                <div>
-                  <h3 className="text-base font-bold text-gray-900 mb-1">{t}</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">{d}</p>
+          {/* Pricing Cards */}
+          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
+            
+            {/* Plan 1: Prueba Gratis */}
+            <div className="p-7 sm:p-9 rounded-3xl bg-white border border-gray-200/90 shadow-warm flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-bold text-gray-900">Prueba Gratuita</h3>
+                  <p className="text-xs text-gray-500">Conoce el sistema y pon tu tienda en línea</p>
                 </div>
-                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${
-                  color === 'emerald' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                  color === 'orange' ? 'bg-orange-50 text-orange-800 border-orange-200' :
-                  'bg-blue-50 text-blue-800 border-blue-200'
-                }`}><BadgeIcon size={12} /><span>{badge}</span></div>
+                <div className="flex items-baseline gap-1">
+                  <span className="font-display text-4xl sm:text-5xl font-black text-gray-950">$0</span>
+                  <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">/ 7 días</span>
+                </div>
+                <ul className="space-y-3 pt-4 border-t border-gray-100 text-xs sm:text-sm text-gray-600">
+                  <li className="flex items-center gap-2.5">
+                    <Check size={16} className="text-blue-600 shrink-0" />
+                    <span>Catálogo interactivo completo</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={16} className="text-blue-600 shrink-0" />
+                    <span>Recepción de pedidos a WhatsApp</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={16} className="text-blue-600 shrink-0" />
+                    <span>Cálculo GPS por kilómetro</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={16} className="text-blue-600 shrink-0" />
+                    <span>Sin tarjeta de crédito requerida</span>
+                  </li>
+                </ul>
               </div>
-            ))}
+
+              <Link 
+                to="/registro" 
+                className="w-full py-3.5 px-6 rounded-full text-center text-sm font-bold text-gray-800 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Comenzar prueba gratis
+              </Link>
+            </div>
+
+            {/* Plan 2: Plan Pro */}
+            <div className="p-7 sm:p-9 rounded-3xl bg-white border-2 border-blue-600 shadow-warm-lg flex flex-col justify-between space-y-6 relative">
+              <div className="absolute -top-3.5 right-6 bg-blue-600 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-sm tracking-wider">
+                MÁS POPULAR
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-bold text-gray-900">Plan Profesional</h3>
+                  <p className="text-xs text-blue-600 font-semibold">Todo ilimitado para negocios en crecimiento</p>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="font-display text-4xl sm:text-5xl font-black text-gray-950">
+                    {billingAnnual ? '$49.000' : '$59.000'}
+                  </span>
+                  <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">COP / mes</span>
+                </div>
+                <ul className="space-y-3 pt-4 border-t border-gray-100 text-xs sm:text-sm text-gray-800 font-medium">
+                  <li className="flex items-center gap-2.5">
+                    <Check size={16} className="text-blue-600 shrink-0" />
+                    <span>Productos y categorías ilimitadas</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={16} className="text-blue-600 shrink-0" />
+                    <span>Cálculo automático de domicilio GPS</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={16} className="text-blue-600 shrink-0" />
+                    <span>Personalización con tu logo y colores</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={16} className="text-blue-600 shrink-0" />
+                    <span>Asignación de repartidores en tiempo real</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={16} className="text-blue-600 shrink-0" />
+                    <span>Soporte prioritario por WhatsApp</span>
+                  </li>
+                </ul>
+              </div>
+
+              <Link 
+                to="/registro" 
+                className="w-full py-3.5 px-6 rounded-full text-center text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-glow-blue transition-all"
+              >
+                Activar con 7 días gratis
+              </Link>
+            </div>
+
           </div>
 
-          {/* Full-width dark panel card */}
-          <div className="rounded-2xl bg-gray-950 border border-gray-800 p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div className="space-y-2 flex-1">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-orange-600/20 text-orange-400 text-xs font-bold"><Zap size={13} /><span>Control total desde tu celular</span></div>
-              <h3 className="text-lg font-bold text-white">Panel de ventas y control de productos</h3>
-              <p className="text-sm text-gray-400 max-w-lg">Pausa productos agotados, ajusta precios y revisa los pedidos del dia. Todo desde tu telefono, sin cuadernos ni libretas.</p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full md:w-auto">
-              <div className="p-3 rounded-xl bg-gray-900 border border-gray-800 flex items-center gap-3 text-sm"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0" /><span className="font-semibold text-gray-200">Hamburguesa Doble: Activa</span></div>
-              <div className="p-3 rounded-xl bg-gray-900 border border-gray-800 flex items-center gap-3 text-sm"><span className="w-2.5 h-2.5 rounded-full bg-red-400 shrink-0" /><span className="font-semibold text-gray-400">Jugo de Naranja: Pausado</span></div>
-            </div>
-          </div>
         </div>
       </section>
 
       {/* ═══════════ TESTIMONIOS ═══════════ */}
-      <section className="py-14 sm:py-16 bg-white border-b border-gray-100">
-        <div className="fluid-container">
+      <section className="py-16 sm:py-24 bg-white border-b border-gray-200/70">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            {/* Left: rating block */}
-            <div className="lg:col-span-4 space-y-4">
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => <Star key={i} size={18} fill="currentColor" className="text-orange-500" />)}
+            
+            {/* Rating side block */}
+            <div className="lg:col-span-4 space-y-4 text-center lg:text-left">
+              <div className="flex items-center justify-center lg:justify-start gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={20} fill="currentColor" className="text-amber-400" />
+                ))}
               </div>
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-snug">4.9 / 5 recomendado por duenos de negocios</h2>
-              <p className="text-sm text-gray-500 leading-relaxed">Negocios en Colombia ya reciben pedidos organizados con Camly todos los dias.</p>
-              <Link to="/registro" className="inline-flex items-center gap-2 text-sm font-bold text-orange-600 hover:text-orange-700 transition-colors"><span>Unirme ahora</span><ArrowRight size={14} /></Link>
+              <h2 className="font-display text-2xl sm:text-3xl font-black text-gray-950 tracking-tight leading-snug">
+                4.9 / 5 recomendado por negocios locales
+              </h2>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Emprendedores y restaurantes en Colombia mueven sus pedidos con Move todos los días.
+              </p>
+              <Link 
+                to="/registro" 
+                className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                <span>Únete a Move hoy</span>
+                <ArrowRight size={14} />
+              </Link>
             </div>
 
-            {/* Right: testimonials */}
+            {/* Testimonials cards */}
             <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                { name: 'Sandra Restrepo', biz: 'Comidas Rapidas El Gordo · Bogota', initials: 'SR', color: 'bg-orange-600', quote: 'Antes nos enredabamos porque los clientes daban direcciones incompletas. Ahora todo llega organizado y el domiciliario va directo con el GPS.' },
-                { name: 'Mauricio Henao', biz: 'Pizzeria Napolitana · Medellin', initials: 'MH', color: 'bg-blue-600', quote: 'Muchos clientes nos piden para pasar a recoger. El pedido ya esta listo cuando llegan y nos pagan directo al Nequi sin pagarle porcentajes a nadie.' },
-              ].map((t, i) => (
-                <div key={i} className="rounded-2xl border border-gray-200 bg-gray-50/50 p-5 sm:p-6 space-y-4 hover:shadow-md transition-shadow duration-200">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full ${t.color} text-white text-xs font-black flex items-center justify-center shrink-0`}>{t.initials}</div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">{t.name}</p>
-                      <p className="text-xs text-gray-500">{t.biz}</p>
-                    </div>
+              
+              <div className="rounded-3xl border border-gray-200/80 bg-gray-50/60 p-6 space-y-4 hover:shadow-warm transition-shadow duration-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white text-xs font-black flex items-center justify-center shrink-0">
+                    SR
                   </div>
-                  <p className="text-sm text-gray-700 leading-relaxed">{t.quote}</p>
-                  <div className="flex items-center gap-0.5">
-                    {[...Array(5)].map((_, j) => <Star key={j} size={12} fill="currentColor" className="text-orange-400" />)}
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">Sandra Restrepo</p>
+                    <p className="text-xs text-gray-500">Comidas Rápidas El Gordo · Bogotá</p>
                   </div>
                 </div>
-              ))}
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  "Antes nos enredábamos porque los clientes daban direcciones incompletas por chat. Ahora todo llega organizado y el domiciliario va directo con el GPS."
+                </p>
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} size={13} fill="currentColor" className="text-amber-400" />
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-gray-200/80 bg-gray-50/60 p-6 space-y-4 hover:shadow-warm transition-shadow duration-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-indigo-600 text-white text-xs font-black flex items-center justify-center shrink-0">
+                    MH
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">Mauricio Henao</p>
+                    <p className="text-xs text-gray-500">Pizzería Napolitana · Medellín</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  "Muchos clientes piden para pasar a recoger. El pedido ya está listo cuando llegan y nos pagan directo al Nequi sin pagarle porcentajes a nadie."
+                </p>
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} size={13} fill="currentColor" className="text-amber-400" />
+                  ))}
+                </div>
+              </div>
+
             </div>
+
           </div>
+
         </div>
       </section>
 
-      {/* ═══════════ FAQ ═══════════ */}
-      <section id="preguntas" className="py-14 sm:py-16 bg-gray-50/80 border-b border-gray-100">
-        <div className="fluid-container max-w-3xl mx-auto">
-          <div className="text-center mb-8 space-y-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Preguntas frecuentes</span>
-            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Dudas antes de empezar</h2>
+      {/* ═══════════ PREGUNTAS FRECUENTES (FAQ ACCORDION) ═══════════ */}
+      <section id="faq" className="py-16 sm:py-24 bg-gray-50/60 border-b border-gray-200/70">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          
+          <div className="text-center mb-12 space-y-3">
+            <span className="text-xs font-extrabold uppercase tracking-widest text-gray-400">
+              Respuestas rápidas
+            </span>
+            <h2 className="font-display text-3xl sm:text-4xl font-black text-gray-950 tracking-tight">
+              Preguntas frecuentes
+            </h2>
           </div>
-          <div className="space-y-0 divide-y divide-gray-200 rounded-xl border border-gray-200 bg-white overflow-hidden">
+
+          <div className="space-y-3">
             {FAQS.map((faq, idx) => (
-              <div key={idx}>
-                <button onClick={() => setOpenFaq(openFaq === idx ? -1 : idx)} className="w-full px-5 sm:px-6 py-4 text-left text-sm font-bold text-gray-900 flex items-center justify-between gap-4 hover:bg-gray-50/60 transition-colors">
+              <div 
+                key={idx}
+                className="rounded-2xl border border-gray-200/90 bg-white overflow-hidden transition-all duration-200 shadow-xs"
+              >
+                <button 
+                  onClick={() => setOpenFaq(openFaq === idx ? -1 : idx)}
+                  className="w-full px-5 sm:px-6 py-4 text-left text-sm sm:text-base font-bold text-gray-900 flex items-center justify-between gap-4 hover:bg-gray-50/70 transition-colors"
+                >
                   <span>{faq.q}</span>
-                  <ChevronDown size={15} className={`text-gray-400 shrink-0 transition-transform duration-200 ${openFaq === idx ? 'rotate-180 text-orange-600' : ''}`} />
+                  <ChevronDown 
+                    size={16} 
+                    className={`text-gray-400 shrink-0 transition-transform duration-200 ${
+                      openFaq === idx ? 'rotate-180 text-blue-600' : ''
+                    }`} 
+                  />
                 </button>
-                <div className={`overflow-hidden transition-all duration-200 ${openFaq === idx ? 'max-h-40' : 'max-h-0'}`}>
-                  <div className="px-5 sm:px-6 pb-4 text-sm text-gray-600 leading-relaxed">{faq.a}</div>
-                </div>
+                {openFaq === idx && (
+                  <div className="px-5 sm:px-6 pb-5 text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
+                    {faq.a}
+                  </div>
+                )}
               </div>
             ))}
           </div>
+
         </div>
       </section>
 
-      {/* ═══════════ CTA FINAL ═══════════ */}
-      <section className="py-16 sm:py-20 bg-gray-950 text-white relative overflow-hidden">
-        {/* Subtle background texture */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
+      {/* ═══════════ CTA FINAL (HIGH IMPACT) ═══════════ */}
+      <section className="py-20 sm:py-28 bg-gray-950 text-white relative overflow-hidden">
+        {/* Glow ambient background */}
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-indigo-600/15 rounded-full blur-[100px] pointer-events-none" />
 
-        <div className="fluid-container relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-7 space-y-5">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-600/15 border border-orange-500/25 text-orange-400 text-xs font-bold">
-                <Sparkles size={12} /><span>Unete a los negocios que ya venden con Camly</span>
-              </span>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">Empieza a vender hoy.<br /><span className="text-orange-500">Sin enredos.</span></h2>
-              <p className="text-base text-gray-400 max-w-md">En 5 minutos tienes tu catalogo online con GPS, recogida en tienda y pagos directos a tu cuenta funcionando.</p>
-              <div className="flex flex-col sm:flex-row items-start gap-3">
-                <Link to="/registro" className="btn-primary py-3.5 px-7 text-sm font-bold shadow-xl gap-2 hover:scale-[1.02] transition-transform"><span>Crear mi tienda en 5 minutos</span><ArrowRight size={15} /></Link>
-                <div className="flex items-center gap-2 text-sm text-gray-500 font-medium pt-1">
-                  <CheckCircle2 size={14} className="text-emerald-500" /><span>7 dias gratis · Sin tarjeta</span>
-                </div>
-              </div>
-            </div>
-            <div className="lg:col-span-5 flex justify-center lg:justify-end">
-              <div className="relative">
-                {/* Floating card 1 */}
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10 space-y-2.5 w-64">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-bold">WA</div>
-                    <span className="text-xs font-bold text-white/80">3 pedidos nuevos</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {['#1041 · Hamburguesa Doble + Papas', '#1042 · Pizza Familiar Hawaiana', '#1043 · 3x Malteada Oreo'].map((o, i) => (
-                      <div key={i} className="flex items-center gap-2 text-[11px] font-medium text-gray-300">
-                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" /><span>{o}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="pt-2 border-t border-white/10 flex justify-between items-center">
-                    <span className="text-[10px] text-gray-500">Hace 2 minutos</span>
-                    <span className="text-xs font-black text-white">$127.000</span>
-                  </div>
-                </div>
-                {/* Floating badge */}
-                <div className="absolute -bottom-3 -left-4 bg-emerald-600 text-white rounded-lg px-3 py-1.5 text-xs font-bold shadow-lg flex items-center gap-1.5">
-                  <DollarSign size={12} /><span>$0 comisiones</span>
-                </div>
-              </div>
-            </div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10 text-center space-y-7">
+          
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-600/20 border border-blue-500/30 text-blue-300 text-xs font-bold">
+            <Sparkles size={14} className="text-blue-400" />
+            <span>Únete a los negocios que ya venden con Move</span>
           </div>
+
+          <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05] max-w-3xl mx-auto">
+            Empieza a vender hoy.<br />
+            <span className="text-blue-400">Tu negocio en movimiento.</span>
+          </h2>
+
+          <p className="text-base sm:text-lg text-gray-400 max-w-xl mx-auto leading-relaxed">
+            En menos de 3 minutos tienes tu catálogo en línea con GPS, recogida en local y pedidos organizados a tu WhatsApp.
+          </p>
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link 
+              to="/registro" 
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-base px-9 py-4 rounded-full shadow-glow-blue hover:scale-105 transition-all duration-200"
+            >
+              <span>Crear mi tienda en 3 minutos</span>
+              <ArrowRight size={17} />
+            </Link>
+          </div>
+
+          <p className="text-xs text-gray-500 font-medium pt-2">
+            7 días de prueba gratis · Sin tarjeta de crédito · Cancela en cualquier momento
+          </p>
+
         </div>
       </section>
 
-      {/* ═══════════ FOOTER ═══════════ */}
-      <footer className="py-8 bg-black text-gray-400 text-sm border-t border-gray-900">
-        <div className="fluid-container flex flex-col sm:flex-row items-center justify-between gap-5">
-          <div className="flex items-center gap-2.5"><SaaSLogo className="h-6 text-white" /><span className="text-gray-500">Catalogos digitales para WhatsApp sin comisiones</span></div>
-          <div className="flex items-center gap-5 font-semibold">
-            <Link to="/login"    className="hover:text-white transition-colors">Iniciar sesion</Link>
+      {/* ═══════════ FOOTER MINIMALISTA ═══════════ */}
+      <footer className="py-10 bg-black text-gray-400 text-sm border-t border-gray-900">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <SaaSLogo className="h-7 text-white" />
+            <span className="text-xs text-gray-500 hidden md:inline">
+              · Tu negocio en movimiento
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs sm:text-sm font-semibold">
+            <Link to="/login"    className="hover:text-white transition-colors">Iniciar sesión</Link>
             <Link to="/registro" className="hover:text-white transition-colors">Crear tienda</Link>
             <Link to="/tracking" className="hover:text-white transition-colors">Rastreo de pedido</Link>
           </div>
-          <p className="text-gray-500 text-xs">© {new Date().getFullYear()} CAMLY. Todos los derechos reservados.</p>
+
+          <p className="text-gray-500 text-xs text-center sm:text-right">
+            © {new Date().getFullYear()} Move. Todos los derechos reservados.
+          </p>
         </div>
       </footer>
 
