@@ -75,11 +75,11 @@ export default function LoginPage() {
         
         {/* Header with Centered Logo & Display Title */}
         <div className="text-center mb-6 sm:mb-8 flex flex-col items-center">
-          <Link to="/" className="inline-block transition-transform hover:scale-[1.02] mb-4">
-            <SaaSLogo className="h-9 sm:h-10" />
+          <Link to="/" className="inline-block transition-transform hover:scale-[1.02] mb-3">
+            <SaaSLogo className="h-11 sm:h-12" />
           </Link>
 
-          <span className="inline-block text-[11px] font-extrabold uppercase tracking-[0.22em] text-blue-600 mb-1.5">
+          <span className="inline-block text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#0284C7] mb-1.5">
             Acceso Clientes
           </span>
 
@@ -134,7 +134,7 @@ export default function LoginPage() {
                   href="#olvido"
                   onClick={(e) => {
                     e.preventDefault();
-                    addToast('Para restablecer tu contraseña, por favor contacta al soporte de Move.', 'info');
+                    addToast('Para restablecer tu contraseña, por favor contacta al soporte de Negu.', 'info');
                   }}
                   className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
                 >
@@ -212,8 +212,8 @@ export default function LoginPage() {
           {/* Switch to Register */}
           <div className="text-center">
             <p className="text-xs sm:text-sm text-gray-600">
-              ¿Nuevo en Move?{' '}
-              <Link to="/registro" className="font-bold text-blue-600 hover:text-blue-700 hover:underline">
+              ¿Nuevo en Negu?{' '}
+              <Link to="/registro" className="font-bold text-[#0284C7] hover:text-sky-700 hover:underline">
                 Crea tu cuenta aquí
               </Link>
             </p>

@@ -3,9 +3,10 @@
 
 
 :root {
-  --color-brand:        #2563EB;
-  --color-brand-dark:   #1D4ED8;
-  --color-brand-light:  #EFF6FF;
+  --color-brand:        #0284C7;
+  --color-brand-cyan:   #11CEFC;
+  --color-brand-dark:   #0369A1;
+  --color-brand-light:  #F0F9FF;
   --color-bg:           #F8F9FA;
   --color-surface:      #FFFFFF;
   --color-border:       #E5E7EB;
@@ -296,12 +297,17 @@
 }
 
 .shadow-glow-blue {
-  box-shadow: 0 10px 25px -4px rgba(37, 99, 235, 0.30);
+  box-shadow: 0 10px 25px -4px rgba(2, 132, 199, 0.35);
 }
 
-.gradient-soft-blue {
+.shadow-glow-cyan {
+  box-shadow: 0 10px 25px -4px rgba(17, 206, 252, 0.45);
+}
+
+.gradient-soft-blue,
+.gradient-soft-cyan {
   background:
-    radial-gradient(1200px 600px at 80% -10%, #EFF6FF 0%, transparent 60%),
+    radial-gradient(1200px 600px at 80% -10%, #E0F2FE 0%, transparent 60%),
     radial-gradient(900px 500px at -10% 30%, #F0FDF4 0%, transparent 55%);
 }
 

@@ -80,16 +80,16 @@ export default function RegisterPage() {
         
         {/* Header with Centered Logo & Display Title */}
         <div className="text-center mb-6 sm:mb-8 flex flex-col items-center">
-          <Link to="/" className="inline-block transition-transform hover:scale-[1.02] mb-4">
-            <SaaSLogo className="h-9 sm:h-10" />
+          <Link to="/" className="inline-block transition-transform hover:scale-[1.02] mb-3">
+            <SaaSLogo className="h-11 sm:h-12" />
           </Link>
 
-          <span className="inline-block text-[11px] font-extrabold uppercase tracking-[0.22em] text-blue-600 mb-1.5">
+          <span className="inline-block text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#0284C7] mb-1.5">
             Crear Cuenta
           </span>
 
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-950 tracking-tight">
-            ¡Únete a Move!
+            ¡Únete a Negu!
           </h1>
           
           <p className="text-xs sm:text-sm text-gray-500 mt-1.5 font-medium">
@@ -270,10 +270,10 @@ export default function RegisterPage() {
 
         </div>
 
-        {/* Footer Brand Note (Wenú style) */}
+        {/* Footer Brand Note */}
         <div className="mt-6 flex items-center justify-center gap-2 text-xs font-medium text-gray-500">
-          <Users size={14} className="text-blue-500 shrink-0" />
-          <span>Miles de emprendedores ya usan Move.</span>
+          <Users size={14} className="text-[#0284C7] shrink-0" />
+          <span>Miles de emprendedores ya usan Negu.</span>
         </div>
 
       </div>

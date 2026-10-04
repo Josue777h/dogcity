@@ -191,7 +191,7 @@ export function playNewOrderSound() {
 /**
  * Exportar pedidos a formato CSV con codificación UTF-8 BOM compatible con Excel
  */
-export function exportOrdersToCSV(orders, businessName = 'Move') {
+export function exportOrdersToCSV(orders, businessName = 'Negu') {
   if (!orders || orders.length === 0) return false;
 
   const headers = [

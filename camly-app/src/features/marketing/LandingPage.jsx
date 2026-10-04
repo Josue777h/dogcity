@@ -28,7 +28,7 @@ const BUSINESS_TYPES = [
 const FAQS = [
   {
     q: '¿Mis clientes tienen que descargar alguna aplicación?',
-    a: 'No. Move funciona directamente en el navegador web de cualquier teléfono móvil (Android o iPhone). Tu cliente abre tu enlace o escanea tu QR, arma su carrito y el pedido llega a tu WhatsApp con un solo clic.'
+    a: 'No. Negu funciona directamente en el navegador web de cualquier teléfono móvil (Android o iPhone). Tu cliente abre tu enlace o escanea tu QR, arma su carrito y el pedido llega a tu WhatsApp con un solo clic.'
   },
   {
     q: '¿Cómo funciona la ubicación GPS para los domiciliarios?',
@@ -36,7 +36,7 @@ const FAQS = [
   },
   {
     q: '¿Cómo recibo el dinero de mis ventas?',
-    a: 'El 100% de tu dinero entra directamente a tus cuentas (Nequi, Daviplata, Bancolombia, Bre-B o efectivo contraentrega). Move nunca retiene tu dinero ni te cobra porcentajes por transacción.'
+    a: 'El 100% de tu dinero entra directamente a tus cuentas (Nequi, Daviplata, Bancolombia, Bre-B o efectivo contraentrega). Negu nunca retiene tu dinero ni te cobra porcentajes por transacción.'
   },
   {
     q: '¿Puedo actualizar precios o pausar productos en tiempo real?',
@@ -71,126 +71,123 @@ export default function LandingPage() {
   }, [menuOpen]);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#FBFBFC] text-gray-900 selection:bg-blue-600 selection:text-white font-sans">
+    <div className="min-h-screen overflow-x-clip bg-[#FBFBFC] text-gray-900 selection:bg-cyan-500 selection:text-white font-sans">
 
       {/* ═══════════ TOP ANNOUNCEMENT BAR ═══════════ */}
-      <aside className="bg-gray-950 text-white text-xs py-2 px-4 border-b border-gray-800">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 mx-auto sm:mx-0">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+      <div className="bg-gray-950 text-white text-xs py-2 px-3 sm:px-4 border-b border-gray-800/80 relative z-50">
+        <div className="max-w-6xl mx-auto flex items-center justify-center sm:justify-between gap-2.5">
+          <div className="flex items-center gap-2 text-center sm:text-left">
+            <span className="w-2 h-2 rounded-full bg-[#11CEFC] animate-pulse shrink-0" />
             <span className="font-medium text-gray-300 text-[11px] sm:text-xs">
-              Prueba <strong className="text-white font-bold">7 días gratis</strong> · Sin tarjeta de crédito · Pagos directos a tu Nequi o cuenta
+              Prueba <strong className="text-white font-bold">7 días gratis</strong> · Sin tarjeta · Pagos directos a tu Nequi o cuenta
             </span>
           </div>
-          <Link to="/registro" className="hidden sm:inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 font-bold transition-colors shrink-0">
+          <Link to="/registro" className="hidden sm:inline-flex items-center gap-1 text-[#11CEFC] hover:text-cyan-300 font-bold transition-colors shrink-0 text-xs">
             <span>Crear catálogo</span><ArrowRight size={12} />
           </Link>
         </div>
-      </aside>
+      </div>
 
-      {/* ═══════════ FLOATING PILL NAVBAR (WENÚ / FRAMER STYLE) ═══════════ */}
-      <header className="fixed top-9 sm:top-10 inset-x-3 sm:inset-x-6 z-50 pointer-events-none">
-        <div className="max-w-6xl mx-auto pointer-events-auto">
-          <nav className={`transition-all duration-300 rounded-full px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between shadow-warm ${
-            scrolled 
-              ? 'bg-white/95 backdrop-blur-md border border-gray-200 shadow-warm-lg' 
-              : 'bg-white/90 backdrop-blur-md border border-gray-200/80 shadow-warm'
-          }`} aria-label="Navegación principal">
+      {/* ═══════════ STICKY NAVBAR ═══════════ */}
+      <header className="sticky top-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-xs transition-all duration-200">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6">
+          <nav className="h-16 sm:h-20 flex items-center justify-between" aria-label="Navegación principal">
             
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 shrink-0">
-              <SaaSLogo className="h-8 sm:h-9 md:h-10" />
+            {/* Logo Negu */}
+            <Link to="/" className="flex items-center gap-2 shrink-0 py-1" aria-label="Ir al inicio de Negu">
+              <SaaSLogo className="h-10 sm:h-12 md:h-14" />
             </Link>
 
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center gap-6 lg:gap-8 text-sm font-semibold text-gray-600">
-              <a href="#como-funciona" className="hover:text-blue-600 transition-colors">Cómo funciona</a>
-              <a href="#solucion"      className="hover:text-blue-600 transition-colors">Ventajas</a>
-              <a href="#comparativa"   className="hover:text-blue-600 transition-colors">Antes vs Move</a>
-              <a href="#precios"       className="hover:text-blue-600 transition-colors">Planes</a>
-              <a href="#faq"           className="hover:text-blue-600 transition-colors">Preguntas</a>
+              <a href="#como-funciona" className="hover:text-cyan-600 transition-colors">Cómo funciona</a>
+              <a href="#solucion"      className="hover:text-cyan-600 transition-colors">Ventajas</a>
+              <a href="#comparativa"   className="hover:text-cyan-600 transition-colors">Antes vs Negu</a>
+              <a href="#precios"       className="hover:text-cyan-600 transition-colors">Planes</a>
+              <a href="#faq"           className="hover:text-cyan-600 transition-colors">Preguntas</a>
             </div>
 
             {/* Actions / CTA */}
             <div className="flex items-center gap-2 sm:gap-3">
               <Link 
                 to="/login" 
-                className="hidden sm:inline-flex text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 px-3 py-2 rounded-full transition-colors"
+                className="hidden sm:inline-flex text-xs sm:text-sm font-semibold text-gray-700 hover:text-gray-950 px-3 py-2 rounded-full transition-colors"
               >
                 Entrar
               </Link>
 
               <Link 
                 to="/registro" 
-                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2.5 rounded-full shadow-glow-blue active:scale-95 transition-all duration-150"
+                className="inline-flex items-center gap-2 bg-gray-950 hover:bg-black text-white hover:text-[#11CEFC] text-xs sm:text-sm font-bold px-4 sm:px-5 py-2.5 rounded-full border border-gray-800 shadow-sm active:scale-95 transition-all duration-150"
               >
                 <span>Probar gratis</span>
-                <ArrowRight size={14} className="shrink-0" />
+                <ArrowRight size={14} className="shrink-0 text-[#11CEFC]" />
               </Link>
 
               {/* Hamburger Button for Mobile */}
               <button 
                 onClick={() => setMenuOpen(!menuOpen)} 
-                className="md:hidden w-9 h-9 flex items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
+                className="md:hidden w-10 h-10 flex items-center justify-center rounded-xl text-gray-700 hover:bg-gray-100 transition-colors"
                 aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
               >
-                {menuOpen ? <X size={18} /> : <Menu size={18} />}
+                {menuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             </div>
           </nav>
 
-          {/* Mobile Menu Card */}
+          {/* Mobile Menu Dropdown */}
           {menuOpen && (
-            <div className="mt-2 bg-white rounded-3xl shadow-warm-lg border border-gray-200/80 p-5 flex flex-col gap-2 text-sm font-semibold text-gray-700 md:hidden animate-fade-in-down">
+            <div className="pb-4 pt-1 flex flex-col gap-1 text-sm font-semibold text-gray-700 md:hidden animate-fade-in-down border-t border-gray-100">
               <a 
                 href="#como-funciona" 
                 onClick={() => setMenuOpen(false)}
-                className="px-4 py-3 rounded-2xl hover:bg-blue-50/70 hover:text-blue-600 transition-colors"
+                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
               >
                 Cómo funciona
               </a>
               <a 
                 href="#solucion" 
                 onClick={() => setMenuOpen(false)}
-                className="px-4 py-3 rounded-2xl hover:bg-blue-50/70 hover:text-blue-600 transition-colors"
+                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
               >
-                Ventajas de Move
+                Ventajas de Negu
               </a>
               <a 
                 href="#comparativa" 
                 onClick={() => setMenuOpen(false)}
-                className="px-4 py-3 rounded-2xl hover:bg-blue-50/70 hover:text-blue-600 transition-colors"
+                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
               >
-                Antes vs Con Move
+                Antes vs Con Negu
               </a>
               <a 
                 href="#precios" 
                 onClick={() => setMenuOpen(false)}
-                className="px-4 py-3 rounded-2xl hover:bg-blue-50/70 hover:text-blue-600 transition-colors"
+                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
               >
                 Planes y Precios
               </a>
               <a 
                 href="#faq" 
                 onClick={() => setMenuOpen(false)}
-                className="px-4 py-3 rounded-2xl hover:bg-blue-50/70 hover:text-blue-600 transition-colors"
+                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
               >
                 Preguntas frecuentes
               </a>
-              <div className="pt-3 border-t border-gray-100 flex flex-col gap-2.5">
+              <div className="pt-2 border-t border-gray-100 flex flex-col gap-2">
                 <Link 
                   to="/login" 
                   onClick={() => setMenuOpen(false)} 
-                  className="w-full text-center py-3 text-sm font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-colors"
+                  className="w-full text-center py-2.5 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
                 >
                   Iniciar sesión
                 </Link>
                 <Link 
                   to="/registro" 
                   onClick={() => setMenuOpen(false)} 
-                  className="w-full text-center py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-2xl shadow-glow-blue transition-colors"
+                  className="w-full text-center py-2.5 text-sm font-bold text-white bg-gray-950 hover:bg-black rounded-xl border border-gray-800 transition-colors flex items-center justify-center gap-2"
                 >
-                  Crear tienda gratis
+                  <span>Crear tienda gratis</span>
+                  <ArrowRight size={14} className="text-[#11CEFC]" />
                 </Link>
               </div>
             </div>
@@ -199,7 +196,7 @@ export default function LandingPage() {
       </header>
 
       {/* ═══════════ HERO SECTION ═══════════ */}
-      <section className="relative pt-32 sm:pt-36 lg:pt-40 pb-16 sm:pb-24 overflow-hidden gradient-soft-blue border-b border-gray-200/70">
+      <section className="relative pt-8 sm:pt-14 lg:pt-18 pb-16 sm:pb-24 overflow-hidden gradient-soft-cyan border-b border-gray-200/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
             
@@ -217,7 +214,7 @@ export default function LandingPage() {
               {/* Display Headline */}
               <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-black text-gray-950 tracking-tight leading-[1.03]">
                 Tu catálogo digital,<br />
-                <span className="text-blue-600">listo en minutos</span><br />
+                <span className="text-[#0284C7] text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-cyan-500 to-[#11CEFC]">listo en minutos</span><br />
                 <span className="text-gray-600 font-sans text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight block mt-1">
                   conectado a WhatsApp.
                 </span>
@@ -232,9 +229,9 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-2">
                 <Link 
                   to="/registro" 
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm sm:text-base px-8 py-4 rounded-full shadow-glow-blue hover:shadow-lg transition-all duration-200 active:scale-95"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-gray-950 hover:bg-black text-white hover:text-[#11CEFC] font-bold text-sm sm:text-base px-8 py-4 rounded-full border border-gray-800 shadow-warm hover:shadow-glow-cyan transition-all duration-200 active:scale-95"
                 >
-                  <Sparkles size={18} />
+                  <Sparkles size={18} className="text-[#11CEFC]" />
                   <span>Crear mi tienda gratis</span>
                   <ArrowRight size={16} />
                 </Link>
@@ -243,7 +240,7 @@ export default function LandingPage() {
                   href="#como-funciona" 
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-800 font-bold text-sm sm:text-base px-7 py-4 rounded-full border border-gray-200/90 shadow-xs hover:border-gray-300 transition-all duration-150"
                 >
-                  <Play size={16} className="text-blue-600 fill-blue-600" />
+                  <Play size={16} className="text-[#0284C7] fill-[#0284C7]" />
                   <span>Ver cómo funciona</span>
                 </a>
               </div>
@@ -271,7 +268,7 @@ export default function LandingPage() {
               <div className="relative w-full max-w-[310px] sm:max-w-[340px]">
                 
                 {/* Background Ambient Glow */}
-                <div className="absolute -inset-4 bg-gradient-to-tr from-blue-500/20 via-sky-400/20 to-transparent rounded-[3rem] blur-2xl -z-10" />
+                <div className="absolute -inset-4 bg-gradient-to-tr from-cyan-500/25 via-sky-400/20 to-transparent rounded-[3rem] blur-2xl -z-10" />
 
                 {/* Smartphone Mockup */}
                 <div className="rounded-[2.8rem] p-3 bg-gray-950 shadow-2xl border-4 border-gray-800/90 transition-transform duration-300 hover:rotate-0 -rotate-1">
@@ -280,7 +277,7 @@ export default function LandingPage() {
                   <div className="relative rounded-[2.3rem] overflow-hidden bg-white aspect-[9/16] shadow-inner">
                     <img 
                       src={camlyPreview} 
-                      alt="Vista previa catálogo Move" 
+                      alt="Vista previa catálogo Negu" 
                       className="w-full h-full object-cover object-top" 
                       loading="eager" 
                     />
@@ -301,11 +298,11 @@ export default function LandingPage() {
 
                 {/* Floating Card 2: GPS Location Pin */}
                 <div className="absolute bottom-6 -right-4 sm:-right-8 bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-3.5 shadow-warm-lg border border-gray-200/80 flex items-center gap-3 animate-fade-in-up z-20 max-w-[220px]">
-                  <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-gray-950 text-[#11CEFC] border border-gray-800 flex items-center justify-center shrink-0 shadow-xs">
                     <Navigation size={18} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Ruta Directa GPS</p>
+                    <p className="text-[11px] font-bold text-sky-600 uppercase tracking-wider">Ruta Directa GPS</p>
                     <p className="text-xs font-black text-gray-900 truncate">Google Maps & Waze</p>
                     <p className="text-[10px] text-gray-500 font-medium">El repartidor va sin perderse</p>
                   </div>
@@ -313,7 +310,7 @@ export default function LandingPage() {
 
                 {/* Floating Badge 3: 0% Commissions */}
                 <div className="absolute -bottom-3 left-4 bg-gray-950 text-white rounded-full px-4 py-1.5 text-xs font-bold shadow-lg flex items-center gap-1.5 border border-gray-800">
-                  <DollarSign size={13} className="text-emerald-400" />
+                  <DollarSign size={13} className="text-[#11CEFC]" />
                   <span>0% comisiones sobre tus ventas</span>
                 </div>
 
@@ -339,9 +336,9 @@ export default function LandingPage() {
                 return (
                   <span 
                     key={i} 
-                    className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-gray-50 border border-gray-200/70 text-gray-700 text-xs sm:text-sm font-semibold whitespace-nowrap shrink-0 hover:border-blue-300 hover:bg-blue-50/50 transition-colors"
+                    className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-gray-50 border border-gray-200/70 text-gray-700 text-xs sm:text-sm font-semibold whitespace-nowrap shrink-0 hover:border-cyan-300 hover:bg-cyan-50/50 transition-colors"
                   >
-                    <Icon size={15} className="text-blue-600 shrink-0" />
+                    <Icon size={15} className="text-[#0284C7] shrink-0" />
                     <span>{item.label}</span>
                   </span>
                 );
@@ -357,12 +354,12 @@ export default function LandingPage() {
           
           {/* Header */}
           <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold">
-              <Zap size={13} />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs font-bold">
+              <Zap size={13} className="text-[#0284C7]" />
               <span>Flujo en 3 pasos sencillos</span>
             </div>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-gray-950 tracking-tight leading-tight">
-              Así de simple es mover tu negocio con Move
+              Así de simple es vender con Negu
             </h2>
             <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
               Tus clientes piden desde su celular en segundos y tú recibes la comanda completa en WhatsApp. Sin apps ni enredos.
@@ -520,11 +517,11 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           
           <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs font-bold">
               <span>El antes y después</span>
             </div>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-gray-950 tracking-tight leading-tight">
-              ¿Por qué los negocios eligen Move?
+              ¿Por qué los negocios eligen Negu?
             </h2>
             <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
               Compara la diferencia entre atender por chat tradicional y contar con un catálogo automatizado.
@@ -559,30 +556,30 @@ export default function LandingPage() {
               </ul>
             </div>
 
-            {/* Después: Con Move */}
-            <div className="p-7 sm:p-9 rounded-3xl bg-blue-50/50 border-2 border-blue-600 shadow-warm space-y-5 relative">
-              <div className="absolute -top-3.5 right-6 bg-blue-600 text-white text-[11px] font-extrabold uppercase px-3 py-1 rounded-full shadow-sm">
-                Con Move
+            {/* Después: Con Negu */}
+            <div className="p-7 sm:p-9 rounded-3xl bg-sky-50/50 border-2 border-[#0284C7] shadow-warm space-y-5 relative">
+              <div className="absolute -top-3.5 right-6 bg-gray-950 text-[#11CEFC] text-[11px] font-extrabold uppercase px-3 py-1 rounded-full shadow-sm border border-gray-800">
+                Con Negu
               </div>
-              <div className="flex items-center gap-2.5 text-blue-800 font-extrabold text-sm uppercase tracking-wider">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
-                <span>La experiencia Move</span>
+              <div className="flex items-center gap-2.5 text-sky-900 font-extrabold text-sm uppercase tracking-wider">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#0284C7]" />
+                <span>La experiencia Negu</span>
               </div>
               <ul className="space-y-3.5 text-sm text-gray-900 font-medium">
                 <li className="flex items-start gap-3">
-                  <CheckCircle2 size={18} className="text-blue-600 shrink-0 mt-0.5" />
+                  <CheckCircle2 size={18} className="text-[#0284C7] shrink-0 mt-0.5" />
                   <span>Un solo mensaje de WhatsApp con la comanda lista, precios sumados y método de pago.</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <CheckCircle2 size={18} className="text-blue-600 shrink-0 mt-0.5" />
+                  <CheckCircle2 size={18} className="text-[#0284C7] shrink-0 mt-0.5" />
                   <span>Pin GPS exacto que abre Waze o Google Maps en 1 toque en el celular del repartidor.</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <CheckCircle2 size={18} className="text-blue-600 shrink-0 mt-0.5" />
+                  <CheckCircle2 size={18} className="text-[#0284C7] shrink-0 mt-0.5" />
                   <span>Catálogo rápido, elegante y con fotos profesionales que abre sin descargar nada.</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <CheckCircle2 size={18} className="text-blue-600 shrink-0 mt-0.5" />
+                  <CheckCircle2 size={18} className="text-[#0284C7] shrink-0 mt-0.5" />
                   <span>0% comisiones. El dinero entra completo y directo a tu Nequi, Daviplata o cuenta.</span>
                 </li>
               </ul>
@@ -743,13 +740,13 @@ export default function LandingPage() {
                 4.9 / 5 recomendado por negocios locales
               </h2>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Emprendedores y restaurantes en Colombia mueven sus pedidos con Move todos los días.
+                Emprendedores y restaurantes en Colombia mueven sus pedidos con Negu todos los días.
               </p>
               <Link 
                 to="/registro" 
-                className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                className="inline-flex items-center gap-2 text-sm font-bold text-[#0284C7] hover:text-sky-700 transition-colors"
               >
-                <span>Únete a Move hoy</span>
+                <span>Únete a Negu hoy</span>
                 <ArrowRight size={14} />
               </Link>
             </div>
@@ -759,7 +756,7 @@ export default function LandingPage() {
               
               <div className="rounded-3xl border border-gray-200/80 bg-gray-50/60 p-6 space-y-4 hover:shadow-warm transition-shadow duration-200">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white text-xs font-black flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-[#0284C7] text-white text-xs font-black flex items-center justify-center shrink-0">
                     SR
                   </div>
                   <div>
@@ -779,7 +776,7 @@ export default function LandingPage() {
 
               <div className="rounded-3xl border border-gray-200/80 bg-gray-50/60 p-6 space-y-4 hover:shadow-warm transition-shadow duration-200">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-indigo-600 text-white text-xs font-black flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-slate-900 text-[#11CEFC] text-xs font-black flex items-center justify-center shrink-0 border border-gray-800">
                     MH
                   </div>
                   <div>
@@ -831,7 +828,7 @@ export default function LandingPage() {
                   <ChevronDown 
                     size={16} 
                     className={`text-gray-400 shrink-0 transition-transform duration-200 ${
-                      openFaq === idx ? 'rotate-180 text-blue-600' : ''
+                      openFaq === idx ? 'rotate-180 text-[#0284C7]' : ''
                     }`} 
                   />
                 </button>
@@ -850,19 +847,19 @@ export default function LandingPage() {
       {/* ═══════════ CTA FINAL (HIGH IMPACT) ═══════════ */}
       <section className="py-20 sm:py-28 bg-gray-950 text-white relative overflow-hidden">
         {/* Glow ambient background */}
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-indigo-600/15 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-sky-600/15 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10 text-center space-y-7">
           
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-600/20 border border-blue-500/30 text-blue-300 text-xs font-bold">
-            <Sparkles size={14} className="text-blue-400" />
-            <span>Únete a los negocios que ya venden con Move</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 text-xs font-bold">
+            <Sparkles size={14} className="text-[#11CEFC]" />
+            <span>Únete a los negocios que ya venden con Negu</span>
           </div>
 
           <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05] max-w-3xl mx-auto">
             Empieza a vender hoy.<br />
-            <span className="text-blue-400">Tu negocio en movimiento.</span>
+            <span className="text-[#11CEFC]">Tu catálogo conectado a WhatsApp.</span>
           </h2>
 
           <p className="text-base sm:text-lg text-gray-400 max-w-xl mx-auto leading-relaxed">
@@ -872,7 +869,7 @@ export default function LandingPage() {
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link 
               to="/registro" 
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-base px-9 py-4 rounded-full shadow-glow-blue hover:scale-105 transition-all duration-200"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-[#11CEFC] hover:bg-cyan-400 text-gray-950 font-black text-base px-9 py-4 rounded-full shadow-glow-cyan hover:scale-105 transition-all duration-200"
             >
               <span>Crear mi tienda en 3 minutos</span>
               <ArrowRight size={17} />
@@ -890,9 +887,9 @@ export default function LandingPage() {
       <footer className="py-10 bg-black text-gray-400 text-sm border-t border-gray-900">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <SaaSLogo className="h-7 text-white" />
+            <SaaSLogo className="h-8 text-white" />
             <span className="text-xs text-gray-500 hidden md:inline">
-              · Tu negocio en movimiento
+              · Catálogo digital y pedidos WhatsApp
             </span>
           </div>
 
@@ -903,7 +900,7 @@ export default function LandingPage() {
           </div>
 
           <p className="text-gray-500 text-xs text-center sm:text-right">
-            © {new Date().getFullYear()} Move. Todos los derechos reservados.
+            © {new Date().getFullYear()} Negu. Todos los derechos reservados.
           </p>
         </div>
       </footer>

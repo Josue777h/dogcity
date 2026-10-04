@@ -92,7 +92,7 @@ export default function StoreFooter({ business }) {
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
            <p>© {new Date().getFullYear()} {business.nombre_visible}. Todos los derechos reservados.</p>
            <p className="flex items-center gap-1">
-             Impulsado por <span className="font-semibold text-white/80">Move</span> · Tu negocio en movimiento
+             Impulsado por <span className="font-semibold text-white/80">Negu</span> · Catálogo digital & WhatsApp
            </p>
         </div>
       </div>
