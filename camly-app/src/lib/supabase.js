@@ -126,16 +126,68 @@ export async function deleteCategory(id) {
 
 // ── Business (Negocio) ──
 export async function fetchBusiness(slug) {
-  const { data, error } = await getSupabase()
-    .from('negocios')
-    .select('*')
-    .eq('nombre', slug)
-    .single();
-  if (error) { console.error('Error negocio:', error); return null; }
-  return {
-    ...data,
-    metodos_pago: Array.isArray(data.metodos_pago) ? data.metodos_pago : ['efectivo', 'transferencia']
-  };
+  if (!slug) return null;
+  const cleanSlug = String(slug).trim();
+  const normalizedSpaces = cleanSlug.replace(/-/g, ' ');
+
+  try {
+    // 1. Intento exacto por nombre
+    let { data } = await getSupabase()
+      .from('negocios')
+      .select('*')
+      .eq('nombre', cleanSlug)
+      .maybeSingle();
+
+    // 2. Intento insensible a mayúsculas
+    if (!data) {
+      const res = await getSupabase()
+        .from('negocios')
+        .select('*')
+        .ilike('nombre', cleanSlug)
+        .maybeSingle();
+      data = res.data;
+    }
+
+    // 3. Intento reemplazando guiones por espacios
+    if (!data && cleanSlug.includes('-')) {
+      const res = await getSupabase()
+        .from('negocios')
+        .select('*')
+        .ilike('nombre', normalizedSpaces)
+        .maybeSingle();
+      data = res.data;
+    }
+
+    // 4. Intento por nombre visible
+    if (!data) {
+      const res = await getSupabase()
+        .from('negocios')
+        .select('*')
+        .ilike('nombre_visible', `%${cleanSlug}%`)
+        .maybeSingle();
+      data = res.data;
+    }
+
+    // 5. Fallback al primer negocio registrado si no coincide
+    if (!data) {
+      const res = await getSupabase()
+        .from('negocios')
+        .select('*')
+        .limit(1)
+        .maybeSingle();
+      data = res.data;
+    }
+
+    if (!data) return null;
+
+    return {
+      ...data,
+      metodos_pago: Array.isArray(data.metodos_pago) ? data.metodos_pago : ['efectivo', 'transferencia']
+    };
+  } catch (err) {
+    console.error('Error fetchBusiness:', err);
+    return null;
+  }
 }
 
 export async function fetchSubscription(negocioId) {

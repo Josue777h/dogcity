@@ -4,19 +4,38 @@ import {
   Save, User, Phone, MapPin, Globe, Loader2, 
   Instagram, Facebook, MessageSquare, Palette,
   CheckCircle2, CreditCard, Upload, Smartphone, Check, Settings,
-  Music2, Wallet, Truck, Navigation, Search, Clock
+  Music2, Wallet, Truck, Navigation, Search, Clock, Sparkles,
+  ShoppingBag, ShoppingCart, Eye, Store, Utensils, Plus, X
 } from 'lucide-react';
 import { getSupabase, uploadImage } from '../../../lib/supabase';
 import { useToastStore, useAuthStore } from '../../../stores';
 import PremiumLock from '../../../components/ui/PremiumLock';
 
-const THEME_COLORS = [
-  { name: 'Naranja', hex: '#EA580C', class: 'bg-[#EA580C]' },
-  { name: 'Azul', hex: '#2563EB', class: 'bg-[#2563EB]' },
-  { name: 'Morado', hex: '#7C3AED', class: 'bg-[#7C3AED]' },
-  { name: 'Esmeralda', hex: '#10B981', class: 'bg-[#10B981]' },
-  { name: 'Rosa', hex: '#DB2777', class: 'bg-[#DB2777]' },
-  { name: 'Oscuro', hex: '#1F2937', class: 'bg-[#1F2937]' },
+const CURATED_COLORS = [
+  { hex: '#0F172A', label: 'Carbón Noir' },
+  { hex: '#EA580C', label: 'Naranja Brasa' },
+  { hex: '#DC2626', label: 'Rojo Carmesí' },
+  { hex: '#D97706', label: 'Ámbar Dorado' },
+  { hex: '#059669', label: 'Esmeralda' },
+  { hex: '#16A34A', label: 'Verde Bosque' },
+  { hex: '#2563EB', label: 'Azul Real' },
+  { hex: '#7C3AED', label: 'Violeta' },
+  { hex: '#DB2777', label: 'Fucsia Dulce' },
+  { hex: '#78350F', label: 'Café Tostado' },
+];
+
+const FONT_OPTIONS = [
+  { id: 'sans', name: 'Inter', desc: 'Limpia y equilibrada', fontFamily: "'Inter', sans-serif" },
+  { id: 'jakarta', name: 'Plus Jakarta', desc: 'Moderna y fresca', fontFamily: "'Plus Jakarta Sans', sans-serif" },
+  { id: 'outfit', name: 'Outfit', desc: 'Gourmet y estilizada', fontFamily: "'Outfit', sans-serif" },
+  { id: 'poppins', name: 'Poppins', desc: 'Comercial y bold', fontFamily: "'Poppins', sans-serif" },
+];
+
+const BUTTON_STYLES = [
+  { id: 'pill', name: 'Píldora', desc: 'Curvo / Flotante', buttonClass: 'rounded-full shadow-md' },
+  { id: 'soft', name: 'Suave', desc: 'Rectangular 6px', buttonClass: 'rounded-md shadow-2xs' },
+  { id: 'square', name: 'Cuadrado', desc: 'Recto 90° / Bold', buttonClass: 'rounded-none tracking-wider uppercase font-black' },
+  { id: 'outline', name: 'Contorno', desc: 'Hueco con borde', buttonClass: 'rounded-lg border-2' },
 ];
 
 export default function SettingsView(props) {
@@ -60,6 +79,24 @@ export default function SettingsView(props) {
     domicilio_minimo: business?.domicilio_minimo || 3000,
   });
 
+  const [designData, setDesignData] = useState(() => {
+    const base = {
+      button_style: 'pill',
+      font_family: 'sans',
+    };
+    if (typeof business?.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
+      try {
+        const match = business.footer_message.match(/<!--CAMLY_DESIGN:(.*?)-->/);
+        if (match && match[1]) {
+          return { ...base, ...JSON.parse(match[1]) };
+        }
+      } catch (err) {
+        console.warn('Error parsing design config:', err);
+      }
+    }
+    return base;
+  });
+
   const [scheduleData, setScheduleData] = useState(() => {
     const base = {
       abierto_manual: true,
@@ -89,6 +126,57 @@ export default function SettingsView(props) {
     }
     return base;
   });
+
+  useEffect(() => {
+    if (!business) return;
+
+    setFormData({
+      nombre_visible: business.nombre_visible || '',
+      telefono: business.telefono || '',
+      direccion: business.direccion || '',
+      instagram: business.instagram || '',
+      facebook: business.facebook || '',
+      footer_message: business.footer_message || '',
+      theme_color: business.theme_color || '#EA580C',
+      logo_url: business.logo_url || '',
+      whatsapp_contacto: business.whatsapp_contacto || business.telefono || '',
+      metodos_pago: Array.isArray(business.metodos_pago) ? business.metodos_pago : ['efectivo', 'transferencia'],
+      pago_alias: business.pago_alias || '',
+      pago_banco: business.pago_banco || '',
+      tiktok: business.tiktok || '',
+      lat: business.lat || '',
+      lng: business.lng || '',
+      tipo_domicilio: business.tipo_domicilio || 'automatico',
+      precio_domicilio: business.precio_domicilio || 0,
+      costo_por_km: business.costo_por_km || 1000,
+      domicilio_minimo: business.domicilio_minimo || 3000,
+    });
+
+    if (typeof business.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
+      try {
+        const match = business.footer_message.match(/<!--CAMLY_DESIGN:(.*?)-->/);
+        if (match && match[1]) {
+          setDesignData(prev => ({ ...prev, ...JSON.parse(match[1]) }));
+        }
+      } catch (err) {
+        console.warn('Error parsing design config:', err);
+      }
+    }
+
+    if (business.horario && typeof business.horario === 'object') {
+      setScheduleData(prev => ({ ...prev, ...business.horario, dias: { ...prev.dias, ...(business.horario.dias || {}) } }));
+    } else if (typeof business.footer_message === 'string' && business.footer_message.includes('CAMLY_SCHEDULE:')) {
+      try {
+        const match = business.footer_message.match(/<!--CAMLY_SCHEDULE:(.*?)-->/);
+        if (match && match[1]) {
+          const parsed = JSON.parse(match[1]);
+          setScheduleData(prev => ({ ...prev, ...parsed, dias: { ...prev.dias, ...(parsed.dias || {}) } }));
+        }
+      } catch (err) {
+        console.warn('Error parsing schedule:', err);
+      }
+    }
+  }, [business]);
 
   const [isUploading, setIsUploading] = useState(false);
   const [isLocatingGps, setIsLocatingGps] = useState(false);
@@ -132,9 +220,13 @@ export default function SettingsView(props) {
     setScheduleData(updatedSchedule);
 
     try {
-      const cleanFooter = (formData.footer_message || '').replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '').trim();
+      const cleanFooter = (formData.footer_message || '')
+        .replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '')
+        .replace(/<!--CAMLY_DESIGN:[\s\S]*?-->/g, '')
+        .trim();
       const scheduleTag = `<!--CAMLY_SCHEDULE:${JSON.stringify(updatedSchedule)}-->`;
-      const combinedFooter = cleanFooter ? `${cleanFooter}\n${scheduleTag}` : scheduleTag;
+      const designTag = `<!--CAMLY_DESIGN:${JSON.stringify(designData)}-->`;
+      const combinedFooter = [cleanFooter, scheduleTag, designTag].filter(Boolean).join('\n');
 
       const { error } = await getSupabase()
         .from('negocios')
@@ -170,9 +262,13 @@ export default function SettingsView(props) {
     e.preventDefault();
     setLoading(true);
     try {
-      const cleanFooter = (formData.footer_message || '').replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '').trim();
+      const cleanFooter = (formData.footer_message || '')
+        .replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '')
+        .replace(/<!--CAMLY_DESIGN:[\s\S]*?-->/g, '')
+        .trim();
       const scheduleTag = `<!--CAMLY_SCHEDULE:${JSON.stringify(scheduleData)}-->`;
-      const combinedFooter = cleanFooter ? `${cleanFooter}\n${scheduleTag}` : scheduleTag;
+      const designTag = `<!--CAMLY_DESIGN:${JSON.stringify(designData)}-->`;
+      const combinedFooter = [cleanFooter, scheduleTag, designTag].filter(Boolean).join('\n');
 
       const payload = {
         nombre_visible: formData.nombre_visible || '',
@@ -207,7 +303,7 @@ export default function SettingsView(props) {
         throw error;
       }
       
-      addToast('Configuración guardada', 'success');
+      addToast('Diseño y configuración guardados', 'success');
       onUpdate();
     } catch (err) {
       console.error('Caught Error:', err);
@@ -328,7 +424,7 @@ export default function SettingsView(props) {
       <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
         {[
           { id: 'perfil', label: 'General', icon: User },
-          { id: 'marca', label: 'Marca y Logo', icon: Palette },
+          { id: 'marca', label: 'Diseño del Catálogo', icon: Palette },
           { id: 'horario', label: 'Horarios y Estado', icon: Clock },
           { id: 'pagos', label: 'Formas de Pago', icon: CreditCard },
           { id: 'logistica', label: 'Domicilios y GPS', icon: Truck },
@@ -398,63 +494,422 @@ export default function SettingsView(props) {
             </div>
           )}
 
-          {/* ── MARCA ── */}
+          {/* ── MARCA & DISEÑO DEL CATÁLOGO ── */}
           {activeTab === 'marca' && (
-            <PremiumLock featureName="Identidad Visual Avanzada">
-              <div className="space-y-4 max-w-xl">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-2">Logo de tu tienda</label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-gray-50 border border-border rounded-xl flex items-center justify-center overflow-hidden shrink-0">
-                      {isUploading ? (
-                        <Loader2 className="animate-spin text-orange-600" size={20} />
-                      ) : formData.logo_url ? (
-                        <img src={formData.logo_url} alt="Logo" className="w-full h-full object-contain p-1" />
-                      ) : <Upload className="text-gray-400" size={20} />}
-                    </div>
-                    <div className="space-y-2 flex-1">
-                      <div className="flex gap-2">
-                        <label className="btn-secondary text-xs py-2 px-3 cursor-pointer">
-                          <Upload size={14} /> Subir imagen
-                          <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
-                        </label>
+            <div className="space-y-4">
+                
+                {/* ── VISTA PREVIA COMPACTA EN MÓVIL (Top Pinned para ver cambios sin hacer scroll) ── */}
+                <div className="lg:hidden sticky -top-3 z-30 bg-white/95 backdrop-blur-md p-3 -mx-3.5 sm:mx-0 rounded-b-2xl border-b border-gray-200 shadow-sm animate-fade-in">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-bold text-gray-700 flex items-center gap-1">
+                      <Eye size={13} className="text-gray-500" />
+                      Vista previa en vivo
+                    </span>
+                    <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Cambios en tiempo real
+                    </span>
+                  </div>
+
+                  <div 
+                    style={{
+                      fontFamily: FONT_OPTIONS.find(f => f.id === designData.font_family)?.fontFamily || "'Inter', sans-serif"
+                    }}
+                    className="p-2.5 rounded-xl border border-gray-200 bg-gray-50/50 flex items-center justify-between gap-3 shadow-2xs"
+                  >
+                    {/* Mini Header / Logo */}
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <div className="w-9 h-9 rounded-lg bg-white border border-gray-200 p-0.5 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+                        {formData.logo_url ? (
+                          <img src={formData.logo_url} alt="Logo" className="w-full h-full object-contain" />
+                        ) : (
+                          <div 
+                            style={{ backgroundColor: formData.theme_color || '#0284C7' }} 
+                            className="w-full h-full rounded flex items-center justify-center text-white text-[10px] font-black"
+                          >
+                            <Store size={14} />
+                          </div>
+                        )}
                       </div>
-                      <input 
-                        type="text" 
-                        value={formData.logo_url}
-                        onChange={e => setFormData({...formData, logo_url: e.target.value})}
-                        placeholder="O pega el URL de tu imagen..."
-                        className="input-field text-xs py-1.5" 
-                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-black text-gray-900 truncate leading-tight">
+                          {formData.nombre_visible || 'Nombre de tu negocio'}
+                        </p>
+                        <p className="text-[10px] text-gray-500 truncate">
+                          Hamburguesa Especial · <strong className="text-gray-900 font-bold">$24.000</strong>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Botón dinámico reflejando el color y estilo seleccionado en vivo */}
+                    <div className="shrink-0">
+                      {designData.button_style === 'outline' ? (
+                        <button
+                          type="button"
+                          style={{ borderColor: formData.theme_color || '#0284C7', color: formData.theme_color || '#0284C7' }}
+                          className="py-1 px-3 text-xs font-bold rounded-lg border-2 bg-white shadow-2xs flex items-center gap-1"
+                        >
+                          <Plus size={12} />
+                          <span>Elegir</span>
+                        </button>
+                      ) : designData.button_style === 'square' ? (
+                        <button
+                          type="button"
+                          style={{ backgroundColor: formData.theme_color || '#0284C7' }}
+                          className="py-1.5 px-3 text-xs font-black uppercase tracking-wider rounded-none text-white shadow-2xs flex items-center gap-1"
+                        >
+                          <Plus size={12} />
+                          <span>Elegir</span>
+                        </button>
+                      ) : designData.button_style === 'soft' ? (
+                        <button
+                          type="button"
+                          style={{ backgroundColor: formData.theme_color || '#0284C7' }}
+                          className="py-1.5 px-3.5 text-xs font-semibold rounded-md text-white shadow-2xs flex items-center gap-1"
+                        >
+                          <Plus size={12} />
+                          <span>Elegir</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          style={{ backgroundColor: formData.theme_color || '#0284C7' }}
+                          className="py-1.5 px-4 text-xs font-bold rounded-full text-white shadow-md flex items-center gap-1"
+                        >
+                          <Plus size={12} />
+                          <span>Elegir</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-2">Color principal de tu tienda</label>
-                  <div className="flex flex-wrap items-center gap-2 mb-3">
-                    {THEME_COLORS.map(c => (
-                      <button 
-                        key={c.hex} 
-                        type="button" 
-                        onClick={() => setFormData({...formData, theme_color: c.hex})}
-                        className={`w-8 h-8 rounded-lg ${c.class} border-2 ${formData.theme_color === c.hex ? 'border-gray-900 ring-2 ring-gray-900/20' : 'border-transparent'} transition-transform active:scale-95`}
-                        title={c.name}
-                      />
-                    ))}
-                    <div className="flex items-center gap-2 ml-2 pl-3 border-l border-gray-200">
-                      <input 
-                        type="color" 
-                        value={formData.theme_color}
-                        onChange={e => setFormData({...formData, theme_color: e.target.value})}
-                        className="w-7 h-7 rounded border border-gray-300 cursor-pointer"
-                      />
-                      <span className="font-mono text-xs text-gray-700">{formData.theme_color}</span>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  
+                  {/* Columna Izquierda: Controles Compactos */}
+                  <div className="lg:col-span-7 space-y-4">
+                    
+                    {/* 1. Color de Marca (Compacto en 1 fila) */}
+                    <div className="p-3.5 sm:p-4 rounded-xl border border-gray-200 bg-white shadow-2xs space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold text-gray-900">Color principal de tu marca</h4>
+                        <div className="flex items-center gap-1.5">
+                          <input 
+                            type="color" 
+                            value={formData.theme_color || '#0284C7'}
+                            onChange={e => setFormData({...formData, theme_color: e.target.value})}
+                            className="w-6 h-6 rounded border border-gray-300 cursor-pointer p-0.5 bg-white"
+                          />
+                          <span className="font-mono text-[11px] font-bold text-gray-700">{formData.theme_color}</span>
+                        </div>
+                      </div>
+
+                      {/* Swatches Rápidos de 1 toque */}
+                      <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                        {CURATED_COLORS.map(c => {
+                          const isSelected = formData.theme_color?.toLowerCase() === c.hex.toLowerCase();
+                          return (
+                            <button
+                              key={c.hex}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, theme_color: c.hex })}
+                              className={`w-7 h-7 rounded-full shrink-0 border-2 transition-transform active:scale-90 ${
+                                isSelected ? 'border-gray-950 ring-2 ring-gray-950/20 scale-110 shadow-xs' : 'border-white shadow-2xs hover:scale-105'
+                              }`}
+                              style={{ backgroundColor: c.hex }}
+                              title={c.label}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 2. Estilos de Botones (4 Estilos Totalmente Diferenciados) */}
+                    <div className="p-3.5 sm:p-4 rounded-xl border border-gray-200 bg-white shadow-2xs space-y-2.5">
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-900">Estilo de botones</h4>
+                        <p className="text-[11px] text-gray-500">Selecciona el diseño y corte de los botones de tu catálogo.</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {BUTTON_STYLES.map(b => {
+                          const isSelected = (designData.button_style || 'pill') === b.id;
+                          return (
+                            <button
+                              key={b.id}
+                              type="button"
+                              onClick={() => setDesignData({ ...designData, button_style: b.id })}
+                              className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-between gap-2 ${
+                                isSelected
+                                  ? 'bg-gray-950 text-white border-gray-950 shadow-xs ring-1 ring-gray-950'
+                                  : 'bg-gray-50/70 border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300'
+                              }`}
+                            >
+                              {/* Preview visual del botón */}
+                              <div className="w-full flex justify-center py-1">
+                                {b.id === 'outline' ? (
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${isSelected ? 'border-white text-white' : 'border-gray-700 text-gray-800'}`}>
+                                    + Elegir
+                                  </span>
+                                ) : b.id === 'square' ? (
+                                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-none ${isSelected ? 'bg-white text-gray-950' : 'bg-gray-800 text-white'}`}>
+                                    Elegir
+                                  </span>
+                                ) : b.id === 'soft' ? (
+                                  <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-md ${isSelected ? 'bg-white text-gray-950' : 'bg-gray-800 text-white'}`}>
+                                    + Elegir
+                                  </span>
+                                ) : (
+                                  <span className={`text-[10px] font-bold px-3 py-0.5 rounded-full shadow-2xs ${isSelected ? 'bg-white text-gray-950' : 'bg-gray-800 text-white'}`}>
+                                    + Elegir
+                                  </span>
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold leading-tight">{b.name}</p>
+                                <p className={`text-[10px] ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>{b.desc}</p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 3. Tipografía del Menú (Selector Compacto de 1 fila) */}
+                    <div className="p-3.5 sm:p-4 rounded-xl border border-gray-200 bg-white shadow-2xs space-y-2.5">
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-900">Tipografía del catálogo</h4>
+                        <p className="text-[11px] text-gray-500">Fuente tipográfica aplicada en todo el menú.</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {FONT_OPTIONS.map(f => {
+                          const isSelected = (designData.font_family || 'sans') === f.id;
+                          return (
+                            <button
+                              key={f.id}
+                              type="button"
+                              style={{ fontFamily: f.fontFamily }}
+                              onClick={() => setDesignData({ ...designData, font_family: f.id })}
+                              className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'bg-gray-950 text-white border-gray-950 shadow-xs ring-1 ring-gray-950'
+                                  : 'bg-gray-50/70 border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300'
+                              }`}
+                            >
+                              <span className="text-sm font-extrabold block mb-0.5">Aa</span>
+                              <p className="text-xs font-bold truncate">{f.name}</p>
+                              <p className={`text-[9px] font-sans truncate ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>{f.desc}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 4. Logo del Negocio (Fila Compacta) */}
+                    <div className="p-3.5 sm:p-4 rounded-xl border border-gray-200 bg-white shadow-2xs space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold text-gray-900">Logo de tu tienda</h4>
+                        {formData.logo_url && (
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, logo_url: '' })}
+                            className="text-[11px] font-semibold text-rose-600 hover:underline"
+                          >
+                            Quitar logo
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-2xs p-0.5">
+                          {isUploading ? (
+                            <Loader2 className="animate-spin text-gray-400" size={18} />
+                          ) : formData.logo_url ? (
+                            <img src={formData.logo_url} alt="Logo" className="w-full h-full object-contain" />
+                          ) : (
+                            <Store className="text-gray-300" size={20} />
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <label className="btn-secondary text-xs py-1.5 px-3 cursor-pointer inline-flex items-center gap-1.5 shadow-2xs font-semibold">
+                            <Upload size={13} /> 
+                            <span>{formData.logo_url ? 'Cambiar logo' : 'Subir imagen'}</span>
+                            <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                          </label>
+                          <input 
+                            type="text" 
+                            value={formData.logo_url}
+                            onChange={e => setFormData({...formData, logo_url: e.target.value})}
+                            placeholder="O pega enlace directo URL..."
+                            className="input-field text-xs py-1.5" 
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Columna Derecha: Live Mockup Completo (Desktop) */}
+                  <div className="hidden lg:flex lg:col-span-5 flex-col items-center">
+                    <div className="w-full flex items-center justify-between mb-2 px-1">
+                      <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                        <Eye size={14} className="text-gray-600" />
+                        Vista previa completa
+                      </span>
+                      <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                        En tiempo real
+                      </span>
+                    </div>
+
+                    {/* Teléfono Mockup */}
+                    <div 
+                      style={{
+                        fontFamily: FONT_OPTIONS.find(f => f.id === designData.font_family)?.fontFamily || "'Inter', sans-serif"
+                      }}
+                      className="w-full max-w-[310px] bg-white rounded-[28px] border-4 border-gray-900 shadow-xl overflow-hidden text-gray-900 select-none"
+                    >
+                      
+                      {/* Barra de estado */}
+                      <div className="bg-gray-900 text-white px-4 py-1.5 flex items-center justify-between text-[10px] font-mono">
+                        <span>9:41</span>
+                        <div className="w-12 h-2.5 bg-gray-800 rounded-full mx-auto" />
+                        <span>5G 100%</span>
+                      </div>
+
+                      {/* Header del Catálogo (Logo limpio y grande en fondo blanco) */}
+                      <div className="p-3 border-b border-gray-100 flex items-center justify-between gap-2 bg-white">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-9 h-9 rounded-lg bg-white border border-gray-200/90 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs p-0.5">
+                            {formData.logo_url ? (
+                              <img src={formData.logo_url} alt="Logo" className="w-full h-full object-contain" />
+                            ) : (
+                              <div 
+                                style={{ backgroundColor: formData.theme_color || '#0284C7' }}
+                                className="w-full h-full rounded flex items-center justify-center text-white"
+                              >
+                                <Store size={16} />
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-black text-gray-950 truncate leading-tight">
+                              {formData.nombre_visible || 'Nombre de tu negocio'}
+                            </p>
+                            <p className="text-[9px] text-emerald-600 font-semibold flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                              Abierto ahora
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Botón Carrito Header */}
+                        <div 
+                          style={{ backgroundColor: formData.theme_color || '#0284C7', color: '#ffffff' }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center shadow-xs text-white shrink-0"
+                        >
+                          <ShoppingCart size={13} strokeWidth={2.5} />
+                        </div>
+                      </div>
+
+                      {/* Categorías simuladas */}
+                      <div className="p-2 bg-gray-50/50 border-b border-gray-100 flex gap-1.5 overflow-hidden">
+                        <span 
+                          style={{ backgroundColor: formData.theme_color || '#0284C7', color: '#ffffff' }}
+                          className="text-[10px] font-bold px-3 py-0.5 rounded-full shadow-2xs shrink-0"
+                        >
+                          Todos
+                        </span>
+                        <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-white border border-gray-200 text-gray-600 shrink-0">
+                          Especiales
+                        </span>
+                        <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-white border border-gray-200 text-gray-600 shrink-0">
+                          Bebidas
+                        </span>
+                      </div>
+
+                      {/* Card de Producto Simulada */}
+                      <div className="p-2.5 bg-gray-50/30 space-y-2">
+                        <div 
+                          style={{ borderColor: `${formData.theme_color || '#0284C7'}35` }}
+                          className="bg-white p-2.5 rounded-2xl border shadow-xs relative overflow-hidden"
+                        >
+                          <div 
+                            style={{ backgroundColor: formData.theme_color || '#0284C7', color: '#ffffff' }}
+                            className="inline-flex items-center gap-1 text-[8px] font-bold px-2 py-0.5 rounded-md mb-1.5 shadow-2xs"
+                          >
+                            <Sparkles size={8} />
+                            <span>Personalizable</span>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <div className="w-12 h-12 rounded-xl bg-gray-100 border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
+                              <Utensils size={18} className="text-gray-300" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-gray-900 truncate">Producto Estrella</p>
+                              <p className="text-[9px] text-gray-500 line-clamp-1">Ingredientes frescos y preparación</p>
+                              
+                              <div className="flex items-center justify-between mt-1.5">
+                                <span className="text-xs font-black text-gray-900">$ 24.000</span>
+                                
+                                {/* Botón con estilo seleccionado */}
+                                {designData.button_style === 'outline' ? (
+                                  <div 
+                                    style={{ borderColor: formData.theme_color || '#0284C7', color: formData.theme_color || '#0284C7' }}
+                                    className="text-[9px] font-bold px-2 py-0.5 rounded-lg border-2 bg-white flex items-center gap-1 shadow-2xs"
+                                  >
+                                    <span>+ Elegir</span>
+                                  </div>
+                                ) : designData.button_style === 'square' ? (
+                                  <div 
+                                    style={{ backgroundColor: formData.theme_color || '#0284C7', color: '#ffffff' }}
+                                    className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-none shadow-2xs flex items-center gap-1"
+                                  >
+                                    <span>Elegir</span>
+                                  </div>
+                                ) : designData.button_style === 'soft' ? (
+                                  <div 
+                                    style={{ backgroundColor: formData.theme_color || '#0284C7', color: '#ffffff' }}
+                                    className="text-[9px] font-semibold px-2.5 py-0.5 rounded-md shadow-2xs flex items-center gap-1"
+                                  >
+                                    <span>+ Elegir</span>
+                                  </div>
+                                ) : (
+                                  <div 
+                                    style={{ backgroundColor: formData.theme_color || '#0284C7', color: '#ffffff' }}
+                                    className="text-[9px] font-bold px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1"
+                                  >
+                                    <span>+ Elegir</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Barra Flotante Inferior Simulada */}
+                      <div className="p-2 bg-white border-t border-gray-100">
+                        <div 
+                          style={{ backgroundColor: formData.theme_color || '#0284C7', color: '#ffffff' }}
+                          className="w-full py-2 px-3 rounded-xl flex items-center justify-between text-white text-xs font-bold shadow-md"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-4 h-4 rounded-full bg-white/25 flex items-center justify-center text-[9px] font-black">
+                              1
+                            </span>
+                            <span>Ver mi pedido</span>
+                          </div>
+                          <span className="tabular-nums font-black">$ 24.000</span>
+                        </div>
+                      </div>
+
                     </div>
                   </div>
+
                 </div>
               </div>
-            </PremiumLock>
           )}
 
           {/* ── LOGÍSTICA & GPS ── */}

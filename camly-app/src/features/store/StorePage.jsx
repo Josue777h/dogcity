@@ -33,7 +33,7 @@ export default function StorePage() {
         const biz = await fetchBusiness(slug);
         if (biz) {
           const [prods, sub, cats] = await Promise.all([
-            fetchProducts(biz.id),
+            fetchProducts(biz.id).catch(e => { console.warn('Prods load error:', e); return []; }),
             fetchSubscription ? fetchSubscription(biz.id).catch(() => null) : Promise.resolve(null),
             fetchCategories ? fetchCategories(biz.id).catch(() => []) : Promise.resolve([]),
           ]);
@@ -42,11 +42,13 @@ export default function StorePage() {
           setCategories(cats || []);
         } else {
           setBusiness(null);
-          setLoading(false);
         }
       } catch (err) {
+        console.error('Store load error:', err);
         setError(err.message);
         addToast('No pudimos conectar con la tienda', 'error');
+      } finally {
+        setLoading(false);
       }
     }
     load();
@@ -54,7 +56,7 @@ export default function StorePage() {
 
   // Apply brand color
   useEffect(() => {
-    const color = useBusinessStore.getState().isPro ? (business?.theme_color || '#EA580C') : '#EA580C';
+    const color = business?.theme_color || '#0284C7';
     document.documentElement.style.setProperty('--color-brand', color);
     document.documentElement.style.setProperty('--color-brand-dark', color);
   }, [business?.theme_color]);
@@ -81,6 +83,36 @@ export default function StorePage() {
       return matchesCat && matchesSearch;
     });
   }, [products, currentCategory, searchTerm, categories]);
+
+  const brandColor = business?.theme_color || '#EA580C';
+
+  const designConfig = useMemo(() => {
+    const base = {
+      button_radius: 'rounded-xl',
+      font_family: 'sans',
+      card_style: 'standard'
+    };
+    if (typeof business?.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
+      try {
+        const match = business.footer_message.match(/<!--CAMLY_DESIGN:(.*?)-->/);
+        if (match && match[1]) {
+          return { ...base, ...JSON.parse(match[1]) };
+        }
+      } catch (err) {
+        console.warn('Error parsing design config:', err);
+      }
+    }
+    return base;
+  }, [business?.footer_message]);
+
+  const fontStyle = useMemo(() => {
+    switch (designConfig.font_family) {
+      case 'jakarta': return { fontFamily: "'Plus Jakarta Sans', sans-serif" };
+      case 'outfit': return { fontFamily: "'Outfit', sans-serif" };
+      case 'poppins': return { fontFamily: "'Poppins', sans-serif" };
+      default: return { fontFamily: "'Inter', sans-serif" };
+    }
+  }, [designConfig.font_family]);
 
   if (isLoading) {
     return (
@@ -119,10 +151,11 @@ export default function StorePage() {
     );
   }
 
-  const brandColor = business?.theme_color || '#EA580C';
-
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 selection:bg-orange-500 selection:text-white">
+    <div 
+      style={fontStyle}
+      className="min-h-screen bg-gray-50 text-gray-900 selection:bg-orange-500 selection:text-white"
+    >
       <SEO 
         title={`${business.nombre_visible || business.nombre} | Menú digital en NEGU`}
         description={business.descripcion || `Explora el catálogo interactivo de ${business.nombre_visible || business.nombre}. Haz tu pedido para domicilio con GPS o recogida en local por WhatsApp.`}
@@ -143,19 +176,26 @@ export default function StorePage() {
       <nav className="sticky top-0 z-[80] bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-xs pt-safe">
         <div className="fluid-container flex items-center justify-between gap-3 h-14">
           
-          {/* Logo pequeño y nombre (solo aparece de forma limpia) */}
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-2xs border border-black/5"
-              style={{ backgroundColor: brandColor }}
-            >
-              {business?.logo_url ? (
-                <img src={business.logo_url} className="w-full h-full object-contain p-0.5" alt={business.nombre_visible} loading="lazy" />
-              ) : (
-                <Store size={16} className="text-white" />
-              )}
-            </div>
-            <span className="text-sm font-extrabold text-gray-900 truncate">
+          {/* Logo limpio y destacado + nombre */}
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            {business?.logo_url ? (
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white border border-gray-200/90 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+                <img 
+                  src={business.logo_url} 
+                  className="w-full h-full object-contain p-0.5" 
+                  alt={business.nombre_visible} 
+                  loading="lazy" 
+                />
+              </div>
+            ) : (
+              <div
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-2xs"
+                style={{ backgroundColor: brandColor }}
+              >
+                <Store size={20} className="text-white" />
+              </div>
+            )}
+            <span className="text-sm sm:text-base font-black text-gray-950 truncate">
               {business?.nombre_visible || 'Menú Digital'}
             </span>
           </div>
@@ -164,11 +204,12 @@ export default function StorePage() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setDrawerOpen(true)}
-              className={`flex items-center gap-2 py-2 px-3.5 rounded-xl border transition-all shadow-xs tap-target ${
+              className={`flex items-center gap-2 py-2 px-3.5 ${designConfig.button_radius || 'rounded-xl'} border transition-all shadow-xs tap-target ${
                 totalItems > 0
-                  ? 'bg-orange-600 border-orange-600 text-white shadow-orange-600/20'
+                  ? 'text-white shadow-md'
                   : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
               }`}
+              style={totalItems > 0 ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
               aria-label="Abrir carrito"
             >
               <ShoppingCart size={17} />
@@ -451,10 +492,11 @@ export default function StorePage() {
         <div className="lg:hidden fixed bottom-safe left-3 right-3 z-[90] animate-slide-up">
           <button
             onClick={() => setDrawerOpen(true)}
-            className="w-full flex items-center justify-between p-3.5 rounded-2xl shadow-xl text-white bg-orange-600 active:scale-[0.99] transition-transform"
+            className="w-full flex items-center justify-between p-3.5 rounded-2xl shadow-xl text-white active:scale-[0.99] transition-transform"
+            style={{ backgroundColor: brandColor }}
           >
             <div className="flex items-center gap-2.5">
-              <span className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-xs font-bold">
+              <span className="w-7 h-7 rounded-lg bg-white/25 flex items-center justify-center text-xs font-bold">
                 {totalItems}
               </span>
               <span className="text-sm font-bold">Ver mi pedido</span>

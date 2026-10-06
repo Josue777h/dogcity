@@ -40,8 +40,8 @@ function StatCard({ label, value, rawValue, isMoney, icon: Icon, trend, trendPos
       </div>
 
       {sparkData && sparkData.some(v => v > 0) && (
-        <div className="mt-1.5 h-6">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="mt-1.5 h-6 min-w-0">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <AreaChart data={sparkData.map((v, i) => ({ v, i }))} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
               <Area
                 type="monotone"
@@ -260,8 +260,8 @@ export default function DashboardView(props) {
 
           <PremiumLock featureName="Gráfico de Ventas Avanzado">
             {stats.chartData.some(d => d.ventas > 0) ? (
-              <div className="h-44 sm:h-48">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-44 sm:h-48 min-w-0 w-full">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <AreaChart data={stats.chartData} margin={{ top: 6, right: 6, bottom: 0, left: -18 }}>
                     <defs>
                       <linearGradient id="gradVentas" x1="0" y1="0" x2="0" y2="1">

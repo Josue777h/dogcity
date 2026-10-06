@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ShoppingCart, Plus, Minus, X, UtensilsCrossed, Check, Layers, AlertCircle, Sparkles } from 'lucide-react';
 import { formatMoney } from '../../lib/utils';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
@@ -13,11 +13,9 @@ export default function ProductCard({
   const bid      = business?.id;
   const addToast = useToastStore(s => s.addToast);
 
-  const { carts, increment, decrement, setNote, setQuantity, setItemOptions } = useCartStore();
-  const cart     = carts[bid] || { quantities: {}, notes: {}, itemOptions: {} };
-  const qty      = cart.quantities[product.id] || 0;
-  const note     = cart.notes[product.id] || '';
-  const isSelected = qty > 0;
+  const { addItem, increment, decrement } = useCartStore();
+  const totalProductQty = useCartStore(s => s.getProductTotalQuantity(bid, product.id));
+  const isSelected = totalProductQty > 0;
 
   const [showModal, setShowModal] = useState(false);
   const [imgError, setImgError] = useState(!product.image);
@@ -25,29 +23,44 @@ export default function ProductCard({
   // Opciones y toppings configurados en este producto
   const hasOptions = Array.isArray(product.opciones) && product.opciones.length > 0;
 
-  // Estado de selecciones dentro del modal de personalización
-  const [selectedOptions, setSelectedOptions] = useState(() => {
+  const getDefaultOptions = () => {
     const initial = {};
     if (hasOptions) {
       product.opciones.forEach(group => {
-        if (group.tipo === 'unica' && group.opciones?.length > 0) {
-          // Pre-seleccionar la primera opción si es requerida
-          if (group.requerido) {
-            initial[group.id] = [group.opciones[0]];
-          } else {
-            initial[group.id] = [];
-          }
-        } else {
-          initial[group.id] = [];
-        }
+        initial[group.id] = [];
       });
     }
     return initial;
-  });
+  };
 
-  const [tempNote, setTempNote] = useState(note);
+  // Estado de selecciones dentro del modal de personalización (100% limpio desde cero)
+  const [selectedOptions, setSelectedOptions] = useState(getDefaultOptions);
+  const [tempNote, setTempNote] = useState('');
+
+  const brandColor = business?.theme_color || '#0284C7';
+
+  const designConfig = useMemo(() => {
+    const base = { button_style: 'pill', font_family: 'sans' };
+    if (typeof business?.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
+      try {
+        const match = business.footer_message.match(/<!--CAMLY_DESIGN:(.*?)-->/);
+        if (match && match[1]) return { ...base, ...JSON.parse(match[1]) };
+      } catch (err) {
+        console.warn('Error parsing design config:', err);
+      }
+    }
+    return base;
+  }, [business?.footer_message]);
+
+  const buttonStyle = designConfig.button_style || 'pill';
 
   if (!bid) return null;
+
+  const openCustomizationModal = () => {
+    setSelectedOptions(getDefaultOptions());
+    setTempNote('');
+    setShowModal(true);
+  };
 
   // Cálculo de precio acumulado con toppings
   const extraToppingsCost = Object.values(selectedOptions)
@@ -58,10 +71,15 @@ export default function ProductCard({
 
   // Manejar selección única (radio / sabores)
   const handleSelectRadio = (groupId, option) => {
-    setSelectedOptions(prev => ({
-      ...prev,
-      [groupId]: [option]
-    }));
+    setSelectedOptions(prev => {
+      const current = prev[groupId] || [];
+      const isSame = current.length > 0 && current[0].id === option.id;
+      const group = product.opciones?.find(g => g.id === groupId);
+      if (isSame && !group?.requerido) {
+        return { ...prev, [groupId]: [] };
+      }
+      return { ...prev, [groupId]: [option] };
+    });
   };
 
   // Manejar selección múltiple (checkbox / toppings)
@@ -79,15 +97,16 @@ export default function ProductCard({
 
   // Botón rápido en la tarjeta
   const handleCardAdd = (e) => {
-    e.stopPropagation();
+    e?.stopPropagation?.();
     if (!isStoreOpen) {
       addToast(storeClosedMessage || 'La tienda se encuentra temporalmente en pausa o cerrada.', 'warning');
       return;
     }
     if (hasOptions) {
-      setShowModal(true);
+      openCustomizationModal();
     } else {
-      increment(bid, product.id);
+      addItem(bid, product, { options: [], note: '', quantity: 1 });
+      addToast(`¡${product.name} agregado al pedido!`, 'success');
     }
   };
 
@@ -110,26 +129,50 @@ export default function ProductCard({
     }
 
     const flatOptions = Object.values(selectedOptions).flat();
-    setQuantity(bid, product.id, (qty > 0 ? qty : 1));
-    setItemOptions(bid, product.id, flatOptions);
-    if (tempNote.trim()) {
-      setNote(bid, product.id, tempNote.trim());
-    }
+    addItem(bid, product, { options: flatOptions, note: tempNote.trim(), quantity: 1 });
     setShowModal(false);
-    addToast(`¡${product.name} agregado al pedido!`, 'success');
+    addToast(`¡${product.name} personalizado agregado al pedido!`, 'success');
   };
+
+  const getAddButtonProps = () => {
+    switch (buttonStyle) {
+      case 'square':
+        return {
+          className: "py-1.5 px-3.5 text-[11px] font-black uppercase tracking-wider rounded-none shrink-0 text-white cursor-pointer transition-all active:scale-95 flex items-center justify-center shadow-none",
+          style: { backgroundColor: brandColor }
+        };
+      case 'soft':
+        return {
+          className: "py-1.5 px-3.5 text-xs font-semibold rounded-md shrink-0 text-white cursor-pointer transition-all shadow-2xs active:scale-95 flex items-center justify-center",
+          style: { backgroundColor: brandColor }
+        };
+      case 'outline':
+        return {
+          className: "py-1 px-3.5 text-xs font-bold rounded-lg border-2 shrink-0 bg-white cursor-pointer transition-all active:scale-95 flex items-center justify-center shadow-2xs",
+          style: { borderColor: brandColor, color: brandColor }
+        };
+      default: // pill
+        return {
+          className: "py-1.5 px-4 text-xs font-bold rounded-full shrink-0 text-white cursor-pointer transition-all shadow-md active:scale-95 flex items-center justify-center",
+          style: { backgroundColor: brandColor }
+        };
+    }
+  };
+
+  const btnProps = getAddButtonProps();
 
   return (
     <>
       <article
         className={`card flex flex-col h-full bg-white overflow-hidden transition-all duration-200 border-gray-200/80 hover:shadow-md hover:border-gray-300 ${
-          isSelected ? 'ring-2 ring-blue-600 border-transparent shadow-xs' : ''
+          isSelected ? 'border-transparent shadow-xs' : ''
         }`}
+        style={isSelected ? { borderColor: brandColor, boxShadow: `0 0 0 2px ${brandColor}` } : {}}
       >
         {/* Product Image */}
         <div
           className="relative overflow-hidden cursor-pointer bg-gray-100 aspect-[4/3] group"
-          onClick={() => setShowModal(true)}
+          onClick={() => hasOptions ? openCustomizationModal() : handleCardAdd()}
         >
           {!imgError && product.image ? (
             <img
@@ -146,9 +189,12 @@ export default function ProductCard({
             </div>
           )}
 
-          {/* Badge si tiene toppings o sabores configurados */}
+          {/* Badge si tiene opciones o personalizaciones */}
           {hasOptions && (
-            <div className="absolute top-2.5 left-2.5 bg-blue-600/90 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+            <div 
+              className="absolute top-2.5 left-2.5 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1"
+              style={{ backgroundColor: brandColor }}
+            >
               <Layers size={11} />
               <span>Personalizable</span>
             </div>
@@ -156,8 +202,11 @@ export default function ProductCard({
 
           {/* Quantity pill on image */}
           {isSelected && (
-            <div className="absolute top-2.5 right-2.5 bg-blue-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md animate-scale-in">
-              {qty}
+            <div 
+              className="absolute top-2.5 right-2.5 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md animate-scale-in"
+              style={{ backgroundColor: brandColor }}
+            >
+              {totalProductQty}
             </div>
           )}
 
@@ -171,7 +220,7 @@ export default function ProductCard({
 
         {/* Content */}
         <div className="p-3 sm:p-3.5 flex flex-col flex-1 justify-between font-sans">
-          <div className="cursor-pointer mb-2" onClick={() => setShowModal(true)}>
+          <div className="cursor-pointer mb-2" onClick={() => hasOptions ? openCustomizationModal() : handleCardAdd()}>
             <h3 className="text-sm sm:text-base font-bold text-gray-900 leading-snug line-clamp-1 mb-1">
               {product.name}
             </h3>
@@ -199,7 +248,8 @@ export default function ProductCard({
             ) : !isSelected ? (
               <button
                 onClick={handleCardAdd}
-                className="btn-primary py-1.5 px-3 sm:px-4 text-xs font-bold gap-1 rounded-full shrink-0 shadow-glow-blue cursor-pointer"
+                className={`${btnProps.className} gap-1`}
+                style={btnProps.style}
                 aria-label={`Agregar ${product.name}`}
               >
                 <Plus size={14} />
@@ -215,15 +265,15 @@ export default function ProductCard({
                   <Minus size={13} />
                 </button>
                 <span className="w-6.5 text-center text-xs sm:text-sm font-bold text-gray-900 tabular-nums">
-                  {qty}
+                  {totalProductQty}
                 </span>
                 <button
                   onClick={() => {
-                    if (hasOptions) setShowModal(true);
+                    if (hasOptions) openCustomizationModal();
                     else increment(bid, product.id);
                   }}
                   className="w-7.5 h-7.5 flex items-center justify-center text-gray-600 hover:bg-gray-200/60 active:bg-gray-200 transition-colors cursor-pointer"
-                  aria-label="Sumar una unidad"
+                  aria-label="Sumar una unidad o personalizar otra"
                 >
                   <Plus size={13} />
                 </button>
@@ -317,16 +367,23 @@ export default function ProductCard({
                               <label
                                 key={opt.id}
                                 onClick={() => isRadio ? handleSelectRadio(group.id, opt) : handleToggleCheckbox(group.id, opt)}
+                                style={{
+                                  borderColor: isChecked ? brandColor : undefined,
+                                  backgroundColor: isChecked ? `${brandColor}08` : undefined
+                                }}
                                 className={`flex items-center justify-between p-2.5 sm:p-3 rounded-lg border transition-all cursor-pointer select-none ${
                                   isChecked 
-                                    ? 'bg-white border-blue-600 text-gray-950 shadow-xs' 
+                                    ? 'text-gray-950 shadow-xs font-medium' 
                                     : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
                                 }`}
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                  <div className={`w-4 h-4 rounded-${isRadio ? 'full' : 'md'} border flex items-center justify-center shrink-0 transition-colors ${
-                                    isChecked ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 bg-white'
-                                  }`}>
+                                  <div 
+                                    style={isChecked ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
+                                    className={`w-4 h-4 rounded-${isRadio ? 'full' : 'md'} border flex items-center justify-center shrink-0 transition-colors ${
+                                      isChecked ? 'text-white' : 'border-gray-300 bg-white'
+                                    }`}
+                                  >
                                     {isChecked && (
                                       isRadio 
                                         ? <div className="w-1.5 h-1.5 rounded-full bg-white" /> 
@@ -363,7 +420,7 @@ export default function ProductCard({
                   value={tempNote}
                   onChange={e => setTempNote(e.target.value)}
                   placeholder="Ej: Salsa aparte, bien cocido, etc."
-                  className="w-full text-xs sm:text-sm p-2.5 rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-blue-600 text-gray-900"
+                  className="w-full text-xs sm:text-sm p-2.5 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-gray-400 text-gray-900"
                 />
               </div>
             </div>
@@ -380,10 +437,11 @@ export default function ProductCard({
               <button
                 onClick={handleConfirmCustomization}
                 disabled={!isStoreOpen}
-                className={`py-3 px-6 text-xs sm:text-sm font-bold justify-center rounded-full gap-2 flex-1 sm:flex-none ${
+                style={isStoreOpen ? { backgroundColor: brandColor, color: '#ffffff' } : {}}
+                className={`py-3 px-6 text-xs sm:text-sm font-bold justify-center rounded-full gap-2 flex-1 sm:flex-none shadow-sm transition-transform active:scale-95 ${
                   !isStoreOpen
                     ? 'bg-gray-200 text-gray-500 border border-gray-300 cursor-not-allowed'
-                    : 'btn-primary shadow-glow-blue cursor-pointer'
+                    : 'cursor-pointer hover:opacity-95'
                 }`}
               >
                 {!isStoreOpen ? (

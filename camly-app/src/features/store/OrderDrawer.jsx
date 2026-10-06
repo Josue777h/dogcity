@@ -103,7 +103,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
   function buildMessage(orderId, token) {
     const bizName    = (business?.nombre_visible || 'la tienda').trim();
     const itemsLines = selectedItems.map(i => {
-      const note = (cart.notes[i.id] || '').trim();
+      const note = (i.note || cart.notes?.[i.id] || '').trim();
       const opts = (i.opciones_texto || '').trim();
       const extra = [opts, note].filter(Boolean).join(' · ');
       return `• ${i.quantity}× ${i.name}${extra ? ` (${extra})` : ''} — ${formatMoney(i.price * i.quantity)}`;
@@ -374,10 +374,10 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
                   ) : (
                     <>
                       <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
-                        {selectedItems.map(item => (
-                          <div key={item.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                        {selectedItems.map((item, idx) => (
+                          <div key={item.cartItemId || `${item.id}_${idx}`} className="px-4 py-3 flex items-center justify-between gap-3">
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text-1)' }}>
+                              <p className="text-sm font-semibold truncate" style={{ color: 'var(--color-text-1)' }}>
                                 {item.name}
                               </p>
                               {item.opciones_texto && (
@@ -385,40 +385,42 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
                                   {item.opciones_texto}
                                 </p>
                               )}
-                              {cart.notes[item.id] && (
+                              {(item.note || cart.notes?.[item.id]) && (
                                 <p className="text-xs mt-0.5 truncate text-gray-500 italic">
-                                  Nota: {cart.notes[item.id]}
+                                  Nota: {item.note || cart.notes?.[item.id]}
                                 </p>
                               )}
                             </div>
                             <div className="flex items-center gap-3 shrink-0">
                               {/* Stepper */}
                               <div
-                                className="flex items-center rounded-lg border overflow-hidden"
+                                className="flex items-center rounded-lg border overflow-hidden bg-gray-50/50"
                                 style={{ borderColor: 'var(--color-border)' }}
                               >
                                 <button
-                                  onClick={() => decrement(bid, item.id)}
-                                  className="w-7 h-7 flex items-center justify-center transition-colors hover:bg-gray-50"
+                                  onClick={() => decrement(bid, item.cartItemId || item.id)}
+                                  className="w-7 h-7 flex items-center justify-center transition-colors hover:bg-gray-100 cursor-pointer"
                                   style={{ color: 'var(--color-text-2)' }}
+                                  aria-label="Restar una unidad"
                                 >
                                   <Minus size={12} />
                                 </button>
                                 <span
-                                  className="w-6 text-center text-sm font-medium tabular-nums"
+                                  className="w-6 text-center text-xs font-bold tabular-nums"
                                   style={{ color: 'var(--color-text-1)' }}
                                 >
                                   {item.quantity}
                                 </span>
                                 <button
-                                  onClick={() => increment(bid, item.id)}
-                                  className="w-7 h-7 flex items-center justify-center transition-colors hover:bg-gray-50"
+                                  onClick={() => increment(bid, item.cartItemId || item.id)}
+                                  className="w-7 h-7 flex items-center justify-center transition-colors hover:bg-gray-100 cursor-pointer"
                                   style={{ color: 'var(--color-brand)' }}
+                                  aria-label="Sumar una unidad"
                                 >
                                   <Plus size={12} />
                                 </button>
                               </div>
-                              <span className="text-sm font-medium tabular-nums" style={{ color: 'var(--color-text-2)' }}>
+                              <span className="text-xs sm:text-sm font-bold tabular-nums" style={{ color: 'var(--color-text-1)' }}>
                                 {formatMoney(item.quantity * item.price)}
                               </span>
                             </div>
@@ -462,9 +464,14 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
                             setMapCoords(null);
                           }
                         }}
+                        style={deliveryMethod === m.id ? {
+                          borderColor: business?.theme_color || '#0284C7',
+                          backgroundColor: `${business?.theme_color || '#0284C7'}10`,
+                          color: business?.theme_color || '#0284C7'
+                        } : {}}
                         className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-sm font-semibold transition-all ${
                           deliveryMethod === m.id
-                            ? 'border-orange-500 bg-orange-50/70 text-orange-600 shadow-2xs'
+                            ? 'shadow-2xs'
                             : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                         }`}
                       >
@@ -643,9 +650,14 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
                       key={m.id}
                       type="button"
                       onClick={() => setPaymentMethod(m.id)}
+                      style={paymentMethod === m.id ? {
+                        borderColor: business?.theme_color || '#0284C7',
+                        backgroundColor: `${business?.theme_color || '#0284C7'}10`,
+                        color: business?.theme_color || '#0284C7'
+                      } : {}}
                       className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-sm font-semibold transition-all ${
                         paymentMethod === m.id
-                          ? 'border-orange-500 bg-orange-50/70 text-orange-600 shadow-2xs'
+                          ? 'shadow-2xs'
                           : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
