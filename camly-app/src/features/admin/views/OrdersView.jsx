@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { 
   ChevronRight, User, MapPin, Package, Bike, Trash2, Map,
-  MessageCircle, Loader2, AlertCircle, CheckCircle2, X, Printer, Volume2, VolumeX, Bluetooth
+  MessageCircle, Loader2, AlertCircle, CheckCircle2, Check, X, Printer, Volume2, VolumeX, Bluetooth
 } from 'lucide-react';
 import { 
   formatMoney, getOrderSubtotal, isDeliveryPending, 
@@ -24,25 +25,63 @@ const STATUS_TABS = [
 const STATUS_STEPS = ['nuevo', 'preparando', 'enviado', 'entregado'];
 const STATUS_LABELS = { nuevo: 'Nuevo', preparando: 'Preparando', enviado: 'Enviado', entregado: 'Entregado' };
 
-function OrderTimeline({ currentStatus }) {
+function OrderTimeline({ currentStatus, onStatusChange }) {
   const currentIdx = STATUS_STEPS.indexOf(currentStatus);
   return (
-    <div className="flex items-center gap-0 py-3">
-      {STATUS_STEPS.map((step, i) => (
-        <div key={step} className="flex items-center flex-1 last:flex-none">
-          <div className="flex flex-col items-center gap-1">
-            <div className={`w-2.5 h-2.5 rounded-full border transition-all duration-200 ${
-              i <= currentIdx ? 'bg-orange-600 border-orange-600' : 'bg-white border-gray-300'
-            }`} />
-            <span className={`text-[10px] font-medium hidden sm:block ${i <= currentIdx ? 'text-orange-600' : 'text-gray-400'}`}>
-              {STATUS_LABELS[step]}
-            </span>
-          </div>
-          {i < STATUS_STEPS.length - 1 && (
-            <div className={`flex-1 h-0.5 mx-1.5 transition-all duration-300 ${i < currentIdx ? 'bg-orange-600' : 'bg-gray-200'}`} />
-          )}
-        </div>
-      ))}
+    <div className="py-2.5 px-4 bg-white rounded-xl border border-gray-200 mb-3 shadow-2xs">
+      <div className="flex items-center justify-between relative">
+        {STATUS_STEPS.map((step, i) => {
+          const isPassed = i <= currentIdx;
+          const isCurrent = i === currentIdx;
+          return (
+            <div key={step} className="flex-1 flex flex-col items-center relative group">
+              {/* Barra conectora horizontal detrás de los círculos */}
+              {i < STATUS_STEPS.length - 1 && (
+                <div 
+                  className={`absolute top-3.5 left-1/2 w-full h-[2px] -z-0 transition-colors duration-200 ${
+                    i < currentIdx ? 'bg-blue-600' : 'bg-gray-200'
+                  }`} 
+                />
+              )}
+
+              {/* Botón interactivo con el estado */}
+              <button
+                type="button"
+                onClick={() => onStatusChange && onStatusChange(step)}
+                title={`Cambiar estado a "${STATUS_LABELS[step]}"`}
+                className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer select-none ${
+                  isCurrent 
+                    ? 'bg-blue-600 text-white ring-4 ring-blue-100 shadow-xs scale-110 font-bold' 
+                    : isPassed 
+                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                    : 'bg-white text-gray-500 border-2 border-gray-300 hover:border-blue-500 hover:text-blue-600'
+                }`}
+              >
+                {isPassed && !isCurrent ? (
+                  <Check size={13} strokeWidth={3} />
+                ) : (
+                  <span className="text-[11px] font-bold">{i + 1}</span>
+                )}
+              </button>
+
+              {/* Etiqueta clicable */}
+              <button
+                type="button"
+                onClick={() => onStatusChange && onStatusChange(step)}
+                className={`text-[11px] sm:text-xs mt-1 font-bold transition-colors cursor-pointer text-center leading-tight hover:underline ${
+                  isCurrent 
+                    ? 'text-blue-700' 
+                    : isPassed 
+                    ? 'text-gray-900' 
+                    : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                {STATUS_LABELS[step]}
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -53,8 +92,8 @@ function OrderItems({ order }) {
   const pending = isDeliveryPending(order);
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-1.5">
+    <div className="space-y-2.5">
+      <div className="space-y-1.5 divide-y divide-gray-100">
         {items.map((p, idx) => {
           const qty = p.cantidad ?? p.quantity ?? 1;
           const name = p.nombre ?? p.name ?? 'Producto';
@@ -62,43 +101,49 @@ function OrderItems({ order }) {
           const optionsText = p.opciones_texto || (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
           
           return (
-            <div key={idx} className="p-1.5 rounded-md hover:bg-gray-50/80 transition-colors">
-              <div className="flex justify-between items-center text-xs">
-                <span className="font-semibold text-gray-800">{qty}× {name}</span>
-                <span className="text-gray-500 tabular-nums font-medium">{formatMoney(price * qty)}</span>
+            <div key={idx} className="pt-1.5 first:pt-0">
+              <div className="flex justify-between items-start text-xs sm:text-sm gap-2">
+                <div className="flex items-start gap-1.5 font-bold text-gray-950 leading-snug">
+                  <span className="px-1.5 py-0.5 bg-blue-100 text-blue-900 rounded font-black text-xs shrink-0">{qty}×</span>
+                  <span>{name}</span>
+                </div>
+                <span className="text-gray-950 tabular-nums font-black shrink-0">{formatMoney(price * qty)}</span>
               </div>
+
               {optionsText && (
-                <div className="mt-0.5 text-[11px] font-medium text-orange-700 bg-orange-50 border border-orange-200/60 rounded px-1.5 py-0.5 inline-block">
+                <div className="mt-1 text-xs font-semibold text-blue-950 bg-blue-50 border border-blue-200 rounded-md px-2 py-0.5 inline-block">
                   ▸ {optionsText}
                 </div>
               )}
+
               {p.nota && (
-                <div className="text-[11px] text-gray-500 italic mt-0.5">
-                  Nota: {p.nota}
+                <div className="text-xs font-medium text-amber-950 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 mt-1">
+                  <strong>Nota:</strong> &ldquo;{p.nota}&rdquo;
                 </div>
               )}
             </div>
           );
         })}
       </div>
-      <div className="pt-3 border-t border-gray-200 space-y-1.5">
-        <div className="flex justify-between items-center text-xs text-gray-500">
+
+      <div className="pt-2.5 border-t border-gray-200 space-y-1 bg-gray-50 -mx-2.5 -mb-2.5 p-2.5 rounded-b-xl border-x border-b border-gray-200/80">
+        <div className="flex justify-between items-center text-xs text-gray-700">
           <span>Subtotal productos</span>
-          <span className="tabular-nums">{formatMoney(subtotal)}</span>
+          <span className="tabular-nums font-bold text-gray-900">{formatMoney(subtotal)}</span>
         </div>
         {order.entrega_metodo === 'envio' && (
           <div className="flex justify-between items-center text-xs">
-            <span className={pending ? 'text-amber-700 font-medium' : 'text-gray-500'}>
-              {pending ? 'Domicilio (por confirmar)' : 'Domicilio'}
+            <span className={pending ? 'text-amber-800 font-bold' : 'text-gray-700'}>
+              {pending ? 'Domicilio (por cotizar)' : 'Costo de envío'}
             </span>
-            <span className={pending ? 'text-amber-700 font-medium' : 'text-gray-700 tabular-nums'}>
+            <span className={pending ? 'text-amber-800 font-bold' : 'text-gray-950 tabular-nums font-bold'}>
               {pending ? 'Pendiente' : formatMoney(order.domicilio_costo || 0)}
             </span>
           </div>
         )}
-        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-          <span className="text-xs font-semibold text-gray-700">Total</span>
-          <span className="text-base font-semibold text-gray-900 tabular-nums">{formatMoney(order.total)}</span>
+        <div className="flex justify-between items-center pt-1.5 border-t border-gray-200">
+          <span className="text-xs font-black text-gray-950 uppercase tracking-wider">Total a cobrar</span>
+          <span className="text-base sm:text-lg font-black text-gray-950 tabular-nums">{formatMoney(order.total)}</span>
         </div>
       </div>
     </div>
@@ -142,14 +187,18 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
   };
 
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
-      <div className="flex items-start gap-2.5">
-        <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
-        <div>
-          <h4 className="text-xs font-semibold text-amber-900">Confirmar costo de domicilio</h4>
-          <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
-            Revisa la ubicación, ingresa el costo de entrega y envía el total final al cliente por WhatsApp.
-          </p>
+    <div className="bg-gradient-to-br from-amber-50 to-orange-50/40 border border-amber-200/90 rounded-lg p-2.5 sm:p-3 space-y-2 shadow-2xs">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start gap-2">
+          <div className="w-5 h-5 rounded-md bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5">
+            <AlertCircle size={13} />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-amber-950">Confirmar costo de domicilio</h4>
+            <p className="text-[11px] text-amber-800 leading-snug">
+              Ingresa el valor de la entrega para actualizar el total y enviar la confirmación por WhatsApp.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -158,44 +207,52 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
           href={mapsUrl}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-2 px-3 py-2 bg-white border border-amber-200 rounded-md hover:border-amber-300 transition-colors text-xs text-amber-900"
+          className="flex items-center gap-2 px-2.5 py-1.5 bg-white/90 hover:bg-white border border-amber-200 rounded-md transition-all text-xs text-amber-950 font-medium group shadow-2xs"
         >
-          <Map size={14} className="text-amber-600 shrink-0" />
-          <span className="truncate">{order.direccion || 'Abrir ubicación GPS'}</span>
+          <Map size={13} className="text-orange-600 shrink-0 group-hover:scale-110 transition-transform" />
+          <span className="truncate flex-1">{order.direccion || 'Abrir ubicación GPS'}</span>
+          <span className="text-[10px] text-orange-600 font-bold uppercase shrink-0">Ver mapa ↗</span>
         </a>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-2">
-        <input
-          type="number"
-          min="0"
-          step="500"
-          placeholder="Costo de entrega (ej: 4000)"
-          value={fee}
-          onChange={(e) => setFee(e.target.value)}
-          className="input-field text-sm flex-1"
-        />
+      <div className="flex flex-col sm:flex-row gap-1.5 pt-0.5">
+        <div className="relative flex-1">
+          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">$</span>
+          <input
+            type="number"
+            min="0"
+            step="500"
+            placeholder="Costo de entrega (ej: 4000)"
+            value={fee}
+            onChange={(e) => setFee(e.target.value)}
+            className="input-field pl-6 py-1.5 text-xs sm:text-sm font-semibold w-full bg-white"
+          />
+        </div>
         <button
           onClick={handleConfirm}
           disabled={loading || !feeNum}
-          className="btn-whatsapp py-2 px-4 text-xs font-semibold disabled:opacity-50"
+          className="btn-whatsapp py-2 px-3.5 text-xs font-bold shrink-0 justify-center shadow-xs disabled:opacity-50"
         >
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />}
-          Confirmar y notificar
+          {loading ? <Loader2 size={13} className="animate-spin" /> : <MessageCircle size={13} />}
+          <span>Confirmar y notificar WhatsApp</span>
         </button>
       </div>
 
       {feeNum > 0 && (
-        <div className="flex items-center justify-between text-xs pt-1 text-amber-900 font-medium">
-          <span>Nuevo total a cobrar:</span>
-          <span className="text-sm font-semibold tabular-nums">{formatMoney(newTotal)}</span>
+        <div className="flex items-center justify-between text-xs px-1 pt-1 text-amber-950 font-medium border-t border-amber-200/60">
+          <span className="text-[11px]">Nuevo total a cobrar (con domicilio):</span>
+          <span className="text-sm font-black tabular-nums text-amber-900">{formatMoney(newTotal)}</span>
         </div>
       )}
     </div>
   );
 }
 
-export default function OrdersView({ orders, onUpdate }) {
+export default function OrdersView(props) {
+  const outletCtx = useOutletContext() || {};
+  const orders = props.orders ?? outletCtx.orders ?? [];
+  const onUpdate = props.onUpdate ?? outletCtx.reloadOrders ?? (() => {});
+
   const business = useBusinessStore(s => s.business);
   const businessName = business?.nombre_visible || 'Tu negocio';
   const [drivers, setDrivers] = useState([]);
@@ -312,7 +369,7 @@ export default function OrdersView({ orders, onUpdate }) {
   };
 
   return (
-    <div className="space-y-4 animate-fade-in-up">
+    <div className="space-y-3 animate-fade-in-up">
       {/* Filter tabs & Sound toggle */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 flex-1">
@@ -383,7 +440,7 @@ export default function OrdersView({ orders, onUpdate }) {
       </div>
 
       {/* Orders List */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {filteredOrders.map((order) => {
           const status = order.estado || order.status;
           const deliveryPending = isDeliveryPending(order);
@@ -405,8 +462,12 @@ export default function OrdersView({ orders, onUpdate }) {
               className={`card transition-colors duration-150 overflow-hidden ${borderAccent} border-gray-200/80 shadow-xs`}
             >
               <div 
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
                 onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
-                className="px-4 py-3.5 sm:px-5 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                onKeyDown={e => { if (e.key === 'Enter' && e.target === e.currentTarget) setExpandedOrderId(isExpanded ? null : order.id); }}
+                className="px-3 py-2.5 sm:px-4 cursor-pointer hover:bg-gray-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-700">
@@ -428,7 +489,7 @@ export default function OrdersView({ orders, onUpdate }) {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                <div className="flex items-center justify-between sm:justify-end gap-3 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                   <div className="text-left sm:text-right">
                     <p className="text-sm font-semibold text-gray-900 tabular-nums">{formatMoney(order.total)}</p>
                     {deliveryPending && (
@@ -474,11 +535,14 @@ export default function OrdersView({ orders, onUpdate }) {
               </div>
 
               {isExpanded && (
-                <div className="px-4 pb-5 pt-2 sm:px-5 border-t border-border animate-fade-in-down bg-gray-50/50">
-                  <OrderTimeline currentStatus={status} />
+                <div className="px-3 pb-3.5 pt-1 sm:px-4 border-t border-border animate-fade-in-down bg-gray-50/50">
+                  <OrderTimeline 
+                    currentStatus={status} 
+                    onStatusChange={(newSt) => handleStatusChange(order.id, newSt)} 
+                  />
 
                   {deliveryPending && (
-                    <div className="mb-4">
+                    <div className="mb-3">
                       <DeliveryConfirmPanel 
                         order={order} 
                         businessName={businessName} 
@@ -487,48 +551,100 @@ export default function OrdersView({ orders, onUpdate }) {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
-                    {/* Delivery Details */}
-                    <div className="space-y-4">
-                      <div>
-                        <p className="caps-label mb-2">Cliente y Entrega</p>
-                        <p className="text-sm font-medium text-gray-800 flex items-center gap-2">
-                          <User size={14} className="text-gray-400" />
-                          {order.nombre} · <a href={`tel:${order.telefono}`} className="text-orange-600 hover:underline">{order.telefono}</a>
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1.5 flex items-start gap-2">
-                          <MapPin size={14} className="text-gray-400 mt-0.5 shrink-0" />
-                          {order.direccion || 'Recogida en local'}
-                        </p>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-2">
+                    {/* Columna 1: Cliente, Entrega y Repartidor */}
+                    <div className="space-y-2.5 flex flex-col justify-between">
+                      <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-gray-200 shadow-2xs space-y-2.5">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                          <p className="text-xs font-bold text-gray-900 uppercase tracking-wider">Datos de entrega</p>
+                          <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                            order.entrega_metodo === 'envio' 
+                              ? 'bg-blue-50 text-blue-800 border border-blue-200' 
+                              : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          }`}>
+                            {order.entrega_metodo === 'envio' ? '🛵 Domicilio' : '🏪 Recogida en local'}
+                          </span>
+                        </div>
+
+                        {/* Cliente y Teléfono / WhatsApp */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-xs shrink-0">
+                              <User size={15} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs sm:text-sm font-bold text-gray-950 truncate leading-tight">{order.nombre}</p>
+                              <a href={`tel:${order.telefono}`} className="text-xs font-bold text-blue-700 hover:underline leading-tight block mt-0.5">
+                                {order.telefono}
+                              </a>
+                            </div>
+                          </div>
+
+                          <a 
+                            href={`https://wa.me/${order.telefono?.replace(/\D/g, '')}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors shrink-0"
+                            title="Abrir chat en WhatsApp"
+                          >
+                            <MessageCircle size={14} />
+                            <span>WhatsApp</span>
+                          </a>
+                        </div>
+
+                        {/* Dirección y GPS */}
+                        <div className="pt-2 border-t border-gray-100">
+                          <div className="flex items-start gap-1.5 text-xs text-gray-800">
+                            <MapPin size={15} className="text-blue-600 mt-0.5 shrink-0" />
+                            <p className="leading-snug break-words font-semibold text-gray-950">
+                              {order.direccion || 'Recogida en tienda física'}
+                            </p>
+                          </div>
+
+                          {order.entrega_metodo === 'envio' && (order.ubicacion_link || order.direccion) && (
+                            <a
+                              href={order.ubicacion_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200 transition-all text-xs text-blue-950 font-bold group"
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <Map size={14} className="text-blue-700 shrink-0 group-hover:scale-110 transition-transform" />
+                                <span className="truncate">Ver ubicación en Google Maps</span>
+                              </div>
+                              <span className="text-[11px] text-blue-700 font-bold shrink-0">Abrir ↗</span>
+                            </a>
+                          )}
+                        </div>
                       </div>
 
-                      {order.entrega_metodo === 'envio' && (order.ubicacion_link || order.direccion) && (
-                        <a
-                          href={order.ubicacion_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-2.5 p-3 rounded-lg border border-border bg-white hover:border-orange-300 transition-colors text-xs text-gray-700"
-                        >
-                          <Map size={16} className="text-orange-600 shrink-0" />
-                          <span className="font-medium">Abrir ubicación GPS en Google Maps</span>
-                        </a>
-                      )}
+                      {/* Repartidor asignado */}
+                      <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-gray-200 shadow-2xs">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-bold text-gray-900 uppercase tracking-wider">Repartidor asignado</p>
+                          {order.domiciliario_id && (
+                            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Asignado</span>
+                          )}
+                        </div>
 
-                      {/* Repartidor */}
-                      <div className="pt-3 border-t border-border">
-                        <p className="caps-label mb-2">Repartidor asignado</p>
                         <div className="flex gap-2 items-center">
                           <button 
                             type="button"
                             disabled={loadingDriver === order.id}
                             onClick={() => setSelectedOrderForDriver(order)}
-                            className="input-field text-xs flex items-center justify-between min-w-0 flex-1 truncate py-2"
+                            className="input-field text-xs flex items-center justify-between min-w-0 flex-1 truncate py-2 bg-gray-50 hover:bg-gray-100 cursor-pointer font-bold text-gray-900"
                           >
-                            <span className="truncate">{drivers.find(d => d.id === order.domiciliario_id)?.nombre || 'Sin asignar'}</span>
-                            <ChevronRight size={14} className="rotate-90 text-gray-400 shrink-0 ml-1.5" />
+                            <span className="truncate">
+                              {drivers.find(d => d.id === order.domiciliario_id)?.nombre || 'Seleccionar repartidor...'}
+                            </span>
+                            <ChevronRight size={14} className="rotate-90 text-gray-500 shrink-0 ml-1" />
                           </button>
+
                           {order.domiciliario_id && (
-                            <button onClick={() => handleDispatch(order)} className="btn-secondary text-xs px-3.5 shrink-0 h-[38px]">
+                            <button 
+                              onClick={() => handleDispatch(order)} 
+                              className="h-8.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors shrink-0"
+                            >
                               Despachar
                             </button>
                           )}
@@ -536,48 +652,42 @@ export default function OrdersView({ orders, onUpdate }) {
                       </div>
                     </div>
 
-                    {/* Products & Status Changer */}
-                    <div className="card p-4 bg-white">
-                      <p className="caps-label mb-2">Detalle de productos</p>
-                      <OrderItems order={order} />
+                    {/* Columna 2: Detalle de productos y Barra de acciones */}
+                    <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-gray-200 shadow-2xs flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
+                          <p className="text-xs font-bold text-gray-900 uppercase tracking-wider">Productos del pedido</p>
+                          <span className="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md">
+                            {(order.items || order.productos || []).length} items
+                          </span>
+                        </div>
+                        <OrderItems order={order} />
+                      </div>
 
-                      <div className="mt-4 pt-4 border-t border-border flex flex-col sm:flex-row gap-2">
-                        <button
-                          type="button"
-                          onClick={() => printThermalReceipt(order, business)}
-                          className="btn-secondary py-2.5 px-3 text-xs flex items-center justify-center gap-1.5"
-                          title="Imprimir comanda térmica estándar para cocina"
-                        >
-                          <Printer size={15} /> Imprimir Comanda
-                        </button>
-                        <button
-                          type="button"
-                          disabled={printingBluetoothId === order.id}
-                          onClick={() => handlePrintBluetooth(order)}
-                          className="btn-secondary py-2.5 px-3 text-xs flex items-center justify-center gap-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
-                          title="Imprimir directamente a impresora térmica Bluetooth (POS-58/80)"
-                        >
-                          {printingBluetoothId === order.id ? <Loader2 size={15} className="animate-spin" /> : <Bluetooth size={15} />}
-                          <span>Bluetooth</span>
-                        </button>
-                        <a 
-                          href={`https://wa.me/${order.telefono?.replace(/\D/g, '')}`} 
-                          target="_blank" 
-                          rel="noreferrer" 
-                          className="btn-whatsapp py-2.5 px-3 text-xs flex-1 justify-center"
-                        >
-                          <MessageCircle size={15} /> Chatear con cliente
-                        </a>
-                        <select 
-                          value={status}
-                          onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                          className="input-field text-xs py-2.5 flex-1"
-                        >
-                          <option value="nuevo">Nuevo</option>
-                          <option value="preparando">Preparando</option>
-                          <option value="enviado">Enviado</option>
-                          <option value="entregado">Entregado</option>
-                        </select>
+                      {/* Botones de comanda e impresión */}
+                      <div className="mt-3 pt-2.5 border-t border-gray-200">
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => printThermalReceipt(order, business)}
+                            className="h-8 rounded-lg border border-gray-300 hover:border-gray-900 bg-white text-gray-800 hover:text-black text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            title="Imprimir comanda térmica estándar para cocina"
+                          >
+                            <Printer size={14} className="shrink-0" />
+                            <span className="truncate">Comanda cocina</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={printingBluetoothId === order.id}
+                            onClick={() => handlePrintBluetooth(order)}
+                            className="h-8 rounded-lg border border-blue-200 hover:border-blue-400 bg-blue-50/70 hover:bg-blue-100 text-blue-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            title="Imprimir directamente a impresora térmica Bluetooth (POS-58/80)"
+                          >
+                            {printingBluetoothId === order.id ? <Loader2 size={14} className="animate-spin" /> : <Bluetooth size={14} className="shrink-0" />}
+                            <span className="truncate">POS Bluetooth</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -588,7 +698,7 @@ export default function OrdersView({ orders, onUpdate }) {
         })}
 
         {filteredOrders.length === 0 && (
-          <div className="py-16 text-center card border-dashed p-8">
+          <div className="py-10 text-center card border-dashed p-6">
             <Package size={28} className="mx-auto mb-2 text-gray-400" />
             <p className="text-sm font-semibold text-gray-800">No hay pedidos en esta sección</p>
             <p className="text-xs text-gray-500 mt-1">Los nuevos pedidos de tus clientes aparecerán aquí automáticamente.</p>

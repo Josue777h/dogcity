@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { 
   Save, User, Phone, MapPin, Globe, Loader2, 
   Instagram, Facebook, MessageSquare, Palette,
@@ -6,7 +7,7 @@ import {
   Music2, Wallet, Truck, Navigation, Search, Clock
 } from 'lucide-react';
 import { getSupabase, uploadImage } from '../../../lib/supabase';
-import { useToastStore } from '../../../stores';
+import { useToastStore, useAuthStore } from '../../../stores';
 import PremiumLock from '../../../components/ui/PremiumLock';
 
 const THEME_COLORS = [
@@ -18,7 +19,15 @@ const THEME_COLORS = [
   { name: 'Oscuro', hex: '#1F2937', class: 'bg-[#1F2937]' },
 ];
 
-export default function SettingsView({ business, onUpdate }) {
+export default function SettingsView(props) {
+  const outletCtx = useOutletContext() || {};
+  const session = useAuthStore(s => s.session);
+  const business = props.business ?? outletCtx.business ?? null;
+  const onUpdate = props.onUpdate ?? (() => {
+    if (session?.user?.id && outletCtx.loadData) {
+      outletCtx.loadData(session.user.id, false);
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('perfil');
   const [bizSuggestions, setBizSuggestions] = useState([]);
@@ -110,6 +119,51 @@ export default function SettingsView({ business, onUpdate }) {
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
+  };
+
+  const [isUpdatingPause, setIsUpdatingPause] = useState(false);
+
+  const handleToggleStorePause = async () => {
+    if (isUpdatingPause || !business?.id) return;
+    const nextManualState = scheduleData.abierto_manual === false ? true : false;
+    const updatedSchedule = { ...scheduleData, abierto_manual: nextManualState };
+    
+    setIsUpdatingPause(true);
+    setScheduleData(updatedSchedule);
+
+    try {
+      const cleanFooter = (formData.footer_message || '').replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '').trim();
+      const scheduleTag = `<!--CAMLY_SCHEDULE:${JSON.stringify(updatedSchedule)}-->`;
+      const combinedFooter = cleanFooter ? `${cleanFooter}\n${scheduleTag}` : scheduleTag;
+
+      const { error } = await getSupabase()
+        .from('negocios')
+        .update({ footer_message: combinedFooter })
+        .eq('id', business.id);
+
+      if (error) throw error;
+
+      // Actualizar formData local
+      setFormData(prev => ({ ...prev, footer_message: combinedFooter }));
+
+      if (nextManualState) {
+        addToast('¡Tienda reanudada! El catálogo ahora acepta pedidos.', 'success');
+      } else {
+        addToast('Tienda pausada. El catálogo ahora está en modo solo lectura.', 'warning');
+      }
+
+      // Sincronizar en tiempo real el store global
+      if (typeof onUpdate === 'function') {
+        onUpdate();
+      }
+    } catch (err) {
+      console.error('Error toggling store pause:', err);
+      // Revertir en caso de falla
+      setScheduleData(prev => ({ ...prev, abierto_manual: !nextManualState }));
+      addToast('Error al actualizar el estado de la tienda', 'error');
+    } finally {
+      setIsUpdatingPause(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -269,7 +323,7 @@ export default function SettingsView({ business, onUpdate }) {
   }, [activeTab]);
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-3 animate-fade-in-up">
       {/* Tabs Header */}
       <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
         {[
@@ -294,8 +348,8 @@ export default function SettingsView({ business, onUpdate }) {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="card p-4 sm:p-6 lg:p-8 bg-white border-gray-200/80 shadow-xs rounded-2xl">
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="card p-3.5 sm:p-4 lg:p-5 bg-white border-gray-200/80 shadow-xs rounded-xl">
           
           {/* ── PERFIL ── */}
           {activeTab === 'perfil' && (
@@ -347,7 +401,7 @@ export default function SettingsView({ business, onUpdate }) {
           {/* ── MARCA ── */}
           {activeTab === 'marca' && (
             <PremiumLock featureName="Identidad Visual Avanzada">
-              <div className="space-y-6 max-w-xl">
+              <div className="space-y-4 max-w-xl">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-2">Logo de tu tienda</label>
                   <div className="flex items-center gap-4">
@@ -405,7 +459,7 @@ export default function SettingsView({ business, onUpdate }) {
 
           {/* ── LOGÍSTICA & GPS ── */}
           {activeTab === 'logistica' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
@@ -542,7 +596,7 @@ export default function SettingsView({ business, onUpdate }) {
 
           {/* ── PAGOS ── */}
           {activeTab === 'pagos' && (
-            <div className="space-y-6 max-w-xl">
+            <div className="space-y-4 max-w-xl">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-2">Métodos habilitados para el cliente</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -613,9 +667,9 @@ export default function SettingsView({ business, onUpdate }) {
 
           {/* ── HORARIOS Y ESTADO DE LA TIENDA ── */}
           {activeTab === 'horario' && (
-            <div className="space-y-6 max-w-2xl animate-fade-in">
+            <div className="space-y-4 max-w-2xl animate-fade-in">
               {/* Switch Maestro: Abierto / Cerrado */}
-              <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-gray-50/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="p-3 sm:p-4 rounded-xl border border-gray-200 bg-gray-50/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className={`w-3 h-3 rounded-full ${scheduleData.abierto_manual !== false ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
@@ -632,14 +686,24 @@ export default function SettingsView({ business, onUpdate }) {
 
                 <button
                   type="button"
-                  onClick={() => setScheduleData(prev => ({ ...prev, abierto_manual: prev.abierto_manual === false ? true : false }))}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 shadow-2xs cursor-pointer ${
+                  onClick={handleToggleStorePause}
+                  disabled={isUpdatingPause}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
                     scheduleData.abierto_manual !== false
                       ? 'bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300'
                       : 'bg-emerald-600 text-white hover:bg-emerald-700'
                   }`}
                 >
-                  {scheduleData.abierto_manual !== false ? 'Pausar tienda ahora' : 'Reanudar y abrir tienda'}
+                  {isUpdatingPause ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" />
+                      <span>Actualizando...</span>
+                    </>
+                  ) : scheduleData.abierto_manual !== false ? (
+                    'Pausar tienda ahora'
+                  ) : (
+                    'Reanudar y abrir tienda'
+                  )}
                 </button>
               </div>
 
@@ -808,7 +872,7 @@ export default function SettingsView({ business, onUpdate }) {
             </div>
           )}
 
-          <div className="pt-6 border-t border-border mt-6">
+          <div className="pt-4 border-t border-border mt-4">
             <button 
               type="submit"
               disabled={loading}

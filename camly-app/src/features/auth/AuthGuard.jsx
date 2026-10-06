@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { getSupabase } from '../../lib/supabase';
 import { useAuthStore } from '../../stores';
 
 export default function AuthGuard({ children }) {
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
   const { session, setSession } = useAuthStore();
 
   useEffect(() => {
@@ -30,7 +31,7 @@ export default function AuthGuard({ children }) {
   }
 
   if (!session) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
   return children;

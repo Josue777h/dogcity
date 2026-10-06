@@ -20,6 +20,15 @@ const ParaRestaurantesPage = lazy(() => import('./features/marketing/ParaRestaur
 const ParaNegociosPage = lazy(() => import('./features/marketing/ParaNegociosPage'));
 const NotFoundPage = lazy(() => import('./features/marketing/NotFoundPage'));
 
+// Admin Views (Lazy Loaded)
+const DashboardView = lazy(() => import('./features/admin/views/DashboardView'));
+const OrdersView = lazy(() => import('./features/admin/views/OrdersView'));
+const ProductsView = lazy(() => import('./features/admin/views/ProductsView'));
+const CategoriesView = lazy(() => import('./features/admin/views/CategoriesView'));
+const DriversView = lazy(() => import('./features/admin/views/DriversView'));
+const RevenueView = lazy(() => import('./features/admin/views/RevenueView'));
+const SettingsView = lazy(() => import('./features/admin/views/SettingsView'));
+
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-bg-alt">
     <div className="flex flex-col items-center gap-4 animate-in fade-in duration-500">
@@ -60,12 +69,38 @@ export default function App() {
           <Route path="/registro" element={<RegisterPage />} />
           <Route path="/bienvenido" element={<WelcomePage />} />
           
-          {/* ── ADMIN PANEL (PROTECTED) ──────────────────────── */}
-          <Route path="/admin" element={
-            <AuthGuard>
-              <AdminPage />
-            </AuthGuard>
-          } />
+          {/* ── ADMIN PANEL (PROTECTED NESTED ROUTES) ─────────── */}
+          <Route
+            path="/admin"
+            element={
+              <AuthGuard>
+                <AdminPage />
+              </AuthGuard>
+            }
+          >
+            {/* Redirección por defecto a /admin/dashboard */}
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardView />} />
+            <Route path="pedidos" element={<OrdersView />} />
+            <Route path="orders" element={<Navigate to="/admin/pedidos" replace />} />
+            <Route path="productos" element={<ProductsView />} />
+            <Route path="products" element={<Navigate to="/admin/productos" replace />} />
+            <Route path="categorias" element={<CategoriesView />} />
+            <Route path="categories" element={<Navigate to="/admin/categorias" replace />} />
+            <Route path="domiciliarios" element={<DriversView />} />
+            <Route path="drivers" element={<Navigate to="/admin/domiciliarios" replace />} />
+            <Route path="ingresos" element={<RevenueView />} />
+            <Route path="revenue" element={<Navigate to="/admin/ingresos" replace />} />
+            <Route path="configuracion" element={<SettingsView />} />
+            <Route path="settings" element={<Navigate to="/admin/configuracion" replace />} />
+            {/* Fallback de ruta administrativa inválida */}
+            <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+          </Route>
+
+          {/* Alias amigables de raíz hacia el panel de administración */}
+          <Route path="/pedidos" element={<Navigate to="/admin/pedidos" replace />} />
+          <Route path="/productos" element={<Navigate to="/admin/productos" replace />} />
+          <Route path="/categorias" element={<Navigate to="/admin/categorias" replace />} />
           
           {/* ── CUSTOMER EXPERIENCE ──────────────────────────── */}
           <Route path="/tracking" element={<TrackingPage />} />

@@ -139,38 +139,25 @@ export default function StorePage() {
         }}
       />
       
-      {/* ── TOP NAV ── */}
+      {/* ── TOP NAV (Minimalista y Funcional) ── */}
       <nav className="sticky top-0 z-[80] bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-xs pt-safe">
-        <div className="fluid-container flex items-center justify-between gap-3 h-14 sm:h-16">
+        <div className="fluid-container flex items-center justify-between gap-3 h-14">
           
-          {/* Business identity */}
-          <div className="flex items-center gap-3 min-w-0 flex-1">
+          {/* Logo pequeño y nombre (solo aparece de forma limpia) */}
+          <div className="flex items-center gap-2.5 min-w-0">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-xs border border-black/5"
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-2xs border border-black/5"
               style={{ backgroundColor: brandColor }}
             >
               {business?.logo_url ? (
-                <img src={business.logo_url} className="w-full h-full object-contain p-1" alt={business.nombre_visible} loading="lazy" />
+                <img src={business.logo_url} className="w-full h-full object-contain p-0.5" alt={business.nombre_visible} loading="lazy" />
               ) : (
-                <Store size={20} className="text-white" />
+                <Store size={16} className="text-white" />
               )}
             </div>
-            <div className="min-w-0">
-              <h1 className="text-sm sm:text-base font-bold text-gray-900 truncate leading-tight">
-                {business?.nombre_visible || 'Tienda Digital'}
-              </h1>
-              <div className="flex items-center gap-2 text-[11px] text-gray-500 truncate mt-0.5">
-                <span className={`flex items-center gap-1 font-medium ${scheduleStatus.isOpen ? 'text-emerald-700' : 'text-amber-700'}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${scheduleStatus.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                  {scheduleStatus.message || (scheduleStatus.isOpen ? 'Abierto ahora' : 'Cerrado ahora')}
-                </span>
-                {business?.direccion && (
-                  <span className="hidden sm:inline-block truncate">
-                    · {business.direccion}
-                  </span>
-                )}
-              </div>
-            </div>
+            <span className="text-sm font-extrabold text-gray-900 truncate">
+              {business?.nombre_visible || 'Menú Digital'}
+            </span>
           </div>
 
           {/* Cart button */}
@@ -184,7 +171,7 @@ export default function StorePage() {
               }`}
               aria-label="Abrir carrito"
             >
-              <ShoppingCart size={18} />
+              <ShoppingCart size={17} />
               <span className="text-xs sm:text-sm font-bold">
                 {totalItems > 0 ? (
                   <span className="flex items-center gap-1.5">
@@ -192,7 +179,7 @@ export default function StorePage() {
                     <span className="hidden sm:inline">· {formatMoney(totalPrice)}</span>
                   </span>
                 ) : (
-                  <span className="hidden sm:inline font-semibold">Mi Pedido</span>
+                  <span className="font-semibold">Mi Pedido</span>
                 )}
               </span>
             </button>
@@ -201,16 +188,51 @@ export default function StorePage() {
         </div>
       </nav>
 
-      {/* ── AVISO DE COMERCIO CERRADO ── */}
+      {/* ── AVISO DE COMERCIO CERRADO O EN PAUSA ── */}
       {!scheduleStatus.isOpen && (
-        <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-900 px-4 py-2 text-xs font-semibold flex items-center justify-center gap-2 text-center animate-fade-in">
-          <Clock size={14} className="shrink-0 text-amber-700" />
-          <span>Comercio en pausa o cerrado: {scheduleStatus.message}. Puedes ver el menú pero no se están procesando pedidos.</span>
+        <div className="bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/15 border-b border-amber-500/30 text-amber-950 px-4 py-2.5 text-xs font-semibold flex items-center justify-center gap-2.5 text-center shadow-2xs animate-fade-in">
+          <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+          <Clock size={15} className="shrink-0 text-amber-700" />
+          <span>
+            <strong className="font-bold">Tienda en pausa o cerrada:</strong> {scheduleStatus.message}. El catálogo está en modo informativo y no recibe pedidos en este momento.
+          </span>
         </div>
       )}
 
+      {/* ── DETALLES DE LA TIENDA (INFORMACIÓN CLAVE SIN DUPLICAR) ── */}
+      <section className="bg-white border-b border-gray-200/80">
+        <div className="fluid-container py-3.5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                scheduleStatus.isOpen 
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                  : 'bg-amber-50 text-amber-900 border border-amber-200'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${scheduleStatus.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                {scheduleStatus.isOpen ? 'Abierto ahora' : 'Pausado'}
+              </span>
+              <span className="text-xs text-gray-500 truncate">
+                {scheduleStatus.message}
+              </span>
+            </div>
+            {business?.direccion && (
+              <p className="text-xs text-gray-500 mt-1 truncate">
+                📍 {business.direccion}
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200/70 self-start sm:self-auto">
+            <span>⏱️ 30-45 min aprox.</span>
+            <span>·</span>
+            <span>📱 Pedidos a WhatsApp</span>
+          </div>
+        </div>
+      </section>
+
       {/* ── MAIN CONTENT ── */}
-      <main className="pb-28 sm:pb-20">
+      <main className="pb-28 sm:pb-20 font-sans">
         <div className="fluid-container pt-5">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
@@ -226,7 +248,7 @@ export default function StorePage() {
                     placeholder="Buscar producto..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 shadow-2xs"
+                    className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 shadow-2xs text-gray-900"
                   />
                   {searchTerm && (
                     <button
@@ -240,23 +262,24 @@ export default function StorePage() {
 
                 {/* Categories */}
                 <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1 mb-2 hidden lg:block">
-                    Categorías
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1 mb-2 hidden lg:block">
+                    Categorías del Menú
                   </p>
                   
                   {/* Horizontal Scroll on Mobile / Vertical on Desktop */}
-                  <div className="flex lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0 hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+                  <div className="flex lg:flex-col gap-1.5 sm:gap-2 overflow-x-auto pb-2 lg:pb-0 hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
                     {visibleCategories.map(cat => {
                       const isActive = currentCategory === cat;
                       return (
                         <button
                           key={cat}
                           onClick={() => setCurrentCategory(cat)}
-                          className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all text-center lg:text-left shrink-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 ${
+                          className={`whitespace-nowrap px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all text-center lg:text-left shrink-0 cursor-pointer ${
                             isActive
-                              ? 'bg-orange-600 text-white shadow-xs'
-                              : 'bg-transparent text-gray-700 hover:bg-gray-200/60 hover:text-gray-900'
+                              ? 'text-white shadow-xs'
+                              : 'bg-white lg:bg-transparent border lg:border-none border-gray-200 text-gray-700 hover:bg-gray-100'
                           }`}
+                          style={isActive ? { backgroundColor: brandColor } : {}}
                         >
                           {cat}
                         </button>
@@ -313,9 +336,15 @@ export default function StorePage() {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4.5">
                   {visible.map((p, i) => (
-                    <ProductCard key={p.id} product={p} index={i} />
+                    <ProductCard 
+                      key={p.id} 
+                      product={p} 
+                      index={i} 
+                      isStoreOpen={scheduleStatus.isOpen}
+                      storeClosedMessage={scheduleStatus.message}
+                    />
                   ))}
                 </div>
               )}

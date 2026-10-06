@@ -21,7 +21,7 @@ export default function StoreFooter({ business }) {
                <h3 className="text-base font-semibold text-white tracking-tight">{business.nombre_visible}</h3>
              </div>
              <p className="text-xs leading-relaxed max-w-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
-               {business.footer_message || 'El sabor que te mereces, directo a tu puerta.'}
+               {(business.footer_message || '').replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '').trim() || 'El sabor que te mereces, directo a tu puerta.'}
              </p>
           </div>
 

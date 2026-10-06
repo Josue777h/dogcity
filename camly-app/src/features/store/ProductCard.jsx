@@ -3,7 +3,12 @@ import { ShoppingCart, Plus, Minus, X, UtensilsCrossed, Check, Layers, AlertCirc
 import { formatMoney } from '../../lib/utils';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
 
-export default function ProductCard({ product, index = 0 }) {
+export default function ProductCard({ 
+  product, 
+  index = 0, 
+  isStoreOpen = true, 
+  storeClosedMessage = '' 
+}) {
   const business = useBusinessStore(s => s.business);
   const bid      = business?.id;
   const addToast = useToastStore(s => s.addToast);
@@ -75,6 +80,10 @@ export default function ProductCard({ product, index = 0 }) {
   // Botón rápido en la tarjeta
   const handleCardAdd = (e) => {
     e.stopPropagation();
+    if (!isStoreOpen) {
+      addToast(storeClosedMessage || 'La tienda se encuentra temporalmente en pausa o cerrada.', 'warning');
+      return;
+    }
     if (hasOptions) {
       setShowModal(true);
     } else {
@@ -84,6 +93,11 @@ export default function ProductCard({ product, index = 0 }) {
 
   // Confirmar y agregar desde el modal
   const handleConfirmCustomization = () => {
+    if (!isStoreOpen) {
+      addToast(storeClosedMessage || 'La tienda se encuentra temporalmente en pausa o cerrada.', 'warning');
+      return;
+    }
+
     // Validar grupos requeridos
     if (hasOptions) {
       for (const group of product.opciones) {
@@ -156,27 +170,36 @@ export default function ProductCard({ product, index = 0 }) {
         </div>
 
         {/* Content */}
-        <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between">
-          <div className="cursor-pointer mb-2.5" onClick={() => setShowModal(true)}>
-            <h3 className="text-xs sm:text-sm font-bold text-gray-900 leading-snug line-clamp-1 mb-1">
+        <div className="p-3 sm:p-3.5 flex flex-col flex-1 justify-between font-sans">
+          <div className="cursor-pointer mb-2" onClick={() => setShowModal(true)}>
+            <h3 className="text-sm sm:text-base font-bold text-gray-900 leading-snug line-clamp-1 mb-1">
               {product.name}
             </h3>
             {product.description && (
-              <p className="text-[11px] sm:text-xs text-gray-500 line-clamp-2 leading-relaxed">
+              <p className="text-xs sm:text-[13px] text-gray-500 line-clamp-2 leading-relaxed">
                 {product.description}
               </p>
             )}
           </div>
 
-          <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-1.5 sm:gap-2">
-            <span className="text-xs sm:text-sm font-extrabold text-gray-900 tabular-nums truncate">
+          <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
+            <span className="text-sm sm:text-base font-black text-gray-950 tabular-nums truncate">
               {formatMoney(product.price)}
             </span>
 
-            {!isSelected ? (
+            {!isStoreOpen ? (
+              <button
+                type="button"
+                onClick={handleCardAdd}
+                className="py-1.5 px-3 text-xs font-bold rounded-full shrink-0 bg-gray-100 text-gray-500 border border-gray-200 cursor-not-allowed hover:bg-gray-200/70 transition-colors"
+                title={storeClosedMessage || 'Tienda en pausa o cerrada temporalmente'}
+              >
+                Pausado
+              </button>
+            ) : !isSelected ? (
               <button
                 onClick={handleCardAdd}
-                className="btn-primary py-1.5 px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold gap-1 rounded-full shrink-0 shadow-glow-blue cursor-pointer"
+                className="btn-primary py-1.5 px-3 sm:px-4 text-xs font-bold gap-1 rounded-full shrink-0 shadow-glow-blue cursor-pointer"
                 aria-label={`Agregar ${product.name}`}
               >
                 <Plus size={14} />
@@ -186,12 +209,12 @@ export default function ProductCard({ product, index = 0 }) {
               <div className="flex items-center rounded-full border border-gray-200 bg-gray-50 overflow-hidden shadow-2xs">
                 <button
                   onClick={() => decrement(bid, product.id)}
-                  className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200/60 active:bg-gray-200 transition-colors"
+                  className="w-7.5 h-7.5 flex items-center justify-center text-gray-600 hover:bg-gray-200/60 active:bg-gray-200 transition-colors cursor-pointer"
                   aria-label="Restar una unidad"
                 >
                   <Minus size={13} />
                 </button>
-                <span className="w-6 text-center text-xs font-bold text-gray-900 tabular-nums">
+                <span className="w-6.5 text-center text-xs sm:text-sm font-bold text-gray-900 tabular-nums">
                   {qty}
                 </span>
                 <button
@@ -199,7 +222,7 @@ export default function ProductCard({ product, index = 0 }) {
                     if (hasOptions) setShowModal(true);
                     else increment(bid, product.id);
                   }}
-                  className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200/60 active:bg-gray-200 transition-colors"
+                  className="w-7.5 h-7.5 flex items-center justify-center text-gray-600 hover:bg-gray-200/60 active:bg-gray-200 transition-colors cursor-pointer"
                   aria-label="Sumar una unidad"
                 >
                   <Plus size={13} />
@@ -265,21 +288,21 @@ export default function ProductCard({ product, index = 0 }) {
 
               {/* Grupos de opciones (Sabores / Toppings) */}
               {hasOptions && (
-                <div className="space-y-4 pt-2">
+                <div className="space-y-4 pt-1 font-sans">
                   {product.opciones.map(group => {
                     const isRadio = group.tipo === 'unica';
                     const currentSelected = selectedOptions[group.id] || [];
 
                     return (
-                      <div key={group.id} className="p-3.5 rounded-2xl bg-[#F8F9FA] border border-gray-200/80 space-y-2.5">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-bold text-gray-900 text-xs sm:text-[13px]">
+                      <div key={group.id} className="p-3.5 rounded-xl bg-gray-50/80 border border-gray-200 space-y-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="font-bold text-gray-900 text-xs sm:text-sm">
                             {group.titulo}
                           </h4>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${
                             group.requerido 
-                              ? 'bg-amber-100 text-amber-800' 
-                              : 'bg-gray-200/70 text-gray-600'
+                              ? 'bg-amber-100 text-amber-900 border border-amber-200' 
+                              : 'bg-gray-100 text-gray-600 border border-gray-200'
                           }`}>
                             {group.requerido ? 'Obligatorio' : 'Opcional'}
                           </span>
@@ -288,22 +311,20 @@ export default function ProductCard({ product, index = 0 }) {
                         {/* Opciones dentro del grupo */}
                         <div className="space-y-1.5">
                           {group.opciones?.map(opt => {
-                            const isChecked = isRadio 
-                              ? currentSelected.some(o => o.id === opt.id)
-                              : currentSelected.some(o => o.id === opt.id);
+                            const isChecked = currentSelected.some(o => o.id === opt.id);
 
                             return (
                               <label
                                 key={opt.id}
                                 onClick={() => isRadio ? handleSelectRadio(group.id, opt) : handleToggleCheckbox(group.id, opt)}
-                                className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
+                                className={`flex items-center justify-between p-2.5 sm:p-3 rounded-lg border transition-all cursor-pointer select-none ${
                                   isChecked 
-                                    ? 'bg-blue-50/70 border-blue-600 text-gray-950 font-bold' 
-                                    : 'bg-white border-gray-200/90 text-gray-700 hover:border-gray-300'
+                                    ? 'bg-white border-blue-600 text-gray-950 shadow-xs' 
+                                    : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
                                 }`}
                               >
-                                <div className="flex items-center gap-2.5">
-                                  <div className={`w-4 h-4 rounded-${isRadio ? 'full' : 'md'} border flex items-center justify-center transition-colors ${
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className={`w-4 h-4 rounded-${isRadio ? 'full' : 'md'} border flex items-center justify-center shrink-0 transition-colors ${
                                     isChecked ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 bg-white'
                                   }`}>
                                     {isChecked && (
@@ -312,11 +333,15 @@ export default function ProductCard({ product, index = 0 }) {
                                         : <Check size={11} strokeWidth={3} />
                                     )}
                                   </div>
-                                  <span className="text-xs">{opt.nombre}</span>
+                                  <span className="text-xs sm:text-sm font-medium text-gray-900 truncate">
+                                    {opt.nombre}
+                                  </span>
                                 </div>
 
-                                <span className={`text-xs tabular-nums ${Number(opt.precio) > 0 ? 'text-blue-600 font-bold' : 'text-gray-400 font-medium'}`}>
-                                  {Number(opt.precio) > 0 ? `+${formatMoney(opt.precio)}` : 'Incluido'}
+                                <span className={`text-xs sm:text-sm tabular-nums shrink-0 ml-2 ${
+                                  Number(opt.precio) > 0 ? 'text-gray-900 font-semibold' : 'text-gray-400 font-normal'
+                                }`}>
+                                  {Number(opt.precio) > 0 ? `+${formatMoney(opt.precio)}` : 'Sin costo extra'}
                                 </span>
                               </label>
                             );
@@ -329,16 +354,16 @@ export default function ProductCard({ product, index = 0 }) {
               )}
 
               {/* Instrucción o nota especial */}
-              <div className="pt-2">
-                <label className="block text-xs font-bold text-gray-900 mb-1">
-                  Notas especiales para este producto:
+              <div className="pt-1">
+                <label className="block text-xs font-semibold text-gray-800 mb-1.5">
+                  Notas especiales o instrucciones:
                 </label>
                 <input
                   type="text"
                   value={tempNote}
                   onChange={e => setTempNote(e.target.value)}
-                  placeholder="Ej: Salsa aparte, bien caliente, etc."
-                  className="w-full text-xs p-3 rounded-xl border border-gray-200 bg-[#FAFAF8] focus:bg-white focus:outline-none focus:border-blue-600"
+                  placeholder="Ej: Salsa aparte, bien cocido, etc."
+                  className="w-full text-xs sm:text-sm p-2.5 rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-blue-600 text-gray-900"
                 />
               </div>
             </div>
@@ -354,10 +379,21 @@ export default function ProductCard({ product, index = 0 }) {
 
               <button
                 onClick={handleConfirmCustomization}
-                className="btn-primary py-3 px-6 text-xs sm:text-sm font-bold justify-center rounded-full shadow-glow-blue gap-2 flex-1 sm:flex-none cursor-pointer"
+                disabled={!isStoreOpen}
+                className={`py-3 px-6 text-xs sm:text-sm font-bold justify-center rounded-full gap-2 flex-1 sm:flex-none ${
+                  !isStoreOpen
+                    ? 'bg-gray-200 text-gray-500 border border-gray-300 cursor-not-allowed'
+                    : 'btn-primary shadow-glow-blue cursor-pointer'
+                }`}
               >
-                <Plus size={16} />
-                <span>Agregar al pedido</span>
+                {!isStoreOpen ? (
+                  <span>Tienda en pausa</span>
+                ) : (
+                  <>
+                    <Plus size={16} />
+                    <span>Agregar al pedido</span>
+                  </>
+                )}
               </button>
             </div>
 

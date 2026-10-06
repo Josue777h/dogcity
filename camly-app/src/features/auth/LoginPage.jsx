@@ -33,7 +33,8 @@ export default function LoginPage() {
       const session = await signIn(email, password);
       setSession(session);
       addToast('¡Bienvenido de nuevo!', 'success');
-      navigate('/admin');
+      const destination = location.state?.from?.pathname || '/admin/dashboard';
+      navigate(destination, { replace: true });
     } catch (err) {
       const msg = (err.message || '').toLowerCase();
       if (msg.includes('confirm') || msg.includes('not confirmed')) {

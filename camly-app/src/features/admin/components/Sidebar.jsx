@@ -1,42 +1,45 @@
+import { NavLink } from 'react-router-dom';
 import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike, Sparkles, Tag, DollarSign, ExternalLink } from 'lucide-react';
 import { useBusinessStore } from '../../../stores';
 import SaaSLogo from '../../../components/common/SaaSLogo';
 
 const MAIN_TABS = [
-  { id: 'dashboard', label: 'Dashboard', icon: Store },
-  { id: 'orders',   label: 'Pedidos en vivo', icon: ShoppingBag },
-  { id: 'revenue',  label: 'Ingresos y ventas', icon: DollarSign },
-  { id: 'products', label: 'Productos', icon: Package },
+  { path: '/admin/dashboard',  label: 'Dashboard', icon: Store },
+  { path: '/admin/pedidos',    label: 'Pedidos en vivo', icon: ShoppingBag },
+  { path: '/admin/ingresos',   label: 'Ingresos y ventas', icon: DollarSign },
+  { path: '/admin/productos',  label: 'Productos', icon: Package },
 ];
 
 const MANAGE_TABS = [
-  { id: 'categories', label: 'Categorías', icon: Tag },
-  { id: 'drivers',    label: 'Domiciliarios', icon: Bike },
-  { id: 'settings',   label: 'Configuración', icon: Settings },
+  { path: '/admin/categorias',    label: 'Categorías', icon: Tag },
+  { path: '/admin/domiciliarios', label: 'Domiciliarios', icon: Bike },
+  { path: '/admin/configuracion', label: 'Configuración', icon: Settings },
 ];
 
-export default function Sidebar({ activeTab, setActiveTab, business, onSignOut, isOpen, onClose }) {
+export default function Sidebar({ business, onSignOut, isOpen, onClose }) {
   const isPro = useBusinessStore(s => s.isPro);
   const storeUrl = `/${business?.nombre || ''}`;
 
   const renderTab = (tab) => {
-    const isActive = activeTab === tab.id;
     return (
-      <button
-        key={tab.id}
-        onClick={() => { setActiveTab(tab.id); if (window.innerWidth < 1024) onClose(); }}
+      <NavLink
+        key={tab.path}
+        to={tab.path}
+        onClick={() => { if (window.innerWidth < 1024) onClose(); }}
         title={tab.label}
-        className={`sidebar-item flex items-center justify-between w-full py-2.5 px-3 rounded-xl transition-all text-xs font-semibold ${
+        className={({ isActive }) => `sidebar-item flex items-center justify-between w-full py-2.5 px-3 rounded-xl transition-all text-xs font-semibold ${
           isActive 
             ? 'active bg-white/10 text-white font-bold' 
             : 'text-gray-400 hover:text-white hover:bg-white/5'
         }`}
       >
-        <div className="flex items-center gap-2.5">
-          <tab.icon size={17} strokeWidth={isActive ? 2.2 : 1.8} className={isActive ? 'text-orange-500' : 'text-gray-400'} />
-          <span>{tab.label}</span>
-        </div>
-      </button>
+        {({ isActive }) => (
+          <div className="flex items-center gap-2.5">
+            <tab.icon size={17} strokeWidth={isActive ? 2.2 : 1.8} className={isActive ? 'text-orange-500' : 'text-gray-400'} />
+            <span>{tab.label}</span>
+          </div>
+        )}
+      </NavLink>
     );
   };
 

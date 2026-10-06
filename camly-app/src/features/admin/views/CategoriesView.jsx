@@ -1,11 +1,15 @@
 import { useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { Tag, Plus, Edit, Trash2, Loader2, Save, X } from 'lucide-react';
 import { getSupabase, updateCategory, createCategory, deleteCategory } from '../../../lib/supabase';
 import { useToastStore, useBusinessStore } from '../../../stores';
 import PremiumLock from '../../../components/ui/PremiumLock';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 
-export default function CategoriesView({ businessId }) {
+export default function CategoriesView(props) {
+  const outletCtx = useOutletContext() || {};
+  const businessId = props.businessId ?? outletCtx.business?.id;
+
   const { categories, setCategories, products } = useBusinessStore();
   const [loading, setLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -96,7 +100,7 @@ export default function CategoriesView({ businessId }) {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-3 animate-fade-in-up">
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div className="min-w-0 flex-1">
@@ -112,10 +116,10 @@ export default function CategoriesView({ businessId }) {
       </div>
 
       <PremiumLock featureName="Gestión de Categorías Relacionales">
-        <div className="space-y-5">
+        <div className="space-y-3">
           {/* Add Category Form */}
           {isAdding && (
-            <form onSubmit={handleAdd} className="card p-4 sm:p-5 border-orange-200 bg-orange-50/40 animate-fade-in">
+            <form onSubmit={handleAdd} className="card p-3 sm:p-4 border-orange-200 bg-orange-50/40 animate-fade-in">
               <p className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-2.5">Crear nueva categoría</p>
               <div className="flex flex-col sm:flex-row gap-2.5 max-w-lg">
                 <input 
@@ -198,7 +202,7 @@ export default function CategoriesView({ businessId }) {
             ))}
 
             {!categories.length && !loading && !isAdding && (
-              <div className="col-span-full py-16 text-center card border-dashed p-8">
+              <div className="col-span-full py-10 text-center card border-dashed p-6">
                  <Tag className="mx-auto text-gray-300 mb-2" size={32} />
                  <p className="text-sm font-semibold text-gray-800">No hay categorías creadas</p>
                  <p className="text-xs text-gray-500 mt-1">Crea categorías para organizar mejor tu catálogo.</p>

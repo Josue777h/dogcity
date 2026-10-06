@@ -66,7 +66,25 @@
     line-height: 1.5;
   }
   img, video { max-width: 100%; height: auto; display: block; }
-  button, a, [role="button"] { touch-action: manipulation; }
+  button, a[href], [role="button"], [role="tab"], [role="switch"], [role="option"], [role="menuitem"], [role="link"],
+  summary, select, label[for],
+  label:has(input[type="checkbox"]), label:has(input[type="radio"]), label:has(input[type="file"]) {
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+  input[type="button"], input[type="submit"], input[type="reset"],
+  input[type="checkbox"], input[type="radio"], input[type="color"], input[type="file"], input[type="range"] {
+    cursor: pointer;
+  }
+  input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="number"], input[type="search"], input[type="url"], input:not([type]), textarea {
+    cursor: text;
+  }
+  /* Estados deshabilitados: comunicar claramente que no se puede interactuar */
+  button:disabled, [aria-disabled="true"], input:disabled, select:disabled, textarea:disabled {
+    cursor: not-allowed;
+  }
+  /* Iconos/imagenes dentro de elementos clickeables heredan la mano */
+  button *, a[href] *, [role="button"] * { cursor: inherit; }
   :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
 
   /* Fix Chrome / Edge blue autofill background */
@@ -196,6 +214,10 @@
   }
   .input-field::placeholder { color: var(--color-text-3); }
   .input-field:focus { border-color: var(--color-brand); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+  /* Escritorio: campos más compactos para aprovechar el espacio */
+  @media (min-width: 1024px) {
+    .input-field { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+  }
 
   .overline,
   .caps-label {
@@ -226,7 +248,8 @@
   .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
   .pt-safe { padding-top: max(0px, env(safe-area-inset-top)); }
   .bottom-safe { bottom: max(1.25rem, calc(1.25rem + env(safe-area-inset-bottom))); }
-  .tap-target { min-height: 44px; min-width: 44px; }
+  /* Área táctil mínima de 44px solo en pantallas táctiles; en PC con mouse no infla los botones */
+  @media (pointer: coarse) { .tap-target { min-height: 44px; min-width: 44px; } }
   .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .hide-scrollbar::-webkit-scrollbar { display: none; }
   .scroll-fade-x { mask-image: linear-gradient(to right,transparent,black 12px,black calc(100% - 12px),transparent); -webkit-mask-image: linear-gradient(to right,transparent,black 12px,black calc(100% - 12px),transparent); }

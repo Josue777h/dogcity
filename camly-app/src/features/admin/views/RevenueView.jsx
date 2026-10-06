@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { 
   DollarSign, TrendingUp, Calendar, Trash2, 
   Download, Clock, ArrowUpRight, BarChart3, AlertCircle 
@@ -6,7 +7,11 @@ import {
 import { formatMoney, exportOrdersToCSV } from '../../../lib/utils';
 import { useToastStore } from '../../../stores';
 
-export default function RevenueView({ orders, business }) {
+export default function RevenueView(props) {
+  const outletCtx = useOutletContext() || {};
+  const orders = props.orders ?? outletCtx.orders ?? [];
+  const business = props.business ?? outletCtx.business ?? null;
+
   const bizId = business?.id;
   const addToast = useToastStore(s => s.addToast);
 
@@ -110,7 +115,7 @@ export default function RevenueView({ orders, business }) {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-3 animate-fade-in-up">
       {/* Header + Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -141,7 +146,7 @@ export default function RevenueView({ orders, business }) {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-        <div className="card p-5 bg-white border-gray-200/80 shadow-xs">
+        <div className="card p-3.5 sm:p-4 bg-white border-gray-200/80 shadow-xs">
           <div className="flex justify-between items-start mb-2">
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Ingresos hoy</p>
             <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
@@ -156,7 +161,7 @@ export default function RevenueView({ orders, business }) {
           </span>
         </div>
 
-        <div className="card p-5 bg-white border-gray-200/80 shadow-xs">
+        <div className="card p-3.5 sm:p-4 bg-white border-gray-200/80 shadow-xs">
           <div className="flex justify-between items-start mb-2">
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Últimos 7 días</p>
             <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
@@ -171,7 +176,7 @@ export default function RevenueView({ orders, business }) {
           </span>
         </div>
 
-        <div className="card p-5 bg-white border-gray-200/80 shadow-xs">
+        <div className="card p-3.5 sm:p-4 bg-white border-gray-200/80 shadow-xs">
           <div className="flex justify-between items-start mb-2">
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Últimos 30 días</p>
             <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
@@ -269,7 +274,7 @@ export default function RevenueView({ orders, business }) {
               </tbody>
             </table>
           ) : (
-            <div className="py-12 text-center text-gray-500 space-y-2">
+            <div className="py-8 text-center text-gray-500 space-y-2">
               <AlertCircle className="mx-auto text-gray-300" size={24} />
               <p className="text-xs font-semibold text-gray-700">No hay registros en este período</p>
               <p className="text-xs text-gray-400 max-w-xs mx-auto">

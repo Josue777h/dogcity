@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { 
   UserPlus, Phone, Trash2, Loader2, Save, 
   Bike, CheckCircle2, X
@@ -8,7 +9,10 @@ import { useToastStore } from '../../../stores';
 import PremiumLock from '../../../components/ui/PremiumLock';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 
-export default function DriversView({ businessId }) {
+export default function DriversView(props) {
+  const outletCtx = useOutletContext() || {};
+  const businessId = props.businessId ?? outletCtx.business?.id;
+
   const [itemToDelete, setItemToDelete] = useState(null);
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +104,7 @@ export default function DriversView({ businessId }) {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-3 animate-fade-in-up">
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div className="min-w-0 flex-1">
@@ -116,10 +120,10 @@ export default function DriversView({ businessId }) {
       </div>
 
       <PremiumLock featureName="Gestión de Equipo de Repartidores">
-        <div className="space-y-5">
+        <div className="space-y-3">
           {/* Add form */}
           {isAdding && (
-            <form onSubmit={handleAddDriver} className="card p-4 sm:p-5 border-orange-200 bg-orange-50/40 animate-fade-in">
+            <form onSubmit={handleAddDriver} className="card p-3 sm:p-4 border-orange-200 bg-orange-50/40 animate-fade-in">
               <p className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-3">Registrar repartidor</p>
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
                 <div className="sm:col-span-5">
@@ -199,7 +203,7 @@ export default function DriversView({ businessId }) {
             ))}
 
             {!drivers.length && !loading && !isAdding && (
-              <div className="col-span-full py-16 text-center card border-dashed p-8">
+              <div className="col-span-full py-10 text-center card border-dashed p-6">
                  <Bike className="mx-auto text-gray-300 mb-2" size={32} />
                  <p className="text-sm font-semibold text-gray-800">No hay domiciliarios registrados</p>
                  <p className="text-xs text-gray-500 mt-1">Agrega repartidores para asignarlos a tus pedidos y enviarles los datos directo a WhatsApp.</p>

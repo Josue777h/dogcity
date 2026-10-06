@@ -3,13 +3,19 @@ import { Copy, ExternalLink, Menu, Zap, AlertTriangle, Sparkles, Check } from 'l
 import { useToastStore, useBusinessStore, useAuthStore } from '../../../stores';
 
 const TAB_LABELS = {
-  dashboard:  'Dashboard General',
-  orders:     'Gestión de Pedidos',
-  products:   'Catálogo de Productos',
-  categories: 'Categorías del Menú',
-  drivers:    'Repartidores y Domicilios',
-  settings:   'Configuración de la Tienda',
-  revenue:    'Reportes e Ingresos',
+  dashboard:      'Dashboard General',
+  orders:         'Gestión de Pedidos',
+  pedidos:        'Gestión de Pedidos',
+  products:       'Catálogo de Productos',
+  productos:      'Catálogo de Productos',
+  categories:     'Categorías del Menú',
+  categorias:     'Categorías del Menú',
+  drivers:        'Repartidores y Domicilios',
+  domiciliarios:  'Repartidores y Domicilios',
+  settings:       'Configuración de la Tienda',
+  configuracion:  'Configuración de la Tienda',
+  revenue:        'Reportes e Ingresos',
+  ingresos:       'Reportes e Ingresos',
 };
 
 export default function AdminHeader({ title, business, onOpenMenu, onOpenAssistant }) {
@@ -37,97 +43,111 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
   };
 
   return (
-    <div className="sticky top-0 z-[80] px-3 sm:px-6 lg:px-8 pt-3 pb-1 pt-safe bg-gradient-to-b from-[#F6F4EF] via-[#F6F4EF]/90 to-transparent">
-    <header className="max-w-7xl mx-auto bg-white/95 backdrop-blur-md border border-gray-200/80 rounded-full pl-2 pr-2 sm:pl-5 sm:pr-2.5 py-2 flex items-center justify-between gap-2 sm:gap-3 shadow-warm">
-      
-      {/* Left: Mobile hamburger + Tab title */}
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-        <button
-          onClick={onOpenMenu}
-          className="lg:hidden w-10 h-10 flex items-center justify-center rounded-full text-gray-700 hover:text-gray-950 bg-[#F6F4EF] hover:bg-gray-200/70 transition-colors shrink-0 tap-target"
-          aria-label="Abrir menú de navegación"
-        >
-          <Menu size={18} />
-        </button>
-        <div className="min-w-0">
-          <h1 className="text-sm sm:text-base font-extrabold text-gray-950 tracking-tight truncate leading-tight">
-            {tabLabel}
-          </h1>
-          {business?.nombre_visible && (
-            <p className="text-[11px] text-gray-500 truncate hidden sm:block">
-              {business.nombre_visible} · {business.direccion || 'Tienda activa'}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Right: Plan badge + Store Actions + User Profile */}
-      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+    <header className="sticky top-0 z-[80] bg-white border-b border-gray-200/90 shadow-2xs">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-13 sm:h-14 flex items-center justify-between gap-3">
         
-        {/* Subscription Status Pill */}
-        {isExpired ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-red-50 text-red-700 border border-red-200/80 text-[10px] sm:text-[11px] font-bold px-2.5 py-1">
-            <AlertTriangle size={11} className="shrink-0" />
-            <span className="hidden xs:inline">Plan Vencido</span>
-          </span>
-        ) : subscription?.estado === 'trial' ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200/80 text-[10px] sm:text-[11px] font-bold px-2.5 py-1">
-            <Zap size={11} className="shrink-0" />
-            <span>{trialDaysLeft}d</span>
-            <span className="hidden sm:inline">prueba</span>
-          </span>
-        ) : isPro ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[10px] sm:text-[11px] font-bold px-2.5 py-1">
-            <Sparkles size={11} className="shrink-0" />
-            <span>Pro</span>
-            {proDaysLeft !== null && <span className="hidden sm:inline">· {proDaysLeft}d</span>}
-          </span>
-        ) : null}
-
-        {/* Store link actions */}
-        <div className="flex items-center gap-1 bg-[#F6F4EF] p-1 rounded-full border border-gray-200/60">
+        {/* Izquierda: Menú Hamburguesa + Título claro de sección */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <button
-            onClick={copyLink}
-            title="Copiar link de tienda para clientes"
-            className="h-8 px-2 sm:px-3 rounded-full text-gray-600 hover:text-gray-950 hover:bg-white transition-all tap-target flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+            onClick={onOpenMenu}
+            className="lg:hidden w-8.5 h-8.5 flex items-center justify-center rounded-lg text-gray-700 hover:text-gray-950 hover:bg-gray-100 transition-colors shrink-0"
+            aria-label="Abrir menú"
           >
-            {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
-            <span className="hidden md:inline">{copied ? 'Copiado' : 'Copiar link'}</span>
+            <Menu size={19} />
           </button>
           
+          <div className="min-w-0">
+            <h1 className="text-sm sm:text-base font-bold text-gray-900 tracking-tight truncate leading-tight">
+              {tabLabel}
+            </h1>
+            {business?.nombre_visible && (
+              <p className="text-[11px] text-gray-500 truncate hidden sm:block">
+                {business.nombre_visible} · {business.direccion || 'Tienda activa'}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Derecha: Acciones limpias, proporcionales y organizadas */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          
+          {/* Badge de prueba / Pro */}
+          {isExpired ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-red-50 text-red-700 border border-red-200/80 text-[11px] font-semibold px-2 py-0.5 shrink-0">
+              <AlertTriangle size={12} className="shrink-0" />
+              <span>Vencido</span>
+            </span>
+          ) : subscription?.estado === 'trial' ? (
+            <span 
+              className="inline-flex items-center gap-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200/80 text-[11px] font-semibold px-2 py-0.5 shrink-0"
+              title={`${trialDaysLeft} días de prueba restantes`}
+            >
+              <Zap size={11} className="shrink-0 text-amber-600" />
+              <span>{trialDaysLeft}d <span className="hidden sm:inline">prueba</span></span>
+            </span>
+          ) : isPro ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[11px] font-semibold px-2 py-0.5 shrink-0">
+              <Sparkles size={11} className="shrink-0 text-emerald-600" />
+              <span>Pro</span>
+            </span>
+          ) : null}
+
+          {/* Acciones de tienda en Desktop / Tablet */}
+          <div className="hidden sm:flex items-center gap-1 bg-gray-50 p-0.5 rounded-lg border border-gray-200/70">
+            <button
+              type="button"
+              onClick={copyLink}
+              title="Copiar enlace de tu tienda"
+              className="h-7.5 px-2 rounded-md hover:bg-white text-gray-700 hover:text-gray-900 flex items-center gap-1 text-[11px] font-medium transition-all"
+            >
+              {copied ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
+              <span>{copied ? 'Copiado' : 'Copiar link'}</span>
+            </button>
+
+            <a
+              href={storeUrl}
+              target="_blank"
+              rel="noreferrer"
+              title="Abrir catálogo público"
+              className="h-7.5 px-2 rounded-md hover:bg-white text-gray-700 hover:text-gray-900 flex items-center gap-1 text-[11px] font-medium transition-all"
+            >
+              <ExternalLink size={13} />
+              <span>Ver tienda</span>
+            </a>
+          </div>
+
+          {/* En Móvil: Botón compacto para abrir tienda */}
           <a
             href={storeUrl}
             target="_blank"
             rel="noreferrer"
-            className="h-8 px-2 sm:px-3 rounded-full text-gray-600 hover:text-gray-950 hover:bg-white transition-all tap-target flex items-center gap-1.5 text-xs font-semibold"
             title="Ver catálogo público"
+            className="sm:hidden h-8 px-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 flex items-center gap-1 text-xs font-semibold transition-colors shrink-0"
           >
-            <span className="hidden sm:inline">Ver tienda</span>
-            <ExternalLink size={13} />
+            <span>Tienda</span>
+            <ExternalLink size={12} />
           </a>
+
+          {/* Movia (Asistente IA) */}
+          <button
+            type="button"
+            onClick={onOpenAssistant}
+            title="Consultar a Movia"
+            className="h-8 px-2.5 rounded-lg bg-gray-900 hover:bg-black text-white font-medium flex items-center gap-1.5 text-xs transition-colors shrink-0"
+          >
+            <Sparkles size={12} className="text-amber-400 shrink-0" />
+            <span className="hidden xs:inline">Movia</span>
+          </button>
+
+          {/* Avatar del usuario */}
+          <div
+            className="w-8 h-8 rounded-lg bg-brand text-white text-xs font-bold flex items-center justify-center shrink-0 select-none shadow-2xs"
+            title={userEmail}
+          >
+            {userInitial}
+          </div>
         </div>
-
-        {/* Movia */}
-        <button
-          type="button"
-          onClick={onOpenAssistant}
-          title="Consultar a Movia"
-          className="h-8 px-3 rounded-full bg-gray-900 hover:bg-black text-white font-medium flex items-center gap-1.5 text-xs transition-colors cursor-pointer"
-        >
-          <Sparkles size={12} className="text-gray-300" />
-          <span>Movia</span>
-        </button>
-
-        {/* User Avatar */}
-        <div
-          className="w-9 h-9 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center ring-4 ring-blue-50 shrink-0"
-          title={userEmail}
-        >
-          {userInitial}
-        </div>
-
       </div>
     </header>
-    </div>
   );
 }

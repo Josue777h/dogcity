@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Store, Loader2, ChevronRight, LogOut, Bike, Sparkles } from 'lucide-react';
 import { 
   getSupabase, 
@@ -22,15 +23,7 @@ import BillingModal from '../../components/ui/BillingModal';
 import AiAssistantModal from './components/AiAssistantModal';
 import SEO from '../../components/common/SEO';
 
-// Views (lazy-loaded para mejor rendimiento)
-const DashboardView = lazy(() => import('./views/DashboardView'));
-const ProductsView = lazy(() => import('./views/ProductsView'));
-const OrdersView = lazy(() => import('./views/OrdersView'));
-const SettingsView = lazy(() => import('./views/SettingsView'));
-const DriversView = lazy(() => import('./views/DriversView'));
-const CategoriesView = lazy(() => import('./views/CategoriesView'));
 const PlanExpiredView = lazy(() => import('./views/PlanExpiredView'));
-const RevenueView = lazy(() => import('./views/RevenueView'));
 
 function ViewLoader() {
   return (
@@ -43,7 +36,12 @@ function ViewLoader() {
 export default function AdminPage() {
   const { session, setSession } = useAuthStore();
   const { business, setBusiness, isExpired, setCategories, setProducts: setGlobalProducts } = useBusinessStore();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Obtener la subruta actual (ej. /admin/pedidos -> 'pedidos')
+  const currentPathSegment = location.pathname.split('/')[2] || 'dashboard';
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const addToast = useToastStore((s) => s.addToast);
@@ -187,8 +185,6 @@ export default function AdminPage() {
         noindex={true}
       />
       <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
         business={business} 
         onSignOut={handleSignOut}
         isOpen={isMenuOpen}
@@ -197,13 +193,13 @@ export default function AdminPage() {
 
       <div className="flex-1 flex flex-col min-w-0 h-full max-h-screen overflow-hidden relative">
         <AdminHeader 
-          title={activeTab} 
+          title={currentPathSegment} 
           business={business} 
           onOpenMenu={() => setIsMenuOpen(true)}
           onOpenAssistant={() => setIsAssistantOpen(true)}
         />
 
-        <main className="flex-1 min-h-0 px-3 pb-8 pt-3 sm:px-6 sm:pt-4 lg:px-8 overflow-y-auto relative">
+        <main className="flex-1 min-h-0 px-3 pb-4 pt-1.5 sm:px-5 sm:pt-2.5 lg:px-6 overflow-y-auto relative">
           {isExpired && (
             <Suspense fallback={null}>
               <PlanExpiredView onOpenBilling={() => window.dispatchEvent(new CustomEvent('open-billing-modal'))} />
@@ -212,46 +208,15 @@ export default function AdminPage() {
 
           <div className={`max-w-7xl mx-auto transition-opacity duration-300 ${isExpired ? 'opacity-20 pointer-events-none blur-sm' : ''}`}>
             <Suspense fallback={<ViewLoader />}>
-              {activeTab === 'dashboard' && (
-                <DashboardView 
-                  orders={orders} 
-                  products={products} 
-                  business={business}
-                  onNavigate={setActiveTab}
-                />
-              )}
-              {activeTab === 'products' && (
-                <ProductsView 
-                  products={products} 
-                  onAdd={() => setEditingProduct({})} 
-                  onEdit={setEditingProduct}
-                  onDelete={handleDeleteProduct}
-                />
-              )}
-              {activeTab === 'orders' && (
-                <OrdersView 
-                  orders={orders} 
-                  onUpdate={() => loadData(session.user.id, false)} 
-                />
-              )}
-              {activeTab === 'revenue' && (
-                <RevenueView 
-                  orders={orders} 
-                  business={business}
-                />
-              )}
-              {activeTab === 'settings' && (
-                <SettingsView 
-                  business={business} 
-                  onUpdate={() => loadData(session.user.id, false)} 
-                />
-              )}
-              {activeTab === 'drivers' && (
-                <DriversView businessId={business.id} />
-              )}
-              {activeTab === 'categories' && (
-                <CategoriesView businessId={business.id} />
-              )}
+              <Outlet context={{
+                orders,
+                products,
+                business,
+                loadData,
+                setEditingProduct,
+                handleDeleteProduct,
+                reloadOrders: () => loadData(session.user.id, false)
+              }} />
             </Suspense>
           </div>
         </main>
@@ -269,24 +234,30 @@ export default function AdminPage() {
       
       <BillingModal />
 
-      {/* Floating Movia Trigger */}
-      <button
-        onClick={() => setIsAssistantOpen(true)}
-        className="fixed bottom-5 right-5 z-[70] px-3.5 py-2 rounded-full bg-gray-950 hover:bg-black text-white shadow-lg active:scale-95 transition-all flex items-center gap-2 cursor-pointer border border-gray-800 text-xs font-medium"
-        title="Consultar a Movia"
-        aria-label="Abrir asistente Movia"
-      >
-        <Sparkles size={13} className="text-gray-300" />
-        <span>Movia</span>
-      </button>
-
       {/* AI Assistant Modal */}
       <AiAssistantModal 
         isOpen={isAssistantOpen}
         onClose={() => setIsAssistantOpen(false)}
         business={business}
         productsCount={products.length}
-        onNavigateTab={(tab) => setActiveTab(tab)}
+        onNavigateTab={(tab) => {
+          const tabToPath = {
+            dashboard: '/admin/dashboard',
+            orders: '/admin/pedidos',
+            pedidos: '/admin/pedidos',
+            products: '/admin/productos',
+            productos: '/admin/productos',
+            categories: '/admin/categorias',
+            categorias: '/admin/categorias',
+            drivers: '/admin/domiciliarios',
+            domiciliarios: '/admin/domiciliarios',
+            settings: '/admin/configuracion',
+            configuracion: '/admin/configuracion',
+            revenue: '/admin/ingresos',
+            ingresos: '/admin/ingresos',
+          };
+          navigate(tabToPath[tab] || `/admin/${tab}`);
+        }}
       />
     </div>
   );

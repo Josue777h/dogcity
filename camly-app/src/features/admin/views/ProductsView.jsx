@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { Search, Plus, Edit, Trash2, Tag, Package, LayoutGrid, List } from 'lucide-react';
 import { formatMoney } from '../../../lib/utils';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
@@ -20,7 +21,14 @@ function ProductSkeleton() {
   );
 }
 
-export default function ProductsView({ products, onAdd, onEdit, onDelete, loading }) {
+export default function ProductsView(props) {
+  const outletCtx = useOutletContext() || {};
+  const products = props.products ?? outletCtx.products ?? [];
+  const onAdd = props.onAdd ?? (() => outletCtx.setEditingProduct?.({}));
+  const onEdit = props.onEdit ?? ((p) => outletCtx.setEditingProduct?.(p));
+  const onDelete = props.onDelete ?? ((id) => outletCtx.handleDeleteProduct?.(id));
+  const loading = props.loading ?? false;
+
   const [itemToDelete, setItemToDelete] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,7 +50,7 @@ export default function ProductsView({ products, onAdd, onEdit, onDelete, loadin
   }, [products, searchTerm, categories]);
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-3 animate-fade-in-up">
       {/* Top Bar: Search + Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
         <div className="relative flex-1 max-w-sm">
@@ -77,30 +85,35 @@ export default function ProductsView({ products, onAdd, onEdit, onDelete, loadin
 
           <button 
             onClick={onAdd}
-            className="btn-primary py-2.5 px-4 text-xs sm:text-sm font-semibold flex-1 sm:flex-initial justify-center"
+            className="btn-primary py-2 px-3.5 text-xs font-semibold flex-1 sm:flex-initial justify-center"
           >
-            <Plus size={16} /> <span>Nuevo producto</span>
+            <Plus size={15} /> <span>Nuevo producto</span>
           </button>
         </div>
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2.5 sm:gap-3">
           {[1, 2, 3, 4, 5, 6].map(i => <ProductSkeleton key={i} />)}
         </div>
       ) : (
         <div className={viewMode === 'grid' 
-          ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' 
-          : 'space-y-2'
+          ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2.5 sm:gap-3' 
+          : 'space-y-1.5'
         }>
           {filteredProducts.map(p => (
             <div 
               key={p.id} 
-              className={`card p-4 transition-all duration-150 hover:border-gray-300
-                ${viewMode === 'grid' ? 'flex flex-col justify-between' : 'flex items-center justify-between gap-4'}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => onEdit(p)}
+              onKeyDown={e => { if (e.key === 'Enter' && e.target === e.currentTarget) onEdit(p); }}
+              title="Editar producto"
+              className={`card cursor-pointer transition-all duration-150 hover:border-orange-300 hover:shadow-xs active:scale-[0.99]
+                ${viewMode === 'grid' ? 'p-3 flex flex-col justify-between' : 'px-3 py-2 flex items-center justify-between gap-3'}`}
             >
-              <div className={`flex gap-3.5 ${viewMode === 'list' ? 'flex-1 items-center min-w-0' : ''}`}>
-                <div className={`bg-gray-50 rounded-lg border border-border overflow-hidden relative shrink-0 ${viewMode === 'grid' ? 'w-20 h-20' : 'w-14 h-14'}`}>
+              <div className={`flex gap-3 ${viewMode === 'list' ? 'flex-1 items-center min-w-0' : ''}`}>
+                <div className={`bg-gray-50 rounded-lg border border-border overflow-hidden relative shrink-0 ${viewMode === 'grid' ? 'w-16 h-16' : 'w-11 h-11'}`}>
                   <img 
                     src={p.image} 
                     alt={p.name} 
@@ -116,8 +129,8 @@ export default function ProductsView({ products, onAdd, onEdit, onDelete, loadin
                   )}
                 </div>
                 
-                <div className="flex-1 min-w-0 py-0.5">
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
                       <Tag size={10} className="text-gray-400" />
                       {getCategoryName(p.categoria_id, p.categoria)}
@@ -136,22 +149,22 @@ export default function ProductsView({ products, onAdd, onEdit, onDelete, loadin
                       {p.description}
                     </p>
                   )}
-                  <p className="text-sm font-black text-gray-900 mt-1.5 tabular-nums">
+                  <p className="text-sm font-black text-gray-900 mt-1 tabular-nums">
                     {formatMoney(p.price)}
                   </p>
                 </div>
               </div>
 
-              <div className={`flex items-center gap-1 ${viewMode === 'grid' ? 'border-t border-border pt-3 mt-3 justify-end' : 'shrink-0'}`}>
+              <div className={`flex items-center gap-1 ${viewMode === 'grid' ? 'border-t border-border pt-2 mt-2 justify-end' : 'shrink-0'}`}>
                 <button 
-                  onClick={() => onEdit(p)}
+                  onClick={(e) => { e.stopPropagation(); onEdit(p); }}
                   className="btn-ghost p-1.5 tap-target text-gray-500 hover:text-gray-900"
                   title="Editar producto"
                 >
                   <Edit size={16} />
                 </button>
                 <button 
-                  onClick={() => setItemToDelete(p)}
+                  onClick={(e) => { e.stopPropagation(); setItemToDelete(p); }}
                   className="btn-ghost p-1.5 tap-target text-gray-500 hover:text-red-600"
                   title="Eliminar producto"
                 >
@@ -162,7 +175,7 @@ export default function ProductsView({ products, onAdd, onEdit, onDelete, loadin
           ))}
 
           {filteredProducts.length === 0 && (
-            <div className="col-span-full py-16 text-center card border-dashed p-8">
+            <div className="col-span-full py-10 text-center card border-dashed p-6">
               <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Package size={22} className="text-gray-400" />
               </div>
