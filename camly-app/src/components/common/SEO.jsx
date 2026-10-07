@@ -6,8 +6,8 @@ import { useEffect } from 'react';
  * para cada página de la aplicación.
  */
 export default function SEO({
-  title = 'NEGU | Gestión para tu negocio',
-  description = 'NEGU simplifica la gestión de tu negocio con menú digital, pedidos, clientes y WhatsApp en un solo lugar.',
+  title = 'NEGU | Software para Restaurantes y Negocios | Menú Digital & Pedidos WhatsApp',
+  description = 'NEGU es la plataforma todo-en-uno para restaurantes y comercios: crea tu menú digital interactivo con código QR, recibe pedidos organizados a WhatsApp con cálculo GPS y 0% comisiones.',
   canonical = 'https://negu.pro/',
   ogImage = 'https://negu.pro/og-image.png',
   ogType = 'website',

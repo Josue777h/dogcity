@@ -76,8 +76,8 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen overflow-x-clip bg-[#FBFBFC] text-gray-900 selection:bg-cyan-500 selection:text-white font-sans">
       <SEO 
-        title="NEGU | Gestión para tu negocio"
-        description="NEGU simplifica la gestión de tu negocio con menú digital, pedidos, clientes y WhatsApp en un solo lugar."
+        title="NEGU | Software para Restaurantes y Negocios | Menú Digital & Pedidos WhatsApp"
+        description="NEGU es la plataforma todo-en-uno para restaurantes y comercios: crea tu menú digital interactivo con código QR, recibe pedidos organizados a WhatsApp con cálculo GPS de envío y gestiona tus ventas sin comisiones. Empieza gratis."
         canonical="https://negu.pro/"
       />
 

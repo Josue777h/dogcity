@@ -50,10 +50,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#F6F4EF] text-gray-900 flex flex-col justify-center items-center py-10 px-4 sm:px-6 relative overflow-x-hidden selection:bg-cyan-500 selection:text-white">
       <SEO 
-        title="Iniciar sesión | NEGU"
-        description="Acceso a la plataforma administrativa de NEGU para tu negocio."
+        title="Iniciar Sesión | Acceso al Panel NEGU"
+        description="Ingresa a tu cuenta de NEGU para gestionar pedidos, actualizar productos, configurar delivery GPS y controlar tu negocio en tiempo real."
         canonical="https://negu.pro/login"
-        noindex={true}
+        noindex={false}
       />
       
       {/* Background ambient radial gradients (Wenú style) */}

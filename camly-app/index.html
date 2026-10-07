@@ -8,30 +8,32 @@
   <meta name="robots" content="index, follow" />
   
   <!-- SEO Principal -->
-  <title>NEGU | Gestión para tu negocio</title>
-  <meta name="description" content="NEGU simplifica la gestión de tu negocio con menú digital, pedidos, clientes y WhatsApp en un solo lugar." />
+  <title>NEGU | Software para Restaurantes y Negocios | Menú Digital & Pedidos WhatsApp</title>
+  <meta name="description" content="NEGU es la plataforma todo-en-uno para restaurantes y comercios: crea tu menú digital interactivo con código QR, recibe pedidos organizados a WhatsApp con cálculo GPS de envío y gestiona tus ventas sin comisiones. Empieza gratis." />
+  <meta name="keywords" content="NEGU, negu, negu pro, menu digital, pedidos whatsapp, software restaurantes, catalogo digital qr, delivery gps, punto de venta pos, pedidos por whatsapp colombia, pedidos para restaurantes" />
   <link rel="canonical" href="https://negu.pro/" />
 
   <!-- Open Graph / Facebook / WhatsApp -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="NEGU" />
   <meta property="og:url" content="https://negu.pro/" />
-  <meta property="og:title" content="NEGU | Gestión para tu negocio" />
-  <meta property="og:description" content="NEGU simplifica la gestión de tu negocio con menú digital, pedidos, clientes y WhatsApp en un solo lugar." />
+  <meta property="og:title" content="NEGU | Software para Restaurantes y Negocios | Menú Digital & Pedidos WhatsApp" />
+  <meta property="og:description" content="NEGU es la plataforma todo-en-uno para restaurantes y comercios: crea tu menú digital interactivo con código QR, recibe pedidos organizados a WhatsApp con cálculo GPS de envío y gestiona tus ventas sin comisiones." />
   <meta property="og:image" content="https://negu.pro/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
 
   <!-- Twitter / X Cards -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="NEGU | Gestión para tu negocio" />
-  <meta name="twitter:description" content="NEGU simplifica la gestión de tu negocio con menú digital, pedidos, clientes y WhatsApp en un solo lugar." />
+  <meta name="twitter:title" content="NEGU | Software para Restaurantes y Negocios | Menú Digital & Pedidos WhatsApp" />
+  <meta name="twitter:description" content="NEGU es la plataforma todo-en-uno para restaurantes y comercios: crea tu menú digital interactivo con código QR, recibe pedidos organizados a WhatsApp con cálculo GPS de envío y gestiona tus ventas sin comisiones." />
   <meta name="twitter:image" content="https://negu.pro/og-image.png" />
 
-  <!-- Favicons e Iconos PWA -->
-  <link rel="icon" type="image/png" href="/icono.png" />
+  <!-- Favicons e Iconos Oficiales NEGU -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icono.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="shortcut icon" href="/favicon.ico" />
-  <link rel="apple-touch-icon" href="/icono.png" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -41,11 +43,27 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <!-- Schema.org JSON-LD: Organization, WebSite & SoftwareApplication -->
+  <!-- Schema.org JSON-LD: WebSite, Organization, SoftwareApplication & Sitelinks Navigation -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://negu.pro/#website",
+        "url": "https://negu.pro/",
+        "name": "NEGU",
+        "alternateName": ["NEGU PRO", "Negu", "negu.pro", "NEGU Software"],
+        "description": "Software y menú digital para restaurantes y comercios con pedidos por WhatsApp.",
+        "publisher": {
+          "@id": "https://negu.pro/#organization"
+        },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://negu.pro/?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
       {
         "@type": "Organization",
         "@id": "https://negu.pro/#organization",
@@ -53,17 +71,12 @@
         "legalName": "NEGU",
         "url": "https://negu.pro/",
         "logo": "https://negu.pro/icono.png",
-        "description": "Plataforma SaaS para gestionar negocios, catálogos digitales interactivos y pedidos organizados a WhatsApp."
-      },
-      {
-        "@type": "WebSite",
-        "@id": "https://negu.pro/#website",
-        "url": "https://negu.pro/",
-        "name": "NEGU",
-        "publisher": {
-          "@id": "https://negu.pro/#organization"
-        },
-        "description": "Gestión para tu negocio con menú digital y pedidos por WhatsApp."
+        "image": "https://negu.pro/og-image.png",
+        "description": "Plataforma SaaS para digitalizar restaurantes, catálogos interactivos, cobros y pedidos automáticos a WhatsApp con GPS.",
+        "sameAs": [
+          "https://instagram.com/negu.pro",
+          "https://facebook.com/negu.pro"
+        ]
       },
       {
         "@type": "SoftwareApplication",
@@ -75,10 +88,59 @@
         "offers": {
           "@type": "Offer",
           "price": "0",
-          "priceCurrency": "COP",
-          "description": "Prueba gratuita de 7 días sin tarjeta de crédito"
+          "priceCurrency": "USD",
+          "description": "Prueba gratuita de 7 días sin tarjeta de crédito y 0% comisiones"
         },
-        "description": "Software de gestión de pedidos, menús digitales interactivos con cálculo GPS de entrega y conexión directa a WhatsApp para restaurantes y negocios."
+        "description": "Software gastronómico y comercial para gestión de comandas, menú digital interactivo con QR y delivery con GPS a WhatsApp."
+      },
+      {
+        "@type": "ItemList",
+        "@id": "https://negu.pro/#sitelinks",
+        "name": "Soluciones y Enlaces Principales de NEGU",
+        "itemListElement": [
+          {
+            "@type": "SiteNavigationElement",
+            "position": 1,
+            "name": "Menú Digital para Restaurantes",
+            "description": "Crea tu menú digital interactivo gratis con código QR para mesas, delivery y redes.",
+            "url": "https://negu.pro/menu-digital"
+          },
+          {
+            "@type": "SiteNavigationElement",
+            "position": 2,
+            "name": "Pedidos por WhatsApp",
+            "description": "Recibe pedidos organizados con cálculo de delivery por GPS y 0% comisiones.",
+            "url": "https://negu.pro/pedidos-whatsapp"
+          },
+          {
+            "@type": "SiteNavigationElement",
+            "position": 3,
+            "name": "Gestión de Pedidos & POS",
+            "description": "Panel de administración y control de estados de pedidos en tiempo real.",
+            "url": "https://negu.pro/gestion-de-pedidos"
+          },
+          {
+            "@type": "SiteNavigationElement",
+            "position": 4,
+            "name": "Para Restaurantes y Bares",
+            "description": "Software diseñado para pizzerías, hamburgueserías, cafeterías y locales de comida.",
+            "url": "https://negu.pro/para-restaurantes"
+          },
+          {
+            "@type": "SiteNavigationElement",
+            "position": 5,
+            "name": "Para Todo Tipo de Negocios",
+            "description": "Catálogo interactivo para boutiques, licoreras, minimarkets y comercio local.",
+            "url": "https://negu.pro/para-negocios"
+          },
+          {
+            "@type": "SiteNavigationElement",
+            "position": 6,
+            "name": "Comenzar Gratis",
+            "description": "Crea tu catálogo interactivo y empieza a recibir pedidos hoy mismo.",
+            "url": "https://negu.pro/registro"
+          }
+        ]
       }
     ]
   }

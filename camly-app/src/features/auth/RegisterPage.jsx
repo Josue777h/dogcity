@@ -54,10 +54,10 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-[#F6F4EF] text-gray-900 flex flex-col justify-center items-center py-10 px-4 sm:px-6 relative overflow-x-hidden selection:bg-cyan-500 selection:text-white">
       <SEO 
-        title="Crear cuenta gratis | NEGU"
-        description="Regístrate en NEGU y prueba 7 días gratis el menú digital interactivo y pedidos por WhatsApp."
+        title="¡Comenzar Gratis! | NEGU — Software para Restaurantes y Negocios"
+        description="Crea tu catálogo interactivo y menú digital para tu restaurante o tienda en 3 minutos. Prueba gratis por 7 días sin tarjeta y con 0% comisiones."
         canonical="https://negu.pro/registro"
-        noindex={true}
+        noindex={false}
       />
       
       {/* Background ambient radial gradients (Wenú style) */}
