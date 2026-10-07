@@ -88,7 +88,8 @@ export default function StorePage() {
 
   const designConfig = useMemo(() => {
     const base = {
-      button_radius: 'rounded-xl',
+      button_style: 'pill',
+      button_radius: 'rounded-full',
       font_family: 'sans',
       card_style: 'standard'
     };
@@ -96,7 +97,12 @@ export default function StorePage() {
       try {
         const match = business.footer_message.match(/<!--CAMLY_DESIGN:(.*?)-->/);
         if (match && match[1]) {
-          return { ...base, ...JSON.parse(match[1]) };
+          const parsed = JSON.parse(match[1]);
+          let radius = 'rounded-full';
+          if (parsed.button_style === 'square') radius = 'rounded-none';
+          else if (parsed.button_style === 'soft') radius = 'rounded-md';
+          else if (parsed.button_style === 'outline') radius = 'rounded-lg';
+          return { ...base, ...parsed, button_radius: radius };
         }
       } catch (err) {
         console.warn('Error parsing design config:', err);
@@ -173,13 +179,13 @@ export default function StorePage() {
       />
       
       {/* ── TOP NAV (Minimalista y Funcional) ── */}
-      <nav className="sticky top-0 z-[80] bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-xs pt-safe">
-        <div className="fluid-container flex items-center justify-between gap-3 h-14">
+      <nav className="sticky top-0 z-[80] bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-2xs pt-safe">
+        <div className="fluid-container flex items-center justify-between gap-2.5 h-13 sm:h-14">
           
           {/* Logo limpio y destacado + nombre */}
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             {business?.logo_url ? (
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white border border-gray-200/90 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white border border-gray-200/90 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
                 <img 
                   src={business.logo_url} 
                   className="w-full h-full object-contain p-0.5" 
@@ -189,13 +195,13 @@ export default function StorePage() {
               </div>
             ) : (
               <div
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 shadow-2xs"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 shadow-2xs"
                 style={{ backgroundColor: brandColor }}
               >
-                <Store size={20} className="text-white" />
+                <Store size={18} className="text-white" />
               </div>
             )}
-            <span className="text-sm sm:text-base font-black text-gray-950 truncate">
+            <span className="text-xs sm:text-base font-black text-gray-950 truncate">
               {business?.nombre_visible || 'Menú Digital'}
             </span>
           </div>
@@ -204,23 +210,23 @@ export default function StorePage() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setDrawerOpen(true)}
-              className={`flex items-center gap-2 py-2 px-3.5 ${designConfig.button_radius || 'rounded-xl'} border transition-all shadow-xs tap-target ${
+              className={`flex items-center gap-1.5 sm:gap-2 py-1.5 sm:py-2 px-2.5 sm:px-3.5 ${designConfig.button_radius || 'rounded-full'} border transition-all shadow-xs ${
                 totalItems > 0
-                  ? 'text-white shadow-md'
+                  ? 'text-white shadow-sm'
                   : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
               }`}
               style={totalItems > 0 ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
               aria-label="Abrir carrito"
             >
-              <ShoppingCart size={17} />
+              <ShoppingCart size={15} />
               <span className="text-xs sm:text-sm font-bold">
                 {totalItems > 0 ? (
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-1">
                     <span>{totalItems}</span>
                     <span className="hidden sm:inline">· {formatMoney(totalPrice)}</span>
                   </span>
                 ) : (
-                  <span className="font-semibold">Mi Pedido</span>
+                  <span className="font-semibold text-xs sm:text-sm">Mi Pedido</span>
                 )}
               </span>
             </button>
@@ -242,10 +248,10 @@ export default function StorePage() {
 
       {/* ── DETALLES DE LA TIENDA (INFORMACIÓN CLAVE SIN DUPLICAR) ── */}
       <section className="bg-white border-b border-gray-200/80">
-        <div className="fluid-container py-3.5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+        <div className="fluid-container py-2.5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] sm:text-xs font-bold ${
                 scheduleStatus.isOpen 
                   ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
                   : 'bg-amber-50 text-amber-900 border border-amber-200'
@@ -253,18 +259,18 @@ export default function StorePage() {
                 <span className={`w-1.5 h-1.5 rounded-full ${scheduleStatus.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
                 {scheduleStatus.isOpen ? 'Abierto ahora' : 'Pausado'}
               </span>
-              <span className="text-xs text-gray-500 truncate">
+              <span className="text-[11px] sm:text-xs text-gray-500 truncate">
                 {scheduleStatus.message}
               </span>
             </div>
             {business?.direccion && (
-              <p className="text-xs text-gray-500 mt-1 truncate">
+              <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5 truncate">
                 📍 {business.direccion}
               </p>
             )}
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200/70 self-start sm:self-auto">
+          <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-600 bg-gray-50 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-gray-200/70 self-start sm:self-auto">
             <span>⏱️ 30-45 min aprox.</span>
             <span>·</span>
             <span>📱 Pedidos a WhatsApp</span>
@@ -273,30 +279,30 @@ export default function StorePage() {
       </section>
 
       {/* ── MAIN CONTENT ── */}
-      <main className="pb-28 sm:pb-20 font-sans">
-        <div className="fluid-container pt-5">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <main className="pb-24 sm:pb-20 font-sans">
+        <div className="fluid-container pt-3.5 sm:pt-5">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
 
             {/* ── LEFT: Categories Sidebar (Desktop) / Horizontal pills (Mobile) ── */}
             <aside className="lg:col-span-3">
-              <div className="lg:sticky lg:top-20 space-y-4">
+              <div className="lg:sticky lg:top-20 space-y-3 sm:space-y-4">
                 
                 {/* Search Bar */}
                 <div className="relative w-full">
-                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Buscar producto..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 shadow-2xs text-gray-900"
+                    className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 shadow-2xs text-gray-900"
                   />
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
                     >
-                      <X size={14} />
+                      <X size={13} />
                     </button>
                   )}
                 </div>
@@ -308,14 +314,14 @@ export default function StorePage() {
                   </p>
                   
                   {/* Horizontal Scroll on Mobile / Vertical on Desktop */}
-                  <div className="flex lg:flex-col gap-1.5 sm:gap-2 overflow-x-auto pb-2 lg:pb-0 hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+                  <div className="flex lg:flex-col gap-1.5 overflow-x-auto pb-1.5 lg:pb-0 hide-scrollbar -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
                     {visibleCategories.map(cat => {
                       const isActive = currentCategory === cat;
                       return (
                         <button
                           key={cat}
                           onClick={() => setCurrentCategory(cat)}
-                          className={`whitespace-nowrap px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all text-center lg:text-left shrink-0 cursor-pointer ${
+                          className={`whitespace-nowrap px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-center lg:text-left shrink-0 cursor-pointer ${
                             isActive
                               ? 'text-white shadow-xs'
                               : 'bg-white lg:bg-transparent border lg:border-none border-gray-200 text-gray-700 hover:bg-gray-100'
@@ -377,7 +383,7 @@ export default function StorePage() {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4.5">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-2 xl:grid-cols-3">
                   {visible.map((p, i) => (
                     <ProductCard 
                       key={p.id} 
@@ -489,21 +495,27 @@ export default function StorePage() {
 
       {/* ── MOBILE: Floating Cart Bar ── */}
       {!drawerOpen && totalItems > 0 && (
-        <div className="lg:hidden fixed bottom-safe left-3 right-3 z-[90] animate-slide-up">
+        <div className="lg:hidden fixed bottom-3 left-3 right-3 z-[90] animate-slide-up pb-safe">
           <button
             onClick={() => setDrawerOpen(true)}
-            className="w-full flex items-center justify-between p-3.5 rounded-2xl shadow-xl text-white active:scale-[0.99] transition-transform"
+            className={`w-full flex items-center justify-between p-3 ${
+              designConfig.button_style === 'square'
+                ? 'rounded-none uppercase tracking-wider font-black'
+                : designConfig.button_style === 'soft'
+                  ? 'rounded-xl font-bold'
+                  : 'rounded-2xl font-bold'
+            } shadow-lg text-white active:scale-[0.99] transition-transform`}
             style={{ backgroundColor: brandColor }}
           >
-            <div className="flex items-center gap-2.5">
-              <span className="w-7 h-7 rounded-lg bg-white/25 flex items-center justify-center text-xs font-bold">
+            <div className="flex items-center gap-2">
+              <span className={`w-6.5 h-6.5 ${designConfig.button_style === 'square' ? 'rounded-none' : 'rounded-lg'} bg-white/25 flex items-center justify-center text-xs font-bold`}>
                 {totalItems}
               </span>
-              <span className="text-sm font-bold">Ver mi pedido</span>
+              <span className="text-xs sm:text-sm">Ver mi pedido</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm font-extrabold tabular-nums">{formatMoney(totalPrice)}</span>
-              <ChevronRight size={18} />
+            <div className="flex items-center gap-1">
+              <span className="text-xs sm:text-sm font-extrabold tabular-nums">{formatMoney(totalPrice)}</span>
+              <ChevronRight size={17} />
             </div>
           </button>
         </div>

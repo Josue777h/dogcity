@@ -104,6 +104,7 @@ export default function App() {
           
           {/* ── CUSTOMER EXPERIENCE ──────────────────────────── */}
           <Route path="/tracking" element={<TrackingPage />} />
+          <Route path="/tracking/:id" element={<TrackingPage />} />
           
           {/* MULTI-TENANT STORE: Catches custom business slugs */}
           <Route path="/:slug" element={<StorePage />} />

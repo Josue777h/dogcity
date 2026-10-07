@@ -2,28 +2,162 @@ import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { 
   ChevronRight, User, MapPin, Package, Bike, Trash2, Map,
-  MessageCircle, Loader2, AlertCircle, CheckCircle2, Check, X, Printer, Volume2, VolumeX, Bluetooth
+  MessageCircle, Loader2, AlertCircle, CheckCircle2, Check, X, Printer, Volume2, VolumeX, Bluetooth,
+  Ban, FileText, ExternalLink, Clock
 } from 'lucide-react';
 import { 
   formatMoney, getOrderSubtotal, isDeliveryPending, 
-  buildDeliveryConfirmationMessage, openWhatsApp,
-  printThermalReceipt, playNewOrderSound
+  openWhatsApp, printThermalReceipt, playNewOrderSound
 } from '../../../lib/utils';
 import { isWebBluetoothSupported, printOrderViaBluetooth } from '../../../lib/bluetoothPrinter';
-import { updateOrderStatus, confirmOrderDelivery, getSupabase, deleteOrder } from '../../../lib/supabase';
+import { updateOrderStatus, getSupabase, deleteOrder } from '../../../lib/supabase';
+import { OrderService } from '../../../services/orderService';
+import { getStatusCopy } from '../../../lib/status-labels';
 import { useBusinessStore, useToastStore } from '../../../stores';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 
 const STATUS_TABS = [
   { id: 'all', label: 'Todos' },
-  { id: 'nuevo', label: 'Nuevos' },
-  { id: 'preparando', label: 'Preparando' },
-  { id: 'enviado', label: 'Enviados' },
+  { id: 'cotizacion', label: 'Por Cotizar' },
+  { id: 'preparando', label: 'En Cocina' },
+  { id: 'enviado', label: 'En Camino' },
   { id: 'entregado', label: 'Entregados' },
+  { id: 'cancelado', label: 'Cancelados' },
 ];
 
 const STATUS_STEPS = ['nuevo', 'preparando', 'enviado', 'entregado'];
 const STATUS_LABELS = { nuevo: 'Nuevo', preparando: 'Preparando', enviado: 'Enviado', entregado: 'Entregado' };
+
+const CANCEL_REASONS = [
+  'Cliente no aceptó costo de envío',
+  'Dirección fuera de cobertura',
+  'Cliente no responde',
+  'Comprobante de pago inválido',
+  'Otro (especificar)'
+];
+
+function MerchantCancelModal({ isOpen, order, onClose, onConfirmed }) {
+  const [selectedReason, setSelectedReason] = useState(CANCEL_REASONS[0]);
+  const [customReason, setCustomReason] = useState('');
+  const [loading, setLoading] = useState(false);
+  const addToast = useToastStore(s => s.addToast);
+
+  if (!isOpen || !order) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const finalReason = selectedReason === 'Otro (especificar)' ? customReason.trim() : selectedReason;
+    if (!finalReason) {
+      addToast('Por favor especifica el motivo de la cancelación', 'warning');
+      return;
+    }
+    setLoading(true);
+    try {
+      await OrderService.merchantCancelOrder(order.id, finalReason);
+      addToast('Pedido cancelado correctamente', 'info');
+      onConfirmed();
+      onClose();
+    } catch (err) {
+      console.error(err);
+      addToast('Error al cancelar el pedido', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={onClose} />
+      <div className="relative bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-gray-200 animate-fade-in-up">
+        <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between bg-rose-50/60">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold shrink-0">
+              <Ban size={16} />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-black text-gray-950">
+                Cancelar Pedido #{order.id.toString().slice(-4).toUpperCase()}
+              </h2>
+              <p className="text-[11px] text-gray-500">Selecciona el motivo de cancelación obligatorio</p>
+            </div>
+          </div>
+          <button 
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4">
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-gray-800">
+              Motivo de la cancelación:
+            </label>
+            <div className="space-y-1.5">
+              {CANCEL_REASONS.map((reason) => (
+                <label 
+                  key={reason}
+                  className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+                    selectedReason === reason
+                      ? 'border-rose-500 bg-rose-50/60 text-rose-950 ring-1 ring-rose-400'
+                      : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="cancellationReason"
+                    value={reason}
+                    checked={selectedReason === reason}
+                    onChange={(e) => setSelectedReason(e.target.value)}
+                    className="accent-rose-600 w-4 h-4"
+                  />
+                  <span>{reason}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {selectedReason === 'Otro (especificar)' && (
+            <div className="space-y-1 animate-fade-in">
+              <label className="block text-[11px] font-bold text-gray-700">
+                Detalla el motivo:
+              </label>
+              <textarea
+                rows={2}
+                value={customReason}
+                onChange={(e) => setCustomReason(e.target.value)}
+                placeholder="Escribe el motivo aquí..."
+                className="input-field text-xs w-full bg-gray-50 focus:bg-white resize-none"
+                required
+              />
+            </div>
+          )}
+
+          <div className="pt-2 flex items-center justify-end gap-2 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              Cerrar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 text-white shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            >
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <Ban size={14} />}
+              <span>Confirmar Cancelación</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 function OrderTimeline({ currentStatus, onStatusChange }) {
   const currentIdx = STATUS_STEPS.indexOf(currentStatus);
@@ -137,13 +271,13 @@ function OrderItems({ order }) {
               {pending ? 'Domicilio (por cotizar)' : 'Costo de envío'}
             </span>
             <span className={pending ? 'text-amber-800 font-bold' : 'text-gray-950 tabular-nums font-bold'}>
-              {pending ? 'Pendiente' : formatMoney(order.domicilio_costo || 0)}
+              {pending ? 'Pendiente' : formatMoney(order.delivery_fee || order.domicilio_costo || 0)}
             </span>
           </div>
         )}
         <div className="flex justify-between items-center pt-1.5 border-t border-gray-200">
           <span className="text-xs font-black text-gray-950 uppercase tracking-wider">Total a cobrar</span>
-          <span className="text-base sm:text-lg font-black text-gray-950 tabular-nums">{formatMoney(order.total)}</span>
+          <span className="text-base sm:text-lg font-black text-gray-950 tabular-nums">{formatMoney(order.total_amount || order.total)}</span>
         </div>
       </div>
     </div>
@@ -151,7 +285,7 @@ function OrderItems({ order }) {
 }
 
 function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
-  const [fee, setFee] = useState('');
+  const [fee, setFee] = useState(order.delivery_fee || order.domicilio_costo || '');
   const [loading, setLoading] = useState(false);
   const addToast = useToastStore(s => s.addToast);
 
@@ -162,41 +296,46 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion)}`
     : null);
 
-  const handleConfirm = async () => {
+  const handleConfirmAndNotify = async () => {
     if (!feeNum || feeNum <= 0) {
       addToast('Ingresa el costo del domicilio', 'warning');
       return;
     }
     setLoading(true);
     try {
-      await confirmOrderDelivery(order.id, feeNum, newTotal);
-      const trackingUrl = order.token
-        ? `${window.location.origin}/tracking?id=${order.id}&token=${order.token}`
-        : '';
-      const message = buildDeliveryConfirmationMessage(order, businessName, feeNum, trackingUrl);
-      const phone = order.telefono?.replace(/\D/g, '');
-      openWhatsApp(phone, message);
-      addToast('Domicilio confirmado y enviado al cliente', 'success');
+      await OrderService.setDeliveryQuote(order.id, feeNum, subtotal);
+      
+      const customerPhone = (order.telefono || '').replace(/\D/g, '');
+      const storeName = businessName || 'la tienda';
+      const orderNumber = order.id;
+      const trackingUrl = `https://negu.pro/tracking/${order.id}${order.token ? `?token=${order.token}` : ''}`;
+      
+      const whatsappText = `¡Hola ${order.nombre}! El valor del domicilio para tu orden #${orderNumber} en ${storeName} es de $${feeNum.toLocaleString('es-CO')}. Total a pagar: $${newTotal.toLocaleString('es-CO')}. Por favor confirma o cancela tu orden aquí: ${trackingUrl}`;
+      
+      const waUrl = `https://wa.me/${customerPhone}?text=${encodeURIComponent(whatsappText)}`;
+      window.open(waUrl, '_blank');
+
+      addToast('Cotización fijada y notificada por WhatsApp', 'success');
       onConfirmed();
     } catch (err) {
       console.error(err);
-      addToast('Error al confirmar domicilio', 'error');
+      addToast('Error al fijar cotización', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-gradient-to-br from-amber-50 to-orange-50/40 border border-amber-200/90 rounded-lg p-2.5 sm:p-3 space-y-2 shadow-2xs">
+    <div className="bg-gradient-to-br from-amber-50 to-orange-50/40 border border-amber-300 rounded-xl p-3 sm:p-4 space-y-3 shadow-xs">
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-2">
-          <div className="w-5 h-5 rounded-md bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5">
-            <AlertCircle size={13} />
+        <div className="flex items-start gap-2.5">
+          <div className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5">
+            <AlertCircle size={15} />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-amber-950">Confirmar costo de domicilio</h4>
-            <p className="text-[11px] text-amber-800 leading-snug">
-              Ingresa el valor de la entrega para actualizar el total y enviar la confirmación por WhatsApp.
+            <h4 className="text-xs sm:text-sm font-black text-amber-950 uppercase tracking-wide">Cotización de Domicilio Requerida</h4>
+            <p className="text-[11px] sm:text-xs text-amber-900 leading-snug mt-0.5">
+              Ingresa el costo manual del envío. El sistema recalculará el total y abrirá el mensaje de WhatsApp para que el cliente confirme.
             </p>
           </div>
         </div>
@@ -207,41 +346,49 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
           href={mapsUrl}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-2 px-2.5 py-1.5 bg-white/90 hover:bg-white border border-amber-200 rounded-md transition-all text-xs text-amber-950 font-medium group shadow-2xs"
+          className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-amber-50/50 border border-amber-200 rounded-lg transition-all text-xs text-amber-950 font-bold group shadow-2xs"
         >
-          <Map size={13} className="text-orange-600 shrink-0 group-hover:scale-110 transition-transform" />
+          <Map size={14} className="text-orange-600 shrink-0 group-hover:scale-110 transition-transform" />
           <span className="truncate flex-1">{order.direccion || 'Abrir ubicación GPS'}</span>
-          <span className="text-[10px] text-orange-600 font-bold uppercase shrink-0">Ver mapa ↗</span>
+          <span className="text-[11px] text-orange-600 font-black uppercase shrink-0">Ver mapa ↗</span>
         </a>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-1.5 pt-0.5">
+      <div className="flex flex-col sm:flex-row gap-2 pt-1">
         <div className="relative flex-1">
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">$</span>
-          <input
-            type="number"
-            min="0"
-            step="500"
-            placeholder="Costo de entrega (ej: 4000)"
-            value={fee}
-            onChange={(e) => setFee(e.target.value)}
-            className="input-field pl-6 py-1.5 text-xs sm:text-sm font-semibold w-full bg-white"
-          />
+          <label className="block text-[10px] font-black uppercase tracking-wider text-amber-900 mb-1">
+            Costo de Domicilio ($)
+          </label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">$</span>
+            <input
+              type="number"
+              min="0"
+              step="500"
+              placeholder="Ej: 5000"
+              value={fee}
+              onChange={(e) => setFee(e.target.value)}
+              className="input-field pl-7 py-2 text-xs sm:text-sm font-bold w-full bg-white border-amber-300 focus:border-amber-500 focus:ring-amber-200"
+            />
+          </div>
         </div>
-        <button
-          onClick={handleConfirm}
-          disabled={loading || !feeNum}
-          className="btn-whatsapp py-2 px-3.5 text-xs font-bold shrink-0 justify-center shadow-xs disabled:opacity-50"
-        >
-          {loading ? <Loader2 size={13} className="animate-spin" /> : <MessageCircle size={13} />}
-          <span>Confirmar y notificar WhatsApp</span>
-        </button>
+
+        <div className="sm:self-end">
+          <button
+            onClick={handleConfirmAndNotify}
+            disabled={loading || !feeNum}
+            className="w-full sm:w-auto h-10 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+          >
+            {loading ? <Loader2 size={15} className="animate-spin" /> : <MessageCircle size={15} />}
+            <span>Fijar y Notificar al Cliente</span>
+          </button>
+        </div>
       </div>
 
       {feeNum > 0 && (
-        <div className="flex items-center justify-between text-xs px-1 pt-1 text-amber-950 font-medium border-t border-amber-200/60">
-          <span className="text-[11px]">Nuevo total a cobrar (con domicilio):</span>
-          <span className="text-sm font-black tabular-nums text-amber-900">{formatMoney(newTotal)}</span>
+        <div className="flex items-center justify-between text-xs px-2.5 py-1.5 bg-white/80 rounded-lg border border-amber-200 text-amber-950 font-medium">
+          <span className="text-[11px] font-bold">Subtotal: {formatMoney(subtotal)} + Domicilio: {formatMoney(feeNum)}</span>
+          <span className="text-xs sm:text-sm font-black tabular-nums text-amber-950">Total: {formatMoney(newTotal)}</span>
         </div>
       )}
     </div>
@@ -258,12 +405,19 @@ export default function OrdersView(props) {
   const [drivers, setDrivers] = useState([]);
   const [loadingDriver, setLoadingDriver] = useState(null);
   const [orderToDelete, setOrderToDelete] = useState(null);
+  const [orderToCancel, setOrderToCancel] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [selectedOrderForDriver, setSelectedOrderForDriver] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('camly_order_sound') !== 'false');
   const [printingBluetoothId, setPrintingBluetoothId] = useState(null);
   const addToast = useToastStore(s => s.addToast);
+
+  const isQuotePending = (o) => {
+    const st = (o.status || o.estado || '').toString();
+    const isManualQuoteType = o.delivery_type === 'custom_quote' || o.tipo_domicilio === 'manual' || isDeliveryPending(o);
+    return isManualQuoteType && (st === 'COTIZACION_PENDIENTE' || isDeliveryPending(o) || !o.delivery_fee);
+  };
 
   const handlePrintBluetooth = async (order) => {
     if (!isWebBluetoothSupported()) {
@@ -300,23 +454,71 @@ export default function OrdersView(props) {
     loadDrivers();
   }, [orders]);
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'nuevo': return <span className="badge badge-error">Nuevo</span>;
-      case 'preparando': return <span className="badge badge-warning">Preparando</span>;
-      case 'enviado': return <span className="badge badge-info">Enviado</span>;
-      case 'entregado': return <span className="badge badge-success">Entregado</span>;
-      default: return <span className="badge badge-neutral">{status}</span>;
+  const getStatusBadge = (status, order) => {
+    const st = (status || order?.status || order?.estado || '').toString();
+    const isQuoteRequired = order && isQuotePending(order);
+    const bType = business?.business_type || 'general';
+    const copy = getStatusCopy(st, bType);
+
+    if (st === 'COTIZACION_PENDIENTE' || isQuoteRequired) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-500 text-white shadow-xs">
+          <AlertCircle size={11} /> Cotización Requerida
+        </span>
+      );
     }
+    if (st === 'COTIZACION_ENVIADA') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-sky-100 text-sky-900 border border-sky-300">
+          <Clock size={11} /> {copy.badge || 'Cotización Enviada'}
+        </span>
+      );
+    }
+    if (st === 'CONFIRMADO_GRACIA') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-purple-100 text-purple-900 border border-purple-300 animate-pulse">
+          <Clock size={11} /> Ventana Gracia (60s)
+        </span>
+      );
+    }
+    if (st === 'EN_PREPARACION' || st === 'preparando') {
+      return <span className="badge badge-warning">{copy.badge || 'En Preparación'}</span>;
+    }
+    if (st === 'EN_CAMINO' || st === 'enviado') {
+      return <span className="badge badge-info">{copy.badge || 'En Camino'}</span>;
+    }
+    if (st === 'ENTREGADO' || st === 'entregado') {
+      return <span className="badge badge-success">{copy.badge || 'Entregado'}</span>;
+    }
+    if (st === 'CANCELADO' || st === 'cancelado') {
+      return <span className="badge badge-error">Cancelado</span>;
+    }
+    return <span className="badge badge-neutral">{st || 'Nuevo'}</span>;
+  };
+
+  const getTabCount = (tabId) => {
+    if (tabId === 'all') return orders.length;
+    if (tabId === 'cotizacion') return orders.filter(isQuotePending).length;
+    if (tabId === 'preparando') return orders.filter(o => ['preparando', 'EN_PREPARACION', 'CONFIRMADO_GRACIA'].includes(o.status || o.estado)).length;
+    if (tabId === 'enviado') return orders.filter(o => ['enviado', 'EN_CAMINO'].includes(o.status || o.estado)).length;
+    if (tabId === 'entregado') return orders.filter(o => ['entregado', 'ENTREGADO'].includes(o.status || o.estado)).length;
+    if (tabId === 'cancelado') return orders.filter(o => ['cancelado', 'CANCELADO'].includes(o.status || o.estado)).length;
+    return orders.filter(o => (o.estado || o.status) === tabId).length;
   };
 
   const filteredOrders = activeFilter === 'all' 
     ? orders 
-    : activeFilter === 'dom_pendiente'
-    ? orders.filter(isDeliveryPending)
+    : activeFilter === 'cotizacion'
+    ? orders.filter(isQuotePending)
+    : activeFilter === 'preparando'
+    ? orders.filter(o => ['preparando', 'EN_PREPARACION', 'CONFIRMADO_GRACIA'].includes(o.status || o.estado))
+    : activeFilter === 'enviado'
+    ? orders.filter(o => ['enviado', 'EN_CAMINO'].includes(o.status || o.estado))
+    : activeFilter === 'entregado'
+    ? orders.filter(o => ['entregado', 'ENTREGADO'].includes(o.status || o.estado))
+    : activeFilter === 'cancelado'
+    ? orders.filter(o => ['cancelado', 'CANCELADO'].includes(o.status || o.estado))
     : orders.filter(o => (o.estado || o.status) === activeFilter);
-
-  const pendingCount = orders.filter(isDeliveryPending).length;
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
@@ -374,37 +576,23 @@ export default function OrdersView(props) {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 flex-1">
           {STATUS_TABS.map(tab => {
-            const count = tab.id === 'all' ? orders.length : orders.filter(o => (o.estado || o.status) === tab.id).length;
+            const count = getTabCount(tab.id);
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveFilter(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors shrink-0
                   ${activeFilter === tab.id 
-                    ? 'bg-gray-900 text-white' 
-                    : 'bg-white border border-border text-gray-600 hover:text-gray-900'}`}
+                    ? tab.id === 'cotizacion' ? 'bg-amber-600 text-white shadow-xs' : 'bg-gray-900 text-white shadow-xs'
+                    : tab.id === 'cotizacion' && count > 0 ? 'bg-amber-50 border border-amber-300 text-amber-900 hover:bg-amber-100' : 'bg-white border border-border text-gray-700 hover:text-gray-950'}`}
               >
                 {tab.label}
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeFilter === tab.id ? 'bg-white/20' : 'bg-gray-100 text-gray-500'}`}>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeFilter === tab.id ? 'bg-white/20' : tab.id === 'cotizacion' && count > 0 ? 'bg-amber-200 text-amber-950 font-black' : 'bg-gray-100 text-gray-600'}`}>
                   {count}
                 </span>
               </button>
             );
           })}
-          {pendingCount > 0 && (
-            <button
-              onClick={() => setActiveFilter('dom_pendiente')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0
-                ${activeFilter === 'dom_pendiente' 
-                  ? 'bg-amber-600 text-white' 
-                  : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100'}`}
-            >
-              Dom. pendiente
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeFilter === 'dom_pendiente' ? 'bg-white/20' : 'bg-amber-200 text-amber-900'}`}>
-                {pendingCount}
-              </span>
-            </button>
-          )}
         </div>
 
         {/* Timbre de nuevos pedidos */}
@@ -498,7 +686,18 @@ export default function OrdersView(props) {
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    {getStatusBadge(status)}
+                    {getStatusBadge(status, order)}
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOrderToCancel(order);
+                      }}
+                      className="btn-ghost p-1.5 tap-target text-gray-400 hover:text-rose-600 hover:bg-rose-50"
+                      title="Cancelar pedido con motivo"
+                    >
+                      <Ban size={15} />
+                    </button>
                     <button 
                       type="button"
                       onClick={(e) => {
@@ -536,12 +735,61 @@ export default function OrdersView(props) {
 
               {isExpanded && (
                 <div className="px-3 pb-3.5 pt-1 sm:px-4 border-t border-border animate-fade-in-down bg-gray-50/50">
+                  {/* Banner de Cancelación si está cancelado */}
+                  {(status === 'CANCELADO' || status === 'cancelado') && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-950 mb-3 shadow-2xs">
+                      <Ban size={16} className="text-rose-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-black text-rose-950 uppercase tracking-wide">Pedido Cancelado</p>
+                        <p className="text-rose-800 mt-0.5">
+                          Cancelado por: <span className="font-bold">{order.cancelled_by === 'customer' ? 'El Cliente' : order.cancelled_by === 'merchant' ? 'El Comercio' : 'Sistema'}</span>
+                        </p>
+                        {order.cancellation_reason && (
+                          <p className="text-rose-900 font-semibold mt-0.5">Motivo: &ldquo;{order.cancellation_reason}&rdquo;</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Banner de Ventana de Gracia */}
+                  {(status === 'CONFIRMADO_GRACIA' || order.status === 'CONFIRMADO_GRACIA') && (
+                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl flex items-center gap-2.5 text-xs text-purple-950 mb-3 animate-pulse shadow-2xs">
+                      <Clock size={16} className="text-purple-600 shrink-0" />
+                      <p className="font-bold">
+                        ¡El cliente aceptó la cotización! Transcurriendo ventana de gracia de 60 segundos antes de entrar a preparación en cocina.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Comprobante de Pago adjunto */}
+                  {order.payment_receipt_url && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between gap-2 text-xs mb-3 shadow-2xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText size={16} className="text-emerald-700 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-bold text-emerald-950 truncate">Comprobante de Pago Subido</p>
+                          <p className="text-[11px] text-emerald-800">Método: <span className="font-semibold">{order.payment_method || 'Transferencia'}</span> · Estado: <span className="font-black uppercase">{order.payment_status || 'pending'}</span></p>
+                        </div>
+                      </div>
+                      <a
+                        href={order.payment_receipt_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-xs shadow-2xs shrink-0"
+                      >
+                        <span>Ver Comprobante</span>
+                        <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  )}
+
                   <OrderTimeline 
                     currentStatus={status} 
                     onStatusChange={(newSt) => handleStatusChange(order.id, newSt)} 
                   />
 
-                  {deliveryPending && (
+                  {/* Panel de fijar cotización para el comercio */}
+                  {(deliveryPending || order.status === 'COTIZACION_PENDIENTE' || isQuotePending(order)) && status !== 'CANCELADO' && status !== 'cancelado' && (
                     <div className="mb-3">
                       <DeliveryConfirmPanel 
                         order={order} 
@@ -664,7 +912,7 @@ export default function OrdersView(props) {
                         <OrderItems order={order} />
                       </div>
 
-                      {/* Botones de comanda e impresión */}
+                      {/* Botones de comanda, impresión y cancelación */}
                       <div className="mt-3 pt-2.5 border-t border-gray-200">
                         <div className="grid grid-cols-2 gap-2">
                           <button
@@ -686,6 +934,16 @@ export default function OrdersView(props) {
                           >
                             {printingBluetoothId === order.id ? <Loader2 size={14} className="animate-spin" /> : <Bluetooth size={14} className="shrink-0" />}
                             <span className="truncate">POS Bluetooth</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setOrderToCancel(order)}
+                            className="h-8 rounded-lg border border-rose-200 hover:border-rose-400 bg-rose-50/80 hover:bg-rose-100 text-rose-700 text-xs font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer col-span-2 mt-1"
+                            title="Cancelar este pedido y seleccionar motivo"
+                          >
+                            <Ban size={14} className="shrink-0" />
+                            <span>Cancelar Pedido</span>
                           </button>
                         </div>
                       </div>
@@ -712,6 +970,13 @@ export default function OrdersView(props) {
         message={`¿Estás seguro de que deseas eliminar permanentemente el pedido de "${orderToDelete?.nombre}"? Esta acción no se puede deshacer.`}
         onConfirm={confirmDelete}
         onCancel={() => setOrderToDelete(null)}
+      />
+
+      <MerchantCancelModal
+        isOpen={!!orderToCancel}
+        order={orderToCancel}
+        onClose={() => setOrderToCancel(null)}
+        onConfirmed={onUpdate}
       />
 
       <DriverSelectModal

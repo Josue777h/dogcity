@@ -5,12 +5,12 @@ export default function StoreFooter({ business }) {
   if (!business) return null;
 
   return (
-    <footer className="border-t mt-16" style={{ backgroundColor: 'var(--color-sidebar)', borderColor: 'rgba(255,255,255,0.08)' }}>
-      <div className="fluid-container py-12">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 pb-8 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+    <footer className="border-t mt-10 sm:mt-16" style={{ backgroundColor: 'var(--color-sidebar)', borderColor: 'rgba(255,255,255,0.08)' }}>
+      <div className="fluid-container py-8 sm:py-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 sm:gap-8 pb-6 sm:pb-8 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
           
           {/* Logo & About */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
              <div className="flex items-center gap-3">
                <div
                  className="w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0"
@@ -21,13 +21,17 @@ export default function StoreFooter({ business }) {
                <h3 className="text-base font-semibold text-white tracking-tight">{business.nombre_visible}</h3>
              </div>
              <p className="text-xs leading-relaxed max-w-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
-               {(business.footer_message || '').replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '').trim() || 'El sabor que te mereces, directo a tu puerta.'}
+               {(business.footer_message || '')
+                 .replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '')
+                 .replace(/<!--CAMLY_DESIGN:[\s\S]*?-->/g, '')
+                 .replace(/<!--[\s\S]*?-->/g, '')
+                 .trim() || 'El sabor que te mereces, directo a tu puerta.'}
              </p>
           </div>
 
           {/* Contact & Social */}
-          <div className="flex flex-wrap items-center gap-6">
-             <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+             <div className="flex items-center gap-3 sm:gap-4">
                 {business.instagram && (
                   <a
                     href={`https://instagram.com/${business.instagram.replace('@', '')}`}
@@ -72,7 +76,7 @@ export default function StoreFooter({ business }) {
                 )}
              </div>
              
-             <div className="flex flex-wrap gap-4 text-xs font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>
+             <div className="flex flex-wrap gap-3 sm:gap-4 text-xs font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>
                  {business.telefono && (
                    <span className="flex items-center gap-1.5">
                      <Phone size={13} style={{ color: 'var(--color-brand)' }} />
@@ -89,10 +93,10 @@ export default function StoreFooter({ business }) {
           </div>
         </div>
 
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+        <div className="pt-5 sm:pt-6 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
            <p>© {new Date().getFullYear()} {business.nombre_visible}. Todos los derechos reservados.</p>
            <p className="flex items-center gap-1">
-             Impulsado por <span className="font-semibold text-white/80">Negu</span> · Catálogo digital & WhatsApp
+             Impulsado por <span className="font-semibold text-white/80">NEGU</span> · Catálogo digital & WhatsApp
            </p>
         </div>
       </div>

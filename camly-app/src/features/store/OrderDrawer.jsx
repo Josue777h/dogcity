@@ -212,6 +212,16 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
     setIsSubmitting(true);
     try {
       const token   = Math.random().toString(36).substring(2, 15);
+      const isCustomQuote = deliveryMethod === 'envio' && tipoDom === 'manual';
+      const initialStatus = isCustomQuote ? 'COTIZACION_PENDIENTE' : 'nuevo';
+      const deliveryType = deliveryMethod === 'recogida'
+        ? 'pickup'
+        : isCustomQuote
+          ? 'custom_quote'
+          : tipoDom === 'fijo'
+            ? 'fixed'
+            : 'per_km';
+
       const payload = {
         nombre: customerName.trim(),
         telefono: customerPhone.trim(),
@@ -219,9 +229,14 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
         ubicacion_link: locationLink,
         comentarios: (cart.comment || '').trim(),
         total,
+        total_amount: total,
+        subtotal_amount: subtotal,
         domicilio_costo: deliveryMethod === 'envio' ? deliveryFee : 0,
+        delivery_fee: deliveryMethod === 'envio' ? deliveryFee : 0,
         distancia_km: distanceKm,
-        status: 'nuevo',
+        status: initialStatus,
+        estado: initialStatus,
+        delivery_type: deliveryType,
         items: selectedItems.map(i => ({
           id: i.id, nombre: i.name, cantidad: i.quantity, precio: i.price,
           nota: cart.notes[i.id] || '',
@@ -230,6 +245,8 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
         })),
         entrega_metodo: deliveryMethod,
         pago_metodo: paymentMethod,
+        payment_method: paymentMethod,
+        payment_status: 'pending',
         token,
         negocio_id: bid,
       };
@@ -290,32 +307,32 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
 
         {/* Header */}
         <div
-          className="px-5 py-4 border-b flex items-center justify-between shrink-0"
+          className="px-4 py-3 sm:px-5 sm:py-4 border-b flex items-center justify-between shrink-0"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
               style={{ backgroundColor: 'var(--color-brand)', color: '#fff' }}
             >
               <ShoppingBag size={16} />
             </div>
             <div>
-              <h2 className="text-base font-semibold" style={{ color: 'var(--color-text-1)' }}>
+              <h2 className="text-sm sm:text-base font-semibold" style={{ color: 'var(--color-text-1)' }}>
                 Finalizar pedido
               </h2>
-              <p className="text-xs" style={{ color: 'var(--color-text-2)' }}>
+              <p className="text-[11px] sm:text-xs" style={{ color: 'var(--color-text-2)' }}>
                 Se enviará por WhatsApp
               </p>
             </div>
           </div>
-          <button onClick={handleClose} className="btn-ghost p-2" aria-label="Cerrar">
+          <button onClick={handleClose} className="btn-ghost p-1.5 sm:p-2" aria-label="Cerrar">
             <X size={18} />
           </button>
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5 hide-scrollbar">
+        <div className="flex-1 overflow-y-auto px-4 py-3.5 sm:px-5 sm:py-5 space-y-4 sm:space-y-5 hide-scrollbar">
 
           {/* ── SUCCESS STATE ── */}
           {orderResult ? (
@@ -729,15 +746,15 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
         {/* Footer sticky */}
         {!orderResult && (
           <div
-            className="px-5 py-4 border-t shrink-0 pb-safe"
+            className="px-4 py-3 sm:px-5 sm:py-4 border-t shrink-0 pb-safe"
             style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
           >
             {/* Total */}
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm" style={{ color: 'var(--color-text-2)' }}>
+            <div className="flex items-center justify-between mb-2.5 sm:mb-3">
+              <span className="text-xs sm:text-sm" style={{ color: 'var(--color-text-2)' }}>
                 Total{deliveryMethod === 'envio' && tipoDom !== 'manual' ? ' (con envío)' : ''}
               </span>
-              <span className="text-xl font-semibold tabular-nums" style={{ color: 'var(--color-text-1)' }}>
+              <span className="text-lg sm:text-xl font-bold tabular-nums" style={{ color: 'var(--color-text-1)' }}>
                 {tipoDom === 'manual' && deliveryMethod === 'envio'
                   ? formatMoney(subtotal)
                   : formatMoney(total)
@@ -746,7 +763,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
             </div>
 
             {scheduleStatus?.isOpen === false && (
-              <div className="mb-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2 animate-fade-in">
+              <div className="mb-2.5 sm:mb-3 p-2.5 sm:p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2 animate-fade-in">
                 <AlertCircle size={15} className="shrink-0 text-amber-600 mt-0.5" />
                 <div>
                   <p className="font-bold">Comercio cerrado en este momento</p>
@@ -760,7 +777,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || selectedItems.length === 0 || scheduleStatus?.isOpen === false}
-              className={`btn-whatsapp w-full py-3 ${
+              className={`btn-whatsapp w-full py-2.5 sm:py-3 text-xs sm:text-sm font-bold ${
                 scheduleStatus?.isOpen === false ? '!bg-gray-400 !border-gray-400 !cursor-not-allowed opacity-75' : ''
               }`}
             >

@@ -1317,7 +1317,11 @@ export default function SettingsView(props) {
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Mensaje en el pie de página de la tienda</label>
                 <textarea 
-                  value={(formData.footer_message || '').replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '').trim()} 
+                  value={(formData.footer_message || '')
+                    .replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '')
+                    .replace(/<!--CAMLY_DESIGN:[\s\S]*?-->/g, '')
+                    .replace(/<!--[\s\S]*?-->/g, '')
+                    .trim()} 
                   onChange={e => setFormData({...formData, footer_message: e.target.value})} 
                   placeholder="Ej: Las mejores hamburguesas artesanales de la ciudad."
                   className="input-field text-xs resize-none" 

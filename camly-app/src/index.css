@@ -118,10 +118,10 @@
     max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
   }
-  @media (min-width: 640px) { .fluid-container { padding-left: 1.75rem; padding-right: 1.75rem; } }
+  @media (min-width: 640px) { .fluid-container { padding-left: 1.5rem; padding-right: 1.5rem; } }
   @media (min-width: 1024px) { .fluid-container { padding-left: 2rem; padding-right: 2rem; } }
 
   .btn-primary {
@@ -247,9 +247,8 @@
 
   .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
   .pt-safe { padding-top: max(0px, env(safe-area-inset-top)); }
-  .bottom-safe { bottom: max(1.25rem, calc(1.25rem + env(safe-area-inset-bottom))); }
-  /* Área táctil mínima de 44px solo en pantallas táctiles; en PC con mouse no infla los botones */
-  @media (pointer: coarse) { .tap-target { min-height: 44px; min-width: 44px; } }
+  /* Interacción táctil fluida sin inflar márgenes de botones compactos */
+  .tap-target { touch-action: manipulation; }
   .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .hide-scrollbar::-webkit-scrollbar { display: none; }
   .scroll-fade-x { mask-image: linear-gradient(to right,transparent,black 12px,black calc(100% - 12px),transparent); -webkit-mask-image: linear-gradient(to right,transparent,black 12px,black calc(100% - 12px),transparent); }

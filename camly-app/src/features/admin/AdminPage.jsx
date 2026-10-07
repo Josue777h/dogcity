@@ -76,7 +76,7 @@ export default function AdminPage() {
             playNewOrderSound();
           }
           const prevTitle = document.title;
-          document.title = '🔔 (1) ¡Nuevo Pedido! - Camly';
+          document.title = '🔔 (1) ¡Nuevo Pedido! - NEGU';
           setTimeout(() => {
             document.title = prevTitle;
           }, 8000);

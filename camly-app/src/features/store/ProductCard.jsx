@@ -138,28 +138,54 @@ export default function ProductCard({
     switch (buttonStyle) {
       case 'square':
         return {
-          className: "py-1.5 px-3.5 text-[11px] font-black uppercase tracking-wider rounded-none shrink-0 text-white cursor-pointer transition-all active:scale-95 flex items-center justify-center shadow-none",
+          className: "py-1 px-2 sm:py-1.5 sm:px-2.5 text-[10px] sm:text-[11px] font-black uppercase tracking-wider rounded-none shrink-0 text-white cursor-pointer transition-all active:scale-95 flex items-center justify-center shadow-none",
           style: { backgroundColor: brandColor }
         };
       case 'soft':
         return {
-          className: "py-1.5 px-3.5 text-xs font-semibold rounded-md shrink-0 text-white cursor-pointer transition-all shadow-2xs active:scale-95 flex items-center justify-center",
+          className: "py-1 px-2.5 sm:py-1.5 sm:px-3 text-[11px] sm:text-xs font-semibold rounded-md shrink-0 text-white cursor-pointer transition-all shadow-2xs active:scale-95 flex items-center justify-center",
           style: { backgroundColor: brandColor }
         };
       case 'outline':
         return {
-          className: "py-1 px-3.5 text-xs font-bold rounded-lg border-2 shrink-0 bg-white cursor-pointer transition-all active:scale-95 flex items-center justify-center shadow-2xs",
+          className: "py-0.5 px-2.5 sm:py-1 sm:px-3 text-[11px] sm:text-xs font-bold rounded-lg border-2 shrink-0 bg-white cursor-pointer transition-all active:scale-95 flex items-center justify-center shadow-2xs",
           style: { borderColor: brandColor, color: brandColor }
         };
       default: // pill
         return {
-          className: "py-1.5 px-4 text-xs font-bold rounded-full shrink-0 text-white cursor-pointer transition-all shadow-md active:scale-95 flex items-center justify-center",
+          className: "py-1 px-2.5 sm:py-1.5 sm:px-3.5 text-[11px] sm:text-xs font-bold rounded-full shrink-0 text-white cursor-pointer transition-all shadow-sm active:scale-95 flex items-center justify-center",
+          style: { backgroundColor: brandColor }
+        };
+    }
+  };
+
+  const getModalButtonProps = () => {
+    switch (buttonStyle) {
+      case 'square':
+        return {
+          className: "py-2.5 px-4 sm:py-3 sm:px-6 text-xs sm:text-sm font-black uppercase tracking-wider rounded-none shadow-none text-white flex items-center justify-center gap-1.5 transition-transform active:scale-95 shrink-0",
+          style: { backgroundColor: brandColor }
+        };
+      case 'soft':
+        return {
+          className: "py-2.5 px-4 sm:py-3 sm:px-6 text-xs sm:text-sm font-semibold rounded-md shadow-2xs text-white flex items-center justify-center gap-1.5 transition-transform active:scale-95 shrink-0",
+          style: { backgroundColor: brandColor }
+        };
+      case 'outline':
+        return {
+          className: "py-2 px-4 sm:py-2.5 sm:px-6 text-xs sm:text-sm font-bold rounded-lg border-2 bg-white flex items-center justify-center gap-1.5 transition-transform active:scale-95 shrink-0",
+          style: { borderColor: brandColor, color: brandColor }
+        };
+      default: // pill
+        return {
+          className: "py-2.5 px-4 sm:py-3 sm:px-6 text-xs sm:text-sm font-bold rounded-full shadow-md text-white flex items-center justify-center gap-1.5 transition-transform active:scale-95 shrink-0",
           style: { backgroundColor: brandColor }
         };
     }
   };
 
   const btnProps = getAddButtonProps();
+  const modalBtnProps = getModalButtonProps();
 
   return (
     <>
@@ -192,10 +218,10 @@ export default function ProductCard({
           {/* Badge si tiene opciones o personalizaciones */}
           {hasOptions && (
             <div 
-              className="absolute top-2.5 left-2.5 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1"
+              className="absolute top-2 left-2 text-white text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-xs flex items-center gap-1"
               style={{ backgroundColor: brandColor }}
             >
-              <Layers size={11} />
+              <Layers size={10} />
               <span>Personalizable</span>
             </div>
           )}
@@ -203,7 +229,7 @@ export default function ProductCard({
           {/* Quantity pill on image */}
           {isSelected && (
             <div 
-              className="absolute top-2.5 right-2.5 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md animate-scale-in"
+              className="absolute top-2 right-2 text-white text-[11px] font-bold w-5.5 h-5.5 rounded-full flex items-center justify-center shadow-md animate-scale-in"
               style={{ backgroundColor: brandColor }}
             >
               {totalProductQty}
@@ -212,27 +238,27 @@ export default function ProductCard({
 
           {/* Category pill if any */}
           {product.categoria && (
-            <div className="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
+            <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded-full">
               {product.categoria}
             </div>
           )}
         </div>
 
         {/* Content */}
-        <div className="p-3 sm:p-3.5 flex flex-col flex-1 justify-between font-sans">
-          <div className="cursor-pointer mb-2" onClick={() => hasOptions ? openCustomizationModal() : handleCardAdd()}>
-            <h3 className="text-sm sm:text-base font-bold text-gray-900 leading-snug line-clamp-1 mb-1">
+        <div className="p-2.5 sm:p-3.5 flex flex-col flex-1 justify-between font-sans">
+          <div className="cursor-pointer mb-1.5" onClick={() => hasOptions ? openCustomizationModal() : handleCardAdd()}>
+            <h3 className="text-xs sm:text-base font-bold text-gray-900 leading-snug line-clamp-1 mb-0.5">
               {product.name}
             </h3>
             {product.description && (
-              <p className="text-xs sm:text-[13px] text-gray-500 line-clamp-2 leading-relaxed">
+              <p className="text-[11px] sm:text-[13px] text-gray-500 line-clamp-2 leading-relaxed">
                 {product.description}
               </p>
             )}
           </div>
 
-          <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
-            <span className="text-sm sm:text-base font-black text-gray-950 tabular-nums truncate">
+          <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-1.5">
+            <span className="text-xs sm:text-base font-black text-gray-950 tabular-nums truncate">
               {formatMoney(product.price)}
             </span>
 
@@ -240,7 +266,7 @@ export default function ProductCard({
               <button
                 type="button"
                 onClick={handleCardAdd}
-                className="py-1.5 px-3 text-xs font-bold rounded-full shrink-0 bg-gray-100 text-gray-500 border border-gray-200 cursor-not-allowed hover:bg-gray-200/70 transition-colors"
+                className="py-1 px-2 text-[10px] sm:text-xs font-bold rounded-full shrink-0 bg-gray-100 text-gray-500 border border-gray-200 cursor-not-allowed hover:bg-gray-200/70 transition-colors"
                 title={storeClosedMessage || 'Tienda en pausa o cerrada temporalmente'}
               >
                 Pausado
@@ -252,19 +278,19 @@ export default function ProductCard({
                 style={btnProps.style}
                 aria-label={`Agregar ${product.name}`}
               >
-                <Plus size={14} />
+                <Plus size={13} className="shrink-0" />
                 <span>{hasOptions ? 'Elegir' : 'Agregar'}</span>
               </button>
             ) : (
-              <div className="flex items-center rounded-full border border-gray-200 bg-gray-50 overflow-hidden shadow-2xs">
+              <div className="flex items-center rounded-full border border-gray-200 bg-gray-50 overflow-hidden shadow-2xs shrink-0">
                 <button
                   onClick={() => decrement(bid, product.id)}
-                  className="w-7.5 h-7.5 flex items-center justify-center text-gray-600 hover:bg-gray-200/60 active:bg-gray-200 transition-colors cursor-pointer"
+                  className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200/60 active:bg-gray-200 transition-colors cursor-pointer"
                   aria-label="Restar una unidad"
                 >
-                  <Minus size={13} />
+                  <Minus size={11} />
                 </button>
-                <span className="w-6.5 text-center text-xs sm:text-sm font-bold text-gray-900 tabular-nums">
+                <span className="w-5 sm:w-6 text-center text-[11px] sm:text-sm font-bold text-gray-900 tabular-nums">
                   {totalProductQty}
                 </span>
                 <button
@@ -272,10 +298,10 @@ export default function ProductCard({
                     if (hasOptions) openCustomizationModal();
                     else increment(bid, product.id);
                   }}
-                  className="w-7.5 h-7.5 flex items-center justify-center text-gray-600 hover:bg-gray-200/60 active:bg-gray-200 transition-colors cursor-pointer"
+                  className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200/60 active:bg-gray-200 transition-colors cursor-pointer"
                   aria-label="Sumar una unidad o personalizar otra"
                 >
-                  <Plus size={13} />
+                  <Plus size={11} />
                 </button>
               </div>
             )}
@@ -426,33 +452,35 @@ export default function ProductCard({
             </div>
 
             {/* Footer con precio dinámico y botón de confirmación */}
-            <div className="p-4 sm:p-5 bg-white border-t border-gray-100 flex items-center justify-between gap-3 shrink-0">
-              <div>
-                <span className="text-[11px] text-gray-400 font-semibold block">Total producto</span>
-                <span className="text-lg sm:text-xl font-black text-gray-950 tabular-nums">
+            <div className="p-3.5 sm:p-5 bg-white border-t border-gray-100 flex items-center justify-between gap-2.5 sm:gap-4 shrink-0 pb-safe">
+              <div className="shrink-0 min-w-0 pr-1">
+                <span className="text-[10px] sm:text-[11px] text-gray-400 font-semibold block uppercase tracking-wider">
+                  Total producto
+                </span>
+                <span className="text-base sm:text-xl font-black text-gray-950 tabular-nums">
                   {formatMoney(finalUnitPrice)}
                 </span>
               </div>
 
-              <button
-                onClick={handleConfirmCustomization}
-                disabled={!isStoreOpen}
-                style={isStoreOpen ? { backgroundColor: brandColor, color: '#ffffff' } : {}}
-                className={`py-3 px-6 text-xs sm:text-sm font-bold justify-center rounded-full gap-2 flex-1 sm:flex-none shadow-sm transition-transform active:scale-95 ${
-                  !isStoreOpen
-                    ? 'bg-gray-200 text-gray-500 border border-gray-300 cursor-not-allowed'
-                    : 'cursor-pointer hover:opacity-95'
-                }`}
-              >
-                {!isStoreOpen ? (
-                  <span>Tienda en pausa</span>
-                ) : (
-                  <>
-                    <Plus size={16} />
-                    <span>Agregar al pedido</span>
-                  </>
-                )}
-              </button>
+              {!isStoreOpen ? (
+                <button
+                  type="button"
+                  disabled
+                  className="py-2.5 px-4 text-xs font-bold rounded-xl bg-gray-100 text-gray-500 border border-gray-200 cursor-not-allowed shrink-0"
+                >
+                  Tienda en pausa
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleConfirmCustomization}
+                  style={modalBtnProps.style}
+                  className={`${modalBtnProps.className} cursor-pointer hover:opacity-95`}
+                >
+                  <Plus size={15} className="shrink-0" />
+                  <span>Agregar al pedido</span>
+                </button>
+              )}
             </div>
 
           </div>
