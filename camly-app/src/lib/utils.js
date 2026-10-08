@@ -365,17 +365,19 @@ export function printThermalReceipt(order, business) {
     const name = p.nombre ?? p.name ?? 'Producto';
     const price = p.precio ?? p.price ?? 0;
     const itemTotal = price * qty;
-    const optText = p.opciones_texto || (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
-    const nota = p.nota || '';
+    const optText = p.opciones_texto || 
+      (Array.isArray(p.opciones) ? p.opciones.map(o => o.nombre).join(', ') : '') ||
+      (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
+    const nota = (p.nota || '').trim();
 
     return `
-      <div style="margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed #ddd;">
+      <div style="margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed #bbb;">
         <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px;">
           <span>${qty}x ${name}</span>
           <span>$${itemTotal.toLocaleString('es-CO')}</span>
         </div>
-        ${optText ? `<div style="font-size: 11px; margin-left: 8px; color: #111; font-weight: 600;">▸ ${optText}</div>` : ''}
-        ${nota ? `<div style="font-size: 10px; margin-left: 8px; font-style: italic; color: #555;">Nota: ${nota}</div>` : ''}
+        ${optText ? `<div style="font-size: 11px; margin-left: 6px; color: #000; font-weight: bold; margin-top: 2px;">▸ ${optText}</div>` : ''}
+        ${nota ? `<div style="font-size: 11px; margin-left: 6px; font-weight: 900; background: #e5e7eb; padding: 2px 4px; border-left: 3px solid #000; margin-top: 3px;">⚠️ NOTA COCINA: ${nota.toUpperCase()}</div>` : ''}
       </div>
     `;
   }).join('');

@@ -156,14 +156,17 @@ export default function TrackingPage() {
   const deliveryFee = Number(currentOrder.delivery_fee || currentOrder.domicilio_costo || 0);
   const totalAmount = Number(currentOrder.total_amount || currentOrder.total || (subtotal + deliveryFee));
 
-  // Ventana de gracia: contador regresivo de 60 segundos
+  // Ventana de gracia: contador regresivo de 30 segundos
   useEffect(() => {
     if (statusStr !== 'CONFIRMADO_GRACIA') return;
 
+    const GRACE_PERIOD_SECONDS = 30;
     const calcRemaining = () => {
-      const confirmedTime = currentOrder.confirmed_at ? new Date(currentOrder.confirmed_at).getTime() : Date.now();
-      const elapsed = Math.floor((Date.now() - confirmedTime) / 1000);
-      return Math.max(0, 60 - elapsed);
+      if (!currentOrder.confirmed_at) return GRACE_PERIOD_SECONDS;
+      const confirmedTime = new Date(currentOrder.confirmed_at).getTime();
+      // Elimina cualquier desfase por diferencias de reloj entre cliente y servidor
+      const elapsed = Math.max(0, Math.floor((Date.now() - confirmedTime) / 1000));
+      return Math.min(GRACE_PERIOD_SECONDS, Math.max(0, GRACE_PERIOD_SECONDS - elapsed));
     };
 
     setGraceSeconds(calcRemaining());
@@ -240,7 +243,7 @@ export default function TrackingPage() {
         await OrderService.customerCancelOrder(
           currentOrder.id, 
           currentOrder.token, 
-          'Cancelado por el cliente en ventana de gracia (Me equivoqué)'
+          'Cancelado por el cliente'
         );
       }
       setOrder((prev) => ({
@@ -248,7 +251,7 @@ export default function TrackingPage() {
         status: 'CANCELADO',
         estado: 'cancelado',
         cancelled_by: 'customer',
-        cancellation_reason: 'Cancelado por el cliente en ventana de gracia'
+        cancellation_reason: 'Cancelado por el cliente'
       }));
     } catch (err) {
       console.error(err);
@@ -364,77 +367,76 @@ export default function TrackingPage() {
           </div>
         </div>
 
-        {/* ── 1. ESTADO COTIZACION_ENVIADA: TARJETA PROMINENTE DE CONFIRMACIÓN ── */}
+        {/* ── 1. ESTADO COTIZACION_ENVIADA: PANEL DE CONFIRMACIÓN ── */}
         {isQuoteSent && (
-          <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 rounded-2xl p-5 sm:p-6 text-white shadow-xl space-y-4 border border-amber-400/40 animate-fade-in">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 bg-white/20 backdrop-blur-xs rounded-full text-[11px] font-black uppercase tracking-wider">
-                🛵 Costo de envío confirmado
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-xs space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div>
+                <h2 className="text-sm sm:text-base font-bold text-gray-900">
+                  {statusCopy.title}
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {statusCopy.subtitle}
+                </p>
+              </div>
+              <span className="badge badge-warning text-[11px] shrink-0">
+                Por Confirmar
               </span>
             </div>
 
-            <div>
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
-                {statusCopy.title}
-              </h2>
-              <p className="text-xs sm:text-sm text-white/90 mt-1 leading-snug">
-                {statusCopy.subtitle}
-              </p>
-            </div>
-
             {/* Desglose de Precios */}
-            <div className="bg-black/20 backdrop-blur-xs rounded-xl p-3.5 space-y-2 border border-white/20 text-xs sm:text-sm">
-              <div className="flex justify-between text-white/90">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2 text-xs sm:text-sm">
+              <div className="flex justify-between text-gray-600">
                 <span>Subtotal productos</span>
-                <span className="font-semibold tabular-nums">{formatMoney(subtotal)}</span>
+                <span className="font-semibold text-gray-900 tabular-nums">{formatMoney(subtotal)}</span>
               </div>
-              <div className="flex justify-between text-white/90">
-                <span>Costo de envío fijado</span>
-                <span className="font-bold text-yellow-200 tabular-nums">{formatMoney(deliveryFee)}</span>
+              <div className="flex justify-between text-gray-600">
+                <span>Costo de envío</span>
+                <span className="font-semibold text-gray-900 tabular-nums">{formatMoney(deliveryFee)}</span>
               </div>
-              <div className="flex justify-between items-baseline pt-2 border-t border-white/20 font-black">
-                <span className="text-sm uppercase tracking-wider">Total a pagar</span>
-                <span className="text-xl sm:text-2xl tabular-nums font-black text-white">{formatMoney(totalAmount)}</span>
+              <div className="flex justify-between items-baseline pt-2 border-t border-gray-200 text-gray-900">
+                <span className="text-xs font-bold uppercase tracking-wider">Total a pagar</span>
+                <span className="text-base sm:text-lg tabular-nums font-extrabold text-gray-950">{formatMoney(totalAmount)}</span>
               </div>
             </div>
 
-            {/* Botones de Aceptar y Rechazar */}
-            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+            {/* Botones de Confirmar y Cancelar */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <button
                 type="button"
                 onClick={handleAcceptQuote}
                 disabled={actionLoading}
-                className="flex-1 py-3.5 px-4 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.99] text-white font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                className="btn-primary py-2.5 px-4 text-xs sm:text-sm font-semibold justify-center flex-1 shadow-2xs cursor-pointer disabled:opacity-50"
               >
-                {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={18} />}
-                <span>{statusCopy.acceptButton || 'Aceptar y Continuar'}</span>
+                {actionLoading ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                <span>{statusCopy.acceptButton || 'Confirmar Pedido'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setShowCancelModal(true)}
                 disabled={actionLoading}
-                className="py-3 px-4 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/20 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="btn-secondary py-2.5 px-3.5 text-xs font-semibold justify-center cursor-pointer"
               >
-                <X size={15} />
-                <span>Rechazar / Cancelar Pedido</span>
+                <X size={14} />
+                <span>Cancelar Pedido</span>
               </button>
             </div>
           </div>
         )}
 
-        {/* ── 2. VENTANA DE GRACIA (60s) - ESTADO CONFIRMADO_GRACIA ── */}
+        {/* ── 2. VENTANA DE GRACIA - ESTADO CONFIRMADO_GRACIA ── */}
         {isGraceWindow && (
-          <div className="bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 rounded-2xl p-5 sm:p-6 text-white shadow-xl space-y-3.5 border border-purple-400/40 animate-fade-in">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white font-black text-base shadow-xs animate-pulse shrink-0">
+          <div className="bg-white border border-blue-200 rounded-xl p-4 shadow-xs space-y-3 animate-fade-in">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0 border border-blue-100">
                   {graceSeconds}s
                 </div>
-                <div>
-                  <h3 className="font-black text-base sm:text-lg tracking-tight">¡Pedido aceptado!</h3>
-                  <p className="text-xs sm:text-sm text-purple-100 leading-snug">
-                    {statusCopy.graceBanner(graceSeconds)}
+                <div className="min-w-0">
+                  <h3 className="font-bold text-xs sm:text-sm text-gray-900 truncate">Pedido confirmado</h3>
+                  <p className="text-[11px] text-gray-500 truncate">
+                    Pasando a preparación en {graceSeconds} segundos
                   </p>
                 </div>
               </div>
@@ -443,24 +445,20 @@ export default function TrackingPage() {
                 type="button"
                 onClick={handleUndoGrace}
                 disabled={actionLoading}
-                className="px-3.5 py-2.5 bg-white text-purple-900 hover:bg-purple-50 active:scale-95 font-black text-xs rounded-xl shadow-md transition-all cursor-pointer shrink-0 flex items-center gap-1.5"
+                className="btn-secondary py-1.5 px-2.5 text-xs font-semibold shrink-0 cursor-pointer text-gray-600 hover:text-rose-700 hover:bg-rose-50 hover:border-rose-200"
               >
-                <RotateCcw size={13} />
-                <span>Deshacer / Me equivoqué</span>
+                <RotateCcw size={12} />
+                <span>Cancelar</span>
               </button>
             </div>
 
-            {/* Barra de progreso de cuenta regresiva */}
-            <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
+            {/* Barra de progreso sutil */}
+            <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
               <div 
-                className="bg-yellow-300 h-full transition-all duration-1000 ease-linear rounded-full shadow-xs"
-                style={{ width: `${(graceSeconds / 60) * 100}%` }}
+                className="bg-blue-600 h-full transition-all duration-1000 ease-linear rounded-full"
+                style={{ width: `${(Math.min(30, graceSeconds) / 30) * 100}%` }}
               />
             </div>
-
-            <p className="text-[11px] text-purple-200">
-              Tienes 60 segundos por si presionaste por error o necesitas hacer un cambio de último momento.
-            </p>
           </div>
         )}
 
@@ -712,6 +710,11 @@ export default function TrackingPage() {
                 <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-start justify-between gap-3">
                   <div>
                     <span className="font-bold text-gray-900">{qty}× {name}</span>
+                    {(item.opciones_texto || (Array.isArray(item.opciones) && item.opciones.length > 0)) && (
+                      <p className="text-[11px] font-medium text-blue-800 mt-0.5">
+                        ▸ {item.opciones_texto || item.opciones.map(o => o.nombre).join(', ')}
+                      </p>
+                    )}
                     {item.nota && (
                       <p className="text-[11px] text-gray-500 italic mt-0.5">Nota: {item.nota}</p>
                     )}

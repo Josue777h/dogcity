@@ -2,18 +2,19 @@ import { NavLink } from 'react-router-dom';
 import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike, Sparkles, Tag, DollarSign, ExternalLink } from 'lucide-react';
 import { useBusinessStore } from '../../../stores';
 import SaaSLogo from '../../../components/common/SaaSLogo';
+import { isModuleEnabled } from '../../../lib/modules';
 
 const MAIN_TABS = [
-  { path: '/admin/dashboard',  label: 'Dashboard', icon: Store },
-  { path: '/admin/pedidos',    label: 'Pedidos en vivo', icon: ShoppingBag },
-  { path: '/admin/ingresos',   label: 'Ingresos y ventas', icon: DollarSign },
-  { path: '/admin/productos',  label: 'Productos', icon: Package },
+  { path: '/admin/dashboard',  label: 'Dashboard', icon: Store, module: null },
+  { path: '/admin/pedidos',    label: 'Pedidos en vivo', icon: ShoppingBag, module: 'orders' },
+  { path: '/admin/ingresos',   label: 'Ingresos y ventas', icon: DollarSign, module: null },
+  { path: '/admin/productos',  label: 'Productos', icon: Package, module: 'catalog' },
 ];
 
 const MANAGE_TABS = [
-  { path: '/admin/categorias',    label: 'Categorías', icon: Tag },
-  { path: '/admin/domiciliarios', label: 'Domiciliarios', icon: Bike },
-  { path: '/admin/configuracion', label: 'Configuración', icon: Settings },
+  { path: '/admin/categorias',    label: 'Categorías', icon: Tag, module: 'catalog' },
+  { path: '/admin/domiciliarios', label: 'Domiciliarios', icon: Bike, module: 'delivery' },
+  { path: '/admin/configuracion', label: 'Configuración', icon: Settings, module: null },
 ];
 
 export default function Sidebar({ business, onSignOut, isOpen, onClose }) {
@@ -93,14 +94,14 @@ export default function Sidebar({ business, onSignOut, isOpen, onClose }) {
           <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-3 mb-2">
             Principal
           </p>
-          {MAIN_TABS.map(renderTab)}
+          {MAIN_TABS.filter(t => !t.module || isModuleEnabled(business, t.module)).map(renderTab)}
 
           <div className="my-4 mx-2 border-t border-gray-800/70" />
 
           <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-3 mb-2">
             Gestión
           </p>
-          {MANAGE_TABS.map(renderTab)}
+          {MANAGE_TABS.filter(t => !t.module || isModuleEnabled(business, t.module)).map(renderTab)}
         </nav>
 
         {/* Store Link & Plan Upgrade & Logout (permanently pinned at bottom) */}

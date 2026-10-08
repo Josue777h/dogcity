@@ -18,6 +18,7 @@ import ConfirmModal from '../../../components/ui/ConfirmModal';
 
 const STATUS_TABS = [
   { id: 'all', label: 'Todos' },
+  { id: 'nuevo', label: 'Nuevos' },
   { id: 'cotizacion', label: 'Por Cotizar' },
   { id: 'preparando', label: 'En Cocina' },
   { id: 'enviado', label: 'En Camino' },
@@ -27,6 +28,15 @@ const STATUS_TABS = [
 
 const STATUS_STEPS = ['nuevo', 'preparando', 'enviado', 'entregado'];
 const STATUS_LABELS = { nuevo: 'Nuevo', preparando: 'Preparando', enviado: 'Enviado', entregado: 'Entregado' };
+
+function getStepIndex(rawStatus) {
+  const s = (rawStatus || '').toString().toLowerCase();
+  if (['nuevo', 'recibido', 'pendiente', 'cotizacion_pendiente', 'cotizacion_enviada', 'confirmado_gracia'].includes(s)) return 0;
+  if (['preparando', 'en_preparacion'].includes(s)) return 1;
+  if (['enviado', 'en_camino'].includes(s)) return 2;
+  if (['entregado'].includes(s)) return 3;
+  return 0;
+}
 
 const CANCEL_REASONS = [
   'Cliente no aceptó costo de envío',
@@ -160,7 +170,7 @@ function MerchantCancelModal({ isOpen, order, onClose, onConfirmed }) {
 }
 
 function OrderTimeline({ currentStatus, onStatusChange }) {
-  const currentIdx = STATUS_STEPS.indexOf(currentStatus);
+  const currentIdx = getStepIndex(currentStatus);
   return (
     <div className="py-2.5 px-4 bg-white rounded-xl border border-gray-200 mb-3 shadow-2xs">
       <div className="flex items-center justify-between relative">
@@ -232,7 +242,9 @@ function OrderItems({ order }) {
           const qty = p.cantidad ?? p.quantity ?? 1;
           const name = p.nombre ?? p.name ?? 'Producto';
           const price = p.precio ?? p.price ?? 0;
-          const optionsText = p.opciones_texto || (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
+          const optionsText = p.opciones_texto || 
+            (Array.isArray(p.opciones) ? p.opciones.map(o => o.nombre).join(', ') : '') ||
+            (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
           
           return (
             <div key={idx} className="pt-1.5 first:pt-0">
@@ -251,8 +263,9 @@ function OrderItems({ order }) {
               )}
 
               {p.nota && (
-                <div className="text-xs font-medium text-amber-950 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 mt-1">
-                  <strong>Nota:</strong> &ldquo;{p.nota}&rdquo;
+                <div className="text-[11px] font-bold text-amber-950 bg-amber-50 border border-amber-300 rounded px-2 py-0.5 mt-1 flex items-center gap-1">
+                  <span>⚠️ Nota cocina:</span>
+                  <span className="font-semibold">&ldquo;{p.nota}&rdquo;</span>
                 </div>
               )}
             </div>
@@ -307,10 +320,10 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
       
       const customerPhone = (order.telefono || '').replace(/\D/g, '');
       const storeName = businessName || 'la tienda';
-      const orderNumber = order.id;
-      const trackingUrl = `https://negu.pro/tracking/${order.id}${order.token ? `?token=${order.token}` : ''}`;
+      const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://negu.pro';
+      const trackingUrl = `${origin}/tracking?id=${order.id}${order.token ? `&token=${order.token}` : ''}`;
       
-      const whatsappText = `¡Hola ${order.nombre}! El valor del domicilio para tu orden #${orderNumber} en ${storeName} es de $${feeNum.toLocaleString('es-CO')}. Total a pagar: $${newTotal.toLocaleString('es-CO')}. Por favor confirma o cancela tu orden aquí: ${trackingUrl}`;
+      const whatsappText = `Hola ${order.nombre}, el valor del domicilio para tu pedido #${orderNumber} en ${storeName} es de $${feeNum.toLocaleString('es-CO')}.\nTotal a pagar: $${newTotal.toLocaleString('es-CO')}.\n\nConfirma tu pedido aquí:\n${trackingUrl}`;
       
       const waUrl = `https://wa.me/${customerPhone}?text=${encodeURIComponent(whatsappText)}`;
       window.open(waUrl, '_blank');
@@ -477,7 +490,7 @@ export default function OrdersView(props) {
     if (st === 'CONFIRMADO_GRACIA') {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-purple-100 text-purple-900 border border-purple-300 animate-pulse">
-          <Clock size={11} /> Ventana Gracia (60s)
+          <Clock size={11} /> Ventana Gracia (30s)
         </span>
       );
     }
@@ -496,28 +509,36 @@ export default function OrdersView(props) {
     return <span className="badge badge-neutral">{st || 'Nuevo'}</span>;
   };
 
+  const isOrderNew = (o) => {
+    const s = (o.status || o.estado || '').toString().toLowerCase();
+    return ['nuevo', 'recibido', 'pendiente', 'confirmado_gracia'].includes(s) && !isQuotePending(o);
+  };
+
   const getTabCount = (tabId) => {
     if (tabId === 'all') return orders.length;
+    if (tabId === 'nuevo') return orders.filter(isOrderNew).length;
     if (tabId === 'cotizacion') return orders.filter(isQuotePending).length;
-    if (tabId === 'preparando') return orders.filter(o => ['preparando', 'EN_PREPARACION', 'CONFIRMADO_GRACIA'].includes(o.status || o.estado)).length;
-    if (tabId === 'enviado') return orders.filter(o => ['enviado', 'EN_CAMINO'].includes(o.status || o.estado)).length;
-    if (tabId === 'entregado') return orders.filter(o => ['entregado', 'ENTREGADO'].includes(o.status || o.estado)).length;
-    if (tabId === 'cancelado') return orders.filter(o => ['cancelado', 'CANCELADO'].includes(o.status || o.estado)).length;
+    if (tabId === 'preparando') return orders.filter(o => ['preparando', 'en_preparacion'].includes((o.status || o.estado || '').toLowerCase())).length;
+    if (tabId === 'enviado') return orders.filter(o => ['enviado', 'en_camino'].includes((o.status || o.estado || '').toLowerCase())).length;
+    if (tabId === 'entregado') return orders.filter(o => ['entregado'].includes((o.status || o.estado || '').toLowerCase())).length;
+    if (tabId === 'cancelado') return orders.filter(o => ['cancelado'].includes((o.status || o.estado || '').toLowerCase())).length;
     return orders.filter(o => (o.estado || o.status) === tabId).length;
   };
 
   const filteredOrders = activeFilter === 'all' 
     ? orders 
+    : activeFilter === 'nuevo'
+    ? orders.filter(isOrderNew)
     : activeFilter === 'cotizacion'
     ? orders.filter(isQuotePending)
     : activeFilter === 'preparando'
-    ? orders.filter(o => ['preparando', 'EN_PREPARACION', 'CONFIRMADO_GRACIA'].includes(o.status || o.estado))
+    ? orders.filter(o => ['preparando', 'en_preparacion'].includes((o.status || o.estado || '').toLowerCase()))
     : activeFilter === 'enviado'
-    ? orders.filter(o => ['enviado', 'EN_CAMINO'].includes(o.status || o.estado))
+    ? orders.filter(o => ['enviado', 'en_camino'].includes((o.status || o.estado || '').toLowerCase()))
     : activeFilter === 'entregado'
-    ? orders.filter(o => ['entregado', 'ENTREGADO'].includes(o.status || o.estado))
+    ? orders.filter(o => ['entregado'].includes((o.status || o.estado || '').toLowerCase()))
     : activeFilter === 'cancelado'
-    ? orders.filter(o => ['cancelado', 'CANCELADO'].includes(o.status || o.estado))
+    ? orders.filter(o => ['cancelado'].includes((o.status || o.estado || '').toLowerCase()))
     : orders.filter(o => (o.estado || o.status) === activeFilter);
 
   const handleStatusChange = async (orderId, newStatus) => {
@@ -737,26 +758,28 @@ export default function OrdersView(props) {
                 <div className="px-3 pb-3.5 pt-1 sm:px-4 border-t border-border animate-fade-in-down bg-gray-50/50">
                   {/* Banner de Cancelación si está cancelado */}
                   {(status === 'CANCELADO' || status === 'cancelado') && (
-                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-950 mb-3 shadow-2xs">
-                      <Ban size={16} className="text-rose-600 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-black text-rose-950 uppercase tracking-wide">Pedido Cancelado</p>
-                        <p className="text-rose-800 mt-0.5">
-                          Cancelado por: <span className="font-bold">{order.cancelled_by === 'customer' ? 'El Cliente' : order.cancelled_by === 'merchant' ? 'El Comercio' : 'Sistema'}</span>
-                        </p>
-                        {order.cancellation_reason && (
-                          <p className="text-rose-900 font-semibold mt-0.5">Motivo: &ldquo;{order.cancellation_reason}&rdquo;</p>
-                        )}
+                    <div className="p-3 bg-gray-100 border border-gray-200 rounded-xl flex items-center justify-between text-xs text-gray-700 mb-3 shadow-2xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                        <span className="font-bold text-gray-900">Pedido cancelado</span>
+                        <span className="text-gray-500">
+                          · por {order.cancelled_by === 'customer' ? 'el cliente' : order.cancelled_by === 'merchant' ? 'el comercio' : 'sistema'}
+                        </span>
                       </div>
+                      {order.cancellation_reason && (
+                        <span className="text-gray-600 text-[11px] font-medium truncate max-w-[240px]" title={order.cancellation_reason}>
+                          {order.cancellation_reason}
+                        </span>
+                      )}
                     </div>
                   )}
 
                   {/* Banner de Ventana de Gracia */}
                   {(status === 'CONFIRMADO_GRACIA' || order.status === 'CONFIRMADO_GRACIA') && (
-                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl flex items-center gap-2.5 text-xs text-purple-950 mb-3 animate-pulse shadow-2xs">
-                      <Clock size={16} className="text-purple-600 shrink-0" />
-                      <p className="font-bold">
-                        ¡El cliente aceptó la cotización! Transcurriendo ventana de gracia de 60 segundos antes de entrar a preparación en cocina.
+                    <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2 text-xs text-blue-900 mb-3 shadow-2xs">
+                      <Clock size={15} className="text-blue-600 shrink-0" />
+                      <p className="font-medium">
+                        Cotización aceptada por el cliente. Entrando a cocina en 30 segundos.
                       </p>
                     </div>
                   )}
@@ -783,10 +806,13 @@ export default function OrdersView(props) {
                     </div>
                   )}
 
-                  <OrderTimeline 
-                    currentStatus={status} 
-                    onStatusChange={(newSt) => handleStatusChange(order.id, newSt)} 
-                  />
+                  {/* Stepper sólo si NO está cancelado */}
+                  {status !== 'CANCELADO' && status !== 'cancelado' && (
+                    <OrderTimeline 
+                      currentStatus={status} 
+                      onStatusChange={(newSt) => handleStatusChange(order.id, newSt)} 
+                    />
+                  )}
 
                   {/* Panel de fijar cotización para el comercio */}
                   {(deliveryPending || order.status === 'COTIZACION_PENDIENTE' || isQuotePending(order)) && status !== 'CANCELADO' && status !== 'cancelado' && (

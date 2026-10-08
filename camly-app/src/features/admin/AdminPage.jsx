@@ -64,26 +64,74 @@ export default function AdminPage() {
     loadInitial();
   }, [session]);
 
+  const notifyNewOrder = () => {
+    const soundOn = localStorage.getItem('camly_order_sound') !== 'false';
+    if (soundOn) {
+      playNewOrderSound();
+    }
+    const prevTitle = document.title;
+    document.title = '🔔 (1) ¡Nuevo Pedido! - NEGU';
+    setTimeout(() => {
+      document.title = prevTitle;
+    }, 8000);
+    addToast('🔔 ¡Tienes un nuevo pedido entrante!', 'success');
+  };
+
   useEffect(() => {
     if (business?.id && session?.user?.id) {
+      // 1. Supabase Postgres Realtime
       const sub = subscribeToOrders((payload) => {
-        loadData(session.user.id, false); // Reload without full loading state
-
-        // Alerta sonora y visual ante nuevo pedido
+        loadData(session.user.id, false);
         if (!payload || payload.eventType === 'INSERT') {
-          const soundOn = localStorage.getItem('camly_order_sound') !== 'false';
-          if (soundOn) {
-            playNewOrderSound();
-          }
-          const prevTitle = document.title;
-          document.title = '🔔 (1) ¡Nuevo Pedido! - NEGU';
-          setTimeout(() => {
-            document.title = prevTitle;
-          }, 8000);
-          addToast('🔔 ¡Tienes un nuevo pedido entrante!', 'success');
+          notifyNewOrder();
         }
       });
-      return () => { sub.unsubscribe(); };
+
+      // 2. BroadcastChannel instantáneo entre pestañas
+      let bc;
+      try {
+        bc = new BroadcastChannel('negu_orders_channel');
+        bc.onmessage = (msg) => {
+          if (msg?.data?.type === 'NEW_ORDER' && (!msg.data.negocioId || msg.data.negocioId === business.id)) {
+            loadData(session.user.id, false);
+            notifyNewOrder();
+          }
+        };
+      } catch {}
+
+      // 3. Fallback de localStorage entre ventanas
+      const handleStorage = (e) => {
+        if (e.key === 'negu_latest_order_event' && e.newValue) {
+          try {
+            const parsed = JSON.parse(e.newValue);
+            if (!parsed.bid || parsed.bid === business.id) {
+              loadData(session.user.id, false);
+              notifyNewOrder();
+            }
+          } catch {}
+        }
+      };
+      window.addEventListener('storage', handleStorage);
+
+      // 4. Polling inteligente de respaldo + reconexión en foco
+      const handleFocus = () => {
+        loadData(session.user.id, false);
+      };
+      window.addEventListener('focus', handleFocus);
+
+      const pollInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          loadData(session.user.id, false);
+        }
+      }, 10000);
+
+      return () => {
+        sub.unsubscribe();
+        if (bc) bc.close();
+        window.removeEventListener('storage', handleStorage);
+        window.removeEventListener('focus', handleFocus);
+        clearInterval(pollInterval);
+      };
     }
   }, [business?.id, session?.user?.id]);
 

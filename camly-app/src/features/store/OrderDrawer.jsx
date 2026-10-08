@@ -113,32 +113,43 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
     const addressLine  = customerAddress?.trim() || (locationLink ? 'Ver ubicación GPS en el mapa' : 'No especificada');
     let envioLine = '';
     if (deliveryMethod === 'envio') {
-      if (tipoDom === 'manual') envioLine = 'Domicilio: por confirmar en chat';
-      else if (tipoDom === 'fijo') envioLine = `Domicilio: ${formatMoney(deliveryFee)}`;
-      else envioLine = `Domicilio: ${formatMoney(deliveryFee)}${distanceKm ? ` (${distanceKm.toFixed(1)} km)` : ''}`;
+      if (tipoDom === 'manual') envioLine = 'Domicilio: Por cotizar';
+      else envioLine = `Domicilio: ${formatMoney(deliveryFee)}`;
     }
 
-    return [
-      `🛍️ Nuevo pedido en *${bizName}*`,
+    const lines = [
+      `*Pedido #${orderId} - ${bizName}*`,
       '',
       itemsLines,
       '',
-      deliveryMethod === 'envio'
-        ? `📍 Entrega en: ${addressLine}\n🗺️ ${locationLink || ''}\n${envioLine}`
-        : '🏪 Retiro en local',
-      '',
-      tipoDom === 'manual' && deliveryMethod === 'envio'
-        ? `💰 Subtotal: ${formatMoney(subtotal)}`
-        : `💰 Total: ${formatMoney(total)}`,
-      '',
-      `👤 ${customerName} · 📱 ${customerPhone}`,
-      `💳 Pago: ${paymentMethod === 'transferencia'
-        ? `Transferencia (${business?.pago_banco || 'Nequi'}) — comprobante adjunto`
-        : 'Efectivo'}`,
-      cart.comment ? `\n📝 Nota: ${cart.comment}` : '',
-      '',
-      `#${orderId.toString().slice(-6).toUpperCase()} · Seguir pedido → ${trackingUrl}`,
-    ].filter(s => s !== null && s !== undefined && s !== false).join('\n');
+      deliveryMethod === 'envio' ? `Entrega: ${addressLine}` : 'Retiro en local',
+    ];
+
+    if (deliveryMethod === 'envio' && locationLink) {
+      lines.push(`Ubicación: ${locationLink}`);
+    }
+    if (deliveryMethod === 'envio' && envioLine) {
+      lines.push(envioLine);
+    }
+
+    lines.push('');
+    if (tipoDom === 'manual' && deliveryMethod === 'envio') {
+      lines.push(`Subtotal: ${formatMoney(subtotal)}`);
+    } else {
+      lines.push(`Total: ${formatMoney(total)}`);
+    }
+
+    lines.push(`Pago: ${paymentMethod === 'transferencia' ? `Transferencia (${business?.pago_banco || 'Nequi'})` : 'Efectivo'}`);
+    lines.push(`Cliente: ${customerName} (${customerPhone})`);
+
+    if (cart.comment) {
+      lines.push(`Nota: ${cart.comment}`);
+    }
+
+    lines.push('');
+    lines.push(`Seguimiento: ${trackingUrl}`);
+
+    return lines.filter(Boolean).join('\n');
   }
 
   function updateLocationFromCoords(lat, lng, label = 'Ubicación ajustada') {
@@ -239,7 +250,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
         delivery_type: deliveryType,
         items: selectedItems.map(i => ({
           id: i.id, nombre: i.name, cantidad: i.quantity, precio: i.price,
-          nota: cart.notes[i.id] || '',
+          nota: (i.note || cart.notes?.[i.id] || '').trim(),
           opciones_texto: i.opciones_texto || '',
           opciones: i.options || []
         })),
@@ -260,6 +271,18 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
       if (navigator.vibrate) navigator.vibrate(80);
       clearCart(bid);
       setLocation('', '');
+
+      // Notificar al panel administrativo instantáneamente (incluso entre pestañas del navegador)
+      if (typeof window !== 'undefined') {
+        try {
+          const bc = new BroadcastChannel('negu_orders_channel');
+          bc.postMessage({ type: 'NEW_ORDER', orderId, negocioId: bid });
+          bc.close();
+        } catch {}
+        try {
+          localStorage.setItem('negu_latest_order_event', JSON.stringify({ bid, orderId, timestamp: Date.now() }));
+        } catch {}
+      }
 
       setTimeout(() => {
         openWhatsApp(whatsappPhone, message);

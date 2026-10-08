@@ -33,17 +33,12 @@ export const OrderService = {
    */
   buildQuoteWhatsAppUrl(order: Order): string {
     const phone = (order.telefono || '').replace(/\D/g, '');
-    const storeName = order.negocios?.nombre_visible || 'la tienda';
-    const trackingUrl = `https://negu.pro/tracking?id=${order.id}&token=${order.token}`;
+    const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://negu.pro';
+    const trackingUrl = `${origin}/tracking?id=${order.id}&token=${order.token}`;
     const feeFormatted = Number(order.delivery_fee || order.domicilio_costo || 0).toLocaleString('es-CO');
     const totalFormatted = Number(order.total_amount || order.total || 0).toLocaleString('es-CO');
-    const subtotalFormatted = Number(order.subtotal_amount || (Number(order.total || 0) - Number(order.delivery_fee || 0))).toLocaleString('es-CO');
 
-    const message = `¡Hola ${order.nombre}! El valor del domicilio para tu orden #${order.id} en ${storeName} es de $${feeFormatted}.\n\n` +
-      `💰 Subtotal: $${subtotalFormatted}\n` +
-      `🛵 Domicilio: $${feeFormatted}\n` +
-      `💳 Total a pagar: $${totalFormatted}\n\n` +
-      `Por favor confirma o cancela tu orden aquí:\n👉 ${trackingUrl}`;
+    const message = `Hola ${order.nombre}, el valor del domicilio para tu pedido #${order.id} en ${storeName} es de $${feeFormatted}.\nTotal a pagar: $${totalFormatted}.\n\nConfirma tu pedido aquí:\n${trackingUrl}`;
 
     return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   },
