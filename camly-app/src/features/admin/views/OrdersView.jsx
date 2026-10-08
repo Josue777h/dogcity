@@ -323,7 +323,7 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
       const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://negu.pro';
       const trackingUrl = `${origin}/tracking?id=${order.id}${order.token ? `&token=${order.token}` : ''}`;
       
-      const whatsappText = `Hola ${order.nombre}, el valor del domicilio para tu pedido #${orderNumber} en ${storeName} es de $${feeNum.toLocaleString('es-CO')}.\nTotal a pagar: $${newTotal.toLocaleString('es-CO')}.\n\nConfirma tu pedido aquí:\n${trackingUrl}`;
+      const whatsappText = `Hola ${order.nombre}, el valor del domicilio para tu pedido #${order.id} en ${storeName} es de $${feeNum.toLocaleString('es-CO')}.\nTotal a pagar: $${newTotal.toLocaleString('es-CO')}.\n\nConfirma tu pedido aquí:\n${trackingUrl}`;
       
       const waUrl = `https://wa.me/${customerPhone}?text=${encodeURIComponent(whatsappText)}`;
       window.open(waUrl, '_blank');
@@ -541,10 +541,29 @@ export default function OrdersView(props) {
     ? orders.filter(o => ['cancelado'].includes((o.status || o.estado || '').toLowerCase()))
     : orders.filter(o => (o.estado || o.status) === activeFilter);
 
+  const handleNotifyCustomerDispatch = (order) => {
+    const customerPhone = (order.telefono || '').replace(/\D/g, '');
+    if (!customerPhone) {
+      addToast('El pedido no tiene teléfono registrado', 'warning');
+      return;
+    }
+    const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://negu.pro';
+    const trackingUrl = `${origin}/tracking?id=${order.id}${order.token ? `&token=${order.token}` : ''}`;
+    const storeName = businessName || 'la tienda';
+    const message = `Hola ${order.nombre}, tu pedido #${order.id} en ${storeName} ya va en camino hacia tu dirección.\n\nPuedes ver el estado de tu entrega aquí:\n${trackingUrl}`;
+    window.open(`https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
       onUpdate();
+      if (newStatus === 'enviado' || newStatus === 'EN_CAMINO') {
+        const order = orders.find(o => o.id === orderId);
+        if (order && order.entrega_metodo === 'envio') {
+          handleNotifyCustomerDispatch(order);
+        }
+      }
     } catch (err) {
       console.error(err);
     }
@@ -708,17 +727,19 @@ export default function OrdersView(props) {
 
                   <div className="flex items-center gap-1.5">
                     {getStatusBadge(status, order)}
-                    <button 
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOrderToCancel(order);
-                      }}
-                      className="btn-ghost p-1.5 tap-target text-gray-400 hover:text-rose-600 hover:bg-rose-50"
-                      title="Cancelar pedido con motivo"
-                    >
-                      <Ban size={15} />
-                    </button>
+                    {status !== 'CANCELADO' && status !== 'cancelado' && status !== 'ENTREGADO' && status !== 'entregado' && (
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOrderToCancel(order);
+                        }}
+                        className="btn-ghost p-1.5 tap-target text-gray-400 hover:text-rose-600 hover:bg-rose-50"
+                        title="Cancelar pedido con motivo"
+                      >
+                        <Ban size={15} />
+                      </button>
+                    )}
                     <button 
                       type="button"
                       onClick={(e) => {
@@ -854,16 +875,29 @@ export default function OrdersView(props) {
                             </div>
                           </div>
 
-                          <a 
-                            href={`https://wa.me/${order.telefono?.replace(/\D/g, '')}`} 
-                            target="_blank" 
-                            rel="noreferrer" 
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors shrink-0"
-                            title="Abrir chat en WhatsApp"
-                          >
-                            <MessageCircle size={14} />
-                            <span>WhatsApp</span>
-                          </a>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {order.entrega_metodo === 'envio' && (
+                              <button 
+                                type="button"
+                                onClick={() => handleNotifyCustomerDispatch(order)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold transition-colors cursor-pointer"
+                                title="Enviar WhatsApp al cliente avisando que el pedido va en camino con el link de seguimiento"
+                              >
+                                <Bike size={13} />
+                                <span>Avisar envío</span>
+                              </button>
+                            )}
+                            <a 
+                              href={`https://wa.me/${order.telefono?.replace(/\D/g, '')}`} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors shrink-0"
+                              title="Abrir chat en WhatsApp"
+                            >
+                              <MessageCircle size={14} />
+                              <span>WhatsApp</span>
+                            </a>
+                          </div>
                         </div>
 
                         {/* Dirección y GPS */}

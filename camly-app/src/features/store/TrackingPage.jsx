@@ -156,20 +156,40 @@ export default function TrackingPage() {
   const deliveryFee = Number(currentOrder.delivery_fee || currentOrder.domicilio_costo || 0);
   const totalAmount = Number(currentOrder.total_amount || currentOrder.total || (subtotal + deliveryFee));
 
-  // Ventana de gracia: contador regresivo de 30 segundos
+  // Ventana de gracia: contador regresivo de 30 segundos garantizado
   useEffect(() => {
     if (statusStr !== 'CONFIRMADO_GRACIA') return;
 
     const GRACE_PERIOD_SECONDS = 30;
+
+    // Calcular el timestamp base
+    let startMs = Date.now();
+    if (currentOrder.confirmed_at) {
+      const parsed = new Date(currentOrder.confirmed_at).getTime();
+      if (!isNaN(parsed)) {
+        const diff = (Date.now() - parsed) / 1000;
+        // Si el timestamp registrado fue hace menos de 30s, respetar los segundos restantes
+        if (diff >= 0 && diff < GRACE_PERIOD_SECONDS) {
+          startMs = parsed;
+        }
+      }
+    }
+
     const calcRemaining = () => {
-      if (!currentOrder.confirmed_at) return GRACE_PERIOD_SECONDS;
-      const confirmedTime = new Date(currentOrder.confirmed_at).getTime();
-      // Elimina cualquier desfase por diferencias de reloj entre cliente y servidor
-      const elapsed = Math.max(0, Math.floor((Date.now() - confirmedTime) / 1000));
-      return Math.min(GRACE_PERIOD_SECONDS, Math.max(0, GRACE_PERIOD_SECONDS - elapsed));
+      const elapsed = Math.floor((Date.now() - startMs) / 1000);
+      return Math.max(0, GRACE_PERIOD_SECONDS - elapsed);
     };
 
-    setGraceSeconds(calcRemaining());
+    const initialRem = calcRemaining();
+    setGraceSeconds(initialRem);
+
+    if (initialRem <= 0) {
+      if (!isDemo && currentOrder.id && currentOrder.token) {
+        OrderService.advanceToKitchen(currentOrder.id, currentOrder.token).catch(console.error);
+      }
+      setOrder((prev) => prev ? { ...prev, status: 'EN_PREPARACION', estado: 'preparando' } : null);
+      return;
+    }
 
     const timer = setInterval(async () => {
       const rem = calcRemaining();
@@ -462,24 +482,30 @@ export default function TrackingPage() {
           </div>
         )}
 
-        {/* ── 3. ESTADO CANCELADO: BANNER EXPLICATIVO ── */}
+        {/* ── 3. ESTADO CANCELADO: PANEL SOBRIO ── */}
         {isCancelled && (
-          <div className="bg-rose-50 border-2 border-rose-300 rounded-2xl p-5 text-rose-950 shadow-sm space-y-2 animate-fade-in">
-            <div className="flex items-center gap-2 text-rose-700">
-              <Ban size={20} />
-              <h2 className="text-base sm:text-lg font-black uppercase tracking-wide">
-                Pedido Cancelado
-              </h2>
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-xs space-y-2 animate-fade-in">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                <h2 className="text-sm sm:text-base font-bold text-gray-900">
+                  Pedido Cancelado
+                </h2>
+              </div>
+              <span className="badge badge-error text-[11px]">
+                Cancelado
+              </span>
             </div>
-            <p className="text-xs sm:text-sm text-rose-900 leading-relaxed">
+            <p className="text-xs text-gray-600">
               Este pedido fue anulado por{' '}
-              <span className="font-bold">
-                {currentOrder.cancelled_by === 'customer' ? 'ti (Cliente)' : currentOrder.cancelled_by === 'merchant' ? 'el comercio' : 'el sistema'}
-              </span>.
+              <span className="font-semibold text-gray-900">
+                {currentOrder.cancelled_by === 'customer' ? 'el cliente' : currentOrder.cancelled_by === 'merchant' ? 'el comercio' : 'el sistema'}
+              </span>{' '}
+              y queda finalizado.
             </p>
             {currentOrder.cancellation_reason && (
-              <div className="p-3 bg-white/80 rounded-xl border border-rose-200 text-xs font-semibold text-rose-950">
-                Motivo: &ldquo;{currentOrder.cancellation_reason}&rdquo;
+              <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-200 text-xs text-gray-700">
+                <span className="font-semibold text-gray-900">Motivo:</span> {currentOrder.cancellation_reason}
               </div>
             )}
           </div>
