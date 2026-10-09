@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, ArrowRight, ShieldCheck, Heart } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { signIn } from '../../lib/supabase';
 import { useAuthStore, useToastStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
 import SEO from '../../components/common/SEO';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import Card from '../../components/ui/Card';
 
 export default function LoginPage() {
   const navigate   = useNavigate();
@@ -48,94 +51,78 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F4EF] text-gray-900 flex flex-col justify-center items-center py-10 px-4 sm:px-6 relative overflow-x-hidden selection:bg-cyan-500 selection:text-white">
-      <SEO 
+    <div className="min-h-screen bg-white text-slate-900 lg:grid lg:grid-cols-[0.9fr_1.1fr]">
+      <SEO
         title="Iniciar Sesión | Acceso al Panel NEGU"
         description="Ingresa a tu cuenta de NEGU para gestionar pedidos, actualizar productos, configurar delivery GPS y controlar tu negocio en tiempo real."
         canonical="https://negu.pro/login"
         noindex={false}
       />
-      
-      {/* Background ambient radial gradients (Wenú style) */}
-      <div 
-        className="fixed inset-0 pointer-events-none -z-10"
-        style={{
-          background: `
-            radial-gradient(1000px 500px at 85% -5%, rgba(239, 246, 255, 0.9) 0%, transparent 60%),
-            radial-gradient(900px 550px at -5% 35%, rgba(254, 243, 199, 0.45) 0%, transparent 55%),
-            radial-gradient(800px 450px at 50% 100%, rgba(243, 244, 246, 0.7) 0%, transparent 50%)
-          `
-        }}
-      />
 
-      {/* Floating Back Button (Wenú style pill) */}
-      <div className="fixed top-4 left-4 sm:top-6 sm:left-6 z-40">
+      <aside className="relative hidden min-h-screen overflow-hidden bg-slate-950 px-12 py-14 text-white lg:flex lg:flex-col lg:justify-between xl:px-20">
+        <Link to="/" className="inline-flex w-fit rounded-lg"><SaaSLogo className="h-12" /></Link>
+        <div className="relative z-10 max-w-xl pb-12">
+          <span className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-200">Panel de tu negocio</span>
+          <h2 className="mt-6 text-4xl font-bold leading-tight text-white xl:text-5xl">Todo tu comercio,<br /><span className="text-cyan-300">en un solo lugar.</span></h2>
+          <p className="mt-5 max-w-md text-base leading-7 text-slate-300">Administra pedidos, catálogo y ventas desde una plataforma simple, estés donde estés.</p>
+          <div className="mt-8 flex flex-wrap gap-2 text-xs font-medium text-slate-200"><span className="rounded-full bg-white/10 px-3 py-2">Pedidos organizados</span><span className="rounded-full bg-white/10 px-3 py-2">Catálogo actualizado</span><span className="rounded-full bg-white/10 px-3 py-2">Sin comisiones</span></div>
+        </div>
+        <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-sky-500/20 blur-3xl" />
+        <p className="text-xs text-slate-500">NEGU · Herramientas para negocios locales</p>
+      </aside>
+      <div className="flex min-h-screen items-start justify-center px-4 pb-8 pt-5 sm:px-8 lg:items-center lg:px-12 lg:py-10">
+      <div className="w-full max-w-[520px] mx-auto">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 px-4 py-2 rounded-full text-xs sm:text-sm font-semibold border border-gray-200/80 shadow-xs hover:shadow-warm transition-all duration-150 backdrop-blur-sm"
+          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors duration-150 mb-5 lg:mb-8"
         >
-          <ArrowLeft size={15} strokeWidth={2.5} />
-          <span>Regresar</span>
+          <ArrowLeft size={15} strokeWidth={2} />
+          <span>Volver al inicio</span>
         </Link>
-      </div>
 
-      <div className="w-full max-w-[430px] mx-auto flex flex-col items-center">
-        
-        {/* Header with Centered Logo & Display Title */}
-        <div className="text-center mb-6 sm:mb-8 flex flex-col items-center">
-          <Link to="/" className="inline-block transition-transform hover:scale-[1.02] mb-3">
-            <SaaSLogo className="h-11 sm:h-12" />
+        <div className="mb-6">
+          <Link to="/" className="inline-block mb-5">
+            <SaaSLogo className="h-9" />
           </Link>
-
-          <span className="inline-block text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#0284C7] mb-1.5">
-            Acceso Clientes
-          </span>
-
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-950 tracking-tight">
-            ¡Bienvenido de vuelta!
+          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
+            Inicia sesión
           </h1>
-          
-          <p className="text-xs sm:text-sm text-gray-500 mt-1.5 font-medium">
-            Tu negocio no para, y nosotros tampoco.
+          <p className="text-sm text-slate-500 mt-1">
+            Accede a tu panel de NEGU
           </p>
         </div>
 
-        {/* Auth Form Card */}
-        <div className="w-full bg-white rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-200/80 transition-all">
-          
-          {/* Notification if newly registered */}
+        <Card className="w-full border border-slate-200 p-6 sm:p-8 shadow-md">
           {location.state?.email && (
-            <div className="mb-5 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center gap-2.5 text-xs font-semibold text-emerald-800">
-              <ShieldCheck size={18} className="text-emerald-600 shrink-0" />
-              <span>¡Cuenta creada con éxito! Ingresa tu contraseña para acceder.</span>
+            <div className="mb-5 flex items-start gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2.5 text-xs text-emerald-800">
+              <ShieldCheck size={15} className="text-emerald-600 shrink-0 mt-0.5" />
+              <span>Cuenta creada. Ingresa tu contraseña para continuar.</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {/* Email Field */}
             <div>
-              <label className="block text-xs font-bold text-gray-900 mb-1.5">
+              <label htmlFor="login-email" className="block text-sm font-medium text-slate-700 mb-1.5">
                 Correo electrónico
               </label>
-              <div className="relative flex items-center">
-                <Mail size={17} className="absolute left-3.5 text-gray-400 pointer-events-none" />
-                <input
+              <div className="relative">
+                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Input
+                  id="login-email"
                   type="email"
                   placeholder="tu@correo.com"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-[#FAFAF8] hover:bg-white focus:bg-white text-gray-900 text-sm font-medium rounded-2xl border border-gray-200 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-500/15 transition-all placeholder:text-gray-400 placeholder:font-normal"
+                  className="py-3 pl-10"
                   required
                   autoComplete="email"
                 />
               </div>
             </div>
 
-            {/* Password Field */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold text-gray-900">
+                <label htmlFor="login-password" className="block text-sm font-medium text-slate-700">
                   Contraseña
                 </label>
                 <a
@@ -144,27 +131,27 @@ export default function LoginPage() {
                     e.preventDefault();
                     addToast('Para restablecer tu contraseña, por favor contacta al soporte de Negu.', 'info');
                   }}
-                  className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                  className="text-xs font-medium text-[#0284C7] hover:text-sky-700 transition-colors duration-150"
                 >
                   ¿Olvidaste tu contraseña?
                 </a>
               </div>
-
-              <div className="relative flex items-center">
-                <Lock size={17} className="absolute left-3.5 text-gray-400 pointer-events-none" />
-                <input
+              <div className="relative">
+                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Tu contraseña"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 bg-[#FAFAF8] hover:bg-white focus:bg-white text-gray-900 text-sm font-medium rounded-2xl border border-gray-200 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-500/15 transition-all placeholder:text-gray-400 placeholder:font-normal"
+                  className="py-3 pl-10 pr-10"
                   required
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 text-gray-400 hover:text-gray-600 p-1.5 rounded-lg transition-colors cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors duration-150 cursor-pointer"
                   tabIndex={-1}
                   aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
@@ -173,25 +160,23 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Remember Me */}
-            <div className="flex items-center gap-2 pt-0.5">
+            <div className="flex items-center gap-2">
               <input
                 id="remember"
                 type="checkbox"
                 checked={rememberMe}
                 onChange={e => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded-md border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                className="w-4 h-4 rounded border-slate-300 text-[#0284C7] focus:ring-slate-900 cursor-pointer"
               />
-              <label htmlFor="remember" className="text-xs font-medium text-gray-600 cursor-pointer select-none">
+              <label htmlFor="remember" className="text-sm text-slate-600 cursor-pointer select-none">
                 Recordarme en este equipo
               </label>
             </div>
 
-            {/* Submit Button */}
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3.5 px-6 rounded-full font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all duration-150 shadow-glow-blue flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full"
             >
               {loading ? (
                 <>
@@ -199,42 +184,19 @@ export default function LoginPage() {
                   <span>Comprobando acceso...</span>
                 </>
               ) : (
-                <>
-                  <span>Iniciar Sesión</span>
-                  <ArrowRight size={15} strokeWidth={2.5} />
-                </>
+                <span>Iniciar sesión</span>
               )}
-            </button>
+            </Button>
           </form>
 
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200/80" />
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-3 font-semibold text-gray-400">o</span>
-            </div>
-          </div>
-
-          {/* Switch to Register */}
-          <div className="text-center">
-            <p className="text-xs sm:text-sm text-gray-600">
-              ¿Nuevo en Negu?{' '}
-              <Link to="/registro" className="font-bold text-[#0284C7] hover:text-sky-700 hover:underline">
-                Crea tu cuenta aquí
-              </Link>
-            </p>
-          </div>
-
-        </div>
-
-        {/* Footer Brand Note (Wenú style) */}
-        <div className="mt-6 flex items-center justify-center gap-2 text-xs font-medium text-gray-500">
-          <Heart size={14} className="text-blue-500 fill-blue-500/20 shrink-0" />
-          <span>Tu parcero digital · te acompañamos en cada paso.</span>
-        </div>
-
+          <p className="mt-6 text-center text-sm text-slate-500">
+            ¿Nuevo en NEGU?{' '}
+            <Link to="/registro" className="font-medium text-[#0284C7] hover:text-sky-700 transition-colors duration-150">
+              Crea tu cuenta
+            </Link>
+          </p>
+        </Card>
+      </div>
       </div>
     </div>
   );

@@ -30,7 +30,7 @@ export default function PedidosWhatsAppPage() {
 
       <main>
         {/* ── HERO SECTION ── */}
-        <section className="pt-12 sm:pt-20 pb-16 sm:pb-24 border-b border-gray-200/70 gradient-soft-cyan">
+        <section className="pt-12 sm:pt-20 pb-16 sm:pb-24 border-b border-gray-200/70 bg-slate-50">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-6">
             
             <div className="inline-flex items-center gap-2 bg-white/90 border border-emerald-200/80 rounded-full pl-2 pr-3.5 py-1 text-xs font-semibold text-gray-700 shadow-xs mx-auto">
@@ -42,7 +42,7 @@ export default function PedidosWhatsAppPage() {
 
             <h1 className="font-display text-4xl sm:text-6xl font-black text-gray-950 tracking-tight leading-[1.05]">
               Sistema de pedidos por WhatsApp para<br />
-              <span className="text-[#0284C7] text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-sky-600 to-[#11CEFC]">
+              <span className="font-semibold text-sky-700">
                 negocios y domicilios
               </span>
             </h1>
@@ -54,7 +54,7 @@ export default function PedidosWhatsAppPage() {
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 to="/registro"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-gray-950 hover:bg-black text-white hover:text-[#11CEFC] font-bold text-sm sm:text-base px-8 py-4 rounded-full border border-gray-800 shadow-warm hover:shadow-glow-cyan transition-all duration-200 active:scale-95"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm sm:text-base px-5 py-3 rounded-lg border border-gray-800 shadow-card hover:shadow-sm transition-all duration-200 active:scale-95"
               >
                 <Sparkles size={18} className="text-[#11CEFC]" />
                 <span>Empezar a recibir pedidos organizados</span>
@@ -70,7 +70,7 @@ export default function PedidosWhatsAppPage() {
         </section>
 
         {/* ── EL PROBLEMA DE LOS PEDIDOS TRADICIONALES ── */}
-        <section className="py-16 sm:py-24 bg-white border-b border-gray-200/70">
+        <section className="py-12 sm:py-16 bg-white border-b border-gray-200/70">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
             
             <div className="text-center max-w-2xl mx-auto space-y-3">
@@ -85,7 +85,7 @@ export default function PedidosWhatsAppPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
               
               {/* Sin NEGU */}
-              <div className="p-7 rounded-3xl bg-rose-50/50 border border-rose-200/80 space-y-4">
+              <div className="p-7 rounded-xl bg-rose-50/50 border border-rose-200/80 space-y-4">
                 <p className="text-xs font-extrabold uppercase tracking-wider text-rose-700">
                   Sin NEGU (10 a 15 mensajes por cliente)
                 </p>
@@ -114,7 +114,7 @@ export default function PedidosWhatsAppPage() {
               </div>
 
               {/* Con NEGU */}
-              <div className="p-7 rounded-3xl bg-sky-50/60 border-2 border-[#0284C7] space-y-4 shadow-xs">
+              <div className="p-7 rounded-xl bg-sky-50/60 border-2 border-[#0284C7] space-y-4 shadow-xs">
                 <p className="text-xs font-extrabold uppercase tracking-wider text-[#0284C7]">
                   Con NEGU (1 solo mensaje completo)
                 </p>
@@ -148,7 +148,7 @@ export default function PedidosWhatsAppPage() {
         </section>
 
         {/* ── CÓMO SE ESTRUCTURA EL PEDIDO EN WHATSAPP ── */}
-        <section className="py-16 sm:py-24 bg-gray-50/60 border-b border-gray-200/70">
+        <section className="py-12 sm:py-16 bg-gray-50/60 border-b border-gray-200/70">
           <div className="max-w-5xl mx-auto px-4 sm:px-6">
             
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
@@ -199,7 +199,7 @@ export default function PedidosWhatsAppPage() {
 
               {/* Mockup del mensaje de WhatsApp */}
               <div className="lg:col-span-6 flex justify-center">
-                <div className="w-full max-w-sm bg-[#EFEAE2] rounded-3xl p-4 shadow-xl border border-gray-300 space-y-3">
+                <div className="w-full max-w-sm bg-[#EFEAE2] rounded-xl p-4 shadow-xl border border-gray-300 space-y-3">
                   <div className="bg-white rounded-2xl p-4 shadow-xs text-xs space-y-2.5 font-mono text-gray-800">
                     <p className="font-bold text-emerald-700 font-sans text-sm">
                       🍔 ¡NUEVO PEDIDO #1082 - NEGU!
@@ -287,7 +287,7 @@ export default function PedidosWhatsAppPage() {
             <div>
               <Link
                 to="/registro"
-                className="inline-flex items-center gap-2 bg-[#11CEFC] hover:bg-cyan-400 text-gray-950 font-black text-sm sm:text-base px-8 py-3.5 rounded-full shadow-glow-cyan hover:scale-105 transition-all"
+                className="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold text-sm px-5 py-3 rounded-lg shadow-sm hover:scale-105 transition-all"
               >
                 <span>Probar 7 días gratis</span>
                 <ArrowRight size={16} />

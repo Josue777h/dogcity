@@ -1,7 +1,6 @@
 export type BusinessType = 'food' | 'retail' | 'pharmacy' | 'stationery' | 'general';
 
 export type OrderStatus =
-  | 'NUEVO'
   | 'COTIZACION_PENDIENTE'
   | 'COTIZACION_ENVIADA'
   | 'CONFIRMADO_GRACIA'
@@ -10,6 +9,8 @@ export type OrderStatus =
   | 'ENTREGADO'
   | 'CANCELADO';
 
+type InternalOrderStatus = OrderStatus | 'NUEVO';
+
 export interface StatusCopy {
   badge: string;
   title: string;
@@ -17,7 +18,7 @@ export interface StatusCopy {
   stepperLabel: string;
   stepperDesc: string;
   graceBanner: (seconds: number) => string;
-  kitchenLockedNotice: string;
+  cancelLockedNotice: string;
   acceptButton: string;
 }
 
@@ -27,7 +28,7 @@ export interface StepperStep {
   desc: string;
 }
 
-const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
+const DICTIONARY: Record<BusinessType, Record<InternalOrderStatus, StatusCopy>> = {
   food: {
     NUEVO: {
       badge: 'Nuevo',
@@ -36,7 +37,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Pedido recibido',
       graceBanner: () => 'Pedido recibido.',
-      kitchenLockedNotice: 'Tu orden ya se encuentra en preparación.',
+      cancelLockedNotice: 'Tu orden ya se encuentra en preparación.',
       acceptButton: 'Confirmar Pedido',
     },
     COTIZACION_PENDIENTE: {
@@ -46,7 +47,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Por cotizar',
       graceBanner: (s) => `Pedido confirmado. Pasando a cocina en ${s}s...`,
-      kitchenLockedNotice: 'Tu orden ya está en preparación y no puede cancelarse desde la web.',
+      cancelLockedNotice: 'Tu orden ya está en preparación y no puede cancelarse desde la web.',
       acceptButton: 'Confirmar Pedido',
     },
     COTIZACION_ENVIADA: {
@@ -56,7 +57,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Domicilio asignado',
       graceBanner: (s) => `Pedido confirmado. Pasando a cocina en ${s}s...`,
-      kitchenLockedNotice: 'Tu orden ya está en preparación y no puede cancelarse desde la web.',
+      cancelLockedNotice: 'Tu orden ya está en preparación y no puede cancelarse desde la web.',
       acceptButton: 'Confirmar Pedido',
     },
     CONFIRMADO_GRACIA: {
@@ -66,7 +67,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Confirmado',
       graceBanner: (s) => `Pedido confirmado. Entrando a cocina en ${s}s...`,
-      kitchenLockedNotice: 'Tu orden ya está en preparación y no puede cancelarse desde la web.',
+      cancelLockedNotice: 'Tu orden ya está en preparación y no puede cancelarse desde la web.',
       acceptButton: 'Confirmar Pedido',
     },
     EN_PREPARACION: {
@@ -76,7 +77,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'En Cocina',
       stepperDesc: 'En preparación',
       graceBanner: () => 'Tu orden está en preparación.',
-      kitchenLockedNotice: 'Tu orden ya está en preparación y no puede cancelarse desde la web.',
+      cancelLockedNotice: 'Tu orden ya está en preparación y no puede cancelarse desde la web.',
       acceptButton: 'Confirmar Pedido',
     },
     EN_CAMINO: {
@@ -86,7 +87,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'En Camino',
       stepperDesc: 'En camino',
       graceBanner: () => '',
-      kitchenLockedNotice: 'Tu orden ya fue despachada y está en camino.',
+      cancelLockedNotice: 'Tu orden ya fue despachada y está en camino.',
       acceptButton: '',
     },
     ENTREGADO: {
@@ -96,7 +97,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Entregado',
       stepperDesc: 'Entregado',
       graceBanner: () => '',
-      kitchenLockedNotice: '',
+      cancelLockedNotice: '',
       acceptButton: '',
     },
     CANCELADO: {
@@ -106,7 +107,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Cancelado',
       stepperDesc: 'Cancelado',
       graceBanner: () => '',
-      kitchenLockedNotice: '',
+      cancelLockedNotice: '',
       acceptButton: '',
     },
   },
@@ -119,7 +120,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Pedido recibido',
       graceBanner: () => 'Pedido recibido.',
-      kitchenLockedNotice: 'Tu pedido ya está en preparación.',
+      cancelLockedNotice: 'Tu pedido ya está en preparación.',
       acceptButton: 'Confirmar Pedido',
     },
     COTIZACION_PENDIENTE: {
@@ -129,7 +130,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Por cotizar',
       graceBanner: (s) => `Pedido confirmado. Pasando a empaque en ${s}s...`,
-      kitchenLockedNotice: 'Tu pedido ya está en preparación.',
+      cancelLockedNotice: 'Tu pedido ya está en preparación.',
       acceptButton: 'Confirmar Pedido',
     },
     COTIZACION_ENVIADA: {
@@ -139,7 +140,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Envío asignado',
       graceBanner: (s) => `Pedido confirmado. Pasando a empaque en ${s}s...`,
-      kitchenLockedNotice: 'Tu pedido ya está en preparación.',
+      cancelLockedNotice: 'Tu pedido ya está en preparación.',
       acceptButton: 'Confirmar Pedido',
     },
     CONFIRMADO_GRACIA: {
@@ -149,7 +150,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Confirmado',
       graceBanner: (s) => `Pedido confirmado. Pasando a empaque en ${s}s...`,
-      kitchenLockedNotice: 'Tu pedido ya está en preparación.',
+      cancelLockedNotice: 'Tu pedido ya está en preparación.',
       acceptButton: 'Confirmar Pedido',
     },
     EN_PREPARACION: {
@@ -159,7 +160,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'En Empaque',
       stepperDesc: 'Empacando',
       graceBanner: () => 'Tus productos están en proceso de empaque.',
-      kitchenLockedNotice: 'Tu paquete ya está en proceso de empaque.',
+      cancelLockedNotice: 'Tu paquete ya está en proceso de empaque.',
       acceptButton: 'Confirmar Pedido',
     },
     EN_CAMINO: {
@@ -169,7 +170,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'En Camino',
       stepperDesc: 'En ruta',
       graceBanner: () => '',
-      kitchenLockedNotice: 'Tu paquete ya fue despachado.',
+      cancelLockedNotice: 'Tu paquete ya fue despachado.',
       acceptButton: '',
     },
     ENTREGADO: {
@@ -179,7 +180,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Entregado',
       stepperDesc: 'Entregado',
       graceBanner: () => '',
-      kitchenLockedNotice: '',
+      cancelLockedNotice: '',
       acceptButton: '',
     },
     CANCELADO: {
@@ -189,7 +190,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Cancelado',
       stepperDesc: 'Cancelado',
       graceBanner: () => '',
-      kitchenLockedNotice: '',
+      cancelLockedNotice: '',
       acceptButton: '',
     },
   },
@@ -202,7 +203,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Pedido recibido',
       graceBanner: () => 'Pedido recibido.',
-      kitchenLockedNotice: 'Tus medicamentos ya están siendo preparados.',
+      cancelLockedNotice: 'Tus medicamentos ya están siendo preparados.',
       acceptButton: 'Confirmar Pedido',
     },
     COTIZACION_PENDIENTE: {
@@ -212,7 +213,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Por cotizar',
       graceBanner: (s) => `Pedido confirmado. Pasando a preparación en ${s}s...`,
-      kitchenLockedNotice: 'Tus medicamentos ya están en alistamiento.',
+      cancelLockedNotice: 'Tus medicamentos ya están en alistamiento.',
       acceptButton: 'Confirmar Pedido',
     },
     COTIZACION_ENVIADA: {
@@ -222,7 +223,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Envío asignado',
       graceBanner: (s) => `Pedido confirmado. Pasando a preparación en ${s}s...`,
-      kitchenLockedNotice: 'Tus medicamentos ya están en alistamiento.',
+      cancelLockedNotice: 'Tus medicamentos ya están en alistamiento.',
       acceptButton: 'Confirmar Pedido',
     },
     CONFIRMADO_GRACIA: {
@@ -232,7 +233,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Confirmado',
       graceBanner: (s) => `Pedido confirmado. Pasando a alistamiento en ${s}s...`,
-      kitchenLockedNotice: 'Tus medicamentos ya están en alistamiento.',
+      cancelLockedNotice: 'Tus medicamentos ya están en alistamiento.',
       acceptButton: 'Confirmar Pedido',
     },
     EN_PREPARACION: {
@@ -242,7 +243,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Alistamiento',
       stepperDesc: 'Alistando',
       graceBanner: () => 'Tus medicamentos están en alistamiento.',
-      kitchenLockedNotice: 'Tus medicamentos ya están siendo alistados.',
+      cancelLockedNotice: 'Tus medicamentos ya están siendo alistados.',
       acceptButton: 'Confirmar Pedido',
     },
     EN_CAMINO: {
@@ -252,7 +253,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'En Camino',
       stepperDesc: 'En ruta',
       graceBanner: () => '',
-      kitchenLockedNotice: 'Tu pedido ya fue despachado.',
+      cancelLockedNotice: 'Tu pedido ya fue despachado.',
       acceptButton: '',
     },
     ENTREGADO: {
@@ -262,7 +263,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Entregado',
       stepperDesc: 'Entregado',
       graceBanner: () => '',
-      kitchenLockedNotice: '',
+      cancelLockedNotice: '',
       acceptButton: '',
     },
     CANCELADO: {
@@ -272,7 +273,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Cancelado',
       stepperDesc: 'Cancelado',
       graceBanner: () => '',
-      kitchenLockedNotice: '',
+      cancelLockedNotice: '',
       acceptButton: '',
     },
   },
@@ -285,7 +286,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Pedido recibido',
       graceBanner: () => 'Pedido recibido.',
-      kitchenLockedNotice: 'Tus artículos ya están en alistamiento.',
+      cancelLockedNotice: 'Tus artículos ya están en alistamiento.',
       acceptButton: 'Confirmar Pedido',
     },
     COTIZACION_PENDIENTE: {
@@ -295,7 +296,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Por cotizar',
       graceBanner: (s) => `Pedido confirmado. Pasando a alistamiento en ${s}s...`,
-      kitchenLockedNotice: 'Tus artículos ya están en alistamiento.',
+      cancelLockedNotice: 'Tus artículos ya están en alistamiento.',
       acceptButton: 'Confirmar Pedido',
     },
     COTIZACION_ENVIADA: {
@@ -305,7 +306,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Envío asignado',
       graceBanner: (s) => `Pedido confirmado. Pasando a alistamiento en ${s}s...`,
-      kitchenLockedNotice: 'Tus artículos ya están en alistamiento.',
+      cancelLockedNotice: 'Tus artículos ya están en alistamiento.',
       acceptButton: 'Confirmar Pedido',
     },
     CONFIRMADO_GRACIA: {
@@ -315,7 +316,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Confirmado',
       graceBanner: (s) => `Pedido confirmado. Pasando a alistamiento en ${s}s...`,
-      kitchenLockedNotice: 'Tus artículos ya están en alistamiento.',
+      cancelLockedNotice: 'Tus artículos ya están en alistamiento.',
       acceptButton: 'Confirmar Pedido',
     },
     EN_PREPARACION: {
@@ -325,7 +326,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Alistamiento',
       stepperDesc: 'Alistando',
       graceBanner: () => 'Tus artículos están en alistamiento.',
-      kitchenLockedNotice: 'Tus artículos ya están en alistamiento.',
+      cancelLockedNotice: 'Tus artículos ya están en alistamiento.',
       acceptButton: 'Confirmar Pedido',
     },
     EN_CAMINO: {
@@ -335,7 +336,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'En Camino',
       stepperDesc: 'En ruta',
       graceBanner: () => '',
-      kitchenLockedNotice: 'Tu pedido ya fue despachado.',
+      cancelLockedNotice: 'Tu pedido ya fue despachado.',
       acceptButton: '',
     },
     ENTREGADO: {
@@ -345,7 +346,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Entregado',
       stepperDesc: 'Entregado',
       graceBanner: () => '',
-      kitchenLockedNotice: '',
+      cancelLockedNotice: '',
       acceptButton: '',
     },
     CANCELADO: {
@@ -355,7 +356,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Cancelado',
       stepperDesc: 'Cancelado',
       graceBanner: () => '',
-      kitchenLockedNotice: '',
+      cancelLockedNotice: '',
       acceptButton: '',
     },
   },
@@ -368,7 +369,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Pedido recibido',
       graceBanner: () => 'Pedido recibido.',
-      kitchenLockedNotice: 'Tu orden ya está en preparación.',
+      cancelLockedNotice: 'Tu orden ya está en preparación.',
       acceptButton: 'Confirmar Pedido',
     },
     COTIZACION_PENDIENTE: {
@@ -378,7 +379,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Por cotizar',
       graceBanner: (s) => `Pedido confirmado. Pasando a preparación en ${s}s...`,
-      kitchenLockedNotice: 'Tu orden ya está en preparación.',
+      cancelLockedNotice: 'Tu orden ya está en preparación.',
       acceptButton: 'Confirmar Pedido',
     },
     COTIZACION_ENVIADA: {
@@ -388,7 +389,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Envío asignado',
       graceBanner: (s) => `Pedido confirmado. Pasando a preparación en ${s}s...`,
-      kitchenLockedNotice: 'Tu orden ya está en preparación.',
+      cancelLockedNotice: 'Tu orden ya está en preparación.',
       acceptButton: 'Confirmar Pedido',
     },
     CONFIRMADO_GRACIA: {
@@ -398,7 +399,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Recibido',
       stepperDesc: 'Confirmado',
       graceBanner: (s) => `Pedido confirmado. Entrando a preparación en ${s}s...`,
-      kitchenLockedNotice: 'Tu orden ya está en preparación.',
+      cancelLockedNotice: 'Tu orden ya está en preparación.',
       acceptButton: 'Confirmar Pedido',
     },
     EN_PREPARACION: {
@@ -408,7 +409,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'En Preparación',
       stepperDesc: 'Preparando',
       graceBanner: () => 'Tu pedido está en preparación.',
-      kitchenLockedNotice: 'Tu orden ya está en preparación.',
+      cancelLockedNotice: 'Tu orden ya está en preparación.',
       acceptButton: 'Confirmar Pedido',
     },
     EN_CAMINO: {
@@ -418,7 +419,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'En Camino',
       stepperDesc: 'En ruta',
       graceBanner: () => '',
-      kitchenLockedNotice: 'Tu pedido ya está en camino.',
+      cancelLockedNotice: 'Tu pedido ya está en camino.',
       acceptButton: '',
     },
     ENTREGADO: {
@@ -428,7 +429,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Entregado',
       stepperDesc: 'Entregado',
       graceBanner: () => '',
-      kitchenLockedNotice: '',
+      cancelLockedNotice: '',
       acceptButton: '',
     },
     CANCELADO: {
@@ -438,7 +439,7 @@ const DICTIONARY: Record<BusinessType, Record<OrderStatus, StatusCopy>> = {
       stepperLabel: 'Cancelado',
       stepperDesc: 'Cancelado',
       graceBanner: () => '',
-      kitchenLockedNotice: '',
+      cancelLockedNotice: '',
       acceptButton: '',
     },
   },
@@ -460,7 +461,7 @@ export function normalizeBusinessType(type?: string | null): BusinessType {
 /**
  * Normaliza cualquier string de estado al enum canónico de OrderStatus
  */
-export function normalizeOrderStatus(status?: string | null): OrderStatus {
+export function normalizeOrderStatus(status?: string | null): InternalOrderStatus {
   if (!status) return 'NUEVO';
   const s = status.toUpperCase();
   if (s.includes('COTIZACION_PENDIENTE') || s.includes('DOM_PENDIENTE')) return 'COTIZACION_PENDIENTE';

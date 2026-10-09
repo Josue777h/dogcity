@@ -1,10 +1,20 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, Menu, X } from 'lucide-react';
 import SaaSLogo from '../../../components/common/SaaSLogo';
 
 export default function MarketingNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  useEffect(() => setMenuOpen(false), [location.pathname]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const closeOnEscape = event => { if (event.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener('keydown', closeOnEscape); };
+  }, [menuOpen]);
 
   return (
     <>
@@ -24,7 +34,7 @@ export default function MarketingNavbar() {
       </div>
 
       {/* ═══════════ STICKY NAVBAR ═══════════ */}
-      <header className="sticky top-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-xs transition-all duration-200">
+      <header className="sticky top-0 inset-x-0 z-[60] bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-xs transition-all duration-200">
         <div className="max-w-6xl mx-auto px-3.5 sm:px-6">
           <nav className="h-16 sm:h-20 flex items-center justify-between" aria-label="Navegación principal">
             
@@ -53,7 +63,7 @@ export default function MarketingNavbar() {
 
               <Link 
                 to="/registro" 
-                className="inline-flex items-center gap-2 bg-gray-950 hover:bg-black text-white hover:text-[#11CEFC] text-xs sm:text-sm font-bold px-4 sm:px-5 py-2.5 rounded-full border border-gray-800 shadow-sm active:scale-95 transition-all duration-150"
+                className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2.5 rounded-full border border-gray-800 shadow-sm active:scale-95 transition-all duration-150"
               >
                 <span>Probar gratis</span>
                 <ArrowRight size={14} className="shrink-0 text-[#11CEFC]" />
@@ -72,39 +82,39 @@ export default function MarketingNavbar() {
 
           {/* Mobile Menu Dropdown */}
           {menuOpen && (
-            <div className="pb-4 pt-1 flex flex-col gap-1 text-sm font-semibold text-gray-700 lg:hidden animate-fade-in-down border-t border-gray-100">
+            <div id="marketing-mobile-menu" className="fixed inset-x-0 top-16 bottom-0 z-[70] overflow-y-auto bg-white px-4 pb-8 pt-4 text-sm font-semibold text-gray-700 shadow-xl lg:hidden">
               <Link 
                 to="/menu-digital" 
                 onClick={() => setMenuOpen(false)}
-                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
+                className="flex w-full items-center px-4 py-3.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
               >
                 Menú Digital para Negocios
               </Link>
               <Link 
                 to="/pedidos-whatsapp" 
                 onClick={() => setMenuOpen(false)}
-                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
+                className="flex w-full items-center px-4 py-3.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
               >
                 Pedidos por WhatsApp
               </Link>
               <Link 
                 to="/gestion-de-pedidos" 
                 onClick={() => setMenuOpen(false)}
-                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
+                className="flex w-full items-center px-4 py-3.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
               >
                 Gestión y Control de Pedidos
               </Link>
               <Link 
                 to="/para-restaurantes" 
                 onClick={() => setMenuOpen(false)}
-                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
+                className="flex w-full items-center px-4 py-3.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
               >
                 Software para Restaurantes
               </Link>
               <Link 
                 to="/para-negocios" 
                 onClick={() => setMenuOpen(false)}
-                className="px-4 py-2.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
+                className="flex w-full items-center px-4 py-3.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
               >
                 Software para Comercios y Negocios
               </Link>

@@ -8,7 +8,7 @@ import {
   ExternalLink, Ban, ChevronRight
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
-import { formatMoney, isDeliveryPending, getOrderSubtotal } from '../../lib/utils';
+import { formatMoney, getOrderSubtotal } from '../../lib/utils';
 import { OrderService } from '../../services/orderService';
 import { getStatusCopy, getStepperSteps } from '../../lib/status-labels';
 import SEO from '../../components/common/SEO';
@@ -60,18 +60,22 @@ export default function TrackingPage() {
   const isDemo = searchParams.get('store') === 'demo' || !id;
 
   const [order, setOrder] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [graceSeconds, setGraceSeconds] = useState(60);
   const [copyFeedback, setCopyFeedback] = useState(null);
   const [receiptUploading, setReceiptUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [receiptDisplayUrl, setReceiptDisplayUrl] = useState('');
   const fileInputRef = useRef(null);
 
   // 1. Cargar datos de la orden
   useEffect(() => {
     async function loadOrder() {
+      setLoading(true);
+      setLoadError('');
       if (!id || searchParams.get('store') === 'demo') {
         setOrder(DEMO_ORDER);
         setLoading(false);
@@ -79,47 +83,22 @@ export default function TrackingPage() {
       }
 
       try {
-        let resultData = null;
-
-        let query = getSupabase()
-          .from('pedidos')
-          .select(`*, negocios(*)`)
-          .eq('id', id);
-
-        if (token) query = query.eq('token', token);
-
-        const { data: joinData, error: joinError } = await query.maybeSingle();
-
-        if (!joinError && joinData) {
-          resultData = joinData;
-        } else {
-          let fallbackQuery = getSupabase().from('pedidos').select('*').eq('id', id);
-          if (token) fallbackQuery = fallbackQuery.eq('token', token);
-          const { data: fallbackData } = await fallbackQuery.maybeSingle();
-
-          if (!fallbackData) {
-            setOrder(DEMO_ORDER);
-            setLoading(false);
-            return;
+        if (!token && searchParams.get('store') !== 'demo') throw new Error('El enlace no contiene el token de seguimiento. Solicita al comercio un enlace nuevo.');
+        const { data: resultData, error } = await getSupabase().rpc('customer_get_order', {
+          p_order_id: Number(id), p_token: token,
+        });
+        if (error) {
+          if (error.code === 'PGRST202') {
+            throw new Error('La función de seguimiento no está instalada en Supabase. Ejecuta el script supabase/schema.sql completo en el editor SQL y vuelve a intentarlo.');
           }
-
-          let businessData = null;
-          if (fallbackData.negocio_id) {
-            const { data: bData } = await getSupabase()
-              .from('negocios')
-              .select('*')
-              .eq('id', fallbackData.negocio_id)
-              .maybeSingle();
-            businessData = bData;
-          }
-
-          resultData = { ...fallbackData, negocios: businessData };
+          throw error;
         }
-
-        setOrder(resultData || DEMO_ORDER);
+        if (!resultData) throw new Error('No encontramos este pedido. Revisa el enlace de seguimiento.');
+        setOrder(resultData);
       } catch (err) {
         console.error('Error cargando pedido:', err);
-        setOrder(DEMO_ORDER);
+        setLoadError(err.message || 'No fue posible cargar el pedido.');
+        setOrder(null);
       } finally {
         setLoading(false);
       }
@@ -127,24 +106,13 @@ export default function TrackingPage() {
 
     loadOrder();
 
-    // 2. Suscripción limpia a Supabase Realtime
-    if (id && !isDemo) {
-      const channel = getSupabase()
-        .channel(`order-track-${id}`)
-        .on(
-          'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'pedidos', filter: `id=eq.${id}` },
-          (payload) => {
-            setOrder((prev) => (prev ? { ...prev, ...payload.new } : payload.new));
-          }
-        )
-        .subscribe();
+    const poll = !isDemo && id && token ? window.setInterval(async () => {
+      const { data, error } = await getSupabase().rpc('customer_get_order', { p_order_id: Number(id), p_token: token });
+      if (!error && data) setOrder(data);
+    }, 5000) : null;
 
-      return () => {
-        getSupabase().removeChannel(channel);
-      };
-    }
-  }, [id, token, isDemo, searchParams]);
+    return () => { if (poll) window.clearInterval(poll); };
+  }, [id, token, isDemo, retryCount, searchParams]);
 
   const currentOrder = order || DEMO_ORDER;
   const statusStr = (currentOrder.status || currentOrder.estado || '').toString();
@@ -156,22 +124,24 @@ export default function TrackingPage() {
   const deliveryFee = Number(currentOrder.delivery_fee || currentOrder.domicilio_costo || 0);
   const totalAmount = Number(currentOrder.total_amount || currentOrder.total || (subtotal + deliveryFee));
 
-  // Ventana de gracia: contador regresivo de 30 segundos garantizado
   useEffect(() => {
-    if (statusStr !== 'CONFIRMADO_GRACIA') return;
+    const path = currentOrder.payment_receipt_url;
+    if (!path || path.startsWith('http') || isDemo) return;
+    OrderService.getReceiptUrl(path).then(setReceiptDisplayUrl).catch(console.error);
+  }, [currentOrder.payment_receipt_url, isDemo]);
 
-    const GRACE_PERIOD_SECONDS = 30;
+  // Ventana de gracia de 60 segundos calculada desde confirmed_at.
+  useEffect(() => {
+    if (statusStr !== 'CONFIRMADO_GRACIA' || !currentOrder.confirmed_at) return;
+
+    const GRACE_PERIOD_SECONDS = 60;
 
     // Calcular el timestamp base
     let startMs = Date.now();
     if (currentOrder.confirmed_at) {
       const parsed = new Date(currentOrder.confirmed_at).getTime();
       if (!isNaN(parsed)) {
-        const diff = (Date.now() - parsed) / 1000;
-        // Si el timestamp registrado fue hace menos de 30s, respetar los segundos restantes
-        if (diff >= 0 && diff < GRACE_PERIOD_SECONDS) {
-          startMs = parsed;
-        }
+        startMs = parsed;
       }
     }
 
@@ -181,16 +151,16 @@ export default function TrackingPage() {
     };
 
     const initialRem = calcRemaining();
-    setGraceSeconds(initialRem);
 
     if (initialRem <= 0) {
+      const expiredTimer = window.setTimeout(() => setGraceSeconds(0), 0);
       if (!isDemo && currentOrder.id && currentOrder.token) {
         OrderService.advanceToKitchen(currentOrder.id, currentOrder.token).catch(console.error);
       }
-      setOrder((prev) => prev ? { ...prev, status: 'EN_PREPARACION', estado: 'preparando' } : null);
-      return;
+      return () => window.clearTimeout(expiredTimer);
     }
 
+    const initialTimer = window.setTimeout(() => setGraceSeconds(calcRemaining()), 0);
     const timer = setInterval(async () => {
       const rem = calcRemaining();
       setGraceSeconds(rem);
@@ -201,14 +171,16 @@ export default function TrackingPage() {
           if (!isDemo && currentOrder.id && currentOrder.token) {
             await OrderService.advanceToKitchen(currentOrder.id, currentOrder.token);
           }
-          setOrder((prev) => prev ? { ...prev, status: 'EN_PREPARACION', estado: 'preparando' } : null);
         } catch (err) {
-          console.error('Error avanzando a cocina:', err);
+          console.error('Error avanzando el pedido:', err);
         }
       }
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      window.clearTimeout(initialTimer);
+      clearInterval(timer);
+    };
   }, [statusStr, currentOrder.confirmed_at, currentOrder.id, currentOrder.token, isDemo]);
 
   // Manejo de Aceptar Cotización
@@ -216,7 +188,14 @@ export default function TrackingPage() {
     setActionLoading(true);
     try {
       if (!isDemo && currentOrder.id && currentOrder.token) {
-        await OrderService.customerAcceptQuote(currentOrder.id, currentOrder.token);
+        const result = await OrderService.customerAcceptQuote(currentOrder.id, currentOrder.token);
+        setOrder((prev) => ({
+          ...prev,
+          status: 'CONFIRMADO_GRACIA',
+          estado: 'CONFIRMADO_GRACIA',
+          confirmed_at: result?.confirmed_at || new Date().toISOString(),
+        }));
+        return;
       }
       setOrder((prev) => ({
         ...prev,
@@ -298,7 +277,9 @@ export default function TrackingPage() {
     try {
       let receiptUrl = '';
       if (!isDemo && currentOrder.id && currentOrder.token) {
-        receiptUrl = await OrderService.uploadPaymentReceipt(currentOrder.id, file, currentOrder.token);
+        const storagePath = await OrderService.uploadPaymentReceipt(currentOrder.id, currentOrder.token, file);
+        setReceiptDisplayUrl(await OrderService.getReceiptUrl(storagePath));
+        receiptUrl = storagePath;
       } else {
         receiptUrl = URL.createObjectURL(file);
       }
@@ -308,7 +289,6 @@ export default function TrackingPage() {
         payment_receipt_url: receiptUrl,
         payment_status: 'pending'
       }));
-      setUploadSuccess(true);
     } catch (err) {
       console.error(err);
       alert('Error al subir el comprobante. Por favor intenta de nuevo.');
@@ -324,6 +304,10 @@ export default function TrackingPage() {
         <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Cargando estado del pedido...</p>
       </div>
     );
+  }
+
+  if (loadError && !order) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6"><div className="max-w-sm rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm"><AlertCircle className="mx-auto mb-3 text-amber-600" /><h1 className="font-bold text-gray-900">No pudimos abrir el seguimiento</h1><p className="mt-2 text-sm text-gray-600">{loadError}</p><button type="button" onClick={() => setRetryCount(count => count + 1)} className="mt-4 inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Reintentar</button></div></div>;
   }
 
   // Cálculo de progreso del stepper
@@ -456,7 +440,7 @@ export default function TrackingPage() {
                 <div className="min-w-0">
                   <h3 className="font-bold text-xs sm:text-sm text-gray-900 truncate">Pedido confirmado</h3>
                   <p className="text-[11px] text-gray-500 truncate">
-                    Pasando a preparación en {graceSeconds} segundos
+                    {statusCopy.graceBanner(graceSeconds)}
                   </p>
                 </div>
               </div>
@@ -468,7 +452,7 @@ export default function TrackingPage() {
                 className="btn-secondary py-1.5 px-2.5 text-xs font-semibold shrink-0 cursor-pointer text-gray-600 hover:text-rose-700 hover:bg-rose-50 hover:border-rose-200"
               >
                 <RotateCcw size={12} />
-                <span>Cancelar</span>
+                <span>Deshacer pedido</span>
               </button>
             </div>
 
@@ -476,7 +460,7 @@ export default function TrackingPage() {
             <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
               <div 
                 className="bg-blue-600 h-full transition-all duration-1000 ease-linear rounded-full"
-                style={{ width: `${(Math.min(30, graceSeconds) / 30) * 100}%` }}
+                style={{ width: `${(Math.min(60, graceSeconds) / 60) * 100}%` }}
               />
             </div>
           </div>
@@ -574,7 +558,7 @@ export default function TrackingPage() {
             {isCookingOrLater && (
               <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-700 space-y-2">
                 <p className="leading-snug">
-                  🔒 {statusCopy.kitchenLockedNotice}
+                  🔒 {statusCopy.cancelLockedNotice}
                 </p>
                 <a
                   href={`https://wa.me/${business?.whatsapp_contacto || business?.telefono || '573143243707'}?text=${encodeURIComponent(`Hola, tengo una consulta sobre mi orden #${currentOrder.id}`)}`}
@@ -674,7 +658,7 @@ export default function TrackingPage() {
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <a
-                      href={currentOrder.payment_receipt_url}
+                      href={receiptDisplayUrl || currentOrder.payment_receipt_url}
                       target="_blank"
                       rel="noreferrer"
                       className="px-2.5 py-1 bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg font-bold text-[11px] flex items-center gap-1"

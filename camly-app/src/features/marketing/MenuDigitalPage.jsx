@@ -29,7 +29,7 @@ export default function MenuDigitalPage() {
 
       <main>
         {/* ── HERO SECTION ── */}
-        <section className="pt-12 sm:pt-20 pb-16 sm:pb-24 border-b border-gray-200/70 gradient-soft-cyan">
+        <section className="pt-12 sm:pt-20 pb-16 sm:pb-24 border-b border-gray-200/70 bg-slate-50">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-6">
             
             <div className="inline-flex items-center gap-2 bg-white/90 border border-cyan-200/80 rounded-full pl-2 pr-3.5 py-1 text-xs font-semibold text-gray-700 shadow-xs mx-auto">
@@ -41,7 +41,7 @@ export default function MenuDigitalPage() {
 
             <h1 className="font-display text-4xl sm:text-6xl font-black text-gray-950 tracking-tight leading-[1.05]">
               Menú digital interactivo para<br />
-              <span className="text-[#0284C7] text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-[#11CEFC]">
+              <span className="font-semibold text-sky-700">
                 negocios y restaurantes
               </span>
             </h1>
@@ -53,7 +53,7 @@ export default function MenuDigitalPage() {
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 to="/registro"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-gray-950 hover:bg-black text-white hover:text-[#11CEFC] font-bold text-sm sm:text-base px-8 py-4 rounded-full border border-gray-800 shadow-warm hover:shadow-glow-cyan transition-all duration-200 active:scale-95"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm sm:text-base px-5 py-3 rounded-lg border border-gray-800 shadow-card hover:shadow-sm transition-all duration-200 active:scale-95"
               >
                 <Sparkles size={18} className="text-[#11CEFC]" />
                 <span>Crear mi menú digital gratis</span>
@@ -69,7 +69,7 @@ export default function MenuDigitalPage() {
         </section>
 
         {/* ── QUÉ ES UN MENÚ DIGITAL ── */}
-        <section className="py-16 sm:py-24 bg-white border-b border-gray-200/70">
+        <section className="py-12 sm:py-16 bg-white border-b border-gray-200/70">
           <div className="max-w-5xl mx-auto px-4 sm:px-6">
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
@@ -116,7 +116,7 @@ export default function MenuDigitalPage() {
         </section>
 
         {/* ── CÓMO FUNCIONA ── */}
-        <section className="py-16 sm:py-24 bg-gray-50/60 border-b border-gray-200/70">
+        <section className="py-12 sm:py-16 bg-gray-50/60 border-b border-gray-200/70">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
             
             <div className="text-center max-w-2xl mx-auto space-y-3">
@@ -132,7 +132,7 @@ export default function MenuDigitalPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white p-6 rounded-3xl border border-gray-200/80 shadow-xs space-y-4">
+              <div className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-xs space-y-4">
                 <div className="w-12 h-12 rounded-2xl bg-cyan-50 text-[#0284C7] flex items-center justify-center font-bold">
                   <QrCode size={24} />
                 </div>
@@ -142,7 +142,7 @@ export default function MenuDigitalPage() {
                 </p>
               </div>
 
-              <div className="bg-white p-6 rounded-3xl border border-gray-200/80 shadow-xs space-y-4">
+              <div className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-xs space-y-4">
                 <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
                   <Layers size={24} />
                 </div>
@@ -152,7 +152,7 @@ export default function MenuDigitalPage() {
                 </p>
               </div>
 
-              <div className="bg-white p-6 rounded-3xl border border-gray-200/80 shadow-xs space-y-4">
+              <div className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-xs space-y-4">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
                   <Zap size={24} />
                 </div>
@@ -167,7 +167,7 @@ export default function MenuDigitalPage() {
         </section>
 
         {/* ── BENEFICIOS PARA EL NEGOCIO ── */}
-        <section className="py-16 sm:py-24 bg-white border-b border-gray-200/70">
+        <section className="py-12 sm:py-16 bg-white border-b border-gray-200/70">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
             
             <div className="text-center max-w-2xl mx-auto space-y-3">
@@ -272,7 +272,7 @@ export default function MenuDigitalPage() {
             <div>
               <Link
                 to="/registro"
-                className="inline-flex items-center gap-2 bg-[#11CEFC] hover:bg-cyan-400 text-gray-950 font-black text-sm sm:text-base px-8 py-3.5 rounded-full shadow-glow-cyan hover:scale-105 transition-all"
+                className="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold text-sm px-5 py-3 rounded-lg shadow-sm hover:scale-105 transition-all"
               >
                 <span>Crear mi menú digital</span>
                 <ArrowRight size={16} />

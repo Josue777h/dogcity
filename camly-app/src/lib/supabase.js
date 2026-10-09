@@ -326,11 +326,16 @@ export async function getSession() {
 }
 
 // ── Register Business ──
-export async function registerBusiness({ email, password, businessName, phone }) {
+export async function registerBusiness({ email, password, businessName, phone, storeSlug }) {
+  const slug = String(storeSlug || businessName).toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 35);
+  if (!slug) throw new Error('El enlace de la tienda no es válido.');
+  const { data: existingStore, error: lookupError } = await getSupabase()
+    .from('negocios').select('id').eq('nombre', slug).maybeSingle();
+  if (lookupError) throw lookupError;
+  if (existingStore) throw new Error('Ese enlace ya está en uso. Elige otro nombre para tu tienda.');
   const { data: authData, error: authError } = await getSupabase().auth.signUp({ email, password });
   if (authError) throw authError;
-
-  const slug = businessName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
   const { data: negocio, error: negocioError } = await getSupabase()
     .from('negocios')
     .insert({ 

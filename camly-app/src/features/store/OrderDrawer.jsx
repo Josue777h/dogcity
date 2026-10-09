@@ -5,7 +5,7 @@ import {
   CheckCircle2, ShoppingCart, Minus, Plus, CreditCard, AlertCircle
 } from 'lucide-react';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
-import { formatMoney, openWhatsApp, reverseGeocode } from '../../lib/utils';
+import { formatMoney, openWhatsApp, reverseGeocode, formatWhatsAppMessage } from '../../lib/utils';
 import { saveOrder } from '../../lib/supabase';
 import { WHATSAPP_FALLBACK_PHONE } from '../../lib/constants';
 
@@ -102,54 +102,32 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
 
   function buildMessage(orderId, token) {
     const bizName    = (business?.nombre_visible || 'la tienda').trim();
-    const itemsLines = selectedItems.map(i => {
+    const itemsLines = selectedItems.flatMap(i => {
       const note = (i.note || cart.notes?.[i.id] || '').trim();
       const opts = (i.opciones_texto || '').trim();
       const extra = [opts, note].filter(Boolean).join(' · ');
-      return `• ${i.quantity}× ${i.name}${extra ? ` (${extra})` : ''} — ${formatMoney(i.price * i.quantity)}`;
-    }).join('\n');
+      return [`${i.quantity} x ${i.name}`, ...(extra ? [`  Opciones: ${extra}`] : []), `  ${formatMoney(i.price * i.quantity)}`];
+    });
 
-    const trackingUrl  = `${window.location.origin}/tracking?id=${orderId}&token=${token}`;
+    const trackingUrl  = `${window.location.origin}/tracking/${orderId}?token=${encodeURIComponent(token)}`;
     const addressLine  = customerAddress?.trim() || (locationLink ? 'Ver ubicación GPS en el mapa' : 'No especificada');
-    let envioLine = '';
-    if (deliveryMethod === 'envio') {
-      if (tipoDom === 'manual') envioLine = 'Domicilio: Por cotizar';
-      else envioLine = `Domicilio: ${formatMoney(deliveryFee)}`;
-    }
-
-    const lines = [
-      `*Pedido #${orderId} - ${bizName}*`,
-      '',
-      itemsLines,
-      '',
-      deliveryMethod === 'envio' ? `Entrega: ${addressLine}` : 'Retiro en local',
-    ];
-
-    if (deliveryMethod === 'envio' && locationLink) {
-      lines.push(`Ubicación: ${locationLink}`);
-    }
-    if (deliveryMethod === 'envio' && envioLine) {
-      lines.push(envioLine);
-    }
-
-    lines.push('');
-    if (tipoDom === 'manual' && deliveryMethod === 'envio') {
-      lines.push(`Subtotal: ${formatMoney(subtotal)}`);
-    } else {
-      lines.push(`Total: ${formatMoney(total)}`);
-    }
-
-    lines.push(`Pago: ${paymentMethod === 'transferencia' ? `Transferencia (${business?.pago_banco || 'Nequi'})` : 'Efectivo'}`);
-    lines.push(`Cliente: ${customerName} (${customerPhone})`);
-
-    if (cart.comment) {
-      lines.push(`Nota: ${cart.comment}`);
-    }
-
-    lines.push('');
-    lines.push(`Seguimiento: ${trackingUrl}`);
-
-    return lines.filter(Boolean).join('\n');
+    const quotePending = tipoDom === 'manual' && deliveryMethod === 'envio';
+    return formatWhatsAppMessage(`PEDIDO #${orderId} | ${bizName}`, [
+      { title: 'Productos', lines: itemsLines },
+      { title: 'Entrega', lines: [
+        deliveryMethod === 'envio' ? `Dirección: ${addressLine}` : 'Modalidad: Recoger en tienda',
+        deliveryMethod === 'envio' && locationLink ? `Mapa: ${locationLink}` : '',
+        deliveryMethod === 'envio' ? `Domicilio: ${quotePending ? 'Pendiente de cotización' : formatMoney(deliveryFee)}` : '',
+      ] },
+      { title: 'Resumen y pago', lines: [
+        `Subtotal: ${formatMoney(subtotal)}`,
+        deliveryMethod === 'envio' && !quotePending ? `Domicilio: ${formatMoney(deliveryFee)}` : '',
+        quotePending ? 'Total: Pendiente de cotización del envío' : `Total: ${formatMoney(total)}`,
+        `Pago: ${paymentMethod === 'transferencia' ? `Transferencia (${business?.pago_banco || 'Nequi'})` : 'Efectivo'}`,
+      ] },
+      { title: 'Cliente', lines: [`Nombre: ${customerName}`, `Contacto: ${customerPhone}`, cart.comment ? `Nota: ${cart.comment}` : ''] },
+      { title: 'Seguimiento', lines: [trackingUrl] },
+    ]);
   }
 
   function updateLocationFromCoords(lat, lng, label = 'Ubicación ajustada') {
@@ -222,7 +200,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
 
     setIsSubmitting(true);
     try {
-      const token   = Math.random().toString(36).substring(2, 15);
+      const token   = crypto.randomUUID();
       const isCustomQuote = deliveryMethod === 'envio' && tipoDom === 'manual';
       const initialStatus = isCustomQuote ? 'COTIZACION_PENDIENTE' : 'nuevo';
       const deliveryType = deliveryMethod === 'recogida'
@@ -256,7 +234,11 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
         })),
         entrega_metodo: deliveryMethod,
         pago_metodo: paymentMethod,
-        payment_method: paymentMethod,
+        payment_method: paymentMethod === 'transferencia'
+          ? (/daviplata/i.test(business?.pago_banco || '') ? 'transfer_daviplata'
+            : /bancolombia/i.test(business?.pago_banco || '') ? 'transfer_bancolombia'
+              : 'transfer_nequi')
+          : 'cash',
         payment_status: 'pending',
         token,
         negocio_id: bid,

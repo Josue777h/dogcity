@@ -209,9 +209,22 @@ export default function AdminPage() {
     }
   };
 
+  const handleToggleProductAvailability = async (product) => {
+    try {
+      await updateProduct(product.id, { ...product, disponible: !product.disponible });
+      const refreshed = await fetchProducts(business.id);
+      setProducts(refreshed);
+      setGlobalProducts(refreshed);
+      addToast(product.disponible ? 'Producto pausado en el catálogo' : 'Producto disponible en el catálogo', 'success');
+    } catch (err) {
+      console.error(err);
+      addToast('No se pudo actualizar la disponibilidad', 'error');
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F6F4EF] flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
         <Loader2 className="animate-spin text-brand mb-4" size={48} />
         <p className="text-xs font-black text-muted uppercase tracking-[0.3em]">Cargando Negocio...</p>
       </div>
@@ -220,7 +233,7 @@ export default function AdminPage() {
 
   return (
     <div 
-      className="h-screen max-h-screen overflow-hidden bg-[#F6F4EF] flex flex-col lg:flex-row"
+      className="h-screen max-h-screen overflow-hidden bg-slate-50 flex flex-col lg:flex-row"
       style={{ 
         '--primary-brand': business?.theme_color || '#0284C7',
         '--secondary-brand': business?.color_secundario || '#F9FAFB'
@@ -263,6 +276,7 @@ export default function AdminPage() {
                 loadData,
                 setEditingProduct,
                 handleDeleteProduct,
+                handleToggleProductAvailability,
                 reloadOrders: () => loadData(session.user.id, false)
               }} />
             </Suspense>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ShoppingCart, Plus, Minus, X, UtensilsCrossed, Check, Layers, AlertCircle, Sparkles } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, X, PackageCheck, Check, Layers, AlertCircle, Sparkles } from 'lucide-react';
 import { formatMoney } from '../../lib/utils';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
 
@@ -235,7 +235,7 @@ export default function ProductCard({
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-4">
-              <UtensilsCrossed size={28} className="opacity-40 mb-1" />
+              <PackageCheck size={28} className="opacity-40 mb-1" />
               <span className="text-[10px] font-medium text-gray-400">Sin foto</span>
             </div>
           )}
@@ -272,11 +272,11 @@ export default function ProductCard({
         {/* Content */}
         <div className="p-2.5 sm:p-3.5 flex flex-col flex-1 justify-between font-sans">
           <div className="cursor-pointer mb-1.5" onClick={() => hasOptions ? openCustomizationModal() : handleCardAdd()}>
-            <h3 className="text-xs sm:text-base font-bold text-gray-900 leading-snug line-clamp-1 mb-0.5">
+            <h3 className="text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-1 mb-0.5">
               {product.name}
             </h3>
             {product.description && (
-              <p className="text-[11px] sm:text-[13px] text-gray-500 line-clamp-2 leading-relaxed">
+              <p className="text-[11px] sm:text-[13px] text-gray-500 line-clamp-1 sm:line-clamp-2 leading-snug">
                 {product.description}
               </p>
             )}
@@ -364,7 +364,7 @@ export default function ProductCard({
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50">
-                  <UtensilsCrossed size={32} className="opacity-30 mb-1" />
+                  <PackageCheck size={32} className="opacity-30 mb-1" />
                   <span className="text-xs">Sin foto</span>
                 </div>
               )}
@@ -495,7 +495,7 @@ export default function ProductCard({
                   type="text"
                   value={tempNote}
                   onChange={e => setTempNote(e.target.value)}
-                  placeholder="Ej: Salsa aparte, bien cocido, etc."
+                  placeholder="Escribe indicaciones para la tienda"
                   className="w-full text-xs sm:text-sm p-2.5 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-gray-400 text-gray-900"
                 />
               </div>

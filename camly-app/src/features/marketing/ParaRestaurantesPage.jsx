@@ -31,7 +31,7 @@ export default function ParaRestaurantesPage() {
 
       <main>
         {/* ── HERO SECTION ── */}
-        <section className="pt-12 sm:pt-20 pb-16 sm:pb-24 border-b border-gray-200/70 gradient-soft-cyan">
+        <section className="pt-12 sm:pt-20 pb-16 sm:pb-24 border-b border-gray-200/70 bg-slate-50">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-6">
             
             <div className="inline-flex items-center gap-2 bg-white/90 border border-orange-200/80 rounded-full pl-2 pr-3.5 py-1 text-xs font-semibold text-gray-700 shadow-xs mx-auto">
@@ -43,7 +43,7 @@ export default function ParaRestaurantesPage() {
 
             <h1 className="font-display text-4xl sm:text-6xl font-black text-gray-950 tracking-tight leading-[1.05]">
               Software para restaurantes y<br />
-              <span className="text-[#0284C7] text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-sky-600 to-[#11CEFC]">
+              <span className="font-semibold text-sky-700">
                 negocios gastronómicos
               </span>
             </h1>
@@ -55,7 +55,7 @@ export default function ParaRestaurantesPage() {
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 to="/registro"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-gray-950 hover:bg-black text-white hover:text-[#11CEFC] font-bold text-sm sm:text-base px-8 py-4 rounded-full border border-gray-800 shadow-warm hover:shadow-glow-cyan transition-all duration-200 active:scale-95"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm sm:text-base px-5 py-3 rounded-lg border border-gray-800 shadow-card hover:shadow-sm transition-all duration-200 active:scale-95"
               >
                 <Sparkles size={18} className="text-[#11CEFC]" />
                 <span>Digitalizar mi restaurante gratis</span>
@@ -71,7 +71,7 @@ export default function ParaRestaurantesPage() {
         </section>
 
         {/* ── FUNCIONALIDADES GASTRONÓMICAS ── */}
-        <section className="py-16 sm:py-24 bg-white border-b border-gray-200/70">
+        <section className="py-12 sm:py-16 bg-white border-b border-gray-200/70">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
             
             <div className="text-center max-w-2xl mx-auto space-y-3">
@@ -85,7 +85,7 @@ export default function ParaRestaurantesPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               
-              <div className="p-7 rounded-3xl bg-gray-50 border border-gray-200/80 space-y-3">
+              <div className="p-7 rounded-xl bg-gray-50 border border-gray-200/80 space-y-3">
                 <div className="w-10 h-10 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center">
                   <Flame size={20} />
                 </div>
@@ -95,7 +95,7 @@ export default function ParaRestaurantesPage() {
                 </p>
               </div>
 
-              <div className="p-7 rounded-3xl bg-gray-50 border border-gray-200/80 space-y-3">
+              <div className="p-7 rounded-xl bg-gray-50 border border-gray-200/80 space-y-3">
                 <div className="w-10 h-10 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center">
                   <Printer size={20} />
                 </div>
@@ -105,7 +105,7 @@ export default function ParaRestaurantesPage() {
                 </p>
               </div>
 
-              <div className="p-7 rounded-3xl bg-gray-50 border border-gray-200/80 space-y-3">
+              <div className="p-7 rounded-xl bg-gray-50 border border-gray-200/80 space-y-3">
                 <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
                   <Navigation size={20} />
                 </div>
@@ -115,7 +115,7 @@ export default function ParaRestaurantesPage() {
                 </p>
               </div>
 
-              <div className="p-7 rounded-3xl bg-gray-50 border border-gray-200/80 space-y-3">
+              <div className="p-7 rounded-xl bg-gray-50 border border-gray-200/80 space-y-3">
                 <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
                   <QrCode size={20} />
                 </div>
@@ -131,10 +131,10 @@ export default function ParaRestaurantesPage() {
         </section>
 
         {/* ── COMPARATIVA DE RENTABILIDAD: 0% COMISIONES ── */}
-        <section className="py-16 sm:py-24 bg-gray-50/60 border-b border-gray-200/70">
+        <section className="py-12 sm:py-16 bg-gray-50/60 border-b border-gray-200/70">
           <div className="max-w-5xl mx-auto px-4 sm:px-6">
             
-            <div className="bg-white rounded-3xl p-8 sm:p-12 border border-gray-200/80 shadow-warm space-y-8">
+            <div className="bg-white rounded-xl p-5 sm:p-6 border border-gray-200/80 shadow-card space-y-8">
               <div className="max-w-2xl space-y-3">
                 <span className="text-xs font-extrabold uppercase tracking-widest text-[#0284C7]">
                   Protege tu margen de ganancia
@@ -213,7 +213,7 @@ export default function ParaRestaurantesPage() {
             <div>
               <Link
                 to="/registro"
-                className="inline-flex items-center gap-2 bg-[#11CEFC] hover:bg-cyan-400 text-gray-950 font-black text-sm sm:text-base px-8 py-3.5 rounded-full shadow-glow-cyan hover:scale-105 transition-all"
+                className="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold text-sm px-5 py-3 rounded-lg shadow-sm hover:scale-105 transition-all"
               >
                 <span>Probar para mi restaurante gratis</span>
                 <ArrowRight size={16} />

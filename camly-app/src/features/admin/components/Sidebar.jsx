@@ -36,7 +36,7 @@ export default function Sidebar({ business, onSignOut, isOpen, onClose }) {
       >
         {({ isActive }) => (
           <div className="flex items-center gap-2.5">
-            <tab.icon size={17} strokeWidth={isActive ? 2.2 : 1.8} className={isActive ? 'text-orange-500' : 'text-gray-400'} />
+            <tab.icon size={17} strokeWidth={isActive ? 2.2 : 1.8} className={isActive ? 'text-brand' : 'text-gray-400'} />
             <span>{tab.label}</span>
           </div>
         )}

@@ -72,6 +72,17 @@ export function buildWhatsAppUrl(phone, message) {
   return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encoded}`;
 }
 
+/** Render WhatsApp text using a consistent, readable template without emoji characters. */
+export function formatWhatsAppMessage(title, sections = []) {
+  const lines = [`*${title.trim()}*`, '────────────────────────'];
+  sections.forEach(section => {
+    const rows = (section.lines || []).filter(Boolean).map(line => String(line));
+    if (!rows.length) return;
+    lines.push('', `*${section.title.toUpperCase()}*`, ...rows);
+  });
+  return lines.join('\n');
+}
+
 /**
  * Abre WhatsApp de forma segura.
  * En Safari/iOS, window.open() después de un await es bloqueado como popup.

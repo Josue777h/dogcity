@@ -27,6 +27,7 @@ export default function ProductsView(props) {
   const onAdd = props.onAdd ?? (() => outletCtx.setEditingProduct?.({}));
   const onEdit = props.onEdit ?? ((p) => outletCtx.setEditingProduct?.(p));
   const onDelete = props.onDelete ?? ((id) => outletCtx.handleDeleteProduct?.(id));
+  const onToggleAvailability = props.onToggleAvailability ?? outletCtx.handleToggleProductAvailability;
   const loading = props.loading ?? false;
 
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -156,6 +157,14 @@ export default function ProductsView(props) {
               </div>
 
               <div className={`flex items-center gap-1 ${viewMode === 'grid' ? 'border-t border-border pt-2 mt-2 justify-end' : 'shrink-0'}`}>
+                {onToggleAvailability && <button
+                  type="button"
+                  role="switch"
+                  aria-checked={!!p.disponible}
+                  aria-label={`${p.disponible ? 'Pausar' : 'Activar'} ${p.name}`}
+                  onClick={(e) => { e.stopPropagation(); onToggleAvailability(p); }}
+                  className={`relative h-6 w-11 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ${p.disponible ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                ><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${p.disponible ? 'left-[22px]' : 'left-0.5'}`} /></button>}
                 <button 
                   onClick={(e) => { e.stopPropagation(); onEdit(p); }}
                   className="btn-ghost p-1.5 tap-target text-gray-500 hover:text-gray-900"

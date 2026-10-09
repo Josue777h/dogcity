@@ -20,7 +20,7 @@ export default function NotFoundPage() {
       <main className="flex-1 flex items-center justify-center py-20 px-4 sm:px-6">
         <div className="max-w-xl mx-auto text-center space-y-6">
           
-          <div className="w-20 h-20 rounded-3xl bg-cyan-50 border border-cyan-200/80 text-[#0284C7] flex items-center justify-center mx-auto shadow-xs">
+          <div className="w-20 h-20 rounded-xl bg-cyan-50 border border-cyan-200/80 text-[#0284C7] flex items-center justify-center mx-auto shadow-xs">
             <Compass size={40} />
           </div>
 
@@ -73,7 +73,7 @@ export default function NotFoundPage() {
           <div className="pt-4">
             <Link
               to="/"
-              className="inline-flex items-center gap-2 bg-gray-950 hover:bg-black text-white hover:text-[#11CEFC] font-bold text-xs sm:text-sm px-6 py-3 rounded-full border border-gray-800 shadow-sm transition-all"
+              className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm px-6 py-3 rounded-full border border-gray-800 shadow-sm transition-all"
             >
               <span>Volver a la página principal</span>
               <ArrowRight size={14} className="text-[#11CEFC]" />

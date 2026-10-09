@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { 
   ChevronRight, User, MapPin, Package, Bike, Trash2, Map,
@@ -6,8 +6,8 @@ import {
   Ban, FileText, ExternalLink, Clock
 } from 'lucide-react';
 import { 
-  formatMoney, getOrderSubtotal, isDeliveryPending, 
-  openWhatsApp, printThermalReceipt, playNewOrderSound
+  formatMoney, getOrderSubtotal, isDeliveryPending, formatWhatsAppMessage,
+  printThermalReceipt, playNewOrderSound
 } from '../../../lib/utils';
 import { isWebBluetoothSupported, printOrderViaBluetooth } from '../../../lib/bluetoothPrinter';
 import { updateOrderStatus, getSupabase, deleteOrder } from '../../../lib/supabase';
@@ -264,7 +264,7 @@ function OrderItems({ order }) {
 
               {p.nota && (
                 <div className="text-[11px] font-bold text-amber-950 bg-amber-50 border border-amber-300 rounded px-2 py-0.5 mt-1 flex items-center gap-1">
-                  <span>⚠️ Nota cocina:</span>
+      <span>⚠️ Nota del pedido:</span>
                   <span className="font-semibold">&ldquo;{p.nota}&rdquo;</span>
                 </div>
               )}
@@ -314,6 +314,7 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
       addToast('Ingresa el costo del domicilio', 'warning');
       return;
     }
+    const whatsappTab = window.open('about:blank', '_blank');
     setLoading(true);
     try {
       await OrderService.setDeliveryQuote(order.id, feeNum, subtotal);
@@ -321,17 +322,21 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
       const customerPhone = (order.telefono || '').replace(/\D/g, '');
       const storeName = businessName || 'la tienda';
       const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://negu.pro';
-      const trackingUrl = `${origin}/tracking?id=${order.id}${order.token ? `&token=${order.token}` : ''}`;
+      const trackingUrl = `${origin}/tracking/${order.id}${order.token ? `?token=${encodeURIComponent(order.token)}` : ''}`;
       
-      const whatsappText = `Hola ${order.nombre}, el valor del domicilio para tu pedido #${order.id} en ${storeName} es de $${feeNum.toLocaleString('es-CO')}.\nTotal a pagar: $${newTotal.toLocaleString('es-CO')}.\n\nConfirma tu pedido aquí:\n${trackingUrl}`;
+      const whatsappText = formatWhatsAppMessage(`ACTUALIZACIÓN DEL PEDIDO #${order.id} | ${storeName}`, [
+        { title: 'Envío', lines: [`Costo de domicilio: ${formatMoney(feeNum)}`, `Subtotal: ${formatMoney(subtotal)}`, `Total: ${formatMoney(newTotal)}`] },
+        { title: 'Confirmación', lines: ['Revisa el detalle y confirma el pedido desde este enlace:', trackingUrl] },
+      ]);
       
       const waUrl = `https://wa.me/${customerPhone}?text=${encodeURIComponent(whatsappText)}`;
-      window.open(waUrl, '_blank');
+      if (whatsappTab) whatsappTab.location.href = waUrl;
 
       addToast('Cotización fijada y notificada por WhatsApp', 'success');
       onConfirmed();
     } catch (err) {
       console.error(err);
+      whatsappTab?.close();
       addToast('Error al fijar cotización', 'error');
     } finally {
       setLoading(false);
@@ -370,7 +375,7 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
       <div className="flex flex-col sm:flex-row gap-2 pt-1">
         <div className="relative flex-1">
           <label className="block text-[10px] font-black uppercase tracking-wider text-amber-900 mb-1">
-            Costo de Domicilio ($)
+            Costo de entrega ($)
           </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">$</span>
@@ -410,7 +415,8 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
 
 export default function OrdersView(props) {
   const outletCtx = useOutletContext() || {};
-  const orders = props.orders ?? outletCtx.orders ?? [];
+  const ordersSource = props.orders ?? outletCtx.orders;
+  const orders = useMemo(() => ordersSource || [], [ordersSource]);
   const onUpdate = props.onUpdate ?? outletCtx.reloadOrders ?? (() => {});
 
   const business = useBusinessStore(s => s.business);
@@ -424,7 +430,20 @@ export default function OrdersView(props) {
   const [selectedOrderForDriver, setSelectedOrderForDriver] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('camly_order_sound') !== 'false');
   const [printingBluetoothId, setPrintingBluetoothId] = useState(null);
+  const [receiptUrls, setReceiptUrls] = useState({});
   const addToast = useToastStore(s => s.addToast);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all((orders || []).filter(o => o.payment_receipt_url).map(async order => {
+      const path = order.payment_receipt_url;
+      try {
+        const url = path.startsWith('http') ? path : await OrderService.getReceiptUrl(path);
+        return [order.id, url];
+      } catch { return [order.id, '']; }
+    })).then(entries => { if (active) setReceiptUrls(Object.fromEntries(entries)); });
+    return () => { active = false; };
+  }, [orders]);
 
   const isQuotePending = (o) => {
     const st = (o.status || o.estado || '').toString();
@@ -490,7 +509,7 @@ export default function OrdersView(props) {
     if (st === 'CONFIRMADO_GRACIA') {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-purple-100 text-purple-900 border border-purple-300 animate-pulse">
-          <Clock size={11} /> Ventana Gracia (30s)
+          <Clock size={11} /> Ventana de gracia (60 s)
         </span>
       );
     }
@@ -548,9 +567,12 @@ export default function OrdersView(props) {
       return;
     }
     const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://negu.pro';
-    const trackingUrl = `${origin}/tracking?id=${order.id}${order.token ? `&token=${order.token}` : ''}`;
+    const trackingUrl = `${origin}/tracking/${order.id}${order.token ? `?token=${encodeURIComponent(order.token)}` : ''}`;
     const storeName = businessName || 'la tienda';
-    const message = `Hola ${order.nombre}, tu pedido #${order.id} en ${storeName} ya va en camino hacia tu dirección.\n\nPuedes ver el estado de tu entrega aquí:\n${trackingUrl}`;
+    const message = formatWhatsAppMessage(`ACTUALIZACIÓN DEL PEDIDO #${order.id} | ${storeName}`, [
+      { title: 'Estado', lines: ['El pedido salió hacia tu dirección.'] },
+      { title: 'Seguimiento', lines: [trackingUrl] },
+    ]);
     window.open(`https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -606,7 +628,11 @@ export default function OrdersView(props) {
     const driver = drivers.find(d => d.id === order.domiciliario_id);
     if (!driver) return;
     const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion || '')}`;
-    const message = `PEDIDO ASIGNADO\n\nCliente: ${order.nombre}\nTel: ${order.telefono}\nDirección: ${order.direccion || 'Ver mapa'}\nGoogle Maps: ${mapsLink}\n\nTotal: ${formatMoney(order.total)}`;
+    const message = formatWhatsAppMessage(`ASIGNACIÓN DE ENTREGA | PEDIDO #${order.id}`, [
+      { title: 'Cliente', lines: [`Nombre: ${order.nombre}`, `Contacto: ${order.telefono}`] },
+      { title: 'Entrega', lines: [`Dirección: ${order.direccion || 'Consultar ubicación'}`, `Mapa: ${mapsLink}`] },
+      { title: 'Pedido', lines: [`Total: ${formatMoney(order.total_amount || order.total || getOrderSubtotal(order))}`] },
+    ]);
     window.open(`https://wa.me/${driver.telefono}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -616,17 +642,22 @@ export default function OrdersView(props) {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 flex-1">
           {STATUS_TABS.map(tab => {
+            const tabLabel = tab.id === 'preparando'
+              ? `En ${getStatusCopy('EN_PREPARACION', business?.business_type).stepperLabel}`
+              : tab.label;
             const count = getTabCount(tab.id);
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveFilter(tab.id)}
+                onClick={() => {
+                  setActiveFilter(tab.id);
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors shrink-0
                   ${activeFilter === tab.id 
                     ? tab.id === 'cotizacion' ? 'bg-amber-600 text-white shadow-xs' : 'bg-gray-900 text-white shadow-xs'
                     : tab.id === 'cotizacion' && count > 0 ? 'bg-amber-50 border border-amber-300 text-amber-900 hover:bg-amber-100' : 'bg-white border border-border text-gray-700 hover:text-gray-950'}`}
               >
-                {tab.label}
+                {tabLabel}
                 <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeFilter === tab.id ? 'bg-white/20' : tab.id === 'cotizacion' && count > 0 ? 'bg-amber-200 text-amber-950 font-black' : 'bg-gray-100 text-gray-600'}`}>
                   {count}
                 </span>
@@ -667,7 +698,7 @@ export default function OrdersView(props) {
         </div>
       </div>
 
-      {/* Orders List */}
+      {/* Lista de pedidos */}
       <div className="space-y-1.5">
         {filteredOrders.map((order) => {
           const status = order.estado || order.status;
@@ -800,7 +831,7 @@ export default function OrdersView(props) {
                     <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2 text-xs text-blue-900 mb-3 shadow-2xs">
                       <Clock size={15} className="text-blue-600 shrink-0" />
                       <p className="font-medium">
-                        Cotización aceptada por el cliente. Entrando a cocina en 30 segundos.
+                        Cotización aceptada. El pedido pasa a {getStatusCopy('EN_PREPARACION', business?.business_type).stepperLabel.toLowerCase()} al terminar la ventana de gracia de 60 segundos.
                       </p>
                     </div>
                   )}
@@ -816,12 +847,12 @@ export default function OrdersView(props) {
                         </div>
                       </div>
                       <a
-                        href={order.payment_receipt_url}
+                        href={receiptUrls[order.id] || undefined}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-xs shadow-2xs shrink-0"
                       >
-                        <span>Ver Comprobante</span>
+                        <span>{receiptUrls[order.id] ? 'Ver comprobante' : 'Cargando comprobante…'}</span>
                         <ExternalLink size={12} />
                       </a>
                     </div>
@@ -979,10 +1010,10 @@ export default function OrdersView(props) {
                             type="button"
                             onClick={() => printThermalReceipt(order, business)}
                             className="h-8 rounded-lg border border-gray-300 hover:border-gray-900 bg-white text-gray-800 hover:text-black text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                            title="Imprimir comanda térmica estándar para cocina"
+                            title="Imprimir comprobante térmico del pedido"
                           >
                             <Printer size={14} className="shrink-0" />
-                            <span className="truncate">Comanda cocina</span>
+                            <span className="truncate">Imprimir pedido</span>
                           </button>
 
                           <button

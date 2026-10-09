@@ -9,7 +9,7 @@ export type OrderStatus =
 
 export type DeliveryType = 'fixed' | 'per_km' | 'custom_quote' | 'pickup';
 
-export type PaymentMethod = 'transfer_nequi' | 'transfer_daviplata' | 'transferencia' | 'cash' | 'efectivo';
+export type PaymentMethod = 'transfer_nequi' | 'transfer_daviplata' | 'transfer_bancolombia' | 'transferencia' | 'cash' | 'efectivo';
 
 export type PaymentStatus = 'pending' | 'verified' | 'rejected';
 

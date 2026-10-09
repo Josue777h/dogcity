@@ -60,7 +60,12 @@ export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [billingAnnual, setBillingAnnual] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
+  const [storeName, setStoreName] = useState('');
+  const [monthlySales, setMonthlySales] = useState(3000000);
   const orderCount = useAnimatedCounter(1420, 1500);
+  const storeSlug = storeName.trim().toLocaleLowerCase('es-CO').normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 35);
+  const registrationUrl = storeSlug ? `/registro?tienda=${encodeURIComponent(storeSlug)}` : '/registro';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -84,9 +89,9 @@ export default function LandingPage() {
       <MarketingNavbar />
 
       {/* ═══════════ HERO SECTION ═══════════ */}
-      <section className="relative pt-8 sm:pt-14 lg:pt-18 pb-16 sm:pb-24 overflow-hidden gradient-soft-cyan border-b border-gray-200/70">
+      <section className="relative pt-10 sm:pt-14 pb-12 sm:pb-16 overflow-hidden bg-slate-50 border-b border-gray-200/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
             
             {/* Left Column: Copy & Value Proposition */}
             <div className="lg:col-span-7 text-center lg:text-left space-y-6">
@@ -100,9 +105,9 @@ export default function LandingPage() {
               </div>
 
               {/* Display Headline */}
-              <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-black text-gray-950 tracking-tight leading-[1.03]">
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black text-gray-950 tracking-tight leading-[1.03]">
                 Tu catálogo digital,<br />
-                <span className="text-[#0284C7] text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-cyan-500 to-[#11CEFC]">listo en minutos</span><br />
+                <span className="text-sky-700">listo en minutos</span><br />
                 <span className="text-gray-600 font-sans text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight block mt-1">
                   conectado a WhatsApp.
                 </span>
@@ -117,7 +122,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-2">
                 <Link 
                   to="/registro" 
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-gray-950 hover:bg-black text-white hover:text-[#11CEFC] font-bold text-sm sm:text-base px-8 py-4 rounded-full border border-gray-800 shadow-warm hover:shadow-glow-cyan transition-all duration-200 active:scale-95"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm sm:text-base px-5 py-3 rounded-lg border border-gray-800 shadow-card hover:shadow-sm transition-all duration-200 active:scale-95"
                 >
                   <Sparkles size={18} className="text-[#11CEFC]" />
                   <span>Crear mi tienda gratis</span>
@@ -126,7 +131,7 @@ export default function LandingPage() {
 
                 <a 
                   href="#como-funciona" 
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-800 font-bold text-sm sm:text-base px-7 py-4 rounded-full border border-gray-200/90 shadow-xs hover:border-gray-300 transition-all duration-150"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-800 font-bold text-sm sm:text-base px-5 py-3 rounded-lg border border-gray-200/90 shadow-xs hover:border-gray-300 transition-all duration-150"
                 >
                   <Play size={16} className="text-[#0284C7] fill-[#0284C7]" />
                   <span>Ver cómo funciona</span>
@@ -156,10 +161,10 @@ export default function LandingPage() {
               <div className="relative w-full max-w-[310px] sm:max-w-[340px]">
                 
                 {/* Background Ambient Glow */}
-                <div className="absolute -inset-4 bg-gradient-to-tr from-cyan-500/25 via-sky-400/20 to-transparent rounded-[3rem] blur-2xl -z-10" />
+                <div className="absolute -inset-2 rounded-[2.5rem] border border-slate-200/70 -z-10" />
 
                 {/* Smartphone Mockup */}
-                <div className="rounded-[2.8rem] p-3 bg-gray-950 shadow-2xl border-4 border-gray-800/90 transition-transform duration-300 hover:rotate-0 -rotate-1">
+                <div className="rounded-[2.8rem] p-3 bg-gray-950 shadow-md border-4 border-gray-800/90 transition-transform duration-300 hover:rotate-0 -rotate-1">
                   
                   {/* Speaker and Camera notch */}
                   <div className="relative rounded-[2.3rem] overflow-hidden bg-white aspect-[9/16] shadow-inner">
@@ -173,7 +178,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* Floating Card 1: WhatsApp Incoming Order */}
-                <div className="absolute -top-4 -left-4 sm:-left-8 bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-3.5 shadow-warm-lg border border-gray-200/80 flex items-center gap-3 animate-fade-in-down z-20 max-w-[240px]">
+                <div className="absolute -top-4 -left-4 sm:-left-8 bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-3.5 shadow-card border border-gray-200/80 flex items-center gap-3 animate-fade-in-down z-20 max-w-[240px]">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
                     <MessageCircle size={20} />
                   </div>
@@ -185,7 +190,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* Floating Card 2: GPS Location Pin */}
-                <div className="absolute bottom-6 -right-4 sm:-right-8 bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-3.5 shadow-warm-lg border border-gray-200/80 flex items-center gap-3 animate-fade-in-up z-20 max-w-[220px]">
+                <div className="absolute bottom-6 -right-4 sm:-right-8 bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-3.5 shadow-card border border-gray-200/80 flex items-center gap-3 animate-fade-in-up z-20 max-w-[220px]">
                   <div className="w-10 h-10 rounded-xl bg-gray-950 text-[#11CEFC] border border-gray-800 flex items-center justify-center shrink-0 shadow-xs">
                     <Navigation size={18} />
                   </div>
@@ -197,7 +202,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* Floating Badge 3: 0% Commissions */}
-                <div className="absolute -bottom-3 left-4 bg-gray-950 text-white rounded-full px-4 py-1.5 text-xs font-bold shadow-lg flex items-center gap-1.5 border border-gray-800">
+                <div className="absolute -bottom-3 left-4 bg-gray-950 text-white rounded-full px-4 py-1.5 text-xs font-bold shadow-card flex items-center gap-1.5 border border-gray-800">
                   <DollarSign size={13} className="text-[#11CEFC]" />
                   <span>0% comisiones sobre tus ventas</span>
                 </div>
@@ -205,6 +210,34 @@ export default function LandingPage() {
               </div>
             </div>
 
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-slate-200 bg-white py-8 sm:py-10">
+        <div className="mx-auto grid max-w-6xl gap-6 px-4 sm:px-6 md:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 sm:p-6">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Tu enlace de tienda</span>
+            <h2 className="mt-1 text-lg font-bold text-slate-900">Prepara el enlace de tu negocio</h2>
+            <p className="mt-1 text-sm text-slate-600">Define cómo encontrarán tu catálogo tus clientes.</p>
+            <label htmlFor="store-slug" className="sr-only">Nombre de tu tienda</label>
+            <div className="mt-4 flex overflow-hidden rounded-lg border border-slate-300 bg-white focus-within:ring-2 focus-within:ring-brand/20">
+              <span className="flex items-center border-r border-slate-200 bg-slate-50 px-3 text-xs text-slate-500">negu.pro/</span>
+              <input id="store-slug" value={storeName} onChange={e => setStoreName(e.target.value)} placeholder="mi-negocio" className="min-w-0 flex-1 px-3 py-2.5 text-sm outline-none" />
+            </div>
+            {storeName && <p className="mt-2 text-xs text-slate-500">Vista previa: <span className="font-medium text-slate-700">negu.pro/{storeSlug || 'mi-tienda'}</span></p>}
+            <Link to={registrationUrl} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Continuar gratis <ArrowRight size={15} /></Link>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Calculadora de ahorro</span>
+            <h2 className="mt-1 text-lg font-bold text-slate-900">Vende sin pagar comisión por pedido</h2>
+            <label htmlFor="sales-value" className="mt-4 block text-sm text-slate-600">Ventas mensuales aproximadas</label>
+            <div className="mt-2 flex items-center gap-3">
+              <input id="sales-value" type="range" min="500000" max="30000000" step="250000" value={monthlySales} onChange={e => setMonthlySales(Number(e.target.value))} className="w-full accent-sky-700" />
+              <span className="w-28 text-right text-sm font-semibold tabular-nums text-slate-800">${monthlySales.toLocaleString('es-CO')}</span>
+            </div>
+            <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">Con una comisión de referencia del 5%, ahorrarías <strong>${Math.round(monthlySales * 0.05).toLocaleString('es-CO')}</strong> al mes con 0% de comisión de NEGU.</p>
+            <p className="mt-2 text-[11px] text-slate-500">Estimación ilustrativa usando una comisión de referencia del 5%.</p>
           </div>
         </div>
       </section>
@@ -237,7 +270,7 @@ export default function LandingPage() {
       </div>
 
       {/* ═══════════ CÓMO FUNCIONA (THE 3-STEP FLOW) ═══════════ */}
-      <section id="como-funciona" className="py-16 sm:py-24 bg-white border-b border-gray-200/70">
+      <section id="como-funciona" className="py-12 sm:py-16 bg-white border-b border-gray-200/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           
           {/* Header */}
@@ -258,7 +291,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             
             {/* Step 1 */}
-            <div className="relative p-6 sm:p-8 rounded-3xl bg-gray-50/70 border border-gray-200/80 hover:border-blue-300 hover:shadow-warm transition-all duration-200 space-y-5">
+            <div className="relative p-4 sm:p-5 rounded-xl bg-gray-50/70 border border-gray-200/80 hover:border-blue-300 hover:shadow-card transition-all duration-200 space-y-5">
               <div className="flex items-center justify-between">
                 <span className="font-display text-3xl sm:text-4xl font-black text-blue-600">01</span>
                 <div className="w-12 h-12 rounded-2xl bg-blue-100/60 text-blue-600 flex items-center justify-center">
@@ -274,7 +307,7 @@ export default function LandingPage() {
             </div>
 
             {/* Step 2 */}
-            <div className="relative p-6 sm:p-8 rounded-3xl bg-gray-50/70 border border-gray-200/80 hover:border-blue-300 hover:shadow-warm transition-all duration-200 space-y-5">
+            <div className="relative p-4 sm:p-5 rounded-xl bg-gray-50/70 border border-gray-200/80 hover:border-blue-300 hover:shadow-card transition-all duration-200 space-y-5">
               <div className="flex items-center justify-between">
                 <span className="font-display text-3xl sm:text-4xl font-black text-blue-600">02</span>
                 <div className="w-12 h-12 rounded-2xl bg-indigo-100/60 text-indigo-600 flex items-center justify-center">
@@ -290,7 +323,7 @@ export default function LandingPage() {
             </div>
 
             {/* Step 3 */}
-            <div className="relative p-6 sm:p-8 rounded-3xl bg-gray-50/70 border border-gray-200/80 hover:border-blue-300 hover:shadow-warm transition-all duration-200 space-y-5">
+            <div className="relative p-4 sm:p-5 rounded-xl bg-gray-50/70 border border-gray-200/80 hover:border-blue-300 hover:shadow-card transition-all duration-200 space-y-5">
               <div className="flex items-center justify-between">
                 <span className="font-display text-3xl sm:text-4xl font-black text-blue-600">03</span>
                 <div className="w-12 h-12 rounded-2xl bg-emerald-100/60 text-emerald-600 flex items-center justify-center">
@@ -311,7 +344,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════ BENTO GRID: VENTAJAS Y VALOR ═══════════ */}
-      <section id="solucion" className="py-16 sm:py-24 bg-gray-50/60 border-b border-gray-200/70">
+      <section id="solucion" className="py-12 sm:py-16 bg-gray-50/60 border-b border-gray-200/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           
           <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
@@ -331,7 +364,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
             
             {/* Bento Card 1: GPS y Domicilios (Large) */}
-            <div className="md:col-span-8 p-7 sm:p-9 rounded-3xl bg-white border border-gray-200/90 shadow-warm hover:shadow-warm-lg transition-all duration-200 space-y-4">
+            <div className="md:col-span-8 p-4 sm:p-5 rounded-xl bg-white border border-gray-200/90 shadow-card hover:shadow-card transition-all duration-200 space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
                 <Navigation size={22} />
               </div>
@@ -349,7 +382,7 @@ export default function LandingPage() {
             </div>
 
             {/* Bento Card 2: 0% Comisiones (Small) */}
-            <div className="md:col-span-4 p-7 sm:p-9 rounded-3xl bg-white border border-gray-200/90 shadow-warm hover:shadow-warm-lg transition-all duration-200 space-y-4">
+            <div className="md:col-span-4 p-4 sm:p-5 rounded-xl bg-white border border-gray-200/90 shadow-card hover:shadow-card transition-all duration-200 space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                 <DollarSign size={22} />
               </div>
@@ -365,7 +398,7 @@ export default function LandingPage() {
             </div>
 
             {/* Bento Card 3: Recogida en Local (Small) */}
-            <div className="md:col-span-4 p-7 sm:p-9 rounded-3xl bg-white border border-gray-200/90 shadow-warm hover:shadow-warm-lg transition-all duration-200 space-y-4">
+            <div className="md:col-span-4 p-4 sm:p-5 rounded-xl bg-white border border-gray-200/90 shadow-card hover:shadow-card transition-all duration-200 space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
                 <Store size={22} />
               </div>
@@ -378,7 +411,7 @@ export default function LandingPage() {
             </div>
 
             {/* Bento Card 4: Panel en vivo (Large) */}
-            <div className="md:col-span-8 p-7 sm:p-9 rounded-3xl bg-white border border-gray-200/90 shadow-warm hover:shadow-warm-lg transition-all duration-200 space-y-4">
+            <div className="md:col-span-8 p-4 sm:p-5 rounded-xl bg-white border border-gray-200/90 shadow-card hover:shadow-card transition-all duration-200 space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
                 <Smartphone size={22} />
               </div>
@@ -401,7 +434,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════ ANTES VS CON MOVE (COMPARATIVA) ═══════════ */}
-      <section id="comparativa" className="py-16 sm:py-24 bg-white border-b border-gray-200/70">
+      <section id="comparativa" className="py-12 sm:py-16 bg-white border-b border-gray-200/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           
           <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
@@ -419,7 +452,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
             
             {/* Antes: Caos */}
-            <div className="p-7 sm:p-9 rounded-3xl bg-rose-50/40 border border-rose-200/70 space-y-5">
+            <div className="p-4 sm:p-5 rounded-xl bg-rose-50/40 border border-rose-200/70 space-y-5">
               <div className="flex items-center gap-2.5 text-rose-700 font-extrabold text-sm uppercase tracking-wider">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
                 <span>El método tradicional (Caos)</span>
@@ -445,7 +478,7 @@ export default function LandingPage() {
             </div>
 
             {/* Después: Con Negu */}
-            <div className="p-7 sm:p-9 rounded-3xl bg-sky-50/50 border-2 border-[#0284C7] shadow-warm space-y-5 relative">
+            <div className="p-4 sm:p-5 rounded-xl bg-sky-50/50 border border-sky-200 shadow-card space-y-5 relative">
               <div className="absolute -top-3.5 right-6 bg-gray-950 text-[#11CEFC] text-[11px] font-extrabold uppercase px-3 py-1 rounded-full shadow-sm border border-gray-800">
                 Con Negu
               </div>
@@ -479,7 +512,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════ PLANES Y PRECIOS ═══════════ */}
-      <section id="precios" className="py-16 sm:py-24 bg-gray-50/60 border-b border-gray-200/70">
+      <section id="precios" className="py-12 sm:py-16 bg-gray-50/60 border-b border-gray-200/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           
           <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
@@ -519,7 +552,7 @@ export default function LandingPage() {
           <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
             
             {/* Plan 1: Prueba Gratis */}
-            <div className="p-7 sm:p-9 rounded-3xl bg-white border border-gray-200/90 shadow-warm flex flex-col justify-between space-y-6">
+            <div className="p-4 sm:p-5 rounded-xl bg-white border border-gray-200/90 shadow-card flex flex-col justify-between space-y-6">
               <div className="space-y-4">
                 <div className="space-y-1">
                   <h3 className="text-xl font-bold text-gray-900">Prueba Gratuita</h3>
@@ -558,7 +591,7 @@ export default function LandingPage() {
             </div>
 
             {/* Plan 2: Plan Pro */}
-            <div className="p-7 sm:p-9 rounded-3xl bg-white border-2 border-blue-600 shadow-warm-lg flex flex-col justify-between space-y-6 relative">
+            <div className="p-4 sm:p-5 rounded-xl bg-white border border-blue-200 shadow-card flex flex-col justify-between space-y-6 relative">
               <div className="absolute -top-3.5 right-6 bg-blue-600 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-sm tracking-wider">
                 MÁS POPULAR
               </div>
@@ -612,7 +645,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════ TESTIMONIOS ═══════════ */}
-      <section className="py-16 sm:py-24 bg-white border-b border-gray-200/70">
+      <section className="py-12 sm:py-16 bg-white border-b border-gray-200/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
@@ -642,7 +675,7 @@ export default function LandingPage() {
             {/* Testimonials cards */}
             <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
               
-              <div className="rounded-3xl border border-gray-200/80 bg-gray-50/60 p-6 space-y-4 hover:shadow-warm transition-shadow duration-200">
+              <div className="rounded-xl border border-gray-200/80 bg-gray-50/60 p-6 space-y-4 hover:shadow-card transition-shadow duration-200">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-[#0284C7] text-white text-xs font-black flex items-center justify-center shrink-0">
                     SR
@@ -662,7 +695,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-gray-200/80 bg-gray-50/60 p-6 space-y-4 hover:shadow-warm transition-shadow duration-200">
+              <div className="rounded-xl border border-gray-200/80 bg-gray-50/60 p-6 space-y-4 hover:shadow-card transition-shadow duration-200">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-slate-900 text-[#11CEFC] text-xs font-black flex items-center justify-center shrink-0 border border-gray-800">
                     MH
@@ -690,7 +723,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════ PREGUNTAS FRECUENTES (FAQ ACCORDION) ═══════════ */}
-      <section id="faq" className="py-16 sm:py-24 bg-gray-50/60 border-b border-gray-200/70">
+      <section id="faq" className="py-12 sm:py-16 bg-gray-50/60 border-b border-gray-200/70">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           
           <div className="text-center mb-12 space-y-3">
@@ -757,7 +790,7 @@ export default function LandingPage() {
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link 
               to="/registro" 
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-[#11CEFC] hover:bg-cyan-400 text-gray-950 font-black text-base px-9 py-4 rounded-full shadow-glow-cyan hover:scale-105 transition-all duration-200"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-brand hover:bg-brand-dark text-white font-semibold text-sm px-5 py-3 rounded-lg shadow-sm hover:scale-105 transition-all duration-200"
             >
               <span>Crear mi tienda en 3 minutos</span>
               <ArrowRight size={17} />

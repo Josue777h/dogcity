@@ -5,6 +5,7 @@ import {
   Download, Clock, ArrowUpRight, BarChart3, AlertCircle 
 } from 'lucide-react';
 import { formatMoney, exportOrdersToCSV } from '../../../lib/utils';
+import Select from '../../../components/ui/Select';
 import { useToastStore } from '../../../stores';
 
 export default function RevenueView(props) {
@@ -203,17 +204,17 @@ export default function RevenueView(props) {
 
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500">Período:</label>
-            <select
+            <Select
               value={retention}
               onChange={(e) => setRetention(e.target.value)}
-              className="input-field text-xs py-1.5 w-auto"
+              className="text-xs py-1.5 w-auto"
             >
               <option value="7">Últimos 7 días</option>
               <option value="15">Últimos 15 días</option>
               <option value="30">Últimos 30 días</option>
               <option value="90">Últimos 90 días</option>
               <option value="all">Todo el historial</option>
-            </select>
+            </Select>
           </div>
         </div>
 
