@@ -110,7 +110,7 @@ export default function StorePage() {
       }
     }
     return base;
-  }, [business?.footer_message]);
+  }, [business]);
 
   const fontStyle = useMemo(() => {
     switch (designConfig.font_family) {
@@ -164,7 +164,7 @@ export default function StorePage() {
   return (
     <div
       style={fontStyle}
-      className="min-h-screen bg-slate-50 text-slate-900"
+      className="flex min-h-dvh flex-col bg-slate-50 text-slate-900"
     >
       <SEO
         title={`${business.nombre_visible || business.nombre} | Menú digital en NEGU`}
@@ -290,8 +290,8 @@ export default function StorePage() {
       )}
 
       {/* Main catalog */}
-      <main className={totalItems > 0 ? 'pb-24 sm:pb-20' : 'pb-4'}>
-        <div className="fluid-container pt-3 sm:pt-4">
+      <main className="flex flex-1 flex-col">
+        <div className={`fluid-container flex-1 pt-3 sm:pt-4 ${totalItems > 0 ? 'pb-24 sm:pb-20' : ''}`}>
           <div className="flex items-baseline justify-between gap-2 mb-3 px-0.5">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
               {currentCategory === 'Todos' ? 'Todos los productos' : currentCategory}
@@ -348,6 +348,7 @@ export default function StorePage() {
             </a>
           </div>
         </div>
+        <StoreFooter business={business} className="mt-auto" />
       </main>
 
       {/* Floating cart bar — tenant brand color */}
@@ -379,7 +380,6 @@ export default function StorePage() {
       )}
 
       <OrderDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} scheduleStatus={scheduleStatus} />
-      <StoreFooter business={business} />
     </div>
   );
 }

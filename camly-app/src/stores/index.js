@@ -282,7 +282,9 @@ export const useBusinessStore = create((set) => ({
     set({ business, subscription, isPro, isExpired, trialDaysLeft, isLoading: false });
   },
   setProducts: (products) => set({ products }),
-  setCategories: (categories) => set({ categories }),
+  setCategories: (categories) => set((state) => ({
+    categories: typeof categories === 'function' ? categories(state.categories) : categories,
+  })),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error, isLoading: false }),
 }));

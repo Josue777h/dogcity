@@ -337,7 +337,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-4 py-3.5 sm:px-5 sm:py-5 space-y-4 sm:space-y-5 hide-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5 sm:py-4 space-y-4 sm:space-y-5 hide-scrollbar">
 
           {/* ── SUCCESS STATE ── */}
           {orderResult ? (
@@ -384,7 +384,12 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
             <>
               {/* ── ITEMS SUMMARY ── */}
               <div>
-                <p className="caps-label mb-2">Tu pedido</p>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="caps-label">Tu pedido</p>
+                  <span className="text-[11px] font-semibold tabular-nums" style={{ color: 'var(--color-text-3)' }}>
+                    {selectedItems.length} {selectedItems.length === 1 ? 'producto' : 'productos'}
+                  </span>
+                </div>
                 <div
                   className="rounded-lg overflow-hidden border"
                   style={{ borderColor: 'var(--color-border)' }}
@@ -395,25 +400,28 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
                     </p>
                   ) : (
                     <>
-                      <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
+                      <div className="max-h-52 overflow-y-auto overscroll-contain divide-y sm:max-h-64" style={{ borderColor: 'var(--color-border)' }}>
                         {selectedItems.map((item, idx) => (
-                          <div key={item.cartItemId || `${item.id}_${idx}`} className="px-4 py-3 flex items-center justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold truncate" style={{ color: 'var(--color-text-1)' }}>
+                          <div key={item.cartItemId || `${item.id}_${idx}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-3 py-2.5 sm:px-4">
+                            <div className="min-w-0 self-start">
+                              <p className="line-clamp-2 text-[13px] font-semibold leading-snug" style={{ color: 'var(--color-text-1)' }}>
                                 {item.name}
                               </p>
                               {item.opciones_texto && (
-                                <p className="text-xs text-blue-600 font-medium truncate">
+                                <p className="mt-0.5 line-clamp-1 text-[11px] font-medium text-blue-700">
                                   {item.opciones_texto}
                                 </p>
                               )}
                               {(item.note || cart.notes?.[item.id]) && (
-                                <p className="text-xs mt-0.5 truncate text-gray-500 italic">
+                                <p className="mt-0.5 line-clamp-1 text-[11px] italic text-gray-500">
                                   Nota: {item.note || cart.notes?.[item.id]}
                                 </p>
                               )}
                             </div>
-                            <div className="flex items-center gap-3 shrink-0">
+                            <div className="flex shrink-0 flex-col items-end gap-1.5">
+                              <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--color-text-1)' }}>
+                                {formatMoney(item.quantity * item.price)}
+                              </span>
                               {/* Stepper */}
                               <div
                                 className="flex items-center rounded-lg border overflow-hidden bg-gray-50/50"
@@ -421,7 +429,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
                               >
                                 <button
                                   onClick={() => decrement(bid, item.cartItemId || item.id)}
-                                  className="w-7 h-7 flex items-center justify-center transition-colors hover:bg-gray-100 cursor-pointer"
+                                  className="h-7 w-7 flex items-center justify-center transition-colors hover:bg-gray-100 cursor-pointer"
                                   style={{ color: 'var(--color-text-2)' }}
                                   aria-label="Restar una unidad"
                                 >
@@ -435,23 +443,20 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
                                 </span>
                                 <button
                                   onClick={() => increment(bid, item.cartItemId || item.id)}
-                                  className="w-7 h-7 flex items-center justify-center transition-colors hover:bg-gray-100 cursor-pointer"
+                                  className="h-7 w-7 flex items-center justify-center transition-colors hover:bg-gray-100 cursor-pointer"
                                   style={{ color: 'var(--color-brand)' }}
                                   aria-label="Sumar una unidad"
                                 >
                                   <Plus size={12} />
                                 </button>
                               </div>
-                              <span className="text-xs sm:text-sm font-bold tabular-nums" style={{ color: 'var(--color-text-1)' }}>
-                                {formatMoney(item.quantity * item.price)}
-                              </span>
                             </div>
                           </div>
                         ))}
                       </div>
                       {/* Subtotal row */}
                       <div
-                        className="px-4 py-3 flex items-center justify-between"
+                        className="flex items-center justify-between px-3 py-2.5 sm:px-4"
                         style={{ backgroundColor: 'var(--color-bg)', borderTop: `1px solid var(--color-border)` }}
                       >
                         <span className="text-sm" style={{ color: 'var(--color-text-2)' }}>Subtotal</span>

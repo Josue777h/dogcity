@@ -47,8 +47,8 @@ export const OrderService = {
     return data;
   },
 
-  async advanceToKitchen(orderId: number, token: string) {
-    const { data, error } = await getSupabase().rpc('advance_grace_to_kitchen', { p_order_id: orderId, p_token: token });
+  async advanceToPreparation(orderId: number, token: string) {
+    const { data, error } = await getSupabase().rpc('advance_grace_to_preparation', { p_order_id: orderId, p_token: token });
     if (error) throw error;
     return data;
   },

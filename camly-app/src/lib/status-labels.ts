@@ -5,6 +5,7 @@ export type OrderStatus =
   | 'COTIZACION_ENVIADA'
   | 'CONFIRMADO_GRACIA'
   | 'EN_PREPARACION'
+  | 'LISTO_PARA_RECOGER'
   | 'EN_CAMINO'
   | 'ENTREGADO'
   | 'CANCELADO';
@@ -28,7 +29,18 @@ export interface StepperStep {
   desc: string;
 }
 
-const DICTIONARY: Record<BusinessType, Record<InternalOrderStatus, StatusCopy>> = {
+const PICKUP_READY_COPY: StatusCopy = {
+  badge: 'Listo para recoger',
+  title: 'Tu pedido está listo',
+  subtitle: 'Puedes acercarte al local para recogerlo.',
+  stepperLabel: 'Listo',
+  stepperDesc: 'Disponible para recoger',
+  graceBanner: () => '',
+  cancelLockedNotice: 'El pedido ya está listo para recoger. Contacta al comercio si necesitas ayuda.',
+  acceptButton: '',
+};
+
+const DICTIONARY: Record<BusinessType, Partial<Record<InternalOrderStatus, StatusCopy>>> = {
   food: {
     NUEVO: {
       badge: 'Nuevo',
@@ -37,7 +49,7 @@ const DICTIONARY: Record<BusinessType, Record<InternalOrderStatus, StatusCopy>> 
       stepperLabel: 'Recibido',
       stepperDesc: 'Pedido recibido',
       graceBanner: () => 'Pedido recibido.',
-      cancelLockedNotice: 'Tu orden ya se encuentra en preparación.',
+      cancelLockedNotice: 'Tu orden ya está en cocina.',
       acceptButton: 'Confirmar Pedido',
     },
     COTIZACION_PENDIENTE: {
@@ -47,7 +59,7 @@ const DICTIONARY: Record<BusinessType, Record<InternalOrderStatus, StatusCopy>> 
       stepperLabel: 'Recibido',
       stepperDesc: 'Por cotizar',
       graceBanner: (s) => `Pedido confirmado. Pasando a cocina en ${s}s...`,
-      cancelLockedNotice: 'Tu orden ya está en preparación y no puede cancelarse desde la web.',
+      cancelLockedNotice: 'Tu orden ya está en cocina y no puede cancelarse desde la web.',
       acceptButton: 'Confirmar Pedido',
     },
     COTIZACION_ENVIADA: {
@@ -57,27 +69,27 @@ const DICTIONARY: Record<BusinessType, Record<InternalOrderStatus, StatusCopy>> 
       stepperLabel: 'Recibido',
       stepperDesc: 'Domicilio asignado',
       graceBanner: (s) => `Pedido confirmado. Pasando a cocina en ${s}s...`,
-      cancelLockedNotice: 'Tu orden ya está en preparación y no puede cancelarse desde la web.',
+      cancelLockedNotice: 'Tu orden ya está en cocina y no puede cancelarse desde la web.',
       acceptButton: 'Confirmar Pedido',
     },
     CONFIRMADO_GRACIA: {
       badge: 'Confirmado',
       title: 'Pedido Confirmado',
-      subtitle: 'Tu orden entrará a preparación en cocina en breve.',
+      subtitle: 'Tu orden entrará a cocina en breve.',
       stepperLabel: 'Recibido',
       stepperDesc: 'Confirmado',
       graceBanner: (s) => `Pedido confirmado. Entrando a cocina en ${s}s...`,
-      cancelLockedNotice: 'Tu orden ya está en preparación y no puede cancelarse desde la web.',
+      cancelLockedNotice: 'Tu orden ya está en cocina y no puede cancelarse desde la web.',
       acceptButton: 'Confirmar Pedido',
     },
     EN_PREPARACION: {
       badge: 'En Cocina',
-      title: 'En Preparación',
-      subtitle: 'Tu pedido se está preparando.',
+      title: 'En Cocina',
+      subtitle: 'Tu pedido está en cocina.',
       stepperLabel: 'En Cocina',
-      stepperDesc: 'En preparación',
-      graceBanner: () => 'Tu orden está en preparación.',
-      cancelLockedNotice: 'Tu orden ya está en preparación y no puede cancelarse desde la web.',
+      stepperDesc: 'En cocina',
+      graceBanner: () => 'Tu orden está en cocina.',
+      cancelLockedNotice: 'Tu orden ya está en cocina y no puede cancelarse desde la web.',
       acceptButton: 'Confirmar Pedido',
     },
     EN_CAMINO: {
@@ -464,6 +476,7 @@ export function normalizeBusinessType(type?: string | null): BusinessType {
 export function normalizeOrderStatus(status?: string | null): InternalOrderStatus {
   if (!status) return 'NUEVO';
   const s = status.toUpperCase();
+  if (s.includes('LISTO_PARA_RECOGER') || s.includes('READY_FOR_PICKUP')) return 'LISTO_PARA_RECOGER';
   if (s.includes('COTIZACION_PENDIENTE') || s.includes('DOM_PENDIENTE')) return 'COTIZACION_PENDIENTE';
   if (s.includes('COTIZACION_ENVIADA')) return 'COTIZACION_ENVIADA';
   if (s.includes('CONFIRMADO_GRACIA')) return 'CONFIRMADO_GRACIA';
@@ -478,17 +491,43 @@ export function normalizeOrderStatus(status?: string | null): InternalOrderStatu
 /**
  * Obtiene los textos y etiquetas adaptadas al rubro del negocio
  */
-export function getStatusCopy(status?: string | null, businessType?: string | null): StatusCopy {
+export function getStatusCopy(status?: string | null, businessType?: string | null, deliveryMethod?: string | null): StatusCopy {
+  const isPickup = deliveryMethod === 'recogida' || deliveryMethod === 'pickup';
   const normType = normalizeBusinessType(businessType);
-  const normStatus = normalizeOrderStatus(status);
-  return DICTIONARY[normType][normStatus] || DICTIONARY.general[normStatus] || DICTIONARY.general.NUEVO;
+  const normalizedStatus = normalizeOrderStatus(status);
+  if (isPickup && (normalizedStatus === 'LISTO_PARA_RECOGER' || normalizedStatus === 'EN_CAMINO')) return PICKUP_READY_COPY;
+  if (isPickup && normalizedStatus === 'ENTREGADO') {
+    return { ...DICTIONARY.general.ENTREGADO, badge: 'Recogido', title: 'Pedido recogido', subtitle: 'El pedido fue recogido en el local.' };
+  }
+  if (isPickup && normalizedStatus === 'EN_PREPARACION') {
+    const preparationCopy = DICTIONARY[normType].EN_PREPARACION || DICTIONARY.general.EN_PREPARACION!;
+    return {
+      ...preparationCopy,
+      title: normType === 'food' ? 'En Cocina' : preparationCopy.title,
+      subtitle: normType === 'food'
+        ? 'Tu pedido se está preparando en cocina para recogerlo.'
+        : 'El comercio está preparando tu pedido para recogerlo.',
+      stepperDesc: normType === 'food' ? 'En cocina' : preparationCopy.stepperDesc,
+    };
+  }
+  const normStatus = normalizedStatus;
+  if (normStatus === 'LISTO_PARA_RECOGER') return PICKUP_READY_COPY;
+  return DICTIONARY[normType][normStatus] || DICTIONARY.general[normStatus] || DICTIONARY.general.NUEVO || PICKUP_READY_COPY;
 }
 
 /**
  * Devuelve los 4 pasos del Stepper adaptados al rubro de comercio
  */
-export function getStepperSteps(businessType?: string | null): StepperStep[] {
+export function getStepperSteps(businessType?: string | null, deliveryMethod?: string | null): StepperStep[] {
   const bType = normalizeBusinessType(businessType);
+  if (deliveryMethod === 'recogida' || deliveryMethod === 'pickup') {
+    return [
+      { id: 'nuevo', label: 'Recibido', desc: 'Pedido recibido' },
+      { id: 'preparando', label: getStatusCopy('EN_PREPARACION', bType, deliveryMethod).stepperLabel, desc: 'Alistando para recoger' },
+      { id: 'listo', label: 'Listo para recoger', desc: 'Disponible en el local' },
+      { id: 'entregado', label: 'Recogido', desc: 'Pedido entregado' },
+    ];
+  }
   return [
     { id: 'nuevo', label: DICTIONARY[bType].NUEVO.stepperLabel, desc: DICTIONARY[bType].NUEVO.stepperDesc },
     { id: 'preparando', label: DICTIONARY[bType].EN_PREPARACION.stepperLabel, desc: DICTIONARY[bType].EN_PREPARACION.stepperDesc },

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { 
-  ChevronRight, User, MapPin, Package, Bike, Trash2, Map,
+  ChevronRight, User, MapPin, Package, Bike, Store, Trash2, Map,
   MessageCircle, Loader2, AlertCircle, CheckCircle2, Check, X, Printer, Volume2, VolumeX, Bluetooth,
   Ban, FileText, ExternalLink, Clock
 } from 'lucide-react';
@@ -20,7 +20,8 @@ const STATUS_TABS = [
   { id: 'all', label: 'Todos' },
   { id: 'nuevo', label: 'Nuevos' },
   { id: 'cotizacion', label: 'Por Cotizar' },
-  { id: 'preparando', label: 'En Cocina' },
+  { id: 'preparando', label: 'En Preparación' },
+  { id: 'ready_pickup', label: 'Listos para recoger' },
   { id: 'enviado', label: 'En Camino' },
   { id: 'entregado', label: 'Entregados' },
   { id: 'cancelado', label: 'Cancelados' },
@@ -33,6 +34,7 @@ function getStepIndex(rawStatus) {
   const s = (rawStatus || '').toString().toLowerCase();
   if (['nuevo', 'recibido', 'pendiente', 'cotizacion_pendiente', 'cotizacion_enviada', 'confirmado_gracia'].includes(s)) return 0;
   if (['preparando', 'en_preparacion'].includes(s)) return 1;
+  if (['listo_para_recoger', 'ready_for_pickup'].includes(s)) return 2;
   if (['enviado', 'en_camino'].includes(s)) return 2;
   if (['entregado'].includes(s)) return 3;
   return 0;
@@ -169,18 +171,28 @@ function MerchantCancelModal({ isOpen, order, onClose, onConfirmed }) {
   );
 }
 
-function OrderTimeline({ currentStatus, onStatusChange }) {
+function OrderTimeline({ currentStatus, onStatusChange, disabled = false, deliveryMethod = 'envio', businessType }) {
+  const isPickup = deliveryMethod === 'recogida' || deliveryMethod === 'pickup';
+  const steps = isPickup ? ['nuevo', 'preparando', 'listo', 'entregado'] : STATUS_STEPS;
   const currentIdx = getStepIndex(currentStatus);
+  const stepStatus = (step) => step === 'listo' ? 'LISTO_PARA_RECOGER' : step === 'preparando' ? 'EN_PREPARACION' : step === 'enviado' ? 'EN_CAMINO' : step === 'entregado' ? 'ENTREGADO' : 'nuevo';
+  const stepLabel = (step) => {
+    if (isPickup && step === 'listo') return 'Listo para recoger';
+    if (isPickup && step === 'entregado') return 'Recogido';
+    if (step === 'preparando') return getStatusCopy('EN_PREPARACION', businessType, deliveryMethod).stepperLabel;
+    if (step === 'enviado') return getStatusCopy('EN_CAMINO', businessType).stepperLabel;
+    return STATUS_LABELS[step] || 'Recibido';
+  };
   return (
     <div className="py-2.5 px-4 bg-white rounded-xl border border-gray-200 mb-3 shadow-2xs">
       <div className="flex items-center justify-between relative">
-        {STATUS_STEPS.map((step, i) => {
+        {steps.map((step, i) => {
           const isPassed = i <= currentIdx;
           const isCurrent = i === currentIdx;
           return (
             <div key={step} className="flex-1 flex flex-col items-center relative group">
               {/* Barra conectora horizontal detrás de los círculos */}
-              {i < STATUS_STEPS.length - 1 && (
+              {i < steps.length - 1 && (
                 <div 
                   className={`absolute top-3.5 left-1/2 w-full h-[2px] -z-0 transition-colors duration-200 ${
                     i < currentIdx ? 'bg-blue-600' : 'bg-gray-200'
@@ -191,10 +203,11 @@ function OrderTimeline({ currentStatus, onStatusChange }) {
               {/* Botón interactivo con el estado */}
               <button
                 type="button"
-                onClick={() => onStatusChange && onStatusChange(step)}
-                title={`Cambiar estado a "${STATUS_LABELS[step]}"`}
+                disabled={disabled}
+                onClick={() => onStatusChange && onStatusChange(stepStatus(step))}
+                title={`Cambiar estado a "${stepLabel(step)}"`}
                 className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer select-none ${
-                  isCurrent 
+                  disabled ? 'opacity-50 cursor-wait' : isCurrent
                     ? 'bg-blue-600 text-white ring-4 ring-blue-100 shadow-xs scale-110 font-bold' 
                     : isPassed 
                     ? 'bg-blue-600 text-white hover:bg-blue-700' 
@@ -211,7 +224,8 @@ function OrderTimeline({ currentStatus, onStatusChange }) {
               {/* Etiqueta clicable */}
               <button
                 type="button"
-                onClick={() => onStatusChange && onStatusChange(step)}
+                disabled={disabled}
+                onClick={() => onStatusChange && onStatusChange(stepStatus(step))}
                 className={`text-[11px] sm:text-xs mt-1 font-bold transition-colors cursor-pointer text-center leading-tight hover:underline ${
                   isCurrent 
                     ? 'text-blue-700' 
@@ -220,7 +234,7 @@ function OrderTimeline({ currentStatus, onStatusChange }) {
                     : 'text-gray-500 hover:text-gray-800'
                 }`}
               >
-                {STATUS_LABELS[step]}
+                {stepLabel(step)}
               </button>
             </div>
           );
@@ -237,7 +251,7 @@ function OrderItems({ order }) {
 
   return (
     <div className="space-y-2.5">
-      <div className="space-y-1.5 divide-y divide-gray-100">
+      <div className="max-h-40 overflow-y-auto overscroll-contain pr-1 space-y-1.5 divide-y divide-gray-100 sm:max-h-64">
         {items.map((p, idx) => {
           const qty = p.cantidad ?? p.quantity ?? 1;
           const name = p.nombre ?? p.name ?? 'Producto';
@@ -297,6 +311,14 @@ function OrderItems({ order }) {
   );
 }
 
+function WhatsAppIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+    </svg>
+  );
+}
+
 function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
   const [fee, setFee] = useState(order.delivery_fee || order.domicilio_costo || '');
   const [loading, setLoading] = useState(false);
@@ -344,18 +366,16 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
   };
 
   return (
-    <div className="bg-gradient-to-br from-amber-50 to-orange-50/40 border border-amber-300 rounded-xl p-3 sm:p-4 space-y-3 shadow-xs">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-2.5">
-          <div className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5">
-            <AlertCircle size={15} />
-          </div>
-          <div>
-            <h4 className="text-xs sm:text-sm font-black text-amber-950 uppercase tracking-wide">Cotización de Domicilio Requerida</h4>
-            <p className="text-[11px] sm:text-xs text-amber-900 leading-snug mt-0.5">
-              Ingresa el costo manual del envío. El sistema recalculará el total y abrirá el mensaje de WhatsApp para que el cliente confirme.
-            </p>
-          </div>
+    <div className="bg-gradient-to-br from-amber-50 to-orange-50/40 border border-amber-300 rounded-xl p-2.5 sm:p-4 space-y-2 sm:space-y-3 shadow-xs">
+      <div className="flex items-center gap-2">
+        <div className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
+          <AlertCircle size={14} />
+        </div>
+        <div className="min-w-0">
+          <h4 className="text-xs sm:text-sm font-black text-amber-950 uppercase tracking-wide">Cotizar domicilio</h4>
+          <p className="hidden sm:block text-xs text-amber-900 leading-snug mt-0.5">
+            Indica el costo del envío para que el cliente revise y confirme el total.
+          </p>
         </div>
       </div>
 
@@ -364,7 +384,7 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
           href={mapsUrl}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-amber-50/50 border border-amber-200 rounded-lg transition-all text-xs text-amber-950 font-bold group shadow-2xs"
+          className="flex items-center gap-2 px-2.5 py-1.5 bg-white hover:bg-amber-50/50 border border-amber-200 rounded-lg transition-all text-xs text-amber-950 font-bold group shadow-2xs"
         >
           <Map size={14} className="text-orange-600 shrink-0 group-hover:scale-110 transition-transform" />
           <span className="truncate flex-1">{order.direccion || 'Abrir ubicación GPS'}</span>
@@ -372,7 +392,7 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
         </a>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-2 pt-1">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
         <div className="relative flex-1">
           <label className="block text-[10px] font-black uppercase tracking-wider text-amber-900 mb-1">
             Costo de entrega ($)
@@ -386,27 +406,28 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
               placeholder="Ej: 5000"
               value={fee}
               onChange={(e) => setFee(e.target.value)}
-              className="input-field pl-7 py-2 text-xs sm:text-sm font-bold w-full bg-white border-amber-300 focus:border-amber-500 focus:ring-amber-200"
+              className="input-field pl-7 py-1.5 sm:py-2 text-xs sm:text-sm font-bold w-full bg-white border-amber-300 focus:border-amber-500 focus:ring-amber-200"
             />
           </div>
         </div>
 
-        <div className="sm:self-end">
+        <div>
           <button
             onClick={handleConfirmAndNotify}
             disabled={loading || !feeNum}
-            className="w-full sm:w-auto h-10 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+            className="h-10 px-2.5 sm:px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap"
+            aria-label="Fijar y notificar cotización por WhatsApp"
           >
             {loading ? <Loader2 size={15} className="animate-spin" /> : <MessageCircle size={15} />}
-            <span>Fijar y Notificar al Cliente</span>
+            <span><span className="sm:hidden">Enviar</span><span className="hidden sm:inline">Fijar y notificar</span></span>
           </button>
         </div>
       </div>
 
       {feeNum > 0 && (
-        <div className="flex items-center justify-between text-xs px-2.5 py-1.5 bg-white/80 rounded-lg border border-amber-200 text-amber-950 font-medium">
-          <span className="text-[11px] font-bold">Subtotal: {formatMoney(subtotal)} + Domicilio: {formatMoney(feeNum)}</span>
-          <span className="text-xs sm:text-sm font-black tabular-nums text-amber-950">Total: {formatMoney(newTotal)}</span>
+        <div className="flex items-center justify-between gap-2 text-xs px-2.5 py-1.5 bg-white/80 rounded-lg border border-amber-200 text-amber-950 font-medium">
+          <span className="truncate text-[10px] sm:text-xs font-bold">{formatMoney(subtotal)} + {formatMoney(feeNum)} envío</span>
+          <span className="shrink-0 text-xs sm:text-sm font-black tabular-nums text-amber-950">Total {formatMoney(newTotal)}</span>
         </div>
       )}
     </div>
@@ -426,10 +447,12 @@ export default function OrdersView(props) {
   const [orderToDelete, setOrderToDelete] = useState(null);
   const [orderToCancel, setOrderToCancel] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [deliveryFilter, setDeliveryFilter] = useState('all');
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [selectedOrderForDriver, setSelectedOrderForDriver] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('camly_order_sound') !== 'false');
   const [printingBluetoothId, setPrintingBluetoothId] = useState(null);
+  const [updatingStatusOrderId, setUpdatingStatusOrderId] = useState(null);
   const [receiptUrls, setReceiptUrls] = useState({});
   const addToast = useToastStore(s => s.addToast);
 
@@ -474,6 +497,10 @@ export default function OrdersView(props) {
 
   useEffect(() => {
     async function loadDrivers() {
+      if (!orders.some(order => order.entrega_metodo === 'envio' && order.delivery_type !== 'pickup')) {
+        setDrivers([]);
+        return;
+      }
       const biz = orders[0]?.negocio_id;
       if (!biz) return;
       const { data } = await getSupabase()
@@ -486,11 +513,18 @@ export default function OrdersView(props) {
     loadDrivers();
   }, [orders]);
 
+  const isPickupOrder = (order) => order?.delivery_type === 'pickup' || order?.entrega_metodo === 'recogida';
+
   const getStatusBadge = (status, order) => {
     const st = (status || order?.status || order?.estado || '').toString();
     const isQuoteRequired = order && isQuotePending(order);
     const bType = business?.business_type || 'general';
-    const copy = getStatusCopy(st, bType);
+    const normalizedStatus = st.toUpperCase();
+    const copy = getStatusCopy(st, bType, isPickupOrder(order) ? 'pickup' : 'envio');
+
+    if (isPickupOrder(order) && ['LISTO_PARA_RECOGER', 'EN_CAMINO', 'ENVIADO'].includes(normalizedStatus)) {
+      return <span className="badge badge-success">Listo para recoger</span>;
+    }
 
     if (st === 'COTIZACION_PENDIENTE' || isQuoteRequired) {
       return (
@@ -509,7 +543,7 @@ export default function OrdersView(props) {
     if (st === 'CONFIRMADO_GRACIA') {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-purple-100 text-purple-900 border border-purple-300 animate-pulse">
-          <Clock size={11} /> Ventana de gracia (60 s)
+          <Clock size={11} /> Ventana de gracia (30 s)
         </span>
       );
     }
@@ -538,27 +572,50 @@ export default function OrdersView(props) {
     if (tabId === 'nuevo') return orders.filter(isOrderNew).length;
     if (tabId === 'cotizacion') return orders.filter(isQuotePending).length;
     if (tabId === 'preparando') return orders.filter(o => ['preparando', 'en_preparacion'].includes((o.status || o.estado || '').toLowerCase())).length;
-    if (tabId === 'enviado') return orders.filter(o => ['enviado', 'en_camino'].includes((o.status || o.estado || '').toLowerCase())).length;
+    if (tabId === 'ready_pickup') return orders.filter(o => isPickupOrder(o) && ['listo_para_recoger', 'en_camino', 'enviado'].includes((o.status || o.estado || '').toLowerCase())).length;
+    if (tabId === 'enviado') return orders.filter(o => !isPickupOrder(o) && ['enviado', 'en_camino'].includes((o.status || o.estado || '').toLowerCase())).length;
     if (tabId === 'entregado') return orders.filter(o => ['entregado'].includes((o.status || o.estado || '').toLowerCase())).length;
     if (tabId === 'cancelado') return orders.filter(o => ['cancelado'].includes((o.status || o.estado || '').toLowerCase())).length;
     return orders.filter(o => (o.estado || o.status) === tabId).length;
   };
 
-  const filteredOrders = activeFilter === 'all' 
+  const getDeliveryCount = (method) => method === 'all'
+    ? orders.length
+    : orders.filter(o => method === 'pickup' ? isPickupOrder(o) : !isPickupOrder(o)).length;
+
+  const filterOrdersByStatus = (filter) => filter === 'all'
     ? orders 
-    : activeFilter === 'nuevo'
+    : filter === 'nuevo'
     ? orders.filter(isOrderNew)
-    : activeFilter === 'cotizacion'
+    : filter === 'cotizacion'
     ? orders.filter(isQuotePending)
-    : activeFilter === 'preparando'
+    : filter === 'preparando'
     ? orders.filter(o => ['preparando', 'en_preparacion'].includes((o.status || o.estado || '').toLowerCase()))
-    : activeFilter === 'enviado'
-    ? orders.filter(o => ['enviado', 'en_camino'].includes((o.status || o.estado || '').toLowerCase()))
-    : activeFilter === 'entregado'
+    : filter === 'ready_pickup'
+    ? orders.filter(o => isPickupOrder(o) && ['listo_para_recoger', 'en_camino', 'enviado'].includes((o.status || o.estado || '').toLowerCase()))
+    : filter === 'enviado'
+    ? orders.filter(o => !isPickupOrder(o) && ['enviado', 'en_camino'].includes((o.status || o.estado || '').toLowerCase()))
+    : filter === 'entregado'
     ? orders.filter(o => ['entregado'].includes((o.status || o.estado || '').toLowerCase()))
-    : activeFilter === 'cancelado'
+    : filter === 'cancelado'
     ? orders.filter(o => ['cancelado'].includes((o.status || o.estado || '').toLowerCase()))
-    : orders.filter(o => (o.estado || o.status) === activeFilter);
+    : orders.filter(o => (o.estado || o.status) === filter);
+
+  const statusFilteredOrders = filterOrdersByStatus(activeFilter);
+
+  const toggleDeliveryFilter = (method) => {
+    const nextFilter = deliveryFilter === method ? 'all' : method;
+    setDeliveryFilter(nextFilter);
+    const availableOrders = filterOrdersByStatus(activeFilter).filter(order =>
+      nextFilter === 'all' || (nextFilter === 'pickup' ? isPickupOrder(order) : !isPickupOrder(order))
+    );
+    if (activeFilter !== 'all' && availableOrders.length === 0) setActiveFilter('all');
+  };
+
+  const filteredOrders = deliveryFilter === 'all'
+    ? statusFilteredOrders
+    : statusFilteredOrders.filter(order => deliveryFilter === 'pickup' ? isPickupOrder(order) : !isPickupOrder(order));
+  const preparingLabel = getStatusCopy('EN_PREPARACION', business?.business_type).stepperLabel.toLowerCase();
 
   const handleNotifyCustomerDispatch = (order) => {
     const customerPhone = (order.telefono || '').replace(/\D/g, '');
@@ -569,25 +626,26 @@ export default function OrdersView(props) {
     const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://negu.pro';
     const trackingUrl = `${origin}/tracking/${order.id}${order.token ? `?token=${encodeURIComponent(order.token)}` : ''}`;
     const storeName = businessName || 'la tienda';
+    const pickup = isPickupOrder(order);
     const message = formatWhatsAppMessage(`ACTUALIZACIÓN DEL PEDIDO #${order.id} | ${storeName}`, [
-      { title: 'Estado', lines: ['El pedido salió hacia tu dirección.'] },
+      { title: 'Estado', lines: [pickup ? 'Tu pedido está listo para recoger en el local.' : 'El pedido salió hacia tu dirección.'] },
+      ...(pickup && business?.direccion ? [{ title: 'Punto de recogida', lines: [business.direccion] }] : []),
       { title: 'Seguimiento', lines: [trackingUrl] },
     ]);
     window.open(`https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const handleStatusChange = async (orderId, newStatus) => {
+    setUpdatingStatusOrderId(orderId);
     try {
       await updateOrderStatus(orderId, newStatus);
       onUpdate();
-      if (newStatus === 'enviado' || newStatus === 'EN_CAMINO') {
-        const order = orders.find(o => o.id === orderId);
-        if (order && order.entrega_metodo === 'envio') {
-          handleNotifyCustomerDispatch(order);
-        }
-      }
+      addToast('Estado del pedido actualizado', 'success');
     } catch (err) {
       console.error(err);
+      addToast(err?.message || 'No se pudo actualizar el estado del pedido', 'error');
+    } finally {
+      setUpdatingStatusOrderId(null);
     }
   };
 
@@ -595,11 +653,14 @@ export default function OrdersView(props) {
     if (!orderToDelete) return;
     try {
       await deleteOrder(orderToDelete.id);
+      addToast('Pedido eliminado correctamente', 'success');
       setOrderToDelete(null);
       onUpdate();
+      return true;
     } catch (err) {
       console.error(err);
-      alert('Hubo un error al eliminar el pedido.');
+      addToast(err?.message || 'No se pudo eliminar el pedido. Revisa los permisos de Supabase.', 'error');
+      return false;
     }
   };
 
@@ -609,6 +670,7 @@ export default function OrdersView(props) {
   };
 
   const handleAssignDriver = async (orderId, driverId) => {
+    if (isPickupOrder(orders.find(item => item.id === orderId))) return;
     setLoadingDriver(orderId);
     try {
       const { error } = await getSupabase()
@@ -625,6 +687,7 @@ export default function OrdersView(props) {
   };
 
   const handleDispatch = (order) => {
+    if (isPickupOrder(order)) return;
     const driver = drivers.find(d => d.id === order.domiciliario_id);
     if (!driver) return;
     const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion || '')}`;
@@ -639,31 +702,49 @@ export default function OrdersView(props) {
   return (
     <div className="space-y-3 animate-fade-in-up">
       {/* Filter tabs & Sound toggle */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 flex-1">
-          {STATUS_TABS.map(tab => {
-            const tabLabel = tab.id === 'preparando'
-              ? `En ${getStatusCopy('EN_PREPARACION', business?.business_type).stepperLabel}`
-              : tab.label;
-            const count = getTabCount(tab.id);
-            return (
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-2.5">
+        <div className="grid grid-cols-2 gap-2 flex-1 min-w-0">
+          <label className="min-w-0">
+            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-500">Estado del pedido</span>
+            <select
+              aria-label="Filtrar pedidos por estado"
+              value={activeFilter}
+              onChange={event => setActiveFilter(event.target.value)}
+              className="h-10 w-full min-w-0 rounded-lg border border-border bg-white px-2.5 text-xs font-semibold text-gray-800 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-900/5"
+            >
+              {STATUS_TABS.map(tab => (
+                <option key={tab.id} value={tab.id}>
+                  {tab.id === 'preparando' ? getStatusCopy('EN_PREPARACION', business?.business_type).badge : tab.label} ({getTabCount(tab.id)})
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="min-w-0">
+            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-500">Entrega</span>
+            <div role="group" aria-label="Filtrar pedidos por modalidad de entrega" className="grid h-10 grid-cols-2 gap-1 rounded-lg border border-border bg-gray-100 p-1">
               <button
-                key={tab.id}
-                onClick={() => {
-                  setActiveFilter(tab.id);
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors shrink-0
-                  ${activeFilter === tab.id 
-                    ? tab.id === 'cotizacion' ? 'bg-amber-600 text-white shadow-xs' : 'bg-gray-900 text-white shadow-xs'
-                    : tab.id === 'cotizacion' && count > 0 ? 'bg-amber-50 border border-amber-300 text-amber-900 hover:bg-amber-100' : 'bg-white border border-border text-gray-700 hover:text-gray-950'}`}
+                type="button"
+                aria-pressed={deliveryFilter === 'pickup'}
+                onClick={() => toggleDeliveryFilter('pickup')}
+                className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1.5 text-[11px] font-semibold transition-colors ${deliveryFilter === 'pickup' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'}`}
               >
-                {tabLabel}
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeFilter === tab.id ? 'bg-white/20' : tab.id === 'cotizacion' && count > 0 ? 'bg-amber-200 text-amber-950 font-black' : 'bg-gray-100 text-gray-600'}`}>
-                  {count}
-                </span>
+                <Store size={14} className="shrink-0" />
+                <span className="truncate">Local</span>
+                <span className="text-[10px] opacity-70">{getDeliveryCount('pickup')}</span>
               </button>
-            );
-          })}
+              <button
+                type="button"
+                aria-pressed={deliveryFilter === 'envio'}
+                onClick={() => toggleDeliveryFilter('envio')}
+                className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1.5 text-[11px] font-semibold transition-colors ${deliveryFilter === 'envio' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'}`}
+              >
+                <Bike size={14} className="shrink-0" />
+                <span className="delivery-label-full truncate">Domicilio</span>
+                <span className="delivery-label-compact">Domi</span>
+                <span className="text-[10px] opacity-70">{getDeliveryCount('envio')}</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Timbre de nuevos pedidos */}
@@ -702,6 +783,10 @@ export default function OrdersView(props) {
       <div className="space-y-1.5">
         {filteredOrders.map((order) => {
           const status = order.estado || order.status;
+          const isPickup = isPickupOrder(order);
+          const normalizedStatus = String(status || '').toUpperCase();
+          const pickupReady = ['LISTO_PARA_RECOGER', 'EN_CAMINO', 'ENVIADO'].includes(normalizedStatus);
+          const canNotifyCustomer = isPickup ? pickupReady : ['EN_CAMINO', 'ENVIADO'].includes(normalizedStatus);
           const deliveryPending = isDeliveryPending(order);
           const isExpanded = expandedOrderId === order.id;
 
@@ -831,7 +916,7 @@ export default function OrdersView(props) {
                     <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2 text-xs text-blue-900 mb-3 shadow-2xs">
                       <Clock size={15} className="text-blue-600 shrink-0" />
                       <p className="font-medium">
-                        Cotización aceptada. El pedido pasa a {getStatusCopy('EN_PREPARACION', business?.business_type).stepperLabel.toLowerCase()} al terminar la ventana de gracia de 60 segundos.
+                        Cotización aceptada. El pedido pasa a {preparingLabel} al terminar la ventana de gracia de 30 segundos.
                       </p>
                     </div>
                   )}
@@ -862,6 +947,9 @@ export default function OrdersView(props) {
                   {status !== 'CANCELADO' && status !== 'cancelado' && (
                     <OrderTimeline 
                       currentStatus={status} 
+                      disabled={updatingStatusOrderId === order.id}
+                      deliveryMethod={isPickup ? 'pickup' : 'envio'}
+                      businessType={business?.business_type}
                       onStatusChange={(newSt) => handleStatusChange(order.id, newSt)} 
                     />
                   )}
@@ -877,56 +965,58 @@ export default function OrdersView(props) {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-2">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 mt-2 min-w-0">
                     {/* Columna 1: Cliente, Entrega y Repartidor */}
-                    <div className="space-y-2.5 flex flex-col justify-between">
+                    <div className="space-y-2.5 min-w-0">
                       <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-gray-200 shadow-2xs space-y-2.5">
                         <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                           <p className="text-xs font-bold text-gray-900 uppercase tracking-wider">Datos de entrega</p>
-                          <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                          <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
                             order.entrega_metodo === 'envio' 
                               ? 'bg-blue-50 text-blue-800 border border-blue-200' 
                               : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                           }`}>
-                            {order.entrega_metodo === 'envio' ? '🛵 Domicilio' : '🏪 Recogida en local'}
+                            {order.entrega_metodo === 'envio' ? <><Bike size={12} /> Domicilio</> : <><MapPin size={12} /> Recogida en local</>}
                           </span>
                         </div>
 
                         {/* Cliente y Teléfono / WhatsApp */}
                         <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex min-w-0 flex-1 items-center gap-2">
                             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-xs shrink-0">
                               <User size={15} />
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-xs sm:text-sm font-bold text-gray-950 truncate leading-tight">{order.nombre}</p>
-                              <a href={`tel:${order.telefono}`} className="text-xs font-bold text-blue-700 hover:underline leading-tight block mt-0.5">
+                            <div className="min-w-0 flex-1">
+                              <p className="line-clamp-2 text-xs sm:text-sm font-bold text-gray-950 leading-tight break-words">{order.nombre}</p>
+                              <a href={`tel:${order.telefono}`} className="text-[11px] sm:text-xs font-bold text-blue-700 hover:underline leading-tight block mt-0.5 whitespace-nowrap">
                                 {order.telefono}
                               </a>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {order.entrega_metodo === 'envio' && (
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            {canNotifyCustomer && (
                               <button 
                                 type="button"
                                 onClick={() => handleNotifyCustomerDispatch(order)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold transition-colors cursor-pointer"
-                                title="Enviar WhatsApp al cliente avisando que el pedido va en camino con el link de seguimiento"
+                                className="inline-flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 sm:px-2.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold transition-colors cursor-pointer shrink-0"
+                                title={isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
+                                aria-label={isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
                               >
-                                <Bike size={13} />
-                                <span>Avisar envío</span>
+                                {isPickup ? <Store size={13} /> : <Bike size={13} />}
+                                <span className="hidden sm:inline">{isPickup ? 'Avisar recogida' : 'Avisar envío'}</span>
                               </button>
                             )}
                             <a 
                               href={`https://wa.me/${order.telefono?.replace(/\D/g, '')}`} 
                               target="_blank" 
                               rel="noreferrer" 
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors shrink-0"
+                              className="inline-flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors shrink-0"
                               title="Abrir chat en WhatsApp"
+                              aria-label={`Abrir WhatsApp para ${order.nombre || 'el cliente'}`}
                             >
-                              <MessageCircle size={14} />
-                              <span>WhatsApp</span>
+                              <WhatsAppIcon size={17} />
+                              <span className="hidden sm:inline">WhatsApp</span>
                             </a>
                           </div>
                         </div>
@@ -936,7 +1026,7 @@ export default function OrdersView(props) {
                           <div className="flex items-start gap-1.5 text-xs text-gray-800">
                             <MapPin size={15} className="text-blue-600 mt-0.5 shrink-0" />
                             <p className="leading-snug break-words font-semibold text-gray-950">
-                              {order.direccion || 'Recogida en tienda física'}
+                              {isPickup ? (business?.direccion || 'Recogida en tienda física') : (order.direccion || 'Dirección pendiente')}
                             </p>
                           </div>
 
@@ -957,8 +1047,8 @@ export default function OrdersView(props) {
                         </div>
                       </div>
 
-                      {/* Repartidor asignado */}
-                      <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-gray-200 shadow-2xs">
+                      {/* Repartidor asignado solo para pedidos a domicilio */}
+                      {!isPickup && <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-gray-200 shadow-2xs">
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-xs font-bold text-gray-900 uppercase tracking-wider">Repartidor asignado</p>
                           {order.domiciliario_id && (
@@ -988,11 +1078,11 @@ export default function OrdersView(props) {
                             </button>
                           )}
                         </div>
-                      </div>
+                      </div>}
                     </div>
 
                     {/* Columna 2: Detalle de productos y Barra de acciones */}
-                    <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-gray-200 shadow-2xs flex flex-col justify-between">
+                    <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-gray-200 shadow-2xs flex flex-col justify-between min-w-0">
                       <div>
                         <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
                           <p className="text-xs font-bold text-gray-900 uppercase tracking-wider">Productos del pedido</p>

@@ -14,14 +14,14 @@ export default function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm w-full">
+    <div className="fixed top-[calc(env(safe-area-inset-top)+0.75rem)] left-1/2 z-[9999] flex w-[calc(100%-1.5rem)] max-w-sm -translate-x-1/2 flex-col gap-2 sm:left-auto sm:right-4 sm:top-4 sm:translate-x-0 sm:w-full">
       {toasts.map((toast) => (
         <div
           key={toast.id}
           className={`flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg animate-[toast-in_0.3s_ease] ${typeStyles[toast.type] || typeStyles.info}`}
         >
-          <span className="text-sm font-semibold flex-1">{toast.message}</span>
-          <button onClick={() => removeToast(toast.id)} className="opacity-60 hover:opacity-100 transition-opacity">
+          <span className="min-w-0 flex-1 break-words text-sm font-semibold">{toast.message}</span>
+          <button onClick={() => removeToast(toast.id)} aria-label="Cerrar aviso" className="shrink-0 opacity-60 hover:opacity-100 transition-opacity">
             <X size={16} />
           </button>
         </div>

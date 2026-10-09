@@ -132,7 +132,10 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
     setSavingCat(true);
     try {
       const newCat = await createCategory({ nombre: newCatName, negocio_id: businessId });
-      setCategories([...categories, newCat].sort((a,b) => a.nombre.localeCompare(b.nombre)));
+      setCategories(current => [
+        ...current.filter(category => String(category.id) !== String(newCat.id)),
+        newCat,
+      ].sort((a, b) => a.nombre.localeCompare(b.nombre)));
       setFormData(prev => ({ ...prev, categoria_id: newCat.id, categoria: newCat.nombre }));
       setIsAddingCat(false);
       setNewCatName('');
@@ -377,10 +380,10 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
                     <select 
                       value={formData.categoria_id || ''}
                       onChange={e => {
-                        const matchedCat = categories.find(c => c.id === e.target.value);
+                        const matchedCat = categories.find(c => String(c.id) === String(e.target.value));
                         setFormData({
                           ...formData, 
-                          categoria_id: e.target.value,
+                          categoria_id: matchedCat ? matchedCat.id : e.target.value,
                           categoria: matchedCat ? matchedCat.nombre : ''
                         });
                       }}

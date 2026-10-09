@@ -3,6 +3,7 @@ export type OrderStatus =
   | 'COTIZACION_ENVIADA'
   | 'CONFIRMADO_GRACIA'
   | 'EN_PREPARACION'
+  | 'LISTO_PARA_RECOGER'
   | 'EN_CAMINO'
   | 'ENTREGADO'
   | 'CANCELADO';

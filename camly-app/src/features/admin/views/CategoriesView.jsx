@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Tag, Plus, Edit, Trash2, Loader2, Save, X } from 'lucide-react';
-import { getSupabase, updateCategory, createCategory, deleteCategory } from '../../../lib/supabase';
+import { getSupabase, updateCategory, createCategory, deleteCategory, fetchCategories } from '../../../lib/supabase';
 import { useToastStore, useBusinessStore } from '../../../stores';
 import PremiumLock from '../../../components/ui/PremiumLock';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
@@ -20,6 +20,18 @@ export default function CategoriesView(props) {
   
   const [itemToDelete, setItemToDelete] = useState(null);
   const addToast = useToastStore(s => s.addToast);
+
+  useEffect(() => {
+    if (!businessId) return undefined;
+    let active = true;
+    fetchCategories(businessId)
+      .then(data => { if (active) setCategories(data); })
+      .catch(err => {
+        console.error(err);
+        if (active) addToast('Error actualizando categorías.', 'error');
+      });
+    return () => { active = false; };
+  }, [businessId, setCategories, addToast]);
 
   const fetchCategoriasLocally = async () => {
     try {
@@ -44,11 +56,15 @@ export default function CategoriesView(props) {
     if (!newCatName.trim()) return;
     setLoading(true);
     try {
-      await createCategory({ nombre: newCatName, negocio_id: businessId });
+      const createdCategory = await createCategory({ nombre: newCatName, negocio_id: businessId });
+      setCategories(current => [
+        ...current.filter(category => String(category.id) !== String(createdCategory.id)),
+        createdCategory,
+      ].sort((a, b) => a.nombre.localeCompare(b.nombre)));
       addToast('Categoría creada', 'success');
       setNewCatName('');
       setIsAdding(false);
-      fetchCategoriasLocally();
+      await fetchCategoriasLocally();
     } catch (err) {
       console.error(err);
       if(err.code === '23505') {
@@ -96,7 +112,7 @@ export default function CategoriesView(props) {
   };
 
   const getProductCount = (catId) => {
-    return products.filter(p => p.categoria_id === catId).length;
+    return products.filter(p => String(p.categoria_id) === String(catId)).length;
   };
 
   return (

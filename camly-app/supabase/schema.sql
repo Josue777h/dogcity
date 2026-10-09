@@ -112,7 +112,7 @@ BEGIN
     IF OLD.status NOT IN ('COTIZACION_ENVIADA','CONFIRMADO_GRACIA') OR OLD.estado NOT IN ('COTIZACION_ENVIADA','CONFIRMADO_GRACIA') THEN
       RAISE EXCEPTION 'El pedido ya no se puede cancelar desde el seguimiento';
     END IF;
-    IF OLD.status='CONFIRMADO_GRACIA' AND (OLD.confirmed_at IS NULL OR OLD.confirmed_at < now()-interval '60 seconds') THEN
+    IF OLD.status='CONFIRMADO_GRACIA' AND (OLD.confirmed_at IS NULL OR OLD.confirmed_at <= now()-interval '30 seconds') THEN
       RAISE EXCEPTION 'Terminó el tiempo para deshacer el pedido';
     END IF;
   END IF;
@@ -148,6 +148,7 @@ DROP POLICY IF EXISTS "suscripciones_owner_write" ON public.suscripciones;
 DROP POLICY IF EXISTS "Public insert pedidos" ON public.pedidos;
 DROP POLICY IF EXISTS "Tenant read pedidos" ON public.pedidos;
 DROP POLICY IF EXISTS "Tenant update pedidos" ON public.pedidos;
+DROP POLICY IF EXISTS "Tenant delete pedidos" ON public.pedidos;
 CREATE POLICY negocios_public_read ON public.negocios FOR SELECT TO anon,authenticated USING (true);
 CREATE POLICY negocios_owner_write ON public.negocios FOR ALL TO authenticated USING (user_id=auth.uid()) WITH CHECK (user_id=auth.uid());
 CREATE POLICY categorias_public_read ON public.categorias FOR SELECT TO anon,authenticated USING (true);
@@ -160,6 +161,7 @@ CREATE POLICY suscripciones_owner_write ON public.suscripciones FOR ALL TO authe
 CREATE POLICY "Public insert pedidos" ON public.pedidos FOR INSERT TO anon,authenticated WITH CHECK (true);
 CREATE POLICY "Tenant read pedidos" ON public.pedidos FOR SELECT TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
 CREATE POLICY "Tenant update pedidos" ON public.pedidos FOR UPDATE TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid())) WITH CHECK (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
+CREATE POLICY "Tenant delete pedidos" ON public.pedidos FOR DELETE TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
 
 GRANT SELECT ON public.negocios,public.categorias,public.productos,public.suscripciones TO anon,authenticated;
 GRANT INSERT,UPDATE,DELETE ON public.negocios,public.categorias,public.productos,public.domiciliarios,public.suscripciones TO authenticated;
@@ -170,7 +172,7 @@ REVOKE UPDATE,DELETE ON public.pedidos FROM anon,PUBLIC;
 CREATE OR REPLACE FUNCTION public.customer_get_order(p_order_id bigint,p_token text) RETURNS jsonb
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
   SELECT to_jsonb(p)||jsonb_build_object('negocios',CASE WHEN n.id IS NULL THEN NULL ELSE jsonb_build_object(
-    'id',n.id,'nombre',n.nombre,'nombre_visible',n.nombre_visible,'telefono',n.telefono,
+    'id',n.id,'nombre',n.nombre,'nombre_visible',n.nombre_visible,'telefono',n.telefono,'direccion',n.direccion,
     'whatsapp_contacto',n.whatsapp_contacto,'logo_url',n.logo_url,'theme_color',n.theme_color,
     'business_type',n.business_type,'nequi_numero',n.pago_alias,'daviplata_numero',n.pago_alias,
     'titular_cuenta',n.nombre_visible,'pago_banco',n.pago_banco,'pago_alias',n.pago_alias) END)
@@ -194,17 +196,17 @@ BEGIN
   SELECT * INTO o FROM public.pedidos WHERE id=p_order_id AND token=p_token FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Pedido o token inválido'; END IF;
   IF o.status NOT IN ('COTIZACION_ENVIADA','CONFIRMADO_GRACIA') OR o.estado NOT IN ('COTIZACION_ENVIADA','CONFIRMADO_GRACIA') THEN RAISE EXCEPTION 'El pedido ya no se puede cancelar desde el seguimiento'; END IF;
-  IF o.status='CONFIRMADO_GRACIA' AND (o.confirmed_at IS NULL OR o.confirmed_at<now()-interval '60 seconds') THEN RAISE EXCEPTION 'Terminó el tiempo para deshacer el pedido'; END IF;
+  IF o.status='CONFIRMADO_GRACIA' AND (o.confirmed_at IS NULL OR o.confirmed_at<=now()-interval '30 seconds') THEN RAISE EXCEPTION 'Terminó el tiempo para deshacer el pedido'; END IF;
   UPDATE public.pedidos SET status='CANCELADO',estado='CANCELADO',cancelled_by='customer',cancellation_reason=left(coalesce(p_reason,'Cancelado por el cliente'),500),updated_at=now() WHERE id=p_order_id;
   RETURN jsonb_build_object('success',true,'status','CANCELADO');
 END $$;
-CREATE OR REPLACE FUNCTION public.advance_grace_to_kitchen(p_order_id bigint,p_token text) RETURNS jsonb
+CREATE OR REPLACE FUNCTION public.advance_grace_to_preparation(p_order_id bigint,p_token text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
 DECLARE o public.pedidos%ROWTYPE;
 BEGIN
   SELECT * INTO o FROM public.pedidos WHERE id=p_order_id AND token=p_token FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Pedido o token inválido'; END IF;
-  IF o.status<>'CONFIRMADO_GRACIA' OR o.estado<>'CONFIRMADO_GRACIA' OR o.confirmed_at IS NULL OR o.confirmed_at>now()-interval '60 seconds' THEN RAISE EXCEPTION 'El período de gracia sigue activo o el pedido cambió'; END IF;
+  IF o.status<>'CONFIRMADO_GRACIA' OR o.estado<>'CONFIRMADO_GRACIA' OR o.confirmed_at IS NULL OR o.confirmed_at>now()-interval '30 seconds' THEN RAISE EXCEPTION 'El período de gracia sigue activo o el pedido cambió'; END IF;
   UPDATE public.pedidos SET status='EN_PREPARACION',estado='EN_PREPARACION',updated_at=now() WHERE id=p_order_id;
   RETURN jsonb_build_object('success',true,'status','EN_PREPARACION');
 END $$;
@@ -223,10 +225,10 @@ $$;
 REVOKE ALL ON FUNCTION public.customer_get_order(bigint,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.customer_accept_quote(bigint,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.customer_cancel_order(bigint,text,text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.advance_grace_to_kitchen(bigint,text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.advance_grace_to_preparation(bigint,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.customer_save_receipt(bigint,text,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.receipt_path_authorized(text,text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.customer_get_order(bigint,text),public.customer_accept_quote(bigint,text),public.advance_grace_to_kitchen(bigint,text),public.customer_save_receipt(bigint,text,text),public.receipt_path_authorized(text,text) TO anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.customer_get_order(bigint,text),public.customer_accept_quote(bigint,text),public.advance_grace_to_preparation(bigint,text),public.customer_save_receipt(bigint,text,text),public.receipt_path_authorized(text,text) TO anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.customer_cancel_order(bigint,text,text) TO anon,authenticated;
 
 -- Supabase Storage: imágenes públicas del catálogo y comprobantes privados ligados a pedido+token.

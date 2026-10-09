@@ -65,7 +65,7 @@ export default function TrackingPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [graceSeconds, setGraceSeconds] = useState(60);
+  const [graceSeconds, setGraceSeconds] = useState(30);
   const [copyFeedback, setCopyFeedback] = useState(null);
   const [receiptUploading, setReceiptUploading] = useState(false);
   const [receiptDisplayUrl, setReceiptDisplayUrl] = useState('');
@@ -115,7 +115,9 @@ export default function TrackingPage() {
   }, [id, token, isDemo, retryCount, searchParams]);
 
   const currentOrder = order || DEMO_ORDER;
-  const statusStr = (currentOrder.status || currentOrder.estado || '').toString();
+  const deliveryMethod = currentOrder.delivery_type === 'pickup' || currentOrder.entrega_metodo === 'recogida' ? 'pickup' : 'envio';
+  const rawStatus = (currentOrder.status || currentOrder.estado || '').toString();
+  const statusStr = deliveryMethod === 'pickup' && ['EN_CAMINO', 'en_camino', 'enviado'].includes(rawStatus) ? 'LISTO_PARA_RECOGER' : rawStatus;
   const business = currentOrder.negocios || DEMO_ORDER.negocios;
   const items = typeof currentOrder.items === 'string' ? JSON.parse(currentOrder.items) : (currentOrder.items || currentOrder.productos || []);
   const brandColor = business?.theme_color || '#EA580C';
@@ -130,11 +132,11 @@ export default function TrackingPage() {
     OrderService.getReceiptUrl(path).then(setReceiptDisplayUrl).catch(console.error);
   }, [currentOrder.payment_receipt_url, isDemo]);
 
-  // Ventana de gracia de 60 segundos calculada desde confirmed_at.
+  // Ventana de gracia de 30 segundos calculada desde confirmed_at.
   useEffect(() => {
     if (statusStr !== 'CONFIRMADO_GRACIA' || !currentOrder.confirmed_at) return;
 
-    const GRACE_PERIOD_SECONDS = 60;
+    const GRACE_PERIOD_SECONDS = 30;
 
     // Calcular el timestamp base
     let startMs = Date.now();
@@ -146,40 +148,41 @@ export default function TrackingPage() {
     }
 
     const calcRemaining = () => {
-      const elapsed = Math.floor((Date.now() - startMs) / 1000);
-      return Math.max(0, GRACE_PERIOD_SECONDS - elapsed);
+      const elapsed = Math.max(0, (Date.now() - startMs) / 1000);
+      return Math.max(0, Math.ceil(GRACE_PERIOD_SECONDS - elapsed));
     };
 
-    const initialRem = calcRemaining();
+    let advanceInFlight = false;
+    let nextAdvanceAttemptAt = 0;
 
-    if (initialRem <= 0) {
-      const expiredTimer = window.setTimeout(() => setGraceSeconds(0), 0);
-      if (!isDemo && currentOrder.id && currentOrder.token) {
-        OrderService.advanceToKitchen(currentOrder.id, currentOrder.token).catch(console.error);
-      }
-      return () => window.clearTimeout(expiredTimer);
-    }
-
-    const initialTimer = window.setTimeout(() => setGraceSeconds(calcRemaining()), 0);
-    const timer = setInterval(async () => {
+    const tick = async () => {
       const rem = calcRemaining();
       setGraceSeconds(rem);
 
-      if (rem <= 0) {
-        clearInterval(timer);
+      if (rem <= 0 && !advanceInFlight && Date.now() >= nextAdvanceAttemptAt) {
+        advanceInFlight = true;
         try {
           if (!isDemo && currentOrder.id && currentOrder.token) {
-            await OrderService.advanceToKitchen(currentOrder.id, currentOrder.token);
+            await OrderService.advanceToPreparation(currentOrder.id, currentOrder.token);
           }
+          setOrder(prev => prev ? { ...prev, status: 'EN_PREPARACION', estado: 'EN_PREPARACION' } : prev);
         } catch (err) {
-          console.error('Error avanzando el pedido:', err);
+          // El servidor es la autoridad del tiempo. Si aún no han pasado 30 s
+          // según su reloj o hay un fallo temporal, conserva el estado y reintenta.
+          nextAdvanceAttemptAt = Date.now() + 2000;
+          console.warn('Reintentaremos avanzar el pedido al terminar la ventana de gracia:', err);
+        } finally {
+          advanceInFlight = false;
         }
       }
-    }, 1000);
+    };
+
+    const initialTimer = window.setTimeout(tick, 0);
+    const timer = window.setInterval(tick, 1000);
 
     return () => {
       window.clearTimeout(initialTimer);
-      clearInterval(timer);
+      window.clearInterval(timer);
     };
   }, [statusStr, currentOrder.confirmed_at, currentOrder.id, currentOrder.token, isDemo]);
 
@@ -189,6 +192,7 @@ export default function TrackingPage() {
     try {
       if (!isDemo && currentOrder.id && currentOrder.token) {
         const result = await OrderService.customerAcceptQuote(currentOrder.id, currentOrder.token);
+        setGraceSeconds(30);
         setOrder((prev) => ({
           ...prev,
           status: 'CONFIRMADO_GRACIA',
@@ -197,6 +201,7 @@ export default function TrackingPage() {
         }));
         return;
       }
+      setGraceSeconds(30);
       setOrder((prev) => ({
         ...prev,
         status: 'CONFIRMADO_GRACIA',
@@ -313,6 +318,7 @@ export default function TrackingPage() {
   // Cálculo de progreso del stepper
   let currentStepIdx = 0;
   if (['EN_PREPARACION', 'preparando'].includes(statusStr)) currentStepIdx = 1;
+  else if (['LISTO_PARA_RECOGER', 'listo_para_recoger'].includes(statusStr)) currentStepIdx = 2;
   else if (['EN_CAMINO', 'enviado'].includes(statusStr)) currentStepIdx = 2;
   else if (['ENTREGADO', 'entregado'].includes(statusStr)) currentStepIdx = 3;
 
@@ -320,7 +326,7 @@ export default function TrackingPage() {
   const isQuotePending = statusStr === 'COTIZACION_PENDIENTE';
   const isQuoteSent = statusStr === 'COTIZACION_ENVIADA';
   const isGraceWindow = statusStr === 'CONFIRMADO_GRACIA';
-  const isCookingOrLater = ['EN_PREPARACION', 'preparando', 'EN_CAMINO', 'enviado', 'ENTREGADO', 'entregado'].includes(statusStr);
+  const isCookingOrLater = ['EN_PREPARACION', 'preparando', 'LISTO_PARA_RECOGER', 'listo_para_recoger', 'EN_CAMINO', 'enviado', 'ENTREGADO', 'entregado'].includes(statusStr);
 
   const isTransfer = (currentOrder.payment_method || '').includes('transfer') || 
                      (currentOrder.payment_method || '').includes('nequi') || 
@@ -332,8 +338,9 @@ export default function TrackingPage() {
   const titularName = business?.titular_cuenta || business?.nombre_visible || 'Restaurante';
 
   const businessType = business?.business_type || 'general';
-  const statusCopy = getStatusCopy(statusStr, businessType);
-  const steps = getStepperSteps(businessType);
+  const statusCopy = getStatusCopy(statusStr, businessType, deliveryMethod);
+  const steps = getStepperSteps(businessType, deliveryMethod);
+  const stepIcons = deliveryMethod === 'pickup' ? [Clock, Package, Store, CheckCircle2] : STEP_ICONS;
 
   return (
     <div className="min-h-screen bg-gray-50 py-5 sm:py-8 px-4 sm:px-6">
@@ -460,7 +467,7 @@ export default function TrackingPage() {
             <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
               <div 
                 className="bg-blue-600 h-full transition-all duration-1000 ease-linear rounded-full"
-                style={{ width: `${(Math.min(60, graceSeconds) / 60) * 100}%` }}
+                style={{ width: `${(Math.min(30, graceSeconds) / 30) * 100}%` }}
               />
             </div>
           </div>
@@ -518,7 +525,7 @@ export default function TrackingPage() {
               {steps.map((step, i) => {
                 const isPassed = i <= currentStepIdx;
                 const isCurrent = i === currentStepIdx;
-                const StepIcon = STEP_ICONS[i] || Package;
+                const StepIcon = stepIcons[i] || Package;
                 return (
                   <div key={step.id} className="flex flex-col items-center text-center">
                     <div
@@ -544,7 +551,7 @@ export default function TrackingPage() {
             {/* Banner de estado dinámico por rubro */}
             <div className="p-3.5 rounded-xl bg-orange-50/70 border border-orange-200 border-l-4 border-l-orange-500 flex items-center gap-3 text-xs">
               <div className="w-8 h-8 rounded-lg bg-orange-600 text-white flex items-center justify-center shrink-0">
-                <Truck size={16} />
+                {deliveryMethod === 'pickup' ? <Store size={16} /> : <Truck size={16} />}
               </div>
               <div>
                 <p className="font-bold text-gray-900 leading-snug">
@@ -553,6 +560,16 @@ export default function TrackingPage() {
                 <p className="text-gray-500 mt-0.5 text-[11px]">Sincronizado automáticamente en tiempo real.</p>
               </div>
             </div>
+
+            {deliveryMethod === 'pickup' && business?.direccion && (
+              <div className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-950">
+                <MapPin size={16} className="mt-0.5 shrink-0 text-emerald-700" />
+                <div className="min-w-0">
+                  <p className="font-bold">Punto de recogida</p>
+                  <p className="mt-0.5 break-words">{business.direccion}</p>
+                </div>
+              </div>
+            )}
 
             {/* ── 3. BLINDAJE CONTRA CANCELACIONES TARDÍAS (EN_PREPARACION O POSTERIOR) ── */}
             {isCookingOrLater && (

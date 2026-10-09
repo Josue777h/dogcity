@@ -296,11 +296,14 @@ export async function confirmOrderDelivery(id, domicilioCosto, newTotal) {
 }
 
 export async function deleteOrder(id) {
-  const { error } = await getSupabase()
+  const { data, error } = await getSupabase()
     .from('pedidos')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .select('id')
+    .maybeSingle();
   if (error) throw error;
+  if (!data) throw new Error('No se eliminó el pedido. Verifica que pertenezca a tu negocio y que la política DELETE esté instalada en Supabase.');
 }
 
 // ── Auth ──

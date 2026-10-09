@@ -18,6 +18,22 @@ const TAB_LABELS = {
   ingresos:       'Reportes e Ingresos',
 };
 
+const MOBILE_TAB_LABELS = {
+  dashboard: 'Inicio',
+  orders: 'Gestión',
+  pedidos: 'Gestión',
+  products: 'Productos',
+  productos: 'Productos',
+  categories: 'Categorías',
+  categorias: 'Categorías',
+  drivers: 'Repartidores',
+  domiciliarios: 'Repartidores',
+  settings: 'Ajustes',
+  configuracion: 'Ajustes',
+  revenue: 'Ingresos',
+  ingresos: 'Ingresos',
+};
+
 export default function AdminHeader({ title, business, onOpenMenu, onOpenAssistant }) {
   const addToast  = useToastStore(s => s.addToast);
   const session   = useAuthStore(s => s.session);
@@ -26,14 +42,9 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
 
   const storeUrl  = `${window.location.origin}/${business?.nombre || ''}`;
   const tabLabel  = TAB_LABELS[title] || title;
+  const mobileTabLabel = MOBILE_TAB_LABELS[title] || tabLabel;
   const userEmail = session?.user?.email || '';
   const userInitial = userEmail.charAt(0).toUpperCase() || 'U';
-
-  const proDaysLeft = (() => {
-    if (!subscription?.fecha_fin || subscription.estado === 'trial') return null;
-    const diff = new Date(subscription.fecha_fin) - new Date();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-  })();
 
   const copyLink = () => {
     navigator.clipboard.writeText(storeUrl);
@@ -57,8 +68,9 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
           </button>
           
           <div className="min-w-0">
-            <h1 className="text-sm sm:text-base font-bold text-gray-900 tracking-tight truncate leading-tight">
-              {tabLabel}
+            <h1 aria-label={tabLabel} title={tabLabel} className="line-clamp-1 text-sm sm:text-base font-bold text-gray-900 tracking-tight leading-tight">
+              <span className="sm:hidden">{mobileTabLabel}</span>
+              <span className="hidden sm:inline">{tabLabel}</span>
             </h1>
             {business?.nombre_visible && (
               <p className="text-[11px] text-gray-500 truncate hidden sm:block">

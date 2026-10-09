@@ -5,6 +5,8 @@ import { formatMoney } from '../../../lib/utils';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 import { useBusinessStore } from '../../../stores';
 
+const PRODUCT_VIEW_MODE_KEY = 'negu_admin_products_view_mode';
+
 function ProductSkeleton() {
   return (
     <div className="card p-4 animate-pulse">
@@ -31,13 +33,28 @@ export default function ProductsView(props) {
   const loading = props.loading ?? false;
 
   const [itemToDelete, setItemToDelete] = useState(null);
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      return localStorage.getItem(PRODUCT_VIEW_MODE_KEY) === 'list' ? 'list' : 'grid';
+    } catch {
+      return 'grid';
+    }
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const { categories } = useBusinessStore();
 
+  const changeViewMode = (mode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem(PRODUCT_VIEW_MODE_KEY, mode);
+    } catch {
+      // La vista actual sigue funcionando aunque el navegador bloquee el almacenamiento local.
+    }
+  };
+
   const getCategoryName = (id, fallbackName) => {
     if (!id) return fallbackName || 'General';
-    const cat = categories.find(c => c.id === id);
+    const cat = categories.find(c => String(c.id) === String(id));
     return cat ? cat.nombre : (fallbackName || 'General');
   };
 
@@ -69,14 +86,18 @@ export default function ProductsView(props) {
           {/* View toggle */}
           <div className="flex bg-white border border-border rounded-lg p-0.5 shrink-0">
             <button 
-              onClick={() => setViewMode('grid')}
+              onClick={() => changeViewMode('grid')}
+              aria-label="Mostrar productos en tarjetas"
+              aria-pressed={viewMode === 'grid'}
               className={`p-2 rounded transition-colors ${viewMode === 'grid' ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-gray-500 hover:text-gray-800'}`}
               title="Vista en cuadrícula"
             >
               <LayoutGrid size={16} />
             </button>
             <button 
-              onClick={() => setViewMode('list')}
+              onClick={() => changeViewMode('list')}
+              aria-label="Mostrar productos en lista"
+              aria-pressed={viewMode === 'list'}
               className={`p-2 rounded transition-colors ${viewMode === 'list' ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-gray-500 hover:text-gray-800'}`}
               title="Vista en lista"
             >
