@@ -1,19 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, Menu, X } from 'lucide-react';
 import SaaSLogo from '../../../components/common/SaaSLogo';
 
 export default function MarketingNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuTop, setMenuTop] = useState(0);
+  const headerRef = useRef(null);
   const location = useLocation();
   useEffect(() => setMenuOpen(false), [location.pathname]);
   useEffect(() => {
     if (!menuOpen) return;
+    const updateMenuPosition = () => {
+      if (headerRef.current) setMenuTop(headerRef.current.getBoundingClientRect().bottom);
+    };
+    updateMenuPosition();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const closeOnEscape = event => { if (event.key === 'Escape') setMenuOpen(false); };
     window.addEventListener('keydown', closeOnEscape);
-    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener('keydown', closeOnEscape); };
+    window.addEventListener('resize', updateMenuPosition);
+    window.addEventListener('scroll', updateMenuPosition, { passive: true });
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+      window.removeEventListener('resize', updateMenuPosition);
+      window.removeEventListener('scroll', updateMenuPosition);
+    };
   }, [menuOpen]);
 
   return (
@@ -34,7 +48,7 @@ export default function MarketingNavbar() {
       </div>
 
       {/* ═══════════ STICKY NAVBAR ═══════════ */}
-      <header className="sticky top-0 inset-x-0 z-[60] bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-xs transition-all duration-200">
+      <header ref={headerRef} className="sticky top-0 inset-x-0 z-[60] bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-xs transition-all duration-200">
         <div className="max-w-6xl mx-auto px-3.5 sm:px-6">
           <nav className="h-16 sm:h-20 flex items-center justify-between" aria-label="Navegación principal">
             
@@ -72,8 +86,11 @@ export default function MarketingNavbar() {
               {/* Hamburger Button for Mobile */}
               <button 
                 onClick={() => setMenuOpen(!menuOpen)} 
+                type="button"
                 className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl text-gray-700 hover:bg-gray-100 transition-colors"
                 aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+                aria-expanded={menuOpen}
+                aria-controls="marketing-mobile-menu"
               >
                 {menuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
@@ -81,8 +98,8 @@ export default function MarketingNavbar() {
           </nav>
 
           {/* Mobile Menu Dropdown */}
-          {menuOpen && (
-            <div id="marketing-mobile-menu" className="fixed inset-x-0 top-16 bottom-0 z-[70] overflow-y-auto bg-white px-4 pb-8 pt-4 text-sm font-semibold text-gray-700 shadow-xl lg:hidden">
+          {menuOpen && createPortal(
+            <div id="marketing-mobile-menu" style={{ top: menuTop }} className="fixed inset-x-0 bottom-0 z-[70] overflow-y-auto overscroll-contain bg-white px-4 pb-8 pt-4 text-sm font-semibold text-gray-700 shadow-xl lg:hidden">
               <Link 
                 to="/menu-digital" 
                 onClick={() => setMenuOpen(false)}
@@ -136,7 +153,8 @@ export default function MarketingNavbar() {
                   <ArrowRight size={14} className="text-[#11CEFC]" />
                 </Link>
               </div>
-            </div>
+            </div>,
+            document.body,
           )}
         </div>
       </header>

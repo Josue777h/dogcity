@@ -93,25 +93,38 @@ export default function DashboardView(props) {
 
   const stats = useMemo(() => {
     const now = new Date();
-    const todayStr     = now.toISOString().split('T')[0];
-    const thisMonthStr = now.toISOString().slice(0, 7);
+    const dateKey = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    const orderDateKey = (order) => {
+      if (!order.created_at) return '';
+      const date = new Date(order.created_at);
+      return Number.isNaN(date.getTime()) ? '' : dateKey(date);
+    };
+    const todayStr = dateKey(now);
+    const thisMonthStr = todayStr.slice(0, 7);
 
     const totalSales  = orders.reduce((acc, o) => acc + (o.total || 0), 0);
-    const todayOrders = orders.filter(o => o.created_at?.startsWith(todayStr));
-    const monthOrders = orders.filter(o => o.created_at?.startsWith(thisMonthStr));
+    const todayOrders = orders.filter(o => orderDateKey(o) === todayStr);
+    const monthOrders = orders.filter(o => orderDateKey(o).startsWith(thisMonthStr));
     const todaySales  = todayOrders.reduce((acc, o) => acc + (o.total || 0), 0);
     const monthSales  = monthOrders.reduce((acc, o) => acc + (o.total || 0), 0);
 
-    const last7Days = [...Array(7)].map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
-    }).reverse();
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    const weekDates = [...Array(7)].map((_, i) => {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      return dateKey(date);
+    });
 
-    const chartData = last7Days.map(date => {
-      const dayOrders = orders.filter(o => o.created_at?.startsWith(date));
+    const chartData = weekDates.map(date => {
+      const dayOrders = orders.filter(o => orderDateKey(o) === date);
       return {
-        name: new Date(date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short' }),
+        name: new Date(`${date}T12:00:00`).toLocaleDateString('es-CO', { weekday: 'short' }).replace('.', ''),
         ventas: dayOrders.reduce((acc, o) => acc + (o.total || 0), 0),
         pedidos: dayOrders.length
       };
@@ -132,8 +145,8 @@ export default function DashboardView(props) {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    const sparkSales = last7Days.map(date =>
-      orders.filter(o => o.created_at?.startsWith(date)).reduce((acc, o) => acc + (o.total || 0), 0)
+    const sparkSales = weekDates.map(date =>
+      orders.filter(o => orderDateKey(o) === date).reduce((acc, o) => acc + (o.total || 0), 0)
     );
 
     return { totalSales, todaySales, monthSales, todayOrders, monthOrders, chartData, topProducts, sparkSales };
@@ -251,7 +264,7 @@ export default function DashboardView(props) {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-xs sm:text-sm font-bold text-gray-900">
-                Tendencia de ventas — últimos 7 días
+                Tendencia de ventas · lunes a domingo
               </h3>
               <p className="text-[10px] sm:text-[11px] text-gray-500">Volumen diario facturado a través de tu tienda</p>
             </div>

@@ -233,7 +233,7 @@ export default function AdminPage() {
 
   return (
     <div 
-      className="h-screen max-h-screen overflow-hidden bg-slate-50 flex flex-col lg:flex-row"
+      className="min-h-dvh bg-slate-50 flex flex-col lg:h-dvh lg:max-h-dvh lg:overflow-hidden lg:flex-row"
       style={{ 
         '--primary-brand': business?.theme_color || '#0284C7',
         '--secondary-brand': business?.color_secundario || '#F9FAFB'
@@ -252,7 +252,7 @@ export default function AdminPage() {
         onClose={() => setIsMenuOpen(false)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 h-full max-h-screen overflow-hidden relative">
+      <div className="flex-1 flex flex-col min-w-0 relative lg:min-h-0 lg:h-full lg:max-h-dvh lg:overflow-hidden">
         <AdminHeader 
           title={currentPathSegment} 
           business={business} 
@@ -260,7 +260,7 @@ export default function AdminPage() {
           onOpenAssistant={() => setIsAssistantOpen(true)}
         />
 
-        <main className="flex-1 min-h-0 px-3 pb-4 pt-1.5 sm:px-5 sm:pt-2.5 lg:px-6 overflow-y-auto relative">
+        <main className="flex-1 px-3 pb-4 pt-1.5 sm:px-5 sm:pt-2.5 lg:min-h-0 lg:px-6 lg:overflow-y-auto lg:overscroll-y-contain relative">
           {isExpired && (
             <Suspense fallback={null}>
               <PlanExpiredView onOpenBilling={() => window.dispatchEvent(new CustomEvent('open-billing-modal'))} />

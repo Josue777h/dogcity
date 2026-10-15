@@ -58,8 +58,9 @@ export default function RegisterPage() {
         navigate('/bienvenido');
       } else {
         await signOut();
+        setSession(null);
         addToast('¡Cuenta creada! Si tienes confirmación activa, revisa tu correo.', 'success');
-        navigate('/login', { state: { email: form.email } });
+        navigate('/login', { replace: true, state: { email: form.email } });
       }
     } catch (err) {
       addToast(err.message || 'Error al crear la tienda', 'error');
@@ -122,14 +123,14 @@ export default function RegisterPage() {
                 Nombre de tu negocio
               </label>
               <div className="relative">
-                <Store size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Store size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <Input
                   id="reg-business"
                   type="text"
                   placeholder="Ej: Burger House"
                   value={form.businessName}
                   onChange={set('businessName')}
-                  className="py-3 pl-10 pr-10"
+                  className="py-3 pl-5 pr-10"
                   required
                 />
                 {form.businessName.trim().length >= 2 && (
@@ -152,14 +153,14 @@ export default function RegisterPage() {
                 WhatsApp del negocio
               </label>
               <div className="relative">
-                <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Phone size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <Input
                   id="reg-phone"
                   type="tel"
                   placeholder="Ej: 573001234567"
                   value={form.phone}
                   onChange={set('phone')}
-                  className="py-3 pl-10 pr-10"
+                  className="py-3 pl-5 pr-10"
                   required
                 />
                 {form.phone.trim().length >= 7 && (
