@@ -106,14 +106,14 @@ export default function LoginPage() {
                 Correo electrónico
               </label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Mail size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <Input
                   id="login-email"
                   type="email"
                   placeholder="tu@correo.com"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="py-3 pl-10"
+                  className="py-3 pl-5"
                   required
                   autoComplete="email"
                 />
@@ -137,14 +137,14 @@ export default function LoginPage() {
                 </a>
               </div>
               <div className="relative">
-                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Lock size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <Input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Tu contraseña"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="py-3 pl-10 pr-10"
+                  className="py-3 pl-5 pr-10"
                   required
                   autoComplete="current-password"
                 />
