@@ -17,15 +17,12 @@ import {
 import SEO from '../../components/common/SEO';
 import MarketingNavbar from './components/MarketingNavbar';
 import MarketingFooter from './components/MarketingFooter';
+import { MARKETING_SEO } from './seo-pages';
 
 export default function ParaRestaurantesPage() {
   return (
     <div className="min-h-screen overflow-x-clip bg-[#FBFBFC] text-gray-900 font-sans">
-      <SEO 
-        title="Software para restaurantes | NEGU"
-        description="Software integral para restaurantes, pizzerías y locales gastronómicos. Menú digital QR, comanda para cocina, impresión térmica y cálculo de ruta GPS."
-        canonical="https://negu.pro/para-restaurantes"
-      />
+      <SEO {...MARKETING_SEO.restaurantes} />
 
       <MarketingNavbar />
 

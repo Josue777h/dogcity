@@ -1,4 +1,9 @@
 https://www.negu.pro/* https://negu.pro/:splat 301!
 http://www.negu.pro/* https://negu.pro/:splat 301!
 http://negu.pro/* https://negu.pro/:splat 301!
+/menu-digital /menu-digital/index.html 200!
+/pedidos-whatsapp /pedidos-whatsapp/index.html 200!
+/gestion-de-pedidos /gestion-de-pedidos/index.html 200!
+/para-restaurantes /para-restaurantes/index.html 200!
+/para-negocios /para-negocios/index.html 200!
 /* /index.html 200

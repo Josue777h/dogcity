@@ -16,15 +16,12 @@ import {
 import SEO from '../../components/common/SEO';
 import MarketingNavbar from './components/MarketingNavbar';
 import MarketingFooter from './components/MarketingFooter';
+import { MARKETING_SEO } from './seo-pages';
 
 export default function GestionPedidosPage() {
   return (
     <div className="min-h-screen overflow-x-clip bg-[#FBFBFC] text-gray-900 font-sans">
-      <SEO 
-        title="Gestión de pedidos para negocios | NEGU"
-        description="Controla y organiza los pedidos de tu negocio en tiempo real. Estados de cocina, despachos a domicilio, recogida en tienda y reportes de ventas sin comisiones."
-        canonical="https://negu.pro/gestion-de-pedidos"
-      />
+      <SEO {...MARKETING_SEO.gestionPedidos} />
 
       <MarketingNavbar />
 

@@ -16,15 +16,12 @@ import {
 import SEO from '../../components/common/SEO';
 import MarketingNavbar from './components/MarketingNavbar';
 import MarketingFooter from './components/MarketingFooter';
+import { MARKETING_SEO } from './seo-pages';
 
 export default function ParaNegociosPage() {
   return (
     <div className="min-h-screen overflow-x-clip bg-[#FBFBFC] text-gray-900 font-sans">
-      <SEO 
-        title="Software para negocios | NEGU"
-        description="Plataforma para tiendas, cafeterías, reposterías y comercios locales. Catálogo digital, control de inventario y recepción organizada de pedidos a WhatsApp."
-        canonical="https://negu.pro/para-negocios"
-      />
+      <SEO {...MARKETING_SEO.negocios} />
 
       <MarketingNavbar />
 

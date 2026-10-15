@@ -16,15 +16,12 @@ import {
 import SEO from '../../components/common/SEO';
 import MarketingNavbar from './components/MarketingNavbar';
 import MarketingFooter from './components/MarketingFooter';
+import { MARKETING_SEO } from './seo-pages';
 
 export default function PedidosWhatsAppPage() {
   return (
     <div className="min-h-screen overflow-x-clip bg-[#FBFBFC] text-gray-900 font-sans">
-      <SEO 
-        title="Pedidos por WhatsApp para negocios | NEGU"
-        description="Automatiza tus pedidos por WhatsApp. El cliente arma su carrito, comparte su ubicación GPS y tú recibes la comanda estructurada y calculada al instante."
-        canonical="https://negu.pro/pedidos-whatsapp"
-      />
+      <SEO {...MARKETING_SEO.pedidosWhatsApp} />
 
       <MarketingNavbar />
 
