@@ -184,33 +184,28 @@ export default function StorePage() {
 
       {/* ── Sticky header: logo, name, open/closed, search ── */}
       <header className="sticky top-0 z-[80] border-b border-[#e7e3db] bg-white pt-safe">
-        <div className="fluid-container space-y-3 py-3 sm:py-4">
-          <div className="flex items-center gap-3">
+        <div className="fluid-container space-y-2.5 py-2.5 sm:space-y-3 sm:py-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {business?.logo_url ? (
-              <img src={business.logo_url} className="h-11 w-[4.5rem] shrink-0 object-contain object-left sm:h-12 sm:w-20" alt={`Logo de ${business.nombre_visible || business.nombre}`} fetchPriority="high" />
+              <img src={business.logo_url} className="h-10 w-[4.25rem] shrink-0 object-contain object-left sm:h-12 sm:w-20" alt={`Logo de ${business.nombre_visible || business.nombre}`} fetchPriority="high" />
             ) : (
               <div
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12"
                 style={{ backgroundColor: brandColor }}
               >
                 <Store size={20} className="text-white" />
               </div>
             )}
 
-            <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
               <h1 className="truncate text-base font-semibold leading-tight text-slate-900 sm:text-lg">
                 {business?.nombre_visible || 'Menú Digital'}
               </h1>
-              <div className="mt-1 flex min-w-0 items-center gap-2">
-                <Badge variant={scheduleStatus.isOpen ? 'success' : 'warning'} className="shrink-0 px-1.5 py-0.5 text-[10px]">
+              <div className="flex shrink-0 items-center">
+                <Badge variant={scheduleStatus.isOpen ? 'success' : 'warning'} className="px-1.5 py-0.5 text-[10px]">
                   <span className={`w-1.5 h-1.5 rounded-full ${scheduleStatus.isOpen ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                   {scheduleStatus.isOpen ? 'Abierto' : 'Cerrado'}
                 </Badge>
-                {business?.direccion && (
-                  <span className="hidden truncate text-xs text-slate-500 sm:block">
-                    {business.direccion}
-                  </span>
-                )}
               </div>
             </div>
 
@@ -238,7 +233,7 @@ export default function StorePage() {
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               aria-label="Buscar productos"
-              className="h-11 w-full rounded-xl border border-[#d9d5cd] bg-[#f7f6f2] pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-500 focus:border-slate-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/5"
+              className="h-10 w-full rounded-xl border border-[#d9d5cd] bg-[#f7f6f2] pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-500 focus:border-slate-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/5"
             />
             {searchTerm && (
               <button
@@ -255,7 +250,7 @@ export default function StorePage() {
         {/* Horizontal category chips */}
         <nav aria-label="Categorías de productos" className="border-t border-[#f0ede7]">
           <div className="fluid-container">
-            <div role="tablist" className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 py-2.5 hide-scrollbar no-scrollbar">
+            <div role="tablist" className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 py-1.5 hide-scrollbar no-scrollbar">
               {visibleCategories.map(cat => {
                 const isActive = currentCategory === cat;
                 return (
@@ -265,7 +260,7 @@ export default function StorePage() {
                     type="button"
                     role="tab"
                     aria-selected={isActive}
-                    className={`min-h-10 shrink-0 snap-start whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                    className={`min-h-9 shrink-0 snap-start whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
                       isActive
                         ? 'border-slate-900 bg-slate-900 text-white'
                         : 'border-[#d9d5cd] bg-white text-slate-700 hover:border-slate-400 hover:bg-[#f7f6f2]'

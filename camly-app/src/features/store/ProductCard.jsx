@@ -336,51 +336,51 @@ export default function ProductCard({
 
       {/* Modal de Detalle y Personalización (Sabores & Toppings) */}
       {showModal && (
-        <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[120] flex items-end justify-center overflow-hidden p-0 sm:items-center sm:p-4">
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-xs animate-fade-in"
             onClick={() => setShowModal(false)}
           />
 
-          <div className="relative bg-white w-full max-w-lg rounded-t-xl sm:rounded-xl shadow-lg overflow-hidden z-10 animate-scale-in max-h-[90vh] flex flex-col border border-gray-200">
+          <div className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-[#e1ddd5] bg-white shadow-2xl animate-scale-in max-h-[calc(100dvh-env(safe-area-inset-top,0px)-0.5rem)] sm:max-h-[min(88dvh,48rem)] sm:rounded-2xl">
             
             {/* Botón cerrar */}
             <button
               onClick={() => setShowModal(false)}
-              className="absolute top-2.5 right-2.5 w-7 h-7 rounded-md bg-black/40 hover:bg-black/60 text-white flex items-center justify-center z-30 transition-colors cursor-pointer"
+              className="absolute right-3 top-3 z-30 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-black/45 text-white transition-colors hover:bg-black/65"
               aria-label="Cerrar"
             >
               <X size={16} />
             </button>
 
             {/* Cabecera con imagen si existe */}
-            <div className="relative h-40 sm:h-48 bg-gray-100 shrink-0 overflow-hidden flex items-center justify-center">
+            <div className="relative flex h-24 shrink-0 items-center justify-center overflow-hidden bg-[#e8dfd1] sm:h-44">
               {!imgError && product.image ? (
                 <img
                   src={product.image}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  className="h-full w-full object-cover"
                   onError={() => setImgError(true)}
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50">
-                  <PackageCheck size={32} className="opacity-30 mb-1" />
-                  <span className="text-xs">Sin foto</span>
+                <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-[#e8dfd1] text-slate-600">
+                  <PackageCheck size={24} strokeWidth={1.5} />
+                  <span className="text-xs">Foto no disponible</span>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
-              <div className="absolute bottom-3 left-4 right-4 text-white">
-                <span className="text-[10px] font-semibold text-white/90 bg-black/40 px-2 py-0.5 rounded inline-block mb-1">
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+              <div className="absolute bottom-2.5 left-4 right-14 text-white sm:bottom-4">
+                <span className="mb-1 inline-block rounded bg-black/40 px-2 py-0.5 text-[10px] font-semibold text-white/90">
                   {product.categoria || 'Menú'}
                 </span>
-                <h2 className="text-base sm:text-lg font-bold leading-tight">
+                <h2 className="line-clamp-2 text-sm font-semibold leading-tight sm:text-lg">
                   {product.name}
                 </h2>
               </div>
             </div>
 
             {/* Cuerpo desplazable con opciones */}
-            <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-3.5 text-xs">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4 pb-6 text-xs sm:space-y-3.5 sm:p-5">
               {product.description && (
                 <p className="text-gray-600 leading-relaxed">
                   {product.description}
@@ -496,13 +496,13 @@ export default function ProductCard({
                   value={tempNote}
                   onChange={e => setTempNote(e.target.value)}
                   placeholder="Escribe indicaciones para la tienda"
-                  className="w-full text-xs sm:text-sm p-2.5 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-gray-400 text-gray-900"
+                  className="min-h-11 w-full rounded-lg border border-[#d9d5cd] bg-white p-2.5 text-xs text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-900/5 sm:text-sm"
                 />
               </div>
             </div>
 
             {/* Footer con precio dinámico y botón de confirmación */}
-            <div className="p-3.5 sm:p-5 bg-white border-t border-gray-100 flex items-center justify-between gap-2.5 sm:gap-4 shrink-0 pb-safe">
+            <div className="flex shrink-0 items-center justify-between gap-2.5 border-t border-[#e7e3db] bg-white px-4 py-3 sm:gap-4 sm:p-5 pb-safe">
               <div className="shrink-0 min-w-0 pr-1">
                 <span className="text-[10px] sm:text-[11px] text-gray-400 font-semibold block uppercase tracking-wider">
                   Total producto
