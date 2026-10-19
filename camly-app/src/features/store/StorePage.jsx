@@ -164,7 +164,7 @@ export default function StorePage() {
   return (
     <div
       style={fontStyle}
-      className="flex min-h-dvh flex-col bg-slate-50 text-slate-900"
+      className="flex min-h-dvh flex-col bg-[#f7f6f2] text-slate-900"
     >
       <SEO
         title={`${business.nombre_visible || business.nombre} | Menú digital en NEGU`}
@@ -183,31 +183,31 @@ export default function StorePage() {
       />
 
       {/* ── Sticky header: logo, name, open/closed, search ── */}
-      <header className="sticky top-0 z-[80] bg-white/95 backdrop-blur-md border-b border-slate-200/80 pt-safe">
-        <div className="fluid-container py-2 sm:py-2.5 space-y-2">
-          <div className="flex items-center gap-2.5 sm:gap-3">
+      <header className="sticky top-0 z-[80] border-b border-[#e7e3db] bg-white pt-safe">
+        <div className="fluid-container space-y-3 py-3 sm:py-4">
+          <div className="flex items-center gap-3">
             {business?.logo_url ? (
-              <img src={business.logo_url} className="h-12 w-20 shrink-0 object-contain object-left sm:h-14 sm:w-24" alt={`Logo de ${business.nombre_visible || business.nombre}`} fetchPriority="high" />
+              <img src={business.logo_url} className="h-11 w-[4.5rem] shrink-0 object-contain object-left sm:h-12 sm:w-20" alt={`Logo de ${business.nombre_visible || business.nombre}`} fetchPriority="high" />
             ) : (
               <div
-                className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center shrink-0"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12"
                 style={{ backgroundColor: brandColor }}
               >
-                <Store size={22} className="text-white" />
+                <Store size={20} className="text-white" />
               </div>
             )}
 
             <div className="min-w-0 flex-1">
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 truncate leading-tight">
+              <h1 className="truncate text-base font-semibold leading-tight text-slate-900 sm:text-lg">
                 {business?.nombre_visible || 'Menú Digital'}
               </h1>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <Badge variant={scheduleStatus.isOpen ? 'success' : 'warning'} className="px-1.5 py-0.5 text-[10px] sm:text-[11px]">
+              <div className="mt-1 flex min-w-0 items-center gap-2">
+                <Badge variant={scheduleStatus.isOpen ? 'success' : 'warning'} className="shrink-0 px-1.5 py-0.5 text-[10px]">
                   <span className={`w-1.5 h-1.5 rounded-full ${scheduleStatus.isOpen ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                   {scheduleStatus.isOpen ? 'Abierto' : 'Cerrado'}
                 </Badge>
                 {business?.direccion && (
-                  <span className="text-[10px] sm:text-[11px] text-slate-400 truncate hidden xs:inline sm:inline">
+                  <span className="hidden truncate text-xs text-slate-500 sm:block">
                     {business.direccion}
                   </span>
                 )}
@@ -216,35 +216,34 @@ export default function StorePage() {
 
             <button
               onClick={() => setDrawerOpen(true)}
-              className={`flex items-center gap-1.5 py-2 px-2.5 sm:px-3 ${designConfig.button_radius || 'rounded-full'} border transition-colors shrink-0 ${
+              className={`hidden items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors md:flex ${
                 totalItems > 0
                   ? 'text-white border-transparent'
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                  : 'border-[#e4e1da] bg-white text-slate-700 hover:bg-[#f7f6f2]'
               }`}
               style={totalItems > 0 ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
               aria-label="Abrir carrito"
             >
-              <ShoppingCart size={15} />
-              <span className="text-xs font-semibold tabular-nums">
-                {totalItems > 0 ? totalItems : 'Pedido'}
-              </span>
+              <ShoppingCart size={16} />
+              <span className="text-sm font-semibold tabular-nums">Pedido{totalItems > 0 ? ` · ${totalItems}` : ''}</span>
             </button>
           </div>
 
           {/* Search in sticky header */}
           <div className="relative">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Buscar producto..."
+              placeholder="Buscar productos"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-8 py-2.5 text-sm rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:bg-white focus:border-slate-300 focus:ring-2 focus:ring-slate-900/5 text-slate-900 placeholder:text-slate-400"
+              aria-label="Buscar productos"
+              className="h-11 w-full rounded-xl border border-[#d9d5cd] bg-[#f7f6f2] pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-500 focus:border-slate-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/5"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 hover:bg-black/5 hover:text-slate-800"
                 aria-label="Limpiar búsqueda"
               >
                 <X size={14} />
@@ -254,21 +253,23 @@ export default function StorePage() {
         </div>
 
         {/* Horizontal category chips */}
-        <div className="border-t border-slate-100">
+        <nav aria-label="Categorías de productos" className="border-t border-[#f0ede7]">
           <div className="fluid-container">
-            <div className="flex gap-1.5 overflow-x-auto py-1.5 hide-scrollbar no-scrollbar -mx-1 px-1">
+            <div role="tablist" className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 py-2.5 hide-scrollbar no-scrollbar">
               {visibleCategories.map(cat => {
                 const isActive = currentCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => setCurrentCategory(cat)}
-                    className={`whitespace-nowrap px-3 py-1 rounded-full text-xs sm:text-sm font-semibold transition-colors shrink-0 ${
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    className={`min-h-10 shrink-0 snap-start whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                       isActive
-                        ? 'text-white'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        ? 'border-slate-900 bg-slate-900 text-white'
+                        : 'border-[#d9d5cd] bg-white text-slate-700 hover:border-slate-400 hover:bg-[#f7f6f2]'
                     }`}
-                    style={isActive ? { backgroundColor: brandColor } : {}}
                   >
                     {cat}
                   </button>
@@ -276,7 +277,7 @@ export default function StorePage() {
               })}
             </div>
           </div>
-        </div>
+        </nav>
       </header>
 
       {/* Closed / paused banner */}
@@ -291,19 +292,19 @@ export default function StorePage() {
 
       {/* Main catalog */}
       <main className="flex flex-1 flex-col">
-        <div className={`fluid-container flex-1 pt-3 sm:pt-4 ${totalItems > 0 ? 'pb-24 sm:pb-20' : ''}`}>
-          <div className="flex items-baseline justify-between gap-2 mb-3 px-0.5">
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-              {currentCategory === 'Todos' ? 'Todos los productos' : currentCategory}
+        <div className="fluid-container flex-1 pb-6 pt-4 sm:pb-8 sm:pt-6">
+          <div className="mb-3 flex items-center justify-between gap-2 px-0.5 sm:mb-4">
+            <h2 className="text-sm font-semibold text-slate-900 sm:text-base">
+              {currentCategory === 'Todos' ? 'Productos' : currentCategory}
             </h2>
-            <p className="text-xs text-slate-500 tabular-nums shrink-0">
+            <p className="shrink-0 text-xs tabular-nums text-slate-500">
               {visible.length} producto{visible.length !== 1 ? 's' : ''}
             </p>
           </div>
 
           {visible.length === 0 ? (
-            <div className="py-16 px-4 text-center bg-white border border-dashed border-slate-200 rounded-xl">
-              <div className="w-11 h-11 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
+            <div className="rounded-xl border border-dashed border-[#d9d5cd] bg-white px-4 py-12 text-center">
+              <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-[#f2f0eb] text-slate-500">
                 <Search size={20} />
               </div>
               <h3 className="text-sm font-semibold text-slate-800">No encontramos productos</h3>
@@ -312,13 +313,13 @@ export default function StorePage() {
               </p>
               <button
                 onClick={() => { setSearchTerm(''); setCurrentCategory('Todos'); }}
-                className="mt-4 text-xs font-semibold text-slate-700 hover:text-slate-950 underline underline-offset-2"
+                className="mt-4 min-h-10 rounded-lg px-3 text-sm font-semibold text-slate-800 underline underline-offset-2 hover:text-black"
               >
                 Ver todo el catálogo
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
               {visible.map((p, i) => (
                 <ProductCard
                   key={p.id}
@@ -332,7 +333,7 @@ export default function StorePage() {
           )}
 
           {/* Desktop help strip */}
-          <div className="hidden sm:flex mt-5 items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white px-4 py-2.5">
+          <div className="mt-6 hidden items-center justify-between gap-4 rounded-xl border border-[#e4e1da] bg-white px-4 py-3 sm:flex">
             <div className="flex items-center gap-2.5 text-xs text-slate-600">
               <MessageCircle size={15} className="text-emerald-600 shrink-0" />
               <span>Pedido directo a la tienda · Entrega o recogida según disponibilidad</span>
@@ -348,15 +349,15 @@ export default function StorePage() {
             </a>
           </div>
         </div>
-        <StoreFooter business={business} className="mt-auto" />
+        <StoreFooter business={business} hasFloatingCart={totalItems > 0} />
       </main>
 
       {/* Floating cart bar — tenant brand color */}
       {!drawerOpen && totalItems > 0 && (
-        <div className="fixed bottom-3 left-3 right-3 z-[90] animate-slide-up pb-safe max-w-lg mx-auto">
+        <div className="fixed bottom-3 left-3 right-3 z-[90] mx-auto max-w-lg animate-slide-up pb-safe md:hidden">
           <button
             onClick={() => setDrawerOpen(true)}
-            className={`w-full flex items-center justify-between gap-3 px-4 py-3 text-white active:scale-[0.99] transition-transform ${
+            className={`flex min-h-14 w-full items-center justify-between gap-3 px-4 py-2.5 text-white shadow-lg shadow-black/10 transition-transform active:scale-[0.99] ${
               designConfig.button_style === 'square'
                 ? 'rounded-none'
                 : designConfig.button_style === 'soft'

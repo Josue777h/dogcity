@@ -215,35 +215,35 @@ export default function ProductCard({
   return (
     <>
       <article
-        className={`card flex flex-col h-full bg-white overflow-hidden transition-all duration-200 border-gray-200/80 hover:shadow-md hover:border-gray-300 ${
-          isSelected ? 'border-transparent shadow-xs' : ''
+        className={`flex h-full min-w-0 flex-col overflow-hidden rounded-xl border bg-white transition-colors ${
+          isSelected ? 'border-slate-400' : 'border-[#e1ddd5] hover:border-[#c9c4bb]'
         }`}
-        style={isSelected ? { borderColor: brandColor, boxShadow: `0 0 0 2px ${brandColor}` } : {}}
+        style={isSelected ? { borderColor: brandColor } : {}}
       >
         {/* Product Image */}
         <div
-          className="relative overflow-hidden cursor-pointer bg-gray-100 aspect-[4/3] group"
+          className="group relative aspect-[8/5] cursor-pointer overflow-hidden bg-[#e8dfd1]"
           onClick={() => hasOptions ? openCustomizationModal() : handleCardAdd()}
         >
           {!imgError && product.image ? (
             <img
               src={product.image}
               alt={product.name}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               loading="lazy"
               onError={() => setImgError(true)}
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-4">
-              <PackageCheck size={28} className="opacity-40 mb-1" />
-              <span className="text-[10px] font-medium text-gray-400">Sin foto</span>
+            <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-[#e8dfd1] p-4 text-slate-600">
+              <PackageCheck size={21} strokeWidth={1.5} />
+              <span className="text-[10px] font-medium">Foto no disponible</span>
             </div>
           )}
 
           {/* Badge si tiene opciones o personalizaciones */}
           {hasOptions && (
             <div 
-              className="absolute top-2 left-2 text-white text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-xs flex items-center gap-1"
+              className="absolute left-2 top-2 flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold text-white"
               style={{ backgroundColor: brandColor }}
             >
               <Layers size={10} />
@@ -254,7 +254,7 @@ export default function ProductCard({
           {/* Quantity pill on image */}
           {isSelected && (
             <div 
-              className="absolute top-2 right-2 text-white text-[11px] font-bold w-5.5 h-5.5 rounded-full flex items-center justify-center shadow-md animate-scale-in"
+              className="absolute right-2 top-2 flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-xs font-bold text-white"
               style={{ backgroundColor: brandColor }}
             >
               {totalProductQty}
@@ -263,27 +263,27 @@ export default function ProductCard({
 
           {/* Category pill if any */}
           {product.categoria && (
-            <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+            <div className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] truncate rounded-md bg-black/65 px-2 py-1 text-[10px] font-medium text-white">
               {product.categoria}
             </div>
           )}
         </div>
 
         {/* Content */}
-        <div className="p-2.5 sm:p-3.5 flex flex-col flex-1 justify-between font-sans">
-          <div className="cursor-pointer mb-1.5" onClick={() => hasOptions ? openCustomizationModal() : handleCardAdd()}>
-            <h3 className="text-sm sm:text-base font-semibold text-gray-900 leading-snug line-clamp-1 mb-0.5">
+        <div className="flex flex-1 flex-col p-2.5 font-sans sm:p-3">
+          <div className="mb-2 min-w-0 flex-1 cursor-pointer" onClick={() => hasOptions ? openCustomizationModal() : handleCardAdd()}>
+            <h3 className="mb-1 line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-tight text-slate-900 sm:text-base">
               {product.name}
             </h3>
             {product.description && (
-              <p className="text-[11px] sm:text-[13px] text-gray-500 line-clamp-1 sm:line-clamp-2 leading-snug">
+              <p className="line-clamp-2 text-xs leading-snug text-slate-600 sm:text-[13px]">
                 {product.description}
               </p>
             )}
           </div>
 
-          <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-1.5">
-            <span className="text-xs sm:text-base font-black text-gray-950 tabular-nums truncate">
+          <div className="mt-auto flex flex-col gap-2 border-t border-[#f0ede7] pt-2.5">
+            <span className="truncate text-sm font-bold tabular-nums text-slate-900 sm:text-base">
               {formatMoney(product.price)}
             </span>
 
@@ -291,7 +291,7 @@ export default function ProductCard({
               <button
                 type="button"
                 onClick={handleCardAdd}
-                className="py-1 px-2 text-[10px] sm:text-xs font-bold rounded-full shrink-0 bg-gray-100 text-gray-500 border border-gray-200 cursor-not-allowed hover:bg-gray-200/70 transition-colors"
+                className="flex min-h-11 w-full items-center justify-center rounded-lg border border-[#e4e1da] bg-[#f2f0eb] px-3 text-xs font-semibold text-slate-500 cursor-not-allowed"
                 title={storeClosedMessage || 'Tienda en pausa o cerrada temporalmente'}
               >
                 Pausado
@@ -299,7 +299,7 @@ export default function ProductCard({
             ) : !isSelected ? (
               <button
                 onClick={handleCardAdd}
-                className={`${btnProps.className} gap-1`}
+                className={`${btnProps.className} min-h-11 w-full gap-1 rounded-lg px-3 text-sm font-semibold shadow-none`}
                 style={btnProps.style}
                 aria-label={`Agregar ${product.name}`}
               >
@@ -307,15 +307,15 @@ export default function ProductCard({
                 <span>{hasOptions ? 'Elegir' : 'Agregar'}</span>
               </button>
             ) : (
-              <div className="flex items-center rounded-full border border-gray-200 bg-gray-50 overflow-hidden shadow-2xs shrink-0">
+              <div className="flex min-h-11 w-full items-center justify-between overflow-hidden rounded-lg border border-[#e1ddd5] bg-[#f7f6f2]">
                 <button
                   onClick={() => decrement(bid, product.id)}
-                  className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200/60 active:bg-gray-200 transition-colors cursor-pointer"
+                  className="flex h-11 w-12 items-center justify-center text-slate-700 transition-colors hover:bg-black/5 active:bg-black/10"
                   aria-label="Restar una unidad"
                 >
-                  <Minus size={11} />
+                  <Minus size={16} />
                 </button>
-                <span className="w-5 sm:w-6 text-center text-[11px] sm:text-sm font-bold text-gray-900 tabular-nums">
+                <span className="min-w-8 text-center text-sm font-semibold tabular-nums text-slate-900">
                   {totalProductQty}
                 </span>
                 <button
@@ -323,10 +323,10 @@ export default function ProductCard({
                     if (hasOptions) openCustomizationModal();
                     else increment(bid, product.id);
                   }}
-                  className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200/60 active:bg-gray-200 transition-colors cursor-pointer"
+                  className="flex h-11 w-12 items-center justify-center text-slate-700 transition-colors hover:bg-black/5 active:bg-black/10"
                   aria-label="Sumar una unidad o personalizar otra"
                 >
-                  <Plus size={11} />
+                  <Plus size={16} />
                 </button>
               </div>
             )}

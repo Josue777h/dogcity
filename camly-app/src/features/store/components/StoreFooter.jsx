@@ -1,7 +1,7 @@
 import { Phone, MapPin, Instagram, Facebook, Music2, Store } from 'lucide-react';
 import { createElement } from 'react';
 
-export default function StoreFooter({ business, className = '' }) {
+export default function StoreFooter({ business, className = '', hasFloatingCart = false }) {
   if (!business) return null;
 
   const storeName = business.nombre_visible || business.nombre || 'Comercio';
@@ -30,11 +30,11 @@ export default function StoreFooter({ business, className = '' }) {
   ].filter(Boolean);
 
   return (
-    <footer className={`mt-3 border-t border-slate-200 bg-white ${className}`}>
-      <div className="fluid-container py-4 sm:py-5">
+    <footer className={`border-t border-[#e7e3db] bg-white ${className}`}>
+      <div className={`fluid-container py-4 sm:py-5 ${hasFloatingCart ? 'pb-24 md:pb-5' : ''}`}>
         <div className="flex items-start justify-between gap-3 sm:items-center">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#e7e3db] bg-[#f7f6f2]">
               {business.logo_url ? (
                 <img
                   src={business.logo_url}
@@ -63,7 +63,7 @@ export default function StoreFooter({ business, className = '' }) {
                   target="_blank"
                   rel="noreferrer"
                   aria-label={label}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#e7e3db] text-slate-600 transition-colors hover:border-slate-300 hover:bg-[#f7f6f2] hover:text-slate-900"
                 >
                   {createElement(Icon, { size: 16 })}
                 </a>
@@ -73,18 +73,18 @@ export default function StoreFooter({ business, className = '' }) {
         </div>
 
         {(business.telefono || business.direccion) && (
-          <div className="mt-3 grid gap-2 border-t border-slate-100 pt-3 text-xs text-slate-600 sm:grid-cols-2">
+          <div className="mt-3 grid min-w-0 gap-2 border-t border-[#f0ede7] pt-3 text-xs text-slate-600 sm:grid-cols-2">
             {business.telefono && (
               <a
                 href={`tel:${business.telefono}`}
-                className="flex min-h-9 min-w-0 items-center gap-2 rounded-lg bg-slate-50 px-2.5 py-2 transition-colors hover:bg-slate-100"
+                className="flex min-h-10 min-w-0 items-center gap-2 rounded-lg bg-[#f7f6f2] px-2.5 py-2 transition-colors hover:bg-[#f0ede7]"
               >
                 <Phone size={14} className="shrink-0 text-slate-400" />
                 <span className="break-all font-medium">{business.telefono}</span>
               </a>
             )}
             {business.direccion && (
-              <div className="flex min-h-9 min-w-0 items-start gap-2 rounded-lg bg-slate-50 px-2.5 py-2">
+              <div className="flex min-h-10 min-w-0 items-start gap-2 rounded-lg bg-[#f7f6f2] px-2.5 py-2">
                 <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400" />
                 <span className="line-clamp-2 break-words leading-relaxed">{business.direccion}</span>
               </div>
