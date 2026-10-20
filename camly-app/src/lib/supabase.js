@@ -126,6 +126,8 @@ export async function deleteCategory(id) {
 
 // ── Business (Negocio) ──
 const PUBLIC_BUSINESS_FIELDS = 'id,nombre,nombre_visible,telefono,whatsapp_contacto,direccion,theme_color,color_secundario,instagram,facebook,tiktok,footer_message,pago_banco,pago_alias,metodos_pago,lat,lng,tipo_domicilio,costo_por_km,domicilio_minimo,precio_domicilio,logo_url,business_type,horario,catalog_design,timezone';
+// Compatible con proyectos Supabase que aún no ejecutan las columnas nuevas de configuración.
+const LEGACY_PUBLIC_BUSINESS_FIELDS = 'id,nombre,nombre_visible,telefono,whatsapp_contacto,direccion,theme_color,color_secundario,instagram,facebook,tiktok,footer_message,pago_banco,pago_alias,metodos_pago,lat,lng,tipo_domicilio,costo_por_km,domicilio_minimo,precio_domicilio,logo_url,business_type';
 
 export async function fetchBusiness(slug) {
   if (!slug) return null;
@@ -133,40 +135,41 @@ export async function fetchBusiness(slug) {
   const normalizedSpaces = cleanSlug.replace(/-/g, ' ');
 
   try {
+    const fetchMatch = async (column, value, exact = false) => {
+      const runQuery = fields => {
+        const base = getSupabase().from('negocios').select(fields);
+        return (exact ? base.eq(column, value) : base.ilike(column, value)).maybeSingle();
+      };
+      let result = await runQuery(PUBLIC_BUSINESS_FIELDS);
+      if (result.error) {
+        const legacyResult = await runQuery(LEGACY_PUBLIC_BUSINESS_FIELDS);
+        if (!legacyResult.error) return legacyResult;
+      }
+      return result;
+    };
+
     // 1. Intento exacto por nombre
-    let { data } = await getSupabase()
-      .from('negocios')
-      .select(PUBLIC_BUSINESS_FIELDS)
-      .eq('nombre', cleanSlug)
-      .maybeSingle();
+    let { data, error } = await fetchMatch('nombre', cleanSlug, true);
+    if (error) throw error;
 
     // 2. Intento insensible a mayúsculas
     if (!data) {
-      const res = await getSupabase()
-        .from('negocios')
-        .select(PUBLIC_BUSINESS_FIELDS)
-        .ilike('nombre', cleanSlug)
-        .maybeSingle();
+      const res = await fetchMatch('nombre', cleanSlug);
+      if (res.error) throw res.error;
       data = res.data;
     }
 
     // 3. Intento reemplazando guiones por espacios
     if (!data && cleanSlug.includes('-')) {
-      const res = await getSupabase()
-        .from('negocios')
-        .select(PUBLIC_BUSINESS_FIELDS)
-        .ilike('nombre', normalizedSpaces)
-        .maybeSingle();
+      const res = await fetchMatch('nombre', normalizedSpaces);
+      if (res.error) throw res.error;
       data = res.data;
     }
 
     // 4. Intento por nombre visible
     if (!data) {
-      const res = await getSupabase()
-        .from('negocios')
-        .select(PUBLIC_BUSINESS_FIELDS)
-        .ilike('nombre_visible', `%${cleanSlug}%`)
-        .maybeSingle();
+      const res = await fetchMatch('nombre_visible', `%${cleanSlug}%`);
+      if (res.error) throw res.error;
       data = res.data;
     }
 
