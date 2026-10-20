@@ -23,7 +23,9 @@ const socialUrl = (network, value) => {
   return `https://${network}.com/${handle}`;
 };
 
-function getFooterStyle(footerMessage) {
+function getFooterStyle(business) {
+  if (business?.catalog_design && typeof business.catalog_design === 'object' && Object.keys(business.catalog_design).length) return business.catalog_design.footer_style === 'minimal' ? 'minimal' : 'branded';
+  const footerMessage = business?.footer_message;
   if (typeof footerMessage !== 'string') return 'branded';
 
   try {
@@ -40,7 +42,7 @@ export default function StoreFooter({ business, className = '', hasFloatingCart 
 
   const storeName = business.nombre_visible || business.nombre || 'Comercio';
   const brandColor = business.theme_color || '#0284C7';
-  const isBranded = getFooterStyle(business.footer_message) === 'branded';
+  const isBranded = getFooterStyle(business) === 'branded';
   const description = (business.footer_message || '')
     .replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '')
     .replace(/<!--CAMLY_DESIGN:[\s\S]*?-->/g, '')

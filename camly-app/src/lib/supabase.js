@@ -125,6 +125,8 @@ export async function deleteCategory(id) {
 }
 
 // ── Business (Negocio) ──
+const PUBLIC_BUSINESS_FIELDS = 'id,nombre,nombre_visible,telefono,whatsapp_contacto,direccion,theme_color,color_secundario,instagram,facebook,tiktok,footer_message,pago_banco,pago_alias,metodos_pago,lat,lng,tipo_domicilio,costo_por_km,domicilio_minimo,precio_domicilio,logo_url,business_type,horario,catalog_design,timezone';
+
 export async function fetchBusiness(slug) {
   if (!slug) return null;
   const cleanSlug = String(slug).trim();
@@ -134,7 +136,7 @@ export async function fetchBusiness(slug) {
     // 1. Intento exacto por nombre
     let { data } = await getSupabase()
       .from('negocios')
-      .select('*')
+      .select(PUBLIC_BUSINESS_FIELDS)
       .eq('nombre', cleanSlug)
       .maybeSingle();
 
@@ -142,7 +144,7 @@ export async function fetchBusiness(slug) {
     if (!data) {
       const res = await getSupabase()
         .from('negocios')
-        .select('*')
+        .select(PUBLIC_BUSINESS_FIELDS)
         .ilike('nombre', cleanSlug)
         .maybeSingle();
       data = res.data;
@@ -152,7 +154,7 @@ export async function fetchBusiness(slug) {
     if (!data && cleanSlug.includes('-')) {
       const res = await getSupabase()
         .from('negocios')
-        .select('*')
+        .select(PUBLIC_BUSINESS_FIELDS)
         .ilike('nombre', normalizedSpaces)
         .maybeSingle();
       data = res.data;
@@ -162,18 +164,8 @@ export async function fetchBusiness(slug) {
     if (!data) {
       const res = await getSupabase()
         .from('negocios')
-        .select('*')
+        .select(PUBLIC_BUSINESS_FIELDS)
         .ilike('nombre_visible', `%${cleanSlug}%`)
-        .maybeSingle();
-      data = res.data;
-    }
-
-    // 5. Fallback al primer negocio registrado si no coincide
-    if (!data) {
-      const res = await getSupabase()
-        .from('negocios')
-        .select('*')
-        .limit(1)
         .maybeSingle();
       data = res.data;
     }

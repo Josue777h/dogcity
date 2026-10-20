@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS public.negocios (
   costo_por_km numeric DEFAULT 0, domicilio_minimo numeric DEFAULT 0,
   precio_domicilio numeric DEFAULT 0, logo_url text,
   business_type varchar(50) NOT NULL DEFAULT 'general',
+  horario jsonb NOT NULL DEFAULT '{}'::jsonb,
+  catalog_design jsonb NOT NULL DEFAULT '{}'::jsonb,
+  timezone text NOT NULL DEFAULT 'America/Bogota',
   created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()
 );
 CREATE TABLE IF NOT EXISTS public.categorias (
@@ -63,6 +66,10 @@ CREATE TABLE IF NOT EXISTS public.pedidos (
 
 -- Completar instalaciones previas sin borrar datos.
 ALTER TABLE public.negocios ADD COLUMN IF NOT EXISTS business_type varchar(50) NOT NULL DEFAULT 'general';
+ALTER TABLE public.negocios
+  ADD COLUMN IF NOT EXISTS horario jsonb NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS catalog_design jsonb NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS timezone text NOT NULL DEFAULT 'America/Bogota';
 ALTER TABLE public.pedidos
   ADD COLUMN IF NOT EXISTS delivery_type varchar(50) NOT NULL DEFAULT 'fixed',
   ADD COLUMN IF NOT EXISTS delivery_fee numeric(12,2) NOT NULL DEFAULT 0,
@@ -163,7 +170,10 @@ CREATE POLICY "Tenant read pedidos" ON public.pedidos FOR SELECT TO authenticate
 CREATE POLICY "Tenant update pedidos" ON public.pedidos FOR UPDATE TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid())) WITH CHECK (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
 CREATE POLICY "Tenant delete pedidos" ON public.pedidos FOR DELETE TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
 
-GRANT SELECT ON public.negocios,public.categorias,public.productos,public.suscripciones TO anon,authenticated;
+GRANT SELECT ON public.negocios,public.categorias,public.productos,public.suscripciones TO authenticated;
+REVOKE SELECT ON public.negocios FROM anon,PUBLIC;
+GRANT SELECT (id,nombre,nombre_visible,telefono,whatsapp_contacto,direccion,theme_color,color_secundario,instagram,facebook,tiktok,footer_message,pago_banco,pago_alias,metodos_pago,lat,lng,tipo_domicilio,costo_por_km,domicilio_minimo,precio_domicilio,logo_url,business_type,horario,catalog_design,timezone) ON public.negocios TO anon;
+GRANT SELECT ON public.categorias,public.productos,public.suscripciones TO anon;
 GRANT INSERT,UPDATE,DELETE ON public.negocios,public.categorias,public.productos,public.domiciliarios,public.suscripciones TO authenticated;
 GRANT SELECT,INSERT,UPDATE,DELETE ON public.pedidos TO authenticated;
 GRANT INSERT ON public.pedidos TO anon;

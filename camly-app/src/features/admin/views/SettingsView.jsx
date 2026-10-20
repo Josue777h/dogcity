@@ -42,6 +42,12 @@ const FOOTER_STYLES = [
   { id: 'branded', name: 'Con identidad', desc: 'Color y acentos de tu marca' },
   { id: 'minimal', name: 'Esencial', desc: 'Blanco y discreto' },
 ];
+const BUSINESS_TYPES = [
+  { id: 'food', label: 'Gastronomía' }, { id: 'retail', label: 'Moda y comercio' },
+  { id: 'pharmacy', label: 'Farmacia' }, { id: 'stationery', label: 'Papelería' }, { id: 'general', label: 'General' },
+];
+const DEFAULT_DESIGN = { button_style: 'pill', font_family: 'sans', footer_style: 'branded' };
+const cleanFooterMessage = value => String(value || '').replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '').replace(/<!--CAMLY_DESIGN:[\s\S]*?-->/g, '').trim();
 
 export default function SettingsView(props) {
   const outletCtx = useOutletContext() || {};
@@ -68,7 +74,7 @@ export default function SettingsView(props) {
     direccion: business?.direccion || '',
     instagram: business?.instagram || '',
     facebook: business?.facebook || '',
-    footer_message: business?.footer_message || '',
+    footer_message: cleanFooterMessage(business?.footer_message),
     theme_color: business?.theme_color || '#EA580C',
     logo_url: business?.logo_url || '',
     whatsapp_contacto: business?.whatsapp_contacto || business?.telefono || '',
@@ -82,14 +88,14 @@ export default function SettingsView(props) {
     precio_domicilio: business?.precio_domicilio || 0,
     costo_por_km: business?.costo_por_km || 1000,
     domicilio_minimo: business?.domicilio_minimo || 3000,
+    business_type: business?.business_type || 'general',
+    color_secundario: business?.color_secundario || '#FFF7ED',
+    timezone: business?.timezone || 'America/Bogota',
   });
 
   const [designData, setDesignData] = useState(() => {
-    const base = {
-      button_style: 'pill',
-      font_family: 'sans',
-      footer_style: 'branded',
-    };
+    const base = DEFAULT_DESIGN;
+    if (business?.catalog_design && typeof business.catalog_design === 'object' && Object.keys(business.catalog_design).length) return { ...base, ...business.catalog_design };
     if (typeof business?.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
       try {
         const match = business.footer_message.match(/<!--CAMLY_DESIGN:(.*?)-->/);
@@ -116,7 +122,7 @@ export default function SettingsView(props) {
         domingo: { activo: true, abre: '12:00', cierra: '22:00' }
       }
     };
-    if (business?.horario && typeof business.horario === 'object') {
+    if (business?.horario && typeof business.horario === 'object' && Object.keys(business.horario).length) {
       return { ...base, ...business.horario, dias: { ...base.dias, ...(business.horario.dias || {}) } };
     }
     if (typeof business?.footer_message === 'string' && business.footer_message.includes('CAMLY_SCHEDULE:')) {
@@ -132,6 +138,11 @@ export default function SettingsView(props) {
     }
     return base;
   });
+  const currentSnapshot = JSON.stringify({ formData, designData, scheduleData });
+  const [savedSnapshot, setSavedSnapshot] = useState(null);
+  const hasUnsavedChanges = savedSnapshot !== null && currentSnapshot !== savedSnapshot;
+  useEffect(() => { setSavedSnapshot(null); }, [business?.id]);
+  useEffect(() => { if (savedSnapshot === null) setSavedSnapshot(currentSnapshot); }, [currentSnapshot, savedSnapshot]);
 
   useEffect(() => {
     if (!business) return;
@@ -142,7 +153,7 @@ export default function SettingsView(props) {
       direccion: business.direccion || '',
       instagram: business.instagram || '',
       facebook: business.facebook || '',
-      footer_message: business.footer_message || '',
+      footer_message: cleanFooterMessage(business.footer_message),
       theme_color: business.theme_color || '#EA580C',
       logo_url: business.logo_url || '',
       whatsapp_contacto: business.whatsapp_contacto || business.telefono || '',
@@ -156,9 +167,14 @@ export default function SettingsView(props) {
       precio_domicilio: business.precio_domicilio || 0,
       costo_por_km: business.costo_por_km || 1000,
       domicilio_minimo: business.domicilio_minimo || 3000,
+      business_type: business.business_type || 'general',
+      color_secundario: business.color_secundario || '#FFF7ED',
+      timezone: business.timezone || 'America/Bogota',
     });
 
-    if (typeof business.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
+    if (business.catalog_design && typeof business.catalog_design === 'object' && Object.keys(business.catalog_design).length) {
+      setDesignData({ ...DEFAULT_DESIGN, ...business.catalog_design });
+    } else if (typeof business.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
       try {
         const match = business.footer_message.match(/<!--CAMLY_DESIGN:(.*?)-->/);
         if (match && match[1]) {
@@ -169,7 +185,7 @@ export default function SettingsView(props) {
       }
     }
 
-    if (business.horario && typeof business.horario === 'object') {
+    if (business.horario && typeof business.horario === 'object' && Object.keys(business.horario).length) {
       setScheduleData(prev => ({ ...prev, ...business.horario, dias: { ...prev.dias, ...(business.horario.dias || {}) } }));
     } else if (typeof business.footer_message === 'string' && business.footer_message.includes('CAMLY_SCHEDULE:')) {
       try {
@@ -226,23 +242,17 @@ export default function SettingsView(props) {
     setScheduleData(updatedSchedule);
 
     try {
-      const cleanFooter = (formData.footer_message || '')
-        .replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '')
-        .replace(/<!--CAMLY_DESIGN:[\s\S]*?-->/g, '')
-        .trim();
-      const scheduleTag = `<!--CAMLY_SCHEDULE:${JSON.stringify(updatedSchedule)}-->`;
-      const designTag = `<!--CAMLY_DESIGN:${JSON.stringify(designData)}-->`;
-      const combinedFooter = [cleanFooter, scheduleTag, designTag].filter(Boolean).join('\n');
-
-      const { error } = await getSupabase()
+      const { data, error } = await getSupabase()
         .from('negocios')
-        .update({ footer_message: combinedFooter })
-        .eq('id', business.id);
+        .update({ horario: updatedSchedule })
+        .eq('id', business.id)
+        .select('id')
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error('No se pudo actualizar el estado del negocio.');
 
       // Actualizar formData local
-      setFormData(prev => ({ ...prev, footer_message: combinedFooter }));
 
       if (nextManualState) {
         addToast('¡Tienda reanudada! El catálogo ahora acepta pedidos.', 'success');
@@ -268,54 +278,66 @@ export default function SettingsView(props) {
     e.preventDefault();
     setLoading(true);
     try {
-      const cleanFooter = (formData.footer_message || '')
-        .replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '')
-        .replace(/<!--CAMLY_DESIGN:[\s\S]*?-->/g, '')
-        .trim();
-      const scheduleTag = `<!--CAMLY_SCHEDULE:${JSON.stringify(scheduleData)}-->`;
-      const designTag = `<!--CAMLY_DESIGN:${JSON.stringify(designData)}-->`;
-      const combinedFooter = [cleanFooter, scheduleTag, designTag].filter(Boolean).join('\n');
+      const name = formData.nombre_visible.trim();
+      const whatsapp = formData.whatsapp_contacto.trim();
+      const methods = Array.isArray(formData.metodos_pago) ? formData.metodos_pago : [];
+      const lat = formData.lat === '' ? null : Number(formData.lat);
+      const lng = formData.lng === '' ? null : Number(formData.lng);
+      const deliveryPrices = [formData.precio_domicilio, formData.costo_por_km, formData.domicilio_minimo].map(Number);
+      if (!name) throw new Error('Escribe el nombre comercial que verán tus clientes.');
+      if (!whatsapp || !/^[+\d\s()-]{7,20}$/.test(whatsapp)) throw new Error('Ingresa un número de WhatsApp válido.');
+      if (!methods.length) throw new Error('Selecciona al menos una forma de pago.');
+      if (methods.includes('transferencia') && (!formData.pago_banco.trim() || !formData.pago_alias.trim())) throw new Error('Completa el banco y los datos de la cuenta para recibir transferencias.');
+      if ((lat === null) !== (lng === null) || (lat !== null && (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180))) throw new Error('La ubicación debe incluir coordenadas válidas.');
+      if (deliveryPrices.some(value => !Number.isFinite(value) || value < 0)) throw new Error('Los costos de domicilio deben ser números mayores o iguales a cero.');
 
       const payload = {
-        nombre_visible: formData.nombre_visible || '',
+        nombre_visible: name,
         telefono: formData.telefono || '',
         direccion: formData.direccion || '',
         instagram: formData.instagram || '',
         facebook: formData.facebook || '',
         tiktok: formData.tiktok || '',
-        footer_message: combinedFooter,
+        footer_message: cleanFooterMessage(formData.footer_message),
         theme_color: formData.theme_color || '#EA580C',
+        color_secundario: formData.color_secundario || '#FFF7ED',
+        business_type: formData.business_type,
+        timezone: formData.timezone || 'America/Bogota',
+        horario: scheduleData,
+        catalog_design: designData,
         logo_url: formData.logo_url || '',
         whatsapp_contacto: formData.whatsapp_contacto || '',
-        metodos_pago: Array.isArray(formData.metodos_pago) ? formData.metodos_pago : ['efectivo', 'transferencia'],
+        metodos_pago: methods,
         pago_alias: formData.pago_alias || '',
         pago_banco: formData.pago_banco || '',
-        lat: formData.lat !== '' && !isNaN(Number(formData.lat)) ? Number(formData.lat) : null,
-        lng: formData.lng !== '' && !isNaN(Number(formData.lng)) ? Number(formData.lng) : null,
+        lat,
+        lng,
         tipo_domicilio: formData.tipo_domicilio || 'automatico',
         precio_domicilio: Number(formData.precio_domicilio) || 0,
         costo_por_km: Number(formData.costo_por_km) || 0,
         domicilio_minimo: Number(formData.domicilio_minimo) || 0,
       };
 
-      const { error } = await getSupabase()
+      const { data, error } = await getSupabase()
         .from('negocios')
         .update(payload)
-        .eq('id', business.id);
+        .eq('id', business.id)
+        .select('id')
+        .maybeSingle();
         
       if (error) {
         console.error('Supabase Error:', error);
         addToast(`Error: ${error.message}`, 'error');
         throw error;
       }
+      if (!data) throw new Error('No se encontró el negocio o no tienes permiso para actualizarlo.');
       
       addToast('Diseño y configuración guardados', 'success');
+      setSavedSnapshot(currentSnapshot);
       onUpdate();
     } catch (err) {
       console.error('Caught Error:', err);
-      if (!err.message?.includes('Error:')) {
-        addToast('Error al guardar cambios', 'error');
-      }
+      addToast(err.message || 'Error al guardar cambios', 'error');
     } finally {
       setLoading(false);
     }
@@ -324,6 +346,12 @@ export default function SettingsView(props) {
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      addToast('Selecciona un archivo de imagen para el logo', 'error');
+      e.target.value = '';
+      return;
+    }
 
     if (file.size > 2 * 1024 * 1024) {
       addToast('El logo no debe pesar más de 2MB', 'error');
@@ -334,7 +362,7 @@ export default function SettingsView(props) {
     try {
       const path = `logos/${business.id}-${Date.now()}.${file.name.split('.').pop()}`;
       const url = await uploadImage(file, path);
-      setFormData({ ...formData, logo_url: url });
+      setFormData(prev => ({ ...prev, logo_url: url }));
       addToast('Logo actualizado', 'success');
     } catch (err) {
       console.error(err);
@@ -427,7 +455,7 @@ export default function SettingsView(props) {
   return (
     <div className="space-y-3 animate-fade-in-up">
       {/* Tabs Header */}
-      <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
+      <div role="tablist" aria-label="Secciones de configuración" className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
         {[
           { id: 'perfil', label: 'General', icon: User },
           { id: 'marca', label: 'Diseño del Catálogo', icon: Palette },
@@ -438,6 +466,11 @@ export default function SettingsView(props) {
         ].map(tab => (
           <button
             key={tab.id}
+            type="button"
+            role="tab"
+            id={`settings-tab-${tab.id}`}
+            aria-selected={activeTab === tab.id}
+            aria-controls="settings-active-panel"
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap shrink-0 shadow-2xs
               ${activeTab === tab.id 
@@ -451,7 +484,13 @@ export default function SettingsView(props) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="card p-3.5 sm:p-4 lg:p-5 bg-white border-gray-200/80 shadow-xs rounded-xl">
+        <div className="sticky top-0 z-20 -mx-1 flex items-center justify-between gap-3 border-y border-gray-200 bg-white/95 px-3 py-2 backdrop-blur sm:mx-0 sm:rounded-xl sm:border sm:px-4">
+          <p className={`text-xs font-medium ${hasUnsavedChanges ? 'text-amber-700' : 'text-emerald-700'}`} aria-live="polite">{hasUnsavedChanges ? 'Tienes cambios sin guardar' : 'Configuración guardada'}</p>
+          <button type="submit" disabled={loading || !hasUnsavedChanges} className="btn-primary py-2 px-4 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50">
+            {loading ? <Loader2 size={15} className="animate-spin" /> : <><Save size={15} /> Guardar</>}
+          </button>
+        </div>
+        <div id="settings-active-panel" role="tabpanel" aria-labelledby={`settings-tab-${activeTab}`} className="card p-3.5 sm:p-4 lg:p-5 bg-white border-gray-200/80 shadow-xs rounded-xl">
           
           {/* ── PERFIL ── */}
           {activeTab === 'perfil' && (
@@ -467,6 +506,14 @@ export default function SettingsView(props) {
                   className="input-field" 
                   placeholder="Ej: Dog City Burger"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="settings-business-type" className="block text-xs font-semibold text-gray-700 mb-1">Tipo de negocio</label>
+                <select id="settings-business-type" value={formData.business_type} onChange={e => setFormData(prev => ({ ...prev, business_type: e.target.value }))} className="input-field">
+                  {BUSINESS_TYPES.map(type => <option key={type.id} value={type.id}>{type.label}</option>)}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">Ayuda a adaptar el catálogo al vocabulario de tu comercio.</p>
               </div>
 
               <div>
@@ -505,7 +552,7 @@ export default function SettingsView(props) {
             <div className="space-y-4">
                 
                 {/* ── VISTA PREVIA COMPACTA EN MÓVIL (Top Pinned para ver cambios sin hacer scroll) ── */}
-                <div className="lg:hidden sticky -top-3 z-30 bg-white/95 backdrop-blur-md p-3 -mx-3.5 sm:mx-0 rounded-b-2xl border-b border-gray-200 shadow-sm animate-fade-in">
+                <div className="lg:hidden bg-white p-3 -mx-3.5 sm:mx-0 rounded-xl border border-gray-200 shadow-xs animate-fade-in">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[11px] font-bold text-gray-700 flex items-center gap-1">
                       <Eye size={13} className="text-gray-500" />
@@ -541,7 +588,7 @@ export default function SettingsView(props) {
                           {formData.nombre_visible || 'Nombre de tu negocio'}
                         </p>
                         <p className="text-[10px] text-gray-500 truncate">
-                          Hamburguesa Especial · <strong className="text-gray-900 font-bold">$24.000</strong>
+                          {({ food: 'Producto destacado', retail: 'Artículo destacado', pharmacy: 'Producto de cuidado', stationery: 'Útiles escolares', general: 'Producto destacado' })[formData.business_type] || 'Producto destacado'} · <strong className="text-gray-900 font-bold">$24.000</strong>
                         </p>
                       </div>
                     </div>
@@ -627,6 +674,11 @@ export default function SettingsView(props) {
                           );
                         })}
                       </div>
+                    </div>
+
+                    <div className="p-3.5 sm:p-4 rounded-xl border border-gray-200 bg-white shadow-2xs flex items-center justify-between gap-3">
+                      <div><h4 className="text-xs font-bold text-gray-900">Color secundario</h4><p className="text-[11px] text-gray-500">Fondos y acentos suaves del catálogo.</p></div>
+                      <input aria-label="Color secundario de marca" type="color" value={formData.color_secundario || '#FFF7ED'} onChange={e => setFormData(prev => ({ ...prev, color_secundario: e.target.value }))} className="h-9 w-12 rounded border border-gray-300 bg-white p-1" />
                     </div>
 
                     {/* 2. Estilos de Botones (4 Estilos Totalmente Diferenciados) */}
@@ -1234,6 +1286,12 @@ export default function SettingsView(props) {
 
               {/* Horario Semanal */}
               <div className="space-y-3">
+                <div className="max-w-sm">
+                  <label htmlFor="settings-timezone" className="block text-xs font-semibold text-gray-700 mb-1">Zona horaria del negocio</label>
+                  <select id="settings-timezone" value={formData.timezone} onChange={e => setFormData(prev => ({ ...prev, timezone: e.target.value }))} className="input-field">
+                    {['America/Bogota','America/Mexico_City','America/Lima','America/Santiago','America/Argentina/Buenos_Aires','America/Panama'].map(zone => <option key={zone} value={zone}>{zone.replaceAll('_', ' ')}</option>)}
+                  </select>
+                </div>
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Horario semanal de atención</h4>
@@ -1270,8 +1328,8 @@ export default function SettingsView(props) {
                   ].map(day => {
                     const config = scheduleData.dias?.[day.id] || { activo: true, abre: '11:00', cierra: '23:00' };
                     return (
-                      <div key={day.id} className="p-3 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 w-36">
+                      <div key={day.id} className="p-3 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-3 w-auto sm:w-36">
                           <input
                             type="checkbox"
                             id={`day-${day.id}`}
@@ -1294,8 +1352,8 @@ export default function SettingsView(props) {
                         </div>
 
                         {config.activo ? (
-                          <div className="flex items-center gap-2 text-xs">
-                            <span className="text-gray-500">De:</span>
+                          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 text-xs">
+                            <span className="text-gray-500">De</span>
                             <input
                               type="time"
                               value={config.abre || '11:00'}
@@ -1309,9 +1367,9 @@ export default function SettingsView(props) {
                                   }
                                 }));
                               }}
-                              className="input-field py-1 px-2 text-xs w-28 text-center font-mono"
+                              className="input-field py-1 px-2 text-xs w-full min-w-0 sm:w-28 text-center font-mono"
                             />
-                            <span className="text-gray-500">A:</span>
+                            <span className="text-gray-500">A</span>
                             <input
                               type="time"
                               value={config.cierra || '23:00'}
@@ -1325,7 +1383,7 @@ export default function SettingsView(props) {
                                   }
                                 }));
                               }}
-                              className="input-field py-1 px-2 text-xs w-28 text-center font-mono"
+                              className="input-field py-1 px-2 text-xs w-full min-w-0 sm:w-28 text-center font-mono"
                             />
                           </div>
                         ) : (
@@ -1401,15 +1459,6 @@ export default function SettingsView(props) {
             </div>
           )}
 
-          <div className="pt-4 border-t border-border mt-4">
-            <button 
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full sm:w-auto py-2.5 px-6 text-sm font-semibold justify-center"
-            >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <><Save size={16} /> Guardar cambios</>}
-            </button>
-          </div>
         </div>
       </form>
     </div>

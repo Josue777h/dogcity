@@ -278,83 +278,48 @@ export function exportOrdersToCSV(orders, businessName = 'Negu') {
  */
 export function checkBusinessSchedule(business) {
   if (!business) return { isOpen: true, message: 'Abierto ahora' };
-
-  // 1. Si tiene mensaje o campo con estructura de horario
-  let schedule = null;
-  if (business.horario && typeof business.horario === 'object') {
-    schedule = business.horario;
-  } else if (typeof business.footer_message === 'string' && business.footer_message.includes('CAMLY_SCHEDULE:')) {
+  let schedule = business.horario && typeof business.horario === 'object' && Object.keys(business.horario).length ? business.horario : null;
+  if (!schedule && typeof business.footer_message === 'string') {
     try {
       const match = business.footer_message.match(/<!--CAMLY_SCHEDULE:(.*?)-->/);
-      if (match && match[1]) schedule = JSON.parse(match[1]);
-    } catch {
-      schedule = null;
-    }
+      if (match?.[1]) schedule = JSON.parse(match[1]);
+    } catch { schedule = null; }
   }
+  if (!schedule || !schedule.dias || !Object.keys(schedule.dias).length) return { isOpen: true, message: 'Abierto ahora', mode: 'auto' };
+  if (schedule.abierto_manual === false) return { isOpen: false, message: 'Cerrado temporalmente por el comercio', mode: 'manual_closed' };
 
-  // Si no hay configuración explícita, se asume abierto por defecto
-  if (!schedule) {
-    return { isOpen: true, message: 'Abierto ahora', mode: 'auto' };
+  const days = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+  let parts;
+  try {
+    parts = new Intl.DateTimeFormat('en-US', { timeZone: business.timezone || 'America/Bogota', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+  } catch {
+    parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Bogota', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
   }
-
-  // Switch manual de cerrado temporal
-  if (schedule.abierto_manual === false) {
-    return { 
-      isOpen: false, 
-      message: 'Cerrado temporalmente por el comercio',
-      mode: 'manual_closed'
-    };
+  const weekdayIndex = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const index = weekdayIndex[parts.find(part => part.type === 'weekday')?.value] ?? new Date().getDay();
+  const currentDay = days[index];
+  const previousDay = days[(index + 6) % 7];
+  const minutes = Number(parts.find(part => part.type === 'hour')?.value || 0) * 60 + Number(parts.find(part => part.type === 'minute')?.value || 0);
+  const asMinutes = value => { const [h, m] = String(value || '').split(':').map(Number); return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null; };
+  const openAt = (day, isPrevious = false) => {
+    const config = schedule.dias?.[day];
+    if (!config?.activo) return false;
+    if (config.todo_el_dia) return !isPrevious;
+    const opens = asMinutes(config.abre || '09:00');
+    const closes = asMinutes(config.cierra || '22:00');
+    if (opens === null || closes === null || opens === closes) return false;
+    return isPrevious ? closes < opens && minutes <= closes : closes > opens ? minutes >= opens && minutes <= closes : minutes >= opens;
+  };
+  if (openAt(currentDay) || openAt(previousDay, true)) {
+    const closesAt = schedule.dias?.[currentDay]?.cierra;
+    return { isOpen: true, message: closesAt ? `Abierto ahora - Cierra a las ${closesAt}` : 'Abierto ahora' };
   }
-
-  // Verificación por horario semanal
-  const daysMap = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-  const now = new Date();
-  const currentDay = daysMap[now.getDay()];
-  const dayConfig = schedule.dias?.[currentDay];
-
-  if (dayConfig) {
-    if (!dayConfig.activo) {
-      return { 
-        isOpen: false, 
-        message: 'Cerrado hoy', 
-        nextOpen: 'Abre en su próximo día laboral' 
-      };
-    }
-
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const [openH, openM] = (dayConfig.abre || '09:00').split(':').map(Number);
-    const [closeH, closeM] = (dayConfig.cierra || '22:00').split(':').map(Number);
-    const openMinutes = openH * 60 + openM;
-    const closeMinutes = closeH * 60 + closeM;
-
-    // Caso horario normal (ej. 10:00 a 22:00)
-    if (closeMinutes > openMinutes) {
-      if (currentMinutes >= openMinutes && currentMinutes <= closeMinutes) {
-        return { isOpen: true, message: `Abierto hoy hasta las ${dayConfig.cierra}` };
-      } else {
-        return { 
-          isOpen: false, 
-          message: `Cerrado · Horario hoy: ${dayConfig.abre} a ${dayConfig.cierra}` 
-        };
-      }
-    } else {
-      // Caso horario nocturno que cruza medianoche (ej. 18:00 a 02:00)
-      if (currentMinutes >= openMinutes || currentMinutes <= closeMinutes) {
-        return { isOpen: true, message: `Abierto hasta las ${dayConfig.cierra}` };
-      } else {
-        return { 
-          isOpen: false, 
-          message: `Cerrado · Abre hoy a las ${dayConfig.abre}` 
-        };
-      }
-    }
-  }
-
+  const today = schedule.dias?.[currentDay];
+  if (!today?.activo) return { isOpen: false, message: 'Cerrado hoy', nextOpen: 'Abre en el proximo dia laboral' };
+  return { isOpen: false, message: `Cerrado - Horario hoy: ${today.abre || '09:00'} a ${today.cierra || '22:00'}` };
 }
 
-/**
- * Imprimir comanda de cocina o ticket térmico (58mm / 80mm ESC/POS)
- */
+/** Imprimir comanda de cocina o ticket termico (58mm / 80mm ESC/POS) */
 export function printThermalReceipt(order, business) {
   if (!order) return;
 

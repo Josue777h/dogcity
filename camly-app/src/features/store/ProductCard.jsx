@@ -41,6 +41,7 @@ export default function ProductCard({
 
   const designConfig = useMemo(() => {
     const base = { button_style: 'pill', font_family: 'sans' };
+    if (business?.catalog_design && typeof business.catalog_design === 'object' && Object.keys(business.catalog_design).length) return { ...base, ...business.catalog_design };
     if (typeof business?.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
       try {
         const match = business.footer_message.match(/<!--CAMLY_DESIGN:(.*?)-->/);
@@ -50,7 +51,7 @@ export default function ProductCard({
       }
     }
     return base;
-  }, [business?.footer_message]);
+  }, [business?.catalog_design, business?.footer_message]);
 
   const buttonStyle = designConfig.button_style || 'pill';
 

@@ -95,6 +95,14 @@ export default function StorePage() {
       card_style: 'standard',
       footer_style: 'branded'
     };
+    if (business?.catalog_design && typeof business.catalog_design === 'object' && Object.keys(business.catalog_design).length) {
+      const parsed = business.catalog_design;
+      let radius = 'rounded-full';
+      if (parsed.button_style === 'square') radius = 'rounded-none';
+      else if (parsed.button_style === 'soft') radius = 'rounded-md';
+      else if (parsed.button_style === 'outline') radius = 'rounded-lg';
+      return { ...base, ...parsed, button_radius: radius };
+    }
     if (typeof business?.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
       try {
         const match = business.footer_message.match(/<!--CAMLY_DESIGN:(.*?)-->/);
