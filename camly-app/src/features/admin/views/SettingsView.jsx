@@ -38,6 +38,11 @@ const BUTTON_STYLES = [
   { id: 'outline', name: 'Contorno', desc: 'Hueco con borde', buttonClass: 'rounded-lg border-2' },
 ];
 
+const FOOTER_STYLES = [
+  { id: 'branded', name: 'Con identidad', desc: 'Color y acentos de tu marca' },
+  { id: 'minimal', name: 'Esencial', desc: 'Blanco y discreto' },
+];
+
 export default function SettingsView(props) {
   const outletCtx = useOutletContext() || {};
   const session = useAuthStore(s => s.session);
@@ -83,6 +88,7 @@ export default function SettingsView(props) {
     const base = {
       button_style: 'pill',
       font_family: 'sans',
+      footer_style: 'branded',
     };
     if (typeof business?.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
       try {
@@ -748,6 +754,49 @@ export default function SettingsView(props) {
                       </div>
                     </div>
 
+                    {/* 5. Estilo de identidad del footer */}
+                    <div className="space-y-2.5 rounded-xl border border-gray-200 bg-white p-3.5 shadow-2xs sm:p-4">
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-900">Pie del catálogo</h4>
+                        <p className="text-[11px] text-gray-500">Elige cómo aplicar el color y la identidad de tu negocio.</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {FOOTER_STYLES.map(style => {
+                          const isSelected = (designData.footer_style || 'branded') === style.id;
+                          const brandColor = formData.theme_color || '#0284C7';
+                          const isBranded = style.id === 'branded';
+
+                          return (
+                            <button
+                              key={style.id}
+                              type="button"
+                              aria-pressed={isSelected}
+                              onClick={() => setDesignData({ ...designData, footer_style: style.id })}
+                              className={`rounded-xl border p-2.5 text-left transition-colors ${
+                                isSelected
+                                  ? 'border-gray-950 bg-gray-50 ring-1 ring-gray-950'
+                                  : 'border-gray-200 bg-white hover:border-gray-400'
+                              }`}
+                            >
+                              <div
+                                className="mb-2 flex h-9 items-center gap-2 overflow-hidden rounded-lg border px-2"
+                                style={isBranded
+                                  ? { backgroundColor: `color-mix(in srgb, ${brandColor} 9%, white)`, borderColor: `color-mix(in srgb, ${brandColor} 24%, white)` }
+                                  : { backgroundColor: '#fff', borderColor: '#e5e7eb' }}
+                              >
+                                <span className="h-5 w-5 rounded-md bg-white" style={{ border: `1px solid ${brandColor}` }} />
+                                <span className="h-1.5 w-16 rounded-full bg-slate-400/60" />
+                                {isBranded && <span className="ml-auto h-2 w-2 rounded-full" style={{ backgroundColor: brandColor }} />}
+                              </div>
+                              <p className="text-xs font-bold text-gray-900">{style.name}</p>
+                              <p className="mt-0.5 text-[10px] leading-snug text-gray-500">{style.desc}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                   </div>
 
                   {/* Columna Derecha: Live Mockup Completo (Desktop) */}
@@ -886,6 +935,27 @@ export default function SettingsView(props) {
                               </div>
                             </div>
                           </div>
+                        </div>
+                      </div>
+
+                      {/* Vista previa del pie del catálogo */}
+                      <div className="px-2.5 pb-14 pt-1">
+                        <div
+                          className="flex items-center gap-2 rounded-xl border p-2"
+                          style={designData.footer_style === 'minimal'
+                            ? { backgroundColor: '#fff', borderColor: '#e5e7eb' }
+                            : { backgroundColor: `color-mix(in srgb, ${formData.theme_color || '#0284C7'} 9%, white)`, borderColor: `color-mix(in srgb, ${formData.theme_color || '#0284C7'} 24%, white)` }}
+                        >
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white bg-white">
+                            {formData.logo_url
+                              ? <img src={formData.logo_url} alt="" className="h-full w-full object-contain p-0.5" />
+                              : <Store size={13} style={{ color: formData.theme_color || '#0284C7' }} />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[9px] font-bold text-gray-900">{formData.nombre_visible || 'Nombre de tu negocio'}</p>
+                            <p className="truncate text-[8px] text-gray-500">{formData.telefono || 'Contacto'} · Catálogo por NEGU</p>
+                          </div>
+                          <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: formData.theme_color || '#0284C7' }} />
                         </div>
                       </div>
 

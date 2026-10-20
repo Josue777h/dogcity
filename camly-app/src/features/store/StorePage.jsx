@@ -92,7 +92,8 @@ export default function StorePage() {
       button_style: 'pill',
       button_radius: 'rounded-full',
       font_family: 'sans',
-      card_style: 'standard'
+      card_style: 'standard',
+      footer_style: 'branded'
     };
     if (typeof business?.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
       try {
