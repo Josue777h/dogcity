@@ -336,13 +336,13 @@ export default function ProductCard({
 
       {/* Modal de Detalle y Personalización (Sabores & Toppings) */}
       {showModal && (
-        <div className="fixed inset-0 z-[120] flex items-end justify-center overflow-hidden p-3 sm:items-center sm:p-4">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center overflow-hidden p-4">
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-xs animate-fade-in"
             onClick={() => setShowModal(false)}
           />
 
-          <div className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[#e1ddd5] bg-white shadow-2xl animate-scale-in max-h-[calc(100dvh-env(safe-area-inset-top,0px)-1.5rem)] sm:max-h-[min(88dvh,48rem)]">
+          <div className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[#e1ddd5] bg-white shadow-2xl animate-scale-in max-h-[calc(100dvh-env(safe-area-inset-top,0px)-2rem)] sm:max-h-[min(88dvh,48rem)]">
             
             {/* Botón cerrar */}
             <button
