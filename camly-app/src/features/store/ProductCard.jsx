@@ -336,57 +336,53 @@ export default function ProductCard({
 
       {/* Modal de Detalle y Personalización (Sabores & Toppings) */}
       {showModal && (
-        <div className="fixed inset-0 z-[120] flex items-end justify-center overflow-hidden p-0 sm:items-center sm:p-4">
+        <div className="fixed inset-0 z-[120] flex items-end justify-center overflow-hidden p-3 sm:items-center sm:p-4">
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-xs animate-fade-in"
             onClick={() => setShowModal(false)}
           />
 
-          <div className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-[#e1ddd5] bg-white shadow-2xl animate-scale-in max-h-[calc(100dvh-env(safe-area-inset-top,0px)-0.5rem)] sm:max-h-[min(88dvh,48rem)] sm:rounded-2xl">
+          <div className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[#e1ddd5] bg-white shadow-2xl animate-scale-in max-h-[calc(100dvh-env(safe-area-inset-top,0px)-1.5rem)] sm:max-h-[min(88dvh,48rem)]">
             
             {/* Botón cerrar */}
             <button
               onClick={() => setShowModal(false)}
-              className="absolute right-3 top-3 z-30 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-black/45 text-white transition-colors hover:bg-black/65"
+              className="absolute right-3 top-3 z-30 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-[#e1ddd5] bg-white text-slate-600 transition-colors hover:bg-[#f7f6f2]"
               aria-label="Cerrar"
             >
               <X size={16} />
             </button>
 
             {/* Cabecera con imagen si existe */}
-            <div className="relative flex h-24 shrink-0 items-center justify-center overflow-hidden bg-[#e8dfd1] sm:h-44">
+            <div className="flex min-h-[5.5rem] shrink-0 items-center gap-3 border-b border-[#f0ede7] bg-white px-4 py-3 pr-16 sm:min-h-28 sm:gap-4 sm:px-5">
               {!imgError && product.image ? (
                 <img
                   src={product.image}
                   alt={product.name}
-                  className="h-full w-full object-cover"
+                  className="h-16 w-16 shrink-0 rounded-xl border border-[#e7e3db] object-cover sm:h-20 sm:w-20"
                   onError={() => setImgError(true)}
                 />
               ) : (
-                <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-[#e8dfd1] text-slate-600">
-                  <PackageCheck size={24} strokeWidth={1.5} />
-                  <span className="text-xs">Foto no disponible</span>
+                <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border border-[#e7e3db] bg-[#f2eee7] text-slate-500 sm:h-20 sm:w-20">
+                  <PackageCheck size={22} strokeWidth={1.5} />
+                  <span className="text-center text-[9px] font-medium leading-tight">Sin foto</span>
                 </div>
               )}
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-              <div className="absolute bottom-2.5 left-4 right-14 text-white sm:bottom-4">
-                <span className="mb-1 inline-block rounded bg-black/40 px-2 py-0.5 text-[10px] font-semibold text-white/90">
+              <div className="min-w-0 flex-1">
+                <span className="mb-1 inline-block max-w-full truncate rounded-md bg-[#f2f0eb] px-2 py-1 text-[10px] font-semibold text-slate-600">
                   {product.categoria || 'Menú'}
                 </span>
-                <h2 className="line-clamp-2 text-sm font-semibold leading-tight sm:text-lg">
+                <h2 className="line-clamp-2 text-base font-semibold leading-tight text-slate-900 sm:text-lg">
                   {product.name}
                 </h2>
+                {product.description && (
+                  <p className="mt-1 line-clamp-1 text-xs text-slate-500">{product.description}</p>
+                )}
               </div>
             </div>
 
             {/* Cuerpo desplazable con opciones */}
-            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4 pb-6 text-xs sm:space-y-3.5 sm:p-5">
-              {product.description && (
-                <p className="text-gray-600 leading-relaxed">
-                  {product.description}
-                </p>
-              )}
-
+            <div className="min-h-0 max-h-[min(48dvh,26rem)] space-y-3 overflow-y-auto overscroll-contain px-4 py-4 text-xs sm:space-y-3.5 sm:px-5 sm:py-5">
               {/* Grupos de opciones (Sabores / Toppings) */}
               {hasOptions && (
                 <div className="space-y-3 pt-0.5 font-sans">
@@ -396,13 +392,13 @@ export default function ProductCard({
                     const maxLimit = Number(group.max_opciones) || null;
 
                     return (
-                      <div key={group.id} className="p-3 rounded-lg bg-gray-50/70 border border-gray-200 space-y-2">
+                      <div key={group.id} className="space-y-2.5 rounded-xl border border-[#e7e3db] bg-[#fbfaf8] p-3 sm:p-4">
                         <div className="flex items-center justify-between gap-2">
                           <div>
-                            <h4 className="font-semibold text-gray-900 text-xs sm:text-sm">
+                            <h4 className="text-sm font-semibold text-slate-900">
                               {group.titulo}
                             </h4>
-                            <p className="text-[11px] text-gray-500">
+                            <p className="mt-0.5 text-xs text-slate-500">
                               {isRadio 
                                 ? 'Elige 1 opción' 
                                 : maxLimit 
@@ -410,17 +406,17 @@ export default function ProductCard({
                                   : 'Elige las que desees'}
                             </p>
                           </div>
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                          <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold ${
                             group.requerido 
-                              ? 'bg-amber-50 text-amber-800 border border-amber-200' 
-                              : 'bg-gray-100 text-gray-600 border border-gray-200'
+                              ? 'border-amber-200 bg-amber-50 text-amber-800'
+                              : 'border-[#e7e3db] bg-white text-slate-600'
                           }`}>
                             {group.requerido ? 'Obligatorio' : 'Opcional'}
                           </span>
                         </div>
 
                         {/* Opciones dentro del grupo */}
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           {group.opciones?.map(opt => {
                             const isChecked = currentSelected.some(o => o.id === opt.id);
                             const isMaxReached = !isRadio && maxLimit && currentSelected.length >= maxLimit && !isChecked;
@@ -443,21 +439,21 @@ export default function ProductCard({
                                   borderColor: isChecked ? brandColor : undefined,
                                   backgroundColor: isChecked ? `${brandColor}08` : undefined
                                 }}
-                                className={`flex items-center justify-between p-2 sm:p-2.5 rounded-md border transition-colors select-none ${
+                                className={`flex min-h-11 items-center justify-between gap-2 rounded-lg border px-3 py-2 transition-colors select-none ${
                                   isMaxReached 
-                                    ? 'opacity-50 cursor-not-allowed bg-gray-100/60 border-gray-200'
-                                    : 'cursor-pointer hover:border-gray-300'
+                                    ? 'cursor-not-allowed border-[#e7e3db] bg-[#f2f0eb] opacity-60'
+                                    : 'cursor-pointer bg-white hover:border-slate-400'
                                 } ${
                                   isChecked 
-                                    ? 'text-gray-950 font-medium' 
-                                    : 'bg-white border-gray-200 text-gray-700'
+                                    ? 'font-medium text-slate-950'
+                                    : 'border-[#e7e3db] text-slate-700'
                                 }`}
                               >
                                 <div className="flex items-center gap-2 min-w-0">
                                   <div 
                                     style={isChecked ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
-                                    className={`w-4 h-4 rounded-${isRadio ? 'full' : 'sm'} border flex items-center justify-center shrink-0 transition-colors ${
-                                      isChecked ? 'text-white' : 'border-gray-300 bg-white'
+                                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-${isRadio ? 'full' : 'sm'} border transition-colors ${
+                                      isChecked ? 'text-white' : 'border-[#c9c4bb] bg-white'
                                     }`}
                                   >
                                     {isChecked && (
@@ -466,13 +462,13 @@ export default function ProductCard({
                                         : <Check size={11} strokeWidth={3} />
                                     )}
                                   </div>
-                                  <span className="text-xs sm:text-sm text-gray-900 truncate">
+                                  <span className="truncate text-sm text-slate-900">
                                     {opt.nombre}
                                   </span>
                                 </div>
 
                                 <span className={`text-xs tabular-nums shrink-0 ml-2 ${
-                                  Number(opt.precio) > 0 ? 'text-gray-900 font-semibold' : 'text-gray-400 font-normal'
+                                  Number(opt.precio) > 0 ? 'font-semibold text-slate-900' : 'font-normal text-slate-500'
                                 }`}>
                                   {Number(opt.precio) > 0 ? `+${formatMoney(opt.precio)}` : 'Incluido'}
                                 </span>
@@ -488,7 +484,7 @@ export default function ProductCard({
 
               {/* Instrucción o nota especial */}
               <div className="pt-1">
-                <label className="block text-xs font-semibold text-gray-800 mb-1.5">
+                <label className="mb-1.5 block text-xs font-semibold text-slate-800">
                   Notas especiales o instrucciones:
                 </label>
                 <input
@@ -525,7 +521,7 @@ export default function ProductCard({
                   type="button"
                   onClick={handleConfirmCustomization}
                   style={modalBtnProps.style}
-                  className={`${modalBtnProps.className} cursor-pointer hover:opacity-95`}
+                  className={`${modalBtnProps.className} min-h-12 rounded-lg px-3 text-xs shadow-none sm:min-h-12 sm:px-5 sm:text-sm cursor-pointer hover:opacity-95`}
                 >
                   <Plus size={15} className="shrink-0" />
                   <span>Agregar al pedido</span>
