@@ -94,7 +94,7 @@ export default function RegisterPage() {
       />
 
       <aside className="relative hidden min-h-screen overflow-hidden bg-slate-950 px-12 py-14 text-white lg:flex lg:flex-col lg:justify-between xl:px-20">
-        <Link to="/" className="inline-flex w-fit rounded-lg"><SaaSLogo className="h-12" /></Link>
+        <Link to="/" className="inline-flex w-fit rounded-lg"><SaaSLogo className="h-12 text-white" /></Link>
         <div className="relative z-10 max-w-xl pb-12">
           <span className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-200">Empieza hoy</span>
           <h2 className="mt-6 text-4xl font-bold leading-tight text-white xl:text-5xl">Tu negocio en línea,<br /><span className="text-cyan-300">a tu manera.</span></h2>
@@ -116,7 +116,7 @@ export default function RegisterPage() {
 
         <div className="mb-6">
           <Link to="/" className="inline-block mb-5">
-            <SaaSLogo className="h-9" />
+            <SaaSLogo className="h-10" />
           </Link>
           <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
             Crea tu cuenta

@@ -1,7 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike, Sparkles, Tag, DollarSign, ExternalLink } from 'lucide-react';
 import { useBusinessStore } from '../../../stores';
-import SaaSLogo from '../../../components/common/SaaSLogo';
 import { isModuleEnabled } from '../../../lib/modules';
 
 const MAIN_TABS = [

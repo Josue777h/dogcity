@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   MessageCircle, Smartphone, CheckCircle2,
@@ -11,11 +11,9 @@ import {
   ChevronRight, ExternalLink, Play, CheckCircle
 } from 'lucide-react';
 import storePreview from '../../assets/ejemplo.jpeg';
-import SaaSLogo from '../../components/common/SaaSLogo';
 import SEO from '../../components/common/SEO';
 import MarketingNavbar from './components/MarketingNavbar';
 import MarketingFooter from './components/MarketingFooter';
-import { useAnimatedCounter } from '../../lib/utils';
 
 const BUSINESS_TYPES = [
   { icon: ShoppingBag, label: 'Comidas Rápidas' },
@@ -56,27 +54,13 @@ const FAQS = [
 ];
 
 export default function LandingPage() {
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [billingAnnual, setBillingAnnual] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
   const [storeName, setStoreName] = useState('');
   const [monthlySales, setMonthlySales] = useState(3000000);
-  const orderCount = useAnimatedCounter(1420, 1500);
   const storeSlug = storeName.trim().toLocaleLowerCase('es-CO').normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 35);
   const registrationUrl = storeSlug ? `/registro?tienda=${encodeURIComponent(storeSlug)}` : '/registro';
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [menuOpen]);
 
   return (
     <div className="min-h-screen overflow-x-clip bg-[#FBFBFC] text-gray-900 selection:bg-cyan-500 selection:text-white font-sans">

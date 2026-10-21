@@ -64,7 +64,7 @@ export default function LoginPage() {
       />
 
       <aside className="relative hidden min-h-screen overflow-hidden bg-slate-950 px-12 py-14 text-white lg:flex lg:flex-col lg:justify-between xl:px-20">
-        <Link to="/" className="inline-flex w-fit rounded-lg"><SaaSLogo className="h-12" /></Link>
+        <Link to="/" className="inline-flex w-fit rounded-lg"><SaaSLogo className="h-12 text-white" /></Link>
         <div className="relative z-10 max-w-xl pb-12">
           <span className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-200">Panel de tu negocio</span>
           <h2 className="mt-6 text-4xl font-bold leading-tight text-white xl:text-5xl">Todo tu comercio,<br /><span className="text-cyan-300">en un solo lugar.</span></h2>
@@ -86,7 +86,7 @@ export default function LoginPage() {
 
         <div className="mb-6">
           <Link to="/" className="inline-block mb-5">
-            <SaaSLogo className="h-9" />
+            <SaaSLogo className="h-10" />
           </Link>
           <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
             Inicia sesión
@@ -130,17 +130,10 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1.5">
+              <div className="mb-1.5">
                 <label htmlFor="login-password" className="block text-sm font-medium text-slate-700">
                   Contraseña
                 </label>
-                <Link
-                  to="/recuperar-contrasena"
-                  state={{ email }}
-                  className="text-xs font-medium text-[#0284C7] hover:text-sky-700 transition-colors duration-150"
-                >
-                  ¿Olvidaste tu contraseña?
-                </Link>
               </div>
               <div className="relative">
                 <Lock size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -163,6 +156,15 @@ export default function LoginPage() {
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
+              </div>
+              <div className="mt-1.5 flex justify-end">
+                <Link
+                  to="/recuperar-contrasena"
+                  state={{ email }}
+                  className="text-xs font-medium text-[#0284C7] hover:text-sky-700 transition-colors duration-150"
+                >
+                  ¿Olvidaste tu contraseña?
+                </Link>
               </div>
             </div>
 

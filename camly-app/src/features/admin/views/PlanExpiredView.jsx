@@ -1,5 +1,4 @@
 import { Lock, CreditCard, ChevronRight, Zap } from 'lucide-react';
-import SaaSLogo from '../../../components/common/SaaSLogo';
 
 export default function PlanExpiredView({ onOpenBilling }) {
   return (
