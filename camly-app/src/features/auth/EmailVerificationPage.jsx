@@ -1,17 +1,80 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, MailCheck } from 'lucide-react';
-import { resendSignupConfirmation } from '../../lib/supabase';
+import { completePendingBusinessRegistration, getSupabase, resendSignupConfirmation } from '../../lib/supabase';
+import { useAuthStore, useBusinessStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
 import SEO from '../../components/common/SEO';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import PageLoading from '../../components/common/PageLoading';
 
 export default function EmailVerificationPage() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const setSession = useAuthStore(state => state.setSession);
+  const setBusiness = useBusinessStore(state => state.setBusiness);
   const [email, setEmail] = useState(location.state?.email || '');
   const [sending, setSending] = useState(false);
+  const [checkingConfirmation, setCheckingConfirmation] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    let finishingRegistration = false;
+
+    const finishIfConfirmed = async () => {
+      if (finishingRegistration) return;
+      finishingRegistration = true;
+      try {
+        const supabase = getSupabase();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!session) return;
+
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        if (!(user?.email_confirmed_at || user?.confirmed_at)) return;
+
+        if (active) setCheckingConfirmation(true);
+        const verifiedSession = { ...session, user };
+        const business = await completePendingBusinessRegistration(verifiedSession);
+        if (!active) return;
+
+        setSession(verifiedSession);
+        setBusiness(business);
+        navigate('/bienvenido', { replace: true });
+      } catch (confirmationError) {
+        if (active) {
+          setError(confirmationError?.message || 'No pudimos completar la verificación. Abre de nuevo el enlace del correo.');
+        }
+      } finally {
+        finishingRegistration = false;
+        if (active) setCheckingConfirmation(false);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') finishIfConfirmed();
+    };
+    const { data: { subscription } } = getSupabase().auth.onAuthStateChange((event, session) => {
+      if (session && ['SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'].includes(event)) {
+        // Deja que Supabase termine de actualizar el almacenamiento antes de volver a consultar.
+        window.setTimeout(finishIfConfirmed, 0);
+      }
+    });
+
+    window.addEventListener('focus', finishIfConfirmed);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    finishIfConfirmed();
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+      window.removeEventListener('focus', finishIfConfirmed);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [navigate, setBusiness, setSession]);
 
   const handleResend = async (event) => {
     event.preventDefault();
@@ -37,6 +100,10 @@ export default function EmailVerificationPage() {
       setSending(false);
     }
   };
+
+  if (checkingConfirmation) {
+    return <PageLoading label="Activando tu cuenta" />;
+  }
 
   return (
     <main className="flex min-h-screen flex-col bg-slate-50 px-4 text-slate-950">
