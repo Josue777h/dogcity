@@ -11,6 +11,8 @@ const LoginPage = lazy(() => import('./features/auth/LoginPage'));
 const RegisterPage = lazy(() => import('./features/auth/RegisterPage'));
 const EmailVerificationPage = lazy(() => import('./features/auth/EmailVerificationPage'));
 const AuthCallbackPage = lazy(() => import('./features/auth/AuthCallbackPage'));
+const PasswordRecoveryPage = lazy(() => import('./features/auth/PasswordRecoveryPage'));
+const ResetPasswordPage = lazy(() => import('./features/auth/ResetPasswordPage'));
 const TrackingPage = lazy(() => import('./features/store/TrackingPage'));
 const LandingPage = lazy(() => import('./features/marketing/LandingPage'));
 const WelcomePage = lazy(() => import('./features/marketing/WelcomePage'));
@@ -68,6 +70,8 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/registro" element={<RegisterPage />} />
           <Route path="/verificar-correo" element={<EmailVerificationPage />} />
+          <Route path="/recuperar-contrasena" element={<PasswordRecoveryPage />} />
+          <Route path="/restablecer-contrasena" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/bienvenido" element={<WelcomePage />} />
           

@@ -347,6 +347,19 @@ export async function resendSignupConfirmation(email) {
   if (error) throw error;
 }
 
+export async function requestPasswordRecovery(email) {
+  const { error } = await getSupabase().auth.resetPasswordForEmail(String(email || '').trim(), {
+    redirectTo: `${window.location.origin}/restablecer-contrasena`,
+  });
+  if (error) throw error;
+}
+
+export async function updateAccountPassword(password) {
+  const { data, error } = await getSupabase().auth.updateUser({ password });
+  if (error) throw error;
+  return data.user;
+}
+
 export async function signUp(email, password) {
   const { data, error } = await getSupabase().auth.signUp({ email, password });
   if (error) throw error;

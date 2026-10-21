@@ -25,7 +25,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (location.state?.email) {
-      addToast('Ingresa tu contraseña para continuar.', 'info');
+      if (location.state?.passwordUpdated) addToast('Contraseña actualizada. Inicia sesión con tu nueva contraseña.', 'success');
+      else addToast('Ingresa tu contraseña para continuar.', 'info');
     }
   }, [location.state, addToast]);
 
@@ -104,7 +105,7 @@ export default function LoginPage() {
           {location.state?.email && (
             <div className="mb-5 flex items-start gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2.5 text-xs text-emerald-800">
               <ShieldCheck size={15} className="text-emerald-600 shrink-0 mt-0.5" />
-              <span>Cuenta creada. Ingresa tu contraseña para continuar.</span>
+              <span>{location.state?.passwordUpdated ? 'Contraseña actualizada. Ingresa con tu nueva contraseña.' : 'Cuenta creada. Ingresa tu contraseña para continuar.'}</span>
             </div>
           )}
 
@@ -133,16 +134,13 @@ export default function LoginPage() {
                 <label htmlFor="login-password" className="block text-sm font-medium text-slate-700">
                   Contraseña
                 </label>
-                <a
-                  href="#olvido"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    addToast('Para restablecer tu contraseña, por favor contacta al soporte de Negu.', 'info');
-                  }}
+                <Link
+                  to="/recuperar-contrasena"
+                  state={{ email }}
                   className="text-xs font-medium text-[#0284C7] hover:text-sky-700 transition-colors duration-150"
                 >
                   ¿Olvidaste tu contraseña?
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <Lock size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
