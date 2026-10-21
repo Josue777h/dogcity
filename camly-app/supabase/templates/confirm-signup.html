@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <title>Confirma tu correo | NEGU</title>
+    <style>
+      @media screen and (max-width: 620px) {
+        .email-shell { width: 100% !important; }
+        .email-card { border-radius: 0 !important; }
+        .email-content { padding: 32px 24px !important; }
+        .email-footer { padding: 22px 24px !important; }
+        .email-title { font-size: 27px !important; line-height: 34px !important; }
+        .email-button { display: block !important; }
+      }
+    </style>
+  </head>
+  <body style="margin:0; padding:0; background-color:#f3f6fa; font-family:Arial,Helvetica,sans-serif; color:#172033; -webkit-text-size-adjust:100%;">
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
+      Confirma tu correo para activar tu cuenta y continuar con tu tienda en NEGU.
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f3f6fa;">
+      <tr>
+        <td align="center" style="padding:40px 16px;">
+          <table role="presentation" class="email-shell" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px; max-width:560px;">
+            <tr>
+              <td style="padding:0 0 18px 4px;">
+                <a href="https://negu.pro" target="_blank" style="display:inline-block; text-decoration:none;">
+                  <img src="https://negu.pro/negu-email-logo.png" width="128" alt="NEGU" style="display:block; width:128px; max-width:100%; height:auto; border:0;">
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td class="email-card" style="overflow:hidden; border:1px solid #e2e8f0; border-radius:18px; background-color:#ffffff; box-shadow:0 8px 28px rgba(15,23,42,.06);">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="height:4px; background-color:#06a8c7; font-size:0; line-height:0;">&nbsp;</td>
+                  </tr>
+                  <tr>
+                    <td class="email-content" style="padding:42px 44px 38px;">
+                      <p style="margin:0 0 12px; color:#087e9c; font-size:12px; font-weight:700; letter-spacing:1.2px; line-height:18px; text-transform:uppercase;">Activa tu cuenta</p>
+                      <h1 class="email-title" style="margin:0; color:#101828; font-size:32px; font-weight:700; letter-spacing:-.7px; line-height:40px;">Confirma tu correo</h1>
+                      <p style="margin:18px 0 0; color:#475467; font-size:16px; line-height:26px;">
+                        Ya casi terminas. Confirma que esta dirección de correo es tuya para activar tu cuenta y continuar con tu negocio en NEGU.
+                      </p>
+
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 0;">
+                        <tr>
+                          <td align="center" bgcolor="#111827" style="border-radius:10px;">
+                            <a class="email-button" href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block; padding:15px 24px; border:1px solid #111827; border-radius:10px; color:#ffffff; font-size:15px; font-weight:700; line-height:20px; text-align:center; text-decoration:none;">
+                              Confirmar correo
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <p style="margin:26px 0 0; color:#667085; font-size:13px; line-height:21px;">
+                        Después de confirmar, volverás a NEGU para entrar al panel y configurar tu tienda.
+                      </p>
+                      <div style="height:1px; margin:26px 0 20px; background-color:#eaecf0; font-size:0; line-height:0;">&nbsp;</div>
+                      <p style="margin:0; color:#667085; font-size:12px; line-height:19px;">
+                        Si el botón no funciona, copia este enlace y pégalo en tu navegador:
+                      </p>
+                      <p style="margin:8px 0 0; overflow-wrap:anywhere; word-break:break-word;">
+                        <a href="{{ .ConfirmationURL }}" target="_blank" style="color:#087e9c; font-size:12px; line-height:19px; text-decoration:underline;">{{ .ConfirmationURL }}</a>
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="email-footer" style="padding:22px 44px; border-top:1px solid #eaecf0; background-color:#f9fafb;">
+                      <p style="margin:0; color:#667085; font-size:12px; line-height:19px;">
+                        Si no creaste una cuenta en NEGU, puedes ignorar este mensaje. No se activará ninguna cuenta sin confirmar el correo.
+                      </p>
+                      <p style="margin:12px 0 0; color:#98a2b3; font-size:11px; line-height:17px;">
+                        NEGU · Herramientas para negocios locales<br>
+                        <a href="https://negu.pro" target="_blank" style="color:#667085; text-decoration:underline;">negu.pro</a>
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:18px 8px 0; color:#98a2b3; font-size:11px; line-height:17px;">
+                Este correo se envió porque alguien inició un registro en NEGU.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
