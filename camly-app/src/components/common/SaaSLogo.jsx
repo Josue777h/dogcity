@@ -5,7 +5,7 @@ import neguLogo from '../../assets/logo.png';
  * SaaSLogo Component — Negu
  * Renderiza el logotipo oficial de Negu con dimensionamiento optimizado.
  */
-export default function SaaSLogo({ className = "h-10 sm:h-12", withText = true, animated = true }) {
+export default function SaaSLogo({ className = "h-10 sm:h-12", animated = true, centered = false }) {
   const isDark = className.includes('text-white');
 
   return (
@@ -16,7 +16,7 @@ export default function SaaSLogo({ className = "h-10 sm:h-12", withText = true, 
         <img 
           src={neguLogo} 
           alt="Negu" 
-          className="h-full w-auto object-contain max-h-full block transform scale-110 sm:scale-125 origin-left"
+          className={`h-full w-auto object-contain max-h-full block transform ${centered ? 'scale-150 origin-center' : 'scale-110 sm:scale-125 origin-left'}`}
           fetchPriority="high"
         />
       </div>
