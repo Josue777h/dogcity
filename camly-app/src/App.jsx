@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, Suspense, lazy } from 'react';
 import AuthGuard from './features/auth/AuthGuard';
 import ToastContainer from './components/ui/ToastContainer';
+import PageLoading from './components/common/PageLoading';
 
 // Code Splitting (Lazy Loading)
 const StorePage = lazy(() => import('./features/store/StorePage'));
@@ -34,15 +35,6 @@ const DriversView = lazy(() => import('./features/admin/views/DriversView'));
 const RevenueView = lazy(() => import('./features/admin/views/RevenueView'));
 const SettingsView = lazy(() => import('./features/admin/views/SettingsView'));
 
-const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-bg-alt">
-    <div className="flex flex-col items-center gap-4 animate-in fade-in duration-500">
-      <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
-      <p className="text-xs font-black text-muted tracking-[0.2em] uppercase">Cargando...</p>
-    </div>
-  </div>
-);
-
 import { useBusinessStore } from './stores';
 
 export default function App() {
@@ -59,7 +51,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <ToastContainer />
-      <Suspense fallback={<PageLoader />}>
+      <Suspense fallback={<PageLoading title="Cargando página" description="Estamos preparando el contenido." />}>
         <Routes>
           {/* ── MARKETING & PUBLIC SEO ───────────────────────── */}
           <Route path="/" element={<LandingPage />} />

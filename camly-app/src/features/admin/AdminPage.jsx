@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Store, Loader2, ChevronRight, LogOut, Bike, Sparkles } from 'lucide-react';
+import { Store, ChevronRight, LogOut, Bike, Sparkles } from 'lucide-react';
 import { 
   getSupabase, 
   fetchProducts, 
@@ -23,17 +23,9 @@ import ProductModal from './components/ProductModal';
 import BillingModal from '../../components/ui/BillingModal';
 import AiAssistantModal from './components/AiAssistantModal';
 import SEO from '../../components/common/SEO';
-import SaaSLogo from '../../components/common/SaaSLogo';
+import PageLoading from '../../components/common/PageLoading';
 
 const PlanExpiredView = lazy(() => import('./views/PlanExpiredView'));
-
-function ViewLoader() {
-  return (
-    <div className="flex items-center justify-center py-20">
-      <Loader2 className="animate-spin text-brand" size={32} />
-    </div>
-  );
-}
 
 export default function AdminPage() {
   const { session, setSession } = useAuthStore();
@@ -225,21 +217,7 @@ export default function AdminPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-slate-50 px-4 py-8">
-        <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
-          <div className="mb-6 flex justify-center"><SaaSLogo className="h-12 sm:h-14" /></div>
-          <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 text-brand">
-            <Loader2 className="animate-spin" size={22} />
-          </div>
-          <p className="text-base font-semibold text-slate-900">Preparando tu panel</p>
-          <p className="mt-1 text-sm text-slate-500">Estamos cargando la información de tu negocio.</p>
-          <div className="mx-auto mt-5 h-1 w-28 overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full w-1/2 animate-pulse rounded-full bg-brand" />
-          </div>
-        </div>
-      </div>
-    );
+    return <PageLoading title="Preparando tu panel" description="Estamos cargando la información de tu negocio." />;
   }
 
   return (
@@ -279,7 +257,7 @@ export default function AdminPage() {
           )}
 
           <div className={`max-w-7xl mx-auto transition-opacity duration-300 ${isExpired ? 'opacity-20 pointer-events-none blur-sm' : ''}`}>
-            <Suspense fallback={<ViewLoader />}>
+            <Suspense fallback={<PageLoading fullscreen={false} title="Cargando sección" description="Estamos preparando esta vista." />}>
               <Outlet context={{
                 orders,
                 products,

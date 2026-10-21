@@ -8,6 +8,7 @@ import { getSupabase } from '../../../lib/supabase';
 import { useToastStore } from '../../../stores';
 import PremiumLock from '../../../components/ui/PremiumLock';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
+import PageLoading from '../../../components/common/PageLoading';
 
 export default function DriversView(props) {
   const outletCtx = useOutletContext() || {};
@@ -96,11 +97,7 @@ export default function DriversView(props) {
   };
 
   if (loading && !drivers.length) {
-    return (
-      <div className="py-20 flex justify-center">
-        <Loader2 className="animate-spin text-orange-600" size={28} />
-      </div>
-    );
+    return <PageLoading fullscreen={false} title="Cargando repartidores" description="Estamos consultando tu equipo de entregas." />;
   }
 
   return (

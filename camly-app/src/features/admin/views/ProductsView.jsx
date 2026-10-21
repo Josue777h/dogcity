@@ -4,24 +4,9 @@ import { Search, Plus, Edit, Trash2, Tag, Package, LayoutGrid, List } from 'luci
 import { formatMoney } from '../../../lib/utils';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 import { useBusinessStore } from '../../../stores';
+import PageLoading from '../../../components/common/PageLoading';
 
 const PRODUCT_VIEW_MODE_KEY = 'negu_admin_products_view_mode';
-
-function ProductSkeleton() {
-  return (
-    <div className="card p-4 animate-pulse">
-      <div className="flex gap-4">
-        <div className="w-20 h-20 skeleton rounded-lg shrink-0" />
-        <div className="flex-1 space-y-2 py-1">
-          <div className="h-3 skeleton w-16" />
-          <div className="h-4 skeleton w-3/4" />
-          <div className="h-3 skeleton w-1/2" />
-          <div className="h-4 skeleton w-20" />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function ProductsView(props) {
   const outletCtx = useOutletContext() || {};
@@ -115,9 +100,7 @@ export default function ProductsView(props) {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2.5 sm:gap-3">
-          {[1, 2, 3, 4, 5, 6].map(i => <ProductSkeleton key={i} />)}
-        </div>
+        <PageLoading fullscreen={false} title="Cargando productos" description="Estamos preparando tu catálogo." />
       ) : (
         <div className={viewMode === 'grid' 
           ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2.5 sm:gap-3' 

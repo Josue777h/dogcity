@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { getSupabase } from '../../lib/supabase';
 import { useAuthStore } from '../../stores';
+import PageLoading from '../../components/common/PageLoading';
 
 export default function AuthGuard({ children }) {
   const [loading, setLoading] = useState(true);
@@ -23,11 +24,7 @@ export default function AuthGuard({ children }) {
   }, [session, setSession]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-bg-alt flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-brand/20 border-t-brand rounded-full animate-spin" />
-      </div>
-    );
+    return <PageLoading title="Comprobando tu acceso" description="Estamos validando tu sesión segura." />;
   }
 
   if (!session) {

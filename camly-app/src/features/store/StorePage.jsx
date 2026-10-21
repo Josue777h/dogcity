@@ -9,6 +9,7 @@ import ProductCard from './ProductCard';
 import OrderDrawer from './OrderDrawer';
 import StoreFooter from './components/StoreFooter';
 import SEO from '../../components/common/SEO';
+import PageLoading from '../../components/common/PageLoading';
 
 export default function StorePage() {
   const [searchParams] = useSearchParams();
@@ -131,15 +132,7 @@ export default function StorePage() {
   }, [designConfig.font_family]);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-slate-50">
-        <div
-          className="w-9 h-9 rounded-full border-2 border-slate-200 animate-spin"
-          style={{ borderTopColor: 'var(--color-brand, #0284C7)' }}
-        />
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cargando catálogo...</p>
-      </div>
-    );
+    return <PageLoading title="Cargando catálogo" description="Estamos preparando los productos de este negocio." />;
   }
 
   if (!business) {

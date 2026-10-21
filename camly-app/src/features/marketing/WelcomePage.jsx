@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, LoaderCircle } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { useAuthStore, useBusinessStore, useToastStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
 import SEO from '../../components/common/SEO';
+import PageLoading from '../../components/common/PageLoading';
 
 export default function WelcomePage() {
   const business = useBusinessStore(state => state.business);
@@ -40,6 +41,13 @@ export default function WelcomePage() {
 
   const businessName = business?.nombre_visible || business?.nombre || 'tu negocio';
 
+  if (loadingBusiness) {
+    return <>
+      <SEO title="Preparando tu tienda | NEGU" description="Estamos preparando el panel de tu negocio en NEGU." canonical="https://negu.pro/bienvenido" noindex />
+      <PageLoading title="Preparando tu tienda" description="Estamos cargando la información para continuar." />
+    </>;
+  }
+
   return (
     <main className="flex min-h-screen flex-col bg-[radial-gradient(ellipse_at_top,_#e0f2fe_0%,_#f8fafc_44%,_#f8fafc_100%)] px-4 text-slate-950">
       <SEO
@@ -59,7 +67,7 @@ export default function WelcomePage() {
           <div className="p-5 sm:p-8">
           <div className="flex items-start gap-4 sm:gap-5">
           <div className="success-mark-pop relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 sm:h-16 sm:w-16">
-            {!loadingBusiness && <div aria-hidden="true" className="success-confetti">
+            <div aria-hidden="true" className="success-confetti">
               <span style={{ '--confetti-x': '-25px', '--confetti-y': '-28px', '--confetti-rotate': '-35deg' }} />
               <span style={{ '--confetti-x': '2px', '--confetti-y': '-37px', '--confetti-rotate': '20deg' }} />
               <span style={{ '--confetti-x': '29px', '--confetti-y': '-25px', '--confetti-rotate': '55deg' }} />
@@ -67,20 +75,18 @@ export default function WelcomePage() {
               <span style={{ '--confetti-x': '34px', '--confetti-y': '6px', '--confetti-rotate': '-25deg' }} />
               <span style={{ '--confetti-x': '-22px', '--confetti-y': '28px', '--confetti-rotate': '62deg' }} />
               <span style={{ '--confetti-x': '22px', '--confetti-y': '30px', '--confetti-rotate': '-55deg' }} />
-            </div>}
-            {loadingBusiness ? <LoaderCircle size={25} className="animate-spin" /> : <Check size={26} strokeWidth={2.5} />}
+            </div>
+            <Check size={26} strokeWidth={2.5} />
           </div>
           <div className="min-w-0 pt-0.5">
-            <p className="text-sm font-semibold text-emerald-800">{loadingBusiness ? 'Preparando tu espacio' : '¡Felicitaciones!'}</p>
+            <p className="text-sm font-semibold text-emerald-800">¡Felicitaciones!</p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
-              {loadingBusiness ? 'Cargando los datos de tu negocio…' : `${businessName} ya está en NEGU`}
+              {businessName} ya está en NEGU
             </h1>
           </div>
           </div>
           <p className="mt-4 text-sm leading-6 text-slate-600 sm:ml-[4.75rem]">
-            {loadingBusiness
-              ? 'Estamos preparando el panel para que continúes con la configuración.'
-              : 'Tu negocio ya está creado. Entra al panel para agregar tu primer producto y dejar todo listo.'}
+            Tu negocio ya está creado. Entra al panel para agregar tu primer producto y dejar todo listo.
           </p>
 
           <Link to="/admin" className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950 sm:ml-[4.75rem] sm:w-[calc(100%-4.75rem)]">

@@ -12,6 +12,7 @@ import { formatMoney, getOrderSubtotal } from '../../lib/utils';
 import { OrderService } from '../../services/orderService';
 import { getStatusCopy, getStepperSteps } from '../../lib/status-labels';
 import SEO from '../../components/common/SEO';
+import PageLoading from '../../components/common/PageLoading';
 
 const STEP_ICONS = [Clock, Package, Truck, CheckCircle2];
 
@@ -303,12 +304,7 @@ export default function TrackingPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-10 h-10 border-3 border-orange-200 border-t-orange-600 rounded-full animate-spin mb-3" />
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Cargando estado del pedido...</p>
-      </div>
-    );
+    return <PageLoading title="Cargando pedido" description="Estamos consultando el estado de tu pedido." />;
   }
 
   if (loadError && !order) {
