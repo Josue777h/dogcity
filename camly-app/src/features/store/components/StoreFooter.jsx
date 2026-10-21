@@ -153,8 +153,9 @@ export default function StoreFooter({ business, className = '', hasFloatingCart 
             </div>
           )}
 
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 border-t border-black/5 pt-1.5 text-[9px] leading-tight text-slate-500">
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-black/5 pt-1.5 text-[9px] leading-tight text-slate-500">
             <p>© {new Date().getFullYear()} {storeName}</p>
+            <a href="https://sedeelectronica.sic.gov.co/temas/proteccion-al-consumidor" target="_blank" rel="noreferrer" className="font-medium underline underline-offset-2 hover:text-slate-800">Protección al consumidor (SIC)</a>
             <p>Catálogo digital por <span className="font-semibold" style={{ color: isBranded ? brandColor : '#475569' }}>NEGU</span></p>
           </div>
         </section>

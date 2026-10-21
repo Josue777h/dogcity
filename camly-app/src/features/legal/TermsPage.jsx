@@ -63,6 +63,7 @@ export default function TermsPage() {
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-sky-700">Información legal</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Términos del servicio</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">Estos términos describen el uso de NEGU por parte de comercios y usuarios. Léelos antes de crear una cuenta.</p>
+          <a className="mt-3 inline-flex text-sm font-semibold text-sky-800 underline underline-offset-2" href="https://sedeelectronica.sic.gov.co/temas/proteccion-al-consumidor" target="_blank" rel="noreferrer">Consulta tus derechos como consumidor ante la SIC</a>
           <p className="mt-4 text-xs text-slate-500">Vigentes desde el 20 de octubre de 2026 · Versión 1.0</p>
         </div>
         <div className="grid gap-6 lg:grid-cols-[230px_minmax(0,1fr)]">
