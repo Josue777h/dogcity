@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, LoaderCircle, Store } from 'lucide-react';
+import { ArrowRight, Check, LoaderCircle } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { useAuthStore, useBusinessStore, useToastStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
@@ -82,11 +82,6 @@ export default function WelcomePage() {
               ? 'Estamos preparando el panel para que continúes con la configuración.'
               : 'Tu negocio ya está creado. Entra al panel para agregar tu primer producto y dejar todo listo.'}
           </p>
-
-          <div className="mt-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3.5 sm:ml-[4.75rem]">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-700 shadow-sm"><Store size={18} /></div>
-            <p className="text-xs leading-5 text-slate-600">{loadingBusiness ? 'Consultando tu tienda' : businessName}<span className="block font-medium text-slate-800">{loadingBusiness ? 'Un momento, ya casi está listo' : 'Tu negocio quedó creado correctamente'}</span></p>
-          </div>
 
           <Link to="/admin" className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950 sm:ml-[4.75rem] sm:w-[calc(100%-4.75rem)]">
             Ir al panel <ArrowRight size={17} />
