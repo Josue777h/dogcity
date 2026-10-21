@@ -41,13 +41,16 @@ export default function RegisterPage() {
     }));
   };
   const normalizedSlug = slugify(form.storeSlug || form.businessName);
+  const ownerLetterCount = form.ownerName.match(/[\p{L}]/gu)?.length || 0;
+  const businessLetterCount = form.businessName.match(/[\p{L}]/gu)?.length || 0;
+  const isColombianMobile = /^3\d{9}$/.test(form.phone);
 
   const passwordStrength = getPasswordStrength(form.password);
   const isPasswordValid = form.password.length >= 8;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.ownerName.trim() || !form.businessName.trim() || !normalizedSlug || !form.phone.trim() || !form.email.trim() || !isPasswordValid || !termsAccepted || !privacyAccepted) {
+    if (ownerLetterCount < 5 || businessLetterCount < 3 || !isColombianMobile || !normalizedSlug || !form.email.trim() || !isPasswordValid || !termsAccepted || !privacyAccepted) {
       addToast('Por favor completa todos los campos (contraseña mínimo 8 caracteres).', 'warning');
       return;
     }
@@ -57,6 +60,7 @@ export default function RegisterPage() {
       const res = await registerBusiness({
         ...form,
         ownerName: form.ownerName.trim(),
+        phone: `57${form.phone}`,
         storeSlug: normalizedSlug,
         legalAcceptances: {
           acceptedAt,
@@ -132,7 +136,8 @@ export default function RegisterPage() {
             {step === 1 && <>
             <div>
               <label htmlFor="reg-owner-name" className="block text-sm font-medium text-slate-700 mb-1.5">Tu nombre completo</label>
-              <Input id="reg-owner-name" type="text" placeholder="Ej: María Pérez" value={form.ownerName} onChange={set('ownerName')} className="py-3 px-5" autoComplete="name" required />
+              <Input id="reg-owner-name" type="text" placeholder="Ej: María Pérez" value={form.ownerName} onChange={set('ownerName')} className="py-3 px-5" autoComplete="name" minLength={5} required />
+              <p className="mt-1.5 text-xs text-slate-500">Escribe tu nombre completo (mínimo 5 letras).</p>
             </div>
 
             <div>
@@ -148,12 +153,14 @@ export default function RegisterPage() {
                   value={form.businessName}
                   onChange={set('businessName')}
                   className="py-3 pl-5 pr-10"
+                  minLength={3}
                   required
                 />
-                {form.businessName.trim().length >= 2 && (
+                {businessLetterCount >= 3 && (
                   <CheckCircle2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600 pointer-events-none" />
                 )}
               </div>
+              <p className="mt-1.5 text-xs text-slate-500">Usa al menos 3 letras para identificar tu negocio.</p>
             </div>
 
             <div>
@@ -161,25 +168,43 @@ export default function RegisterPage() {
                 WhatsApp del negocio
               </label>
               <div className="relative">
-                <Phone size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <span className="absolute left-9 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-500">+57</span>
                 <Input
                   id="reg-phone"
                   type="tel"
-                  placeholder="Ej: 573001234567"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  placeholder="3001234567"
                   value={form.phone}
-                  onChange={set('phone')}
-                  className="py-3 pl-5 pr-10"
+                  onChange={event => setForm(current => {
+                    const digits = event.target.value.replace(/\D/g, '');
+                    const localNumber = digits.startsWith('57') && digits.length > 10 ? digits.slice(2, 12) : digits.slice(0, 10);
+                    return { ...current, phone: localNumber };
+                  })}
+                  maxLength={16}
+                  pattern="3[0-9]{9}"
+                  className="py-3 pl-[4.5rem] pr-10"
                   required
                 />
-                {form.phone.trim().length >= 7 && (
+                {isColombianMobile && (
                   <CheckCircle2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600 pointer-events-none" />
                 )}
               </div>
+              <p className="mt-1.5 text-xs text-slate-500">Celular colombiano: 10 dígitos, comenzando por 3.</p>
             </div>
 
             <Button type="button" fullWidth onClick={() => {
-              if (!form.ownerName.trim() || !form.businessName.trim() || !form.phone.trim()) {
-                addToast('Completa tu nombre, el nombre del negocio y el WhatsApp para continuar.', 'warning');
+              if (ownerLetterCount < 5) {
+                addToast('Escribe tu nombre completo con al menos 5 letras.', 'warning');
+                return;
+              }
+              if (businessLetterCount < 3) {
+                addToast('El nombre del negocio debe tener al menos 3 letras.', 'warning');
+                return;
+              }
+              if (!isColombianMobile) {
+                addToast('Ingresa un celular colombiano de 10 dígitos que comience por 3.', 'warning');
                 return;
               }
               setStep(2);
@@ -192,14 +217,14 @@ export default function RegisterPage() {
                 Correo electrónico
               </label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Mail size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <Input
                   id="reg-email"
                   type="email"
                   placeholder="tu@correo.com"
                   value={form.email}
                   onChange={set('email')}
-                  className="py-3 pl-10 pr-10"
+                  className="py-3 pl-5 pr-10"
                   required
                   autoComplete="email"
                 />
@@ -214,7 +239,7 @@ export default function RegisterPage() {
                 Contraseña
               </label>
               <div className="relative">
-                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Lock size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <Input
                   id="reg-password"
                   type={showPassword ? 'text' : 'password'}
@@ -222,7 +247,7 @@ export default function RegisterPage() {
                   value={form.password}
                   onChange={set('password')}
                   minLength={8}
-                  className="py-3 pl-10 pr-10"
+                  className="py-3 pl-5 pr-10"
                   required
                   autoComplete="new-password"
                 />
