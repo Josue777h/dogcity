@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Store, Phone, Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { registerBusiness, signOut } from '../../lib/supabase';
+import { registerBusiness } from '../../lib/supabase';
 import { useToastStore, useAuthStore, useBusinessStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
 import SEO from '../../components/common/SEO';
@@ -70,10 +70,9 @@ export default function RegisterPage() {
         addToast('¡Cuenta y negocio creados con éxito!', 'success');
         navigate('/bienvenido');
       } else {
-        await signOut();
         setSession(null);
-        addToast('¡Cuenta creada! Si tienes confirmación activa, revisa tu correo.', 'success');
-        navigate('/login', { replace: true, state: { email: form.email } });
+        addToast('Te enviamos un enlace para confirmar tu correo.', 'success');
+        navigate('/verificar-correo', { replace: true, state: { email: form.email } });
       }
     } catch (err) {
       addToast(err.message || 'Error al crear la tienda', 'error');

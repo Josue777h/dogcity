@@ -338,6 +338,15 @@ export async function signIn(email, password) {
   return data.session;
 }
 
+export async function resendSignupConfirmation(email) {
+  const { error } = await getSupabase().auth.resend({
+    type: 'signup',
+    email: String(email || '').trim(),
+    options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+  });
+  if (error) throw error;
+}
+
 export async function signUp(email, password) {
   const { data, error } = await getSupabase().auth.signUp({ email, password });
   if (error) throw error;
@@ -351,6 +360,81 @@ export async function signOut() {
 export async function getSession() {
   const { data } = await getSupabase().auth.getSession();
   return data.session;
+}
+
+async function createBusinessForUser(user) {
+  const supabase = getSupabase();
+  const { data: existingBusiness, error: lookupError } = await supabase
+    .from('negocios')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (lookupError) throw lookupError;
+  if (existingBusiness) return existingBusiness;
+
+  const metadata = user.user_metadata || {};
+  const baseSlug = String(metadata.negu_store_slug || metadata.negu_business_name || '')
+    .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 35);
+  let slug = baseSlug;
+  const businessName = String(metadata.negu_business_name || '').trim();
+  const phone = String(metadata.negu_business_phone || '').trim();
+  if (!slug || !businessName || !phone) {
+    throw new Error('No pudimos recuperar los datos del negocio. Inicia sesión y contacta al soporte de NEGU.');
+  }
+
+  const { data: nameInUse, error: nameLookupError } = await supabase
+    .from('negocios').select('id').eq('nombre', slug).maybeSingle();
+  if (nameLookupError) throw nameLookupError;
+  if (nameInUse) {
+    slug = `${baseSlug.slice(0, 28)}-${user.id.replace(/-/g, '').slice(0, 6)}`;
+    const { data: fallbackInUse, error: fallbackLookupError } = await supabase
+      .from('negocios').select('id').eq('nombre', slug).maybeSingle();
+    if (fallbackLookupError) throw fallbackLookupError;
+    if (fallbackInUse) throw new Error('No pudimos asignar un enlace único a tu tienda. Contacta al soporte para terminar el registro.');
+  }
+
+  const { data: business, error: businessError } = await supabase
+    .from('negocios')
+    .insert({
+      nombre: slug,
+      nombre_visible: businessName,
+      telefono: phone,
+      user_id: user.id,
+      theme_color: '#2563EB',
+      color_secundario: '#F9FAFB',
+      metodos_pago: ['efectivo'],
+    })
+    .select()
+    .single();
+  if (businessError) {
+    const { data: concurrentlyCreated, error: retryLookupError } = await supabase
+      .from('negocios').select('*').eq('user_id', user.id).maybeSingle();
+    if (retryLookupError) throw retryLookupError;
+    if (concurrentlyCreated) return concurrentlyCreated;
+    throw businessError;
+  }
+
+  const trialEndsAt = new Date();
+  trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+  const { error: subscriptionError } = await supabase.from('suscripciones').upsert({
+    negocio_id: business.id,
+    plan: 'pro',
+    estado: 'trial',
+    fecha_fin: trialEndsAt.toISOString(),
+    es_trial: true,
+  }, { onConflict: 'negocio_id' });
+  if (subscriptionError) console.error('Error creando la suscripción inicial:', subscriptionError);
+
+  return business;
+}
+
+export async function completePendingBusinessRegistration(session) {
+  const user = session?.user;
+  if (!user || !(user.email_confirmed_at || user.confirmed_at)) {
+    throw new Error('Confirma tu correo antes de continuar al panel.');
+  }
+  return createBusinessForUser(user);
 }
 
 // ── Register Business ──
@@ -368,48 +452,24 @@ export async function registerBusiness({ email, password, businessName, ownerNam
     options: {
       data: {
         full_name: String(ownerName || '').trim(),
+        negu_business_name: String(businessName || '').trim(),
+        negu_store_slug: slug,
+        negu_business_phone: String(phone || '').trim(),
         negu_terms_accepted_at: legalAcceptances?.acceptedAt || null,
         negu_terms_version: legalAcceptances?.termsVersion || null,
         negu_privacy_accepted_at: legalAcceptances?.acceptedAt || null,
         negu_privacy_version: legalAcceptances?.privacyVersion || null,
       },
+      emailRedirectTo: `${window.location.origin}/auth/callback`,
     },
   });
   if (authError) throw authError;
-  const { data: negocio, error: negocioError } = await getSupabase()
-    .from('negocios')
-    .insert({ 
-      nombre: slug, 
-      nombre_visible: businessName, 
-      telefono: phone, 
-      user_id: authData.user.id,
-      theme_color: '#2563EB',
-      color_secundario: '#F9FAFB',
-      // A new store has no bank or wallet details yet, so only enable cash.
-      metodos_pago: ['efectivo']
-    })
-    .select()
-    .single();
-  if (negocioError) throw negocioError;
-
-  // Insertar Suscripción Trial (7 días) automáticamente (usando upsert por si ya existe creada por trigger)
-  const d = new Date();
-  d.setDate(d.getDate() + 7);
-  const { error: subError } = await getSupabase()
-    .from('suscripciones')
-    .upsert({
-      negocio_id: negocio.id,
-      plan: 'pro',
-      estado: 'trial',
-      fecha_fin: d.toISOString(),
-      es_trial: true
-    }, { onConflict: 'negocio_id' });
-    
-  if (subError) {
-    console.error("Error creando/actualizando la suscripción:", subError);
+  if (!authData.session) {
+    return { user: authData.user, session: null, negocio: null, needsEmailConfirmation: true };
   }
 
-  return { user: authData.user, session: authData.session, negocio };
+  const negocio = await createBusinessForUser(authData.user);
+  return { user: authData.user, session: authData.session, negocio, needsEmailConfirmation: false };
 }
 
 // ── Storage ──

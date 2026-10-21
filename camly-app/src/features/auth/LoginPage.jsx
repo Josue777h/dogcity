@@ -15,16 +15,16 @@ export default function LoginPage() {
   const setSession = useAuthStore(s => s.setSession);
   const addToast   = useToastStore(s => s.addToast);
 
-  const [email,        setEmail]        = useState('');
+  const [email,        setEmail]        = useState(location.state?.email || '');
   const [password,     setPassword]     = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe,   setRememberMe]   = useState(true);
   const [loading,      setLoading]      = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   useEffect(() => {
     if (location.state?.email) {
-      setEmail(location.state.email);
-      addToast('¡Registro completado! Inicia sesión con tus credenciales.', 'success');
+      addToast('Ingresa tu contraseña para continuar.', 'info');
     }
   }, [location.state, addToast]);
 
@@ -32,6 +32,7 @@ export default function LoginPage() {
     e.preventDefault();
     if (!email || !password) return;
     setLoading(true);
+    setNeedsConfirmation(false);
     try {
       const session = await signIn(email, password);
       setSession(session);
@@ -41,7 +42,8 @@ export default function LoginPage() {
     } catch (err) {
       const msg = (err.message || '').toLowerCase();
       if (msg.includes('confirm') || msg.includes('not confirmed')) {
-        addToast('Debes confirmar tu correo o desactivar "Confirm email" en Supabase.', 'error');
+        setNeedsConfirmation(true);
+        addToast('Confirma tu correo para acceder a NEGU.', 'error');
       } else {
         addToast('Correo o contraseña incorrectos.', 'error');
       }
@@ -93,6 +95,11 @@ export default function LoginPage() {
         </div>
 
         <Card className="w-full border border-slate-200 p-6 sm:p-8 shadow-md">
+          {needsConfirmation && (
+            <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm leading-5 text-amber-900">
+              Confirma el correo de esta cuenta para entrar al panel. <Link to="/verificar-correo" state={{ email }} className="font-semibold underline underline-offset-2">Reenviar enlace</Link>
+            </div>
+          )}
           {location.state?.email && (
             <div className="mb-5 flex items-start gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2.5 text-xs text-emerald-800">
               <ShieldCheck size={15} className="text-emerald-600 shrink-0 mt-0.5" />

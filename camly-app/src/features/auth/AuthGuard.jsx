@@ -33,6 +33,9 @@ export default function AuthGuard({ children }) {
   if (!session) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+  if (!(session.user?.email_confirmed_at || session.user?.confirmed_at)) {
+    return <Navigate to="/verificar-correo" state={{ email: session.user?.email }} replace />;
+  }
   
   return children;
 }

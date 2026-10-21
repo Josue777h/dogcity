@@ -8,6 +8,8 @@ const StorePage = lazy(() => import('./features/store/StorePage'));
 const AdminPage = lazy(() => import('./features/admin/AdminPage'));
 const LoginPage = lazy(() => import('./features/auth/LoginPage'));
 const RegisterPage = lazy(() => import('./features/auth/RegisterPage'));
+const EmailVerificationPage = lazy(() => import('./features/auth/EmailVerificationPage'));
+const AuthCallbackPage = lazy(() => import('./features/auth/AuthCallbackPage'));
 const TrackingPage = lazy(() => import('./features/store/TrackingPage'));
 const LandingPage = lazy(() => import('./features/marketing/LandingPage'));
 const WelcomePage = lazy(() => import('./features/marketing/WelcomePage'));
@@ -73,6 +75,8 @@ export default function App() {
           {/* ── AUTH & ONBOARDING ────────────────────────────── */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/registro" element={<RegisterPage />} />
+          <Route path="/verificar-correo" element={<EmailVerificationPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/bienvenido" element={<WelcomePage />} />
           
           {/* ── ADMIN PANEL (PROTECTED NESTED ROUTES) ─────────── */}
