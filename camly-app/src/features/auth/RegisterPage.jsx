@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Store, Phone, Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Store, Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { registerBusiness } from '../../lib/supabase';
 import { useToastStore, useAuthStore, useBusinessStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
@@ -41,8 +41,6 @@ export default function RegisterPage() {
     }));
   };
   const normalizedSlug = slugify(form.storeSlug || form.businessName);
-  const ownerLetterCount = form.ownerName.match(/[\p{L}]/gu)?.length || 0;
-  const businessLetterCount = form.businessName.match(/[\p{L}]/gu)?.length || 0;
   const isColombianMobile = /^3\d{9}$/.test(form.phone);
 
   const passwordStrength = getPasswordStrength(form.password);
@@ -50,7 +48,7 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (ownerLetterCount < 5 || businessLetterCount < 3 || !isColombianMobile || !normalizedSlug || !form.email.trim() || !isPasswordValid || !termsAccepted || !privacyAccepted) {
+    if (!form.ownerName.trim() || !form.businessName.trim() || !isColombianMobile || !normalizedSlug || !form.email.trim() || !isPasswordValid || !termsAccepted || !privacyAccepted) {
       addToast('Por favor completa todos los campos (contraseña mínimo 8 caracteres).', 'warning');
       return;
     }
@@ -136,8 +134,7 @@ export default function RegisterPage() {
             {step === 1 && <>
             <div>
               <label htmlFor="reg-owner-name" className="block text-sm font-medium text-slate-700 mb-1.5">Tu nombre completo</label>
-              <Input id="reg-owner-name" type="text" placeholder="Ej: María Pérez" value={form.ownerName} onChange={set('ownerName')} className="py-3 px-5" autoComplete="name" minLength={5} required />
-              <p className="mt-1.5 text-xs text-slate-500">Escribe tu nombre completo (mínimo 5 letras).</p>
+              <Input id="reg-owner-name" type="text" placeholder="Ej: María Pérez" value={form.ownerName} onChange={set('ownerName')} className="py-3 px-5" autoComplete="name" required />
             </div>
 
             <div>
@@ -153,24 +150,21 @@ export default function RegisterPage() {
                   value={form.businessName}
                   onChange={set('businessName')}
                   className="py-3 pl-5 pr-10"
-                  minLength={3}
                   required
                 />
-                {businessLetterCount >= 3 && (
+                {form.businessName.trim().length >= 2 && (
                   <CheckCircle2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600 pointer-events-none" />
                 )}
               </div>
-              <p className="mt-1.5 text-xs text-slate-500">Usa al menos 3 letras para identificar tu negocio.</p>
             </div>
 
             <div>
               <label htmlFor="reg-phone" className="block text-sm font-medium text-slate-700 mb-1.5">
                 WhatsApp del negocio
               </label>
-              <div className="relative">
-                <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <span className="absolute left-9 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-500">+57</span>
-                <Input
+              <div className="flex min-h-12 overflow-hidden rounded-lg border border-slate-200 bg-white transition focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-900/5">
+                <span className="inline-flex shrink-0 items-center border-r border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-600">+57</span>
+                <input
                   id="reg-phone"
                   type="tel"
                   inputMode="numeric"
@@ -184,23 +178,24 @@ export default function RegisterPage() {
                   })}
                   maxLength={16}
                   pattern="3[0-9]{9}"
-                  className="py-3 pl-[4.5rem] pr-10"
+                  aria-describedby="reg-phone-hint"
+                  className="block min-w-0 flex-1 border-0 bg-transparent px-3 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:ring-0"
                   required
                 />
                 {isColombianMobile && (
-                  <CheckCircle2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600 pointer-events-none" />
+                  <CheckCircle2 size={16} className="mr-3 shrink-0 self-center text-emerald-600" aria-hidden="true" />
                 )}
               </div>
-              <p className="mt-1.5 text-xs text-slate-500">Celular colombiano: 10 dígitos, comenzando por 3.</p>
+              <p id="reg-phone-hint" className="mt-1.5 text-xs text-slate-500">Ingresa los 10 dígitos del celular, sin repetir el +57.</p>
             </div>
 
             <Button type="button" fullWidth onClick={() => {
-              if (ownerLetterCount < 5) {
-                addToast('Escribe tu nombre completo con al menos 5 letras.', 'warning');
+              if (!form.ownerName.trim()) {
+                addToast('Escribe tu nombre para continuar.', 'warning');
                 return;
               }
-              if (businessLetterCount < 3) {
-                addToast('El nombre del negocio debe tener al menos 3 letras.', 'warning');
+              if (!form.businessName.trim() || !normalizedSlug) {
+                addToast('Escribe un nombre válido para tu negocio.', 'warning');
                 return;
               }
               if (!isColombianMobile) {
