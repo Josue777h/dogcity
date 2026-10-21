@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import {
-  User, Phone, MapPin, Loader2, Navigation, MessageCircle,
+  User, Phone, MapPin, Navigation, MessageCircle,
   Copy, Check, Trash2, X, Wallet, ShoppingBag, Truck,
   CheckCircle2, ShoppingCart, Minus, Plus, CreditCard, AlertCircle
 } from 'lucide-react';
@@ -8,6 +8,7 @@ import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
 import { formatMoney, openWhatsApp, reverseGeocode, formatWhatsAppMessage } from '../../lib/utils';
 import { saveOrder } from '../../lib/supabase';
 import { WHATSAPP_FALLBACK_PHONE } from '../../lib/constants';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -564,7 +565,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
                             disabled={isCalculating}
                             className="btn-primary py-1.5 px-3 text-xs font-bold gap-1 rounded-lg shrink-0 shadow-xs"
                           >
-                            {isCalculating ? <Loader2 size={12} className="animate-spin" /> : <Navigation size={12} />}
+                            {isCalculating ? <LoadingSpinner size={12} /> : <Navigation size={12} />}
                             <span>{isCalculating ? 'Leyendo...' : 'Activar GPS'}</span>
                           </button>
                         </div>
@@ -601,7 +602,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
                               color: 'var(--color-brand)',
                             }}
                           >
-                            {isCalculating ? <Loader2 size={12} className="animate-spin" /> : <Navigation size={12} />}
+                            {isCalculating ? <LoadingSpinner size={12} /> : <Navigation size={12} />}
                             Recalcular GPS
                           </button>
                         </div>
@@ -615,7 +616,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
                               className="h-48 rounded-lg flex items-center justify-center"
                               style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
                             >
-                              <Loader2 size={20} className="animate-spin" style={{ color: 'var(--color-brand)' }} />
+                              <LoadingSpinner size={20} style={{ color: 'var(--color-brand)' }} />
                             </div>
                           }
                         >
@@ -792,7 +793,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
               }`}
             >
               {isSubmitting ? (
-                <Loader2 size={18} className="animate-spin" />
+                <LoadingSpinner size={18} />
               ) : scheduleStatus?.isOpen === false ? (
                 <span>Tienda cerrada · Pedidos pausados</span>
               ) : (

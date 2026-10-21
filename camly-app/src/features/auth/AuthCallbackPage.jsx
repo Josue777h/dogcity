@@ -54,7 +54,7 @@ export default function AuthCallbackPage() {
   if (!error) {
     return <>
       <SEO title="Verificando correo | NEGU" description="Estamos confirmando tu correo y preparando tu cuenta de NEGU." canonical="https://negu.pro/auth/callback" noindex />
-      <PageLoading title="Verificando tu correo" description="Estamos activando tu cuenta y preparando el acceso al panel." />
+      <PageLoading label="Verificando tu correo" />
     </>;
   }
 

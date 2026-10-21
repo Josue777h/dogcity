@@ -1,5 +1,6 @@
-import { Trash2, X, Loader2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 import { useState } from 'react';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 export default function ConfirmModal({ 
   isOpen, 
@@ -71,7 +72,7 @@ export default function ConfirmModal({
             disabled={pending}
             className="flex-1 py-3 px-4 rounded-xl bg-error text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-error/20 hover:bg-error/90 hover:scale-[1.02] transition-all disabled:opacity-60 disabled:cursor-wait"
           >
-            {pending ? <span className="inline-flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Procesando</span> : confirmText}
+            {pending ? <span className="inline-flex items-center gap-2"><LoadingSpinner size={14} /> Procesando</span> : confirmText}
           </button>
         </div>
 

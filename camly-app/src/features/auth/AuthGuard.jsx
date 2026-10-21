@@ -24,7 +24,7 @@ export default function AuthGuard({ children }) {
   }, [session, setSession]);
 
   if (loading) {
-    return <PageLoading title="Comprobando tu acceso" description="Estamos validando tu sesión segura." />;
+    return <PageLoading label="Comprobando tu acceso" />;
   }
 
   if (!session) {

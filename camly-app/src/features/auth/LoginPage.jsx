@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { signIn } from '../../lib/supabase';
 import { useAuthStore, useToastStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
@@ -8,6 +8,7 @@ import SEO from '../../components/common/SEO';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 export default function LoginPage() {
   const navigate   = useNavigate();
@@ -187,7 +188,7 @@ export default function LoginPage() {
             >
               {loading ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" />
+                  <LoadingSpinner size={16} />
                   <span>Comprobando acceso...</span>
                 </>
               ) : (

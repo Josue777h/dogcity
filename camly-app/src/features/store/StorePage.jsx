@@ -132,7 +132,7 @@ export default function StorePage() {
   }, [designConfig.font_family]);
 
   if (isLoading) {
-    return <PageLoading title="Cargando catálogo" description="Estamos preparando los productos de este negocio." />;
+    return <PageLoading label="Cargando catálogo" />;
   }
 
   if (!business) {

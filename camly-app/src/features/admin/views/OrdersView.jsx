@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { 
   ChevronRight, User, MapPin, Package, Bike, Store, Trash2, Map,
-  MessageCircle, Loader2, AlertCircle, CheckCircle2, Check, X, Printer, Volume2, VolumeX, Bluetooth,
+  MessageCircle, AlertCircle, CheckCircle2, Check, X, Printer, Volume2, VolumeX, Bluetooth,
   Ban, FileText, ExternalLink, Clock
 } from 'lucide-react';
 import { 
@@ -11,6 +11,7 @@ import {
 } from '../../../lib/utils';
 import { isWebBluetoothSupported, printOrderViaBluetooth } from '../../../lib/bluetoothPrinter';
 import { updateOrderStatus, getSupabase, deleteOrder } from '../../../lib/supabase';
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import { OrderService } from '../../../services/orderService';
 import { getStatusCopy } from '../../../lib/status-labels';
 import { useBusinessStore, useToastStore } from '../../../stores';
@@ -162,7 +163,7 @@ function MerchantCancelModal({ isOpen, order, onClose, onConfirmed }) {
               disabled={loading}
               className="px-4 py-2 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 text-white shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
             >
-              {loading ? <Loader2 size={14} className="animate-spin" /> : <Ban size={14} />}
+              {loading ? <LoadingSpinner size={14} /> : <Ban size={14} />}
               <span>Confirmar Cancelación</span>
             </button>
           </div>
@@ -419,7 +420,7 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
             className="h-10 px-2.5 sm:px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap"
             aria-label="Fijar y notificar cotización por WhatsApp"
           >
-            {loading ? <Loader2 size={15} className="animate-spin" /> : <MessageCircle size={15} />}
+            {loading ? <LoadingSpinner size={15} /> : <MessageCircle size={15} />}
             <span><span className="sm:hidden">Enviar</span><span className="hidden sm:inline">Fijar y notificar</span></span>
           </button>
         </div>
@@ -878,7 +879,7 @@ export default function OrdersView(props) {
                       className="btn-ghost p-1.5 tap-target text-blue-500 hover:text-blue-700 hover:bg-blue-50"
                       title="Imprimir vía Bluetooth directo (POS-58/80)"
                     >
-                      {printingBluetoothId === order.id ? <Loader2 size={15} className="animate-spin text-blue-600" /> : <Bluetooth size={15} />}
+                      {printingBluetoothId === order.id ? <LoadingSpinner size={15} className="text-blue-600" /> : <Bluetooth size={15} />}
                     </button>
                     <button 
                       onClick={(e) => handleDeleteClick(e, order)}
@@ -1114,7 +1115,7 @@ export default function OrdersView(props) {
                             className="h-8 rounded-lg border border-blue-200 hover:border-blue-400 bg-blue-50/70 hover:bg-blue-100 text-blue-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                             title="Imprimir directamente a impresora térmica Bluetooth (POS-58/80)"
                           >
-                            {printingBluetoothId === order.id ? <Loader2 size={14} className="animate-spin" /> : <Bluetooth size={14} className="shrink-0" />}
+                            {printingBluetoothId === order.id ? <LoadingSpinner size={14} /> : <Bluetooth size={14} className="shrink-0" />}
                             <span className="truncate">POS Bluetooth</span>
                           </button>
 
@@ -1257,7 +1258,7 @@ function DriverSelectModal({ isOpen, onClose, drivers, currentDriverId, onSelect
 
         {loading && (
           <div className="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center z-20">
-            <Loader2 className="animate-spin text-orange-600" size={24} />
+            <LoadingSpinner className="text-orange-600" size={24} />
           </div>
         )}
       </div>

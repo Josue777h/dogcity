@@ -3,7 +3,7 @@ import { useSearchParams, useParams, Link } from 'react-router-dom';
 import {
   Package, CheckCircle2, Clock, Truck,
   AlertCircle, ArrowLeft, Store, MessageCircle,
-  MapPin, ShoppingCart, Loader2, Sparkles,
+  MapPin, ShoppingCart, Sparkles,
   X, RotateCcw, Copy, Check, Upload, FileText,
   ExternalLink, Ban, ChevronRight
 } from 'lucide-react';
@@ -13,6 +13,7 @@ import { OrderService } from '../../services/orderService';
 import { getStatusCopy, getStepperSteps } from '../../lib/status-labels';
 import SEO from '../../components/common/SEO';
 import PageLoading from '../../components/common/PageLoading';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const STEP_ICONS = [Clock, Package, Truck, CheckCircle2];
 
@@ -304,7 +305,7 @@ export default function TrackingPage() {
   };
 
   if (loading) {
-    return <PageLoading title="Cargando pedido" description="Estamos consultando el estado de tu pedido." />;
+    return <PageLoading label="Cargando pedido" />;
   }
 
   if (loadError && !order) {
@@ -415,7 +416,7 @@ export default function TrackingPage() {
                 disabled={actionLoading}
                 className="btn-primary py-2.5 px-4 text-xs sm:text-sm font-semibold justify-center flex-1 shadow-2xs cursor-pointer disabled:opacity-50"
               >
-                {actionLoading ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                {actionLoading ? <LoadingSpinner size={15} /> : <CheckCircle2 size={16} />}
                 <span>{statusCopy.acceptButton || 'Confirmar Pedido'}</span>
               </button>
 
@@ -696,7 +697,7 @@ export default function TrackingPage() {
                   className="w-full py-3 px-4 border-2 border-dashed border-gray-300 hover:border-orange-500 rounded-xl bg-gray-50/70 hover:bg-orange-50/30 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5"
                 >
                   {receiptUploading ? (
-                    <Loader2 size={20} className="animate-spin text-orange-600" />
+                    <LoadingSpinner size={20} className="text-orange-600" />
                   ) : (
                     <Upload size={20} className="text-gray-400 group-hover:text-orange-600" />
                   )}
@@ -824,7 +825,7 @@ export default function TrackingPage() {
                 disabled={actionLoading}
                 className="px-4 py-2 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 text-white shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
               >
-                {actionLoading ? <Loader2 size={13} className="animate-spin" /> : null}
+                {actionLoading ? <LoadingSpinner size={13} /> : null}
                 <span>Sí, Cancelar Orden</span>
               </button>
             </div>

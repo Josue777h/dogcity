@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { 
-  Save, User, Phone, MapPin, Globe, Loader2, 
+  Save, User, Phone, MapPin, Globe,
   Instagram, Facebook, MessageSquare, Palette,
   CheckCircle2, CreditCard, Upload, Smartphone, Check, Settings,
   Music2, Wallet, Truck, Navigation, Search, Clock, Sparkles,
@@ -10,6 +10,7 @@ import {
 import { getSupabase, updateBusiness, uploadImage } from '../../../lib/supabase';
 import { useToastStore, useAuthStore } from '../../../stores';
 import PremiumLock from '../../../components/ui/PremiumLock';
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
 
 const CURATED_COLORS = [
   { hex: '#0F172A', label: 'Carbón Noir' },
@@ -475,7 +476,7 @@ export default function SettingsView(props) {
         <div className="sticky top-0 z-20 -mx-1 flex items-center justify-between gap-3 border-y border-gray-200 bg-white/95 px-3 py-2 backdrop-blur sm:mx-0 sm:rounded-xl sm:border sm:px-4">
           <p className={`text-xs font-medium ${hasUnsavedChanges ? 'text-amber-700' : 'text-emerald-700'}`} aria-live="polite">{hasUnsavedChanges ? 'Tienes cambios sin guardar' : 'Configuración guardada'}</p>
           <button type="submit" disabled={loading || !hasUnsavedChanges} className="btn-primary py-2 px-4 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50">
-            {loading ? <Loader2 size={15} className="animate-spin" /> : <><Save size={15} /> Guardar</>}
+            {loading ? <LoadingSpinner size={15} /> : <><Save size={15} /> Guardar</>}
           </button>
         </div>
         <div id="settings-active-panel" role="tabpanel" aria-labelledby={`settings-tab-${activeTab}`} className="card p-3.5 sm:p-4 lg:p-5 bg-white border-gray-200/80 shadow-xs rounded-xl">
@@ -769,7 +770,7 @@ export default function SettingsView(props) {
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-2xs p-0.5">
                           {isUploading ? (
-                            <Loader2 className="animate-spin text-gray-400" size={18} />
+                            <LoadingSpinner className="text-gray-400" size={18} />
                           ) : formData.logo_url ? (
                             <img src={formData.logo_url} alt="Logo" className="w-full h-full object-contain" />
                           ) : (
@@ -1037,13 +1038,13 @@ export default function SettingsView(props) {
                     disabled={isLocatingGps}
                     className="btn-secondary py-1.5 px-3 text-xs gap-1.5 shrink-0"
                   >
-                    {isLocatingGps ? <Loader2 size={13} className="animate-spin" /> : <Navigation size={13} />}
+                    {isLocatingGps ? <LoadingSpinner size={13} /> : <Navigation size={13} />}
                     Fijar con mi GPS actual
                   </button>
                 </div>
 
                 <div className="relative">
-                  {isSearchingBiz ? <Loader2 size={15} className="absolute left-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400" /> : <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />}
+                  {isSearchingBiz ? <LoadingSpinner size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /> : <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />}
                   <input 
                     type="text" 
                     value={bizSearchQuery}
@@ -1261,7 +1262,7 @@ export default function SettingsView(props) {
                 >
                   {isUpdatingPause ? (
                     <>
-                      <Loader2 size={13} className="animate-spin" />
+                      <LoadingSpinner size={13} />
                       <span>Actualizando...</span>
                     </>
                   ) : scheduleData.abierto_manual !== false ? (

@@ -100,7 +100,7 @@ export default function ProductsView(props) {
       </div>
 
       {loading ? (
-        <PageLoading fullscreen={false} title="Cargando productos" description="Estamos preparando tu catálogo." />
+        <PageLoading fullscreen={false} label="Cargando productos" />
       ) : (
         <div className={viewMode === 'grid' 
           ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2.5 sm:gap-3' 

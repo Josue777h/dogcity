@@ -44,7 +44,7 @@ export default function WelcomePage() {
   if (loadingBusiness) {
     return <>
       <SEO title="Preparando tu tienda | NEGU" description="Estamos preparando el panel de tu negocio en NEGU." canonical="https://negu.pro/bienvenido" noindex />
-      <PageLoading title="Preparando tu tienda" description="Estamos cargando la información para continuar." />
+      <PageLoading label="Preparando tu tienda" />
     </>;
   }
 

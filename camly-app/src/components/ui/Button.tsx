@@ -1,5 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
-import { LoaderCircle } from 'lucide-react';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -37,7 +37,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-busy={loading || undefined}
       {...props}
     >
-      {loading && <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />}
+      {loading && <LoadingSpinner size={16} />}
       {children}
     </button>
   );

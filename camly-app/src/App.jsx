@@ -51,7 +51,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <ToastContainer />
-      <Suspense fallback={<PageLoading title="Cargando página" description="Estamos preparando el contenido." />}>
+      <Suspense fallback={<PageLoading label="Cargando página" />}>
         <Routes>
           {/* ── MARKETING & PUBLIC SEO ───────────────────────── */}
           <Route path="/" element={<LandingPage />} />

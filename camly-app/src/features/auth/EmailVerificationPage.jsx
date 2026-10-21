@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Loader2, MailCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, MailCheck } from 'lucide-react';
 import { resendSignupConfirmation } from '../../lib/supabase';
 import SaaSLogo from '../../components/common/SaaSLogo';
 import SEO from '../../components/common/SEO';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 export default function EmailVerificationPage() {
   const location = useLocation();
@@ -63,7 +64,7 @@ export default function EmailVerificationPage() {
               className="min-h-11 w-full rounded-xl border border-slate-300 px-3.5 text-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-900/10"
             />
             <button type="submit" disabled={sending || !email.trim()} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
-              {sending ? <><Loader2 size={16} className="animate-spin" /> Enviando enlace…</> : 'Reenviar correo de confirmación'}
+              {sending ? <><LoadingSpinner size={16} /> Enviando enlace…</> : 'Reenviar correo de confirmación'}
             </button>
           </form>
 

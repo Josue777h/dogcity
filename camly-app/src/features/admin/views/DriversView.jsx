@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { 
-  UserPlus, Phone, Trash2, Loader2, Save, 
+  UserPlus, Phone, Trash2, Save,
   Bike, CheckCircle2, X
 } from 'lucide-react';
 import { getSupabase } from '../../../lib/supabase';
@@ -9,6 +9,7 @@ import { useToastStore } from '../../../stores';
 import PremiumLock from '../../../components/ui/PremiumLock';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 import PageLoading from '../../../components/common/PageLoading';
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
 
 export default function DriversView(props) {
   const outletCtx = useOutletContext() || {};
@@ -97,7 +98,7 @@ export default function DriversView(props) {
   };
 
   if (loading && !drivers.length) {
-    return <PageLoading fullscreen={false} title="Cargando repartidores" description="Estamos consultando tu equipo de entregas." />;
+    return <PageLoading fullscreen={false} label="Cargando repartidores" />;
   }
 
   return (
@@ -149,7 +150,7 @@ export default function DriversView(props) {
                     disabled={loading} 
                     className="btn-primary w-full py-2.5 px-4 text-xs font-semibold h-[42px] justify-center"
                   >
-                    {loading ? <Loader2 size={15} className="animate-spin" /> : <><Save size={15} /> Guardar</>}
+                    {loading ? <LoadingSpinner size={15} /> : <><Save size={15} /> Guardar</>}
                   </button>
                 </div>
               </div>

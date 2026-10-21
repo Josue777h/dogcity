@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
-  X, Save, Upload, Loader2, Image as ImageIcon, Plus, 
+  X, Save, Upload, Image as ImageIcon, Plus,
   Trash2, Layers, AlertCircle, RotateCcw, ChevronRight 
 } from 'lucide-react';
 import { uploadImage, createCategory } from '../../../lib/supabase';
 import { useToastStore, useBusinessStore } from '../../../stores';
 import ToppingsManagerModal from './ToppingsManagerModal';
 import { readMigratedLocalStorage } from '../../../lib/localStorage';
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
 
 const DRAFT_STORAGE_PREFIX = 'negu_product_draft_';
 
@@ -308,7 +309,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
                 ) : (
                   <div className="flex flex-col items-center justify-center text-center">
                     {uploading ? (
-                      <Loader2 size={18} className="animate-spin text-blue-600" />
+                      <LoadingSpinner size={18} className="text-blue-600" />
                     ) : (
                       <>
                         <ImageIcon size={18} className="text-gray-400 mb-1" />
@@ -367,7 +368,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
                         disabled={savingCat} 
                         className="btn-primary py-1 px-2.5 text-xs shrink-0 cursor-pointer"
                       >
-                        {savingCat ? <Loader2 size={11} className="animate-spin" /> : 'Crear'}
+                        {savingCat ? <LoadingSpinner size={11} /> : 'Crear'}
                       </button>
                       <button 
                         type="button" 
@@ -474,7 +475,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
                 className="btn-primary py-2 px-4 text-xs font-bold flex-1 justify-center disabled:opacity-50 cursor-pointer shadow-glow-blue"
               >
                 {loading ? (
-                  <Loader2 size={14} className="animate-spin" />
+                  <LoadingSpinner size={14} />
                 ) : (
                   <>
                     <Save size={14} />

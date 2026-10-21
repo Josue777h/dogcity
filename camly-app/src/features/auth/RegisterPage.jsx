@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Store, Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Store, Mail, Lock, Eye, EyeOff, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { registerBusiness } from '../../lib/supabase';
 import { useToastStore, useAuthStore, useBusinessStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
@@ -9,6 +9,7 @@ import { getPasswordStrength } from '../../lib/utils';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 export default function RegisterPage() {
   const navigate   = useNavigate();
@@ -319,7 +320,7 @@ export default function RegisterPage() {
               </span>
             </label>
             <Button type="submit" disabled={loading || !termsAccepted || !privacyAccepted} fullWidth>
-              {loading ? <><Loader2 size={16} className="animate-spin" /><span>Creando tu tienda...</span></> : <span>Crear mi tienda</span>}
+              {loading ? <><LoadingSpinner size={16} /><span>Creando tu tienda...</span></> : <span>Crear mi tienda</span>}
             </Button>
             <Button type="button" variant="ghost" fullWidth onClick={() => setStep(1)}>Volver al negocio</Button>
             </>}

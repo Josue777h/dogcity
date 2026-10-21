@@ -274,7 +274,6 @@
     width: 3px; height: 1.1rem; background-color: var(--color-brand); border-radius: 0 2px 2px 0;
   }
 
-  .skeleton { background-color: var(--color-border-dark); border-radius: var(--radius-sm); animation: skeleton-pulse 1.5s ease-in-out infinite; }
 }
 
 .tabular-nums { font-variant-numeric: tabular-nums; }
@@ -286,7 +285,6 @@
 @keyframes fade-in-down { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes scale-in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 @keyframes slide-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 @keyframes success-mark-pop {
   0% { opacity: 0; transform: scale(.68); }
   70% { opacity: 1; transform: scale(1.12); }

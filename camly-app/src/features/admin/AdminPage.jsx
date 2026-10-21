@@ -217,7 +217,7 @@ export default function AdminPage() {
   };
 
   if (loading) {
-    return <PageLoading title="Preparando tu panel" description="Estamos cargando la información de tu negocio." />;
+    return <PageLoading label="Preparando tu panel" />;
   }
 
   return (
@@ -257,7 +257,7 @@ export default function AdminPage() {
           )}
 
           <div className={`max-w-7xl mx-auto transition-opacity duration-300 ${isExpired ? 'opacity-20 pointer-events-none blur-sm' : ''}`}>
-            <Suspense fallback={<PageLoading fullscreen={false} title="Cargando sección" description="Estamos preparando esta vista." />}>
+            <Suspense fallback={<PageLoading fullscreen={false} label="Cargando sección" />}>
               <Outlet context={{
                 orders,
                 products,

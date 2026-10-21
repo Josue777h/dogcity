@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Tag, Plus, Edit, Trash2, Loader2, Save, X } from 'lucide-react';
+import { Tag, Plus, Edit, Trash2, Save, X } from 'lucide-react';
 import { getSupabase, updateCategory, createCategory, deleteCategory, fetchCategories } from '../../../lib/supabase';
 import { useToastStore, useBusinessStore } from '../../../stores';
 import PremiumLock from '../../../components/ui/PremiumLock';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
 
 export default function CategoriesView(props) {
   const outletCtx = useOutletContext() || {};
@@ -152,7 +153,7 @@ export default function CategoriesView(props) {
                   disabled={loading} 
                   className="btn-primary w-full sm:w-auto py-2.5 px-4 text-xs font-semibold shrink-0 justify-center h-[42px]"
                 >
-                  {loading ? <Loader2 size={15} className="animate-spin" /> : <><Save size={15} /> Guardar</>}
+                  {loading ? <LoadingSpinner size={15} /> : <><Save size={15} /> Guardar</>}
                 </button>
               </div>
             </form>
