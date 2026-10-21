@@ -1,4 +1,4 @@
-// CAMLY SaaS — Supabase Configuration (Lee de .env.local con fallback)
+// NEGU SaaS — Configuración de Supabase (usa variables de entorno)
 const getEnv = (key, fallback) => {
   if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) {
     return import.meta.env[key];

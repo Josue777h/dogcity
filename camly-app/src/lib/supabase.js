@@ -35,7 +35,7 @@ function buildRecord(product, schema) {
   let finalDescription = (product.description || '').trim();
   const opciones = Array.isArray(product.opciones) ? product.opciones : [];
   if (opciones.length > 0) {
-    finalDescription = `${finalDescription}\n<!--CAMLY_OPTIONS:${JSON.stringify(opciones)}-->`;
+    finalDescription = `${finalDescription}\n<!--NEGU_OPTIONS:${JSON.stringify(opciones)}-->`;
   }
   if (schema.fields.description) record[schema.fields.description] = finalDescription;
 
@@ -55,12 +55,12 @@ function normalizeProduct(row) {
 
   if (row.opciones && Array.isArray(row.opciones)) {
     opciones = row.opciones;
-  } else if (typeof description === 'string' && description.includes('<!--CAMLY_OPTIONS:')) {
+  } else if (typeof description === 'string' && /<!--(?:NEGU|CAMLY)_OPTIONS:/.test(description)) {
     try {
-      const match = description.match(/<!--CAMLY_OPTIONS:(.*?)-->/s);
+      const match = description.match(/<!--(?:NEGU|CAMLY)_OPTIONS:(.*?)-->/s);
       if (match && match[1]) {
         opciones = JSON.parse(match[1]);
-        description = description.replace(/<!--CAMLY_OPTIONS:(.*?)-->/s, '').trim();
+        description = description.replace(/<!--(?:NEGU|CAMLY)_OPTIONS:(.*?)-->/s, '').trim();
       }
     } catch (e) {
       console.warn('Error parsing product options:', e);
@@ -182,6 +182,36 @@ export async function fetchBusiness(slug) {
   } catch (err) {
     console.error('Error fetchBusiness:', err);
     return null;
+  }
+}
+
+const OPTIONAL_BUSINESS_COLUMNS = new Set(['business_type', 'catalog_design', 'horario', 'timezone']);
+
+export async function updateBusiness(id, updates) {
+  const payload = { ...updates };
+
+  while (true) {
+    const { data, error } = await getSupabase()
+      .from('negocios')
+      .update(payload)
+      .eq('id', id)
+      .select('id')
+      .maybeSingle();
+
+    if (!error) return data;
+
+    const missingColumn = [...OPTIONAL_BUSINESS_COLUMNS].find(column =>
+      error.message?.includes(`'${column}'`)
+      || error.message?.includes(`"${column}"`)
+      || new RegExp(`\\bcolumn\\s+${column}\\b`, 'i').test(error.message || '')
+    );
+    const isMissingColumn = ['PGRST204', '42703'].includes(error.code);
+
+    if (!isMissingColumn || !missingColumn || !OPTIONAL_BUSINESS_COLUMNS.has(missingColumn) || !(missingColumn in payload)) {
+      throw error;
+    }
+
+    delete payload[missingColumn];
   }
 }
 
@@ -343,7 +373,8 @@ export async function registerBusiness({ email, password, businessName, phone, s
       user_id: authData.user.id,
       theme_color: '#2563EB',
       color_secundario: '#F9FAFB',
-      metodos_pago: ['efectivo', 'transferencia']
+      // A new store has no bank or wallet details yet, so only enable cash.
+      metodos_pago: ['efectivo']
     })
     .select()
     .single();

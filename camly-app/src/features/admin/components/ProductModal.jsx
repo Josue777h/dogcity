@@ -6,8 +6,9 @@ import {
 import { uploadImage, createCategory } from '../../../lib/supabase';
 import { useToastStore, useBusinessStore } from '../../../stores';
 import ToppingsManagerModal from './ToppingsManagerModal';
+import { readMigratedLocalStorage } from '../../../lib/localStorage';
 
-const DRAFT_STORAGE_PREFIX = 'camly_product_draft_';
+const DRAFT_STORAGE_PREFIX = 'negu_product_draft_';
 
 export default function ProductModal({ product, businessId, onSave, onClose }) {
   const isEditing = Boolean(product?.id);
@@ -46,7 +47,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
   useEffect(() => {
     if (!isEditing) {
       try {
-        const savedDraft = localStorage.getItem(draftKey);
+        const savedDraft = readMigratedLocalStorage(draftKey, [`camly_product_draft_${businessId || 'default'}`]);
         if (savedDraft) {
           const parsed = JSON.parse(savedDraft);
           if (parsed && (parsed.name || parsed.price || parsed.description || parsed.image || (parsed.opciones && parsed.opciones.length > 0))) {

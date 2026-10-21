@@ -12,7 +12,7 @@ import SEO from '../../components/common/SEO';
 
 export default function StorePage() {
   const [searchParams] = useSearchParams();
-  const slug = useParams().slug || searchParams.get('negocio') || 'dogcity';
+  const slug = useParams().slug || searchParams.get('negocio') || '';
 
   const { business, products, categories, isLoading, setBusiness, setProducts, setCategories, setLoading, setError } = useBusinessStore();
   const bid = business?.id;
@@ -103,9 +103,9 @@ export default function StorePage() {
       else if (parsed.button_style === 'outline') radius = 'rounded-lg';
       return { ...base, ...parsed, button_radius: radius };
     }
-    if (typeof business?.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
+    if (typeof business?.footer_message === 'string' && /<!--(?:NEGU|CAMLY)_DESIGN:/.test(business.footer_message)) {
       try {
-        const match = business.footer_message.match(/<!--CAMLY_DESIGN:(.*?)-->/);
+        const match = business.footer_message.match(/<!--(?:NEGU|CAMLY)_DESIGN:(.*?)-->/);
         if (match && match[1]) {
           const parsed = JSON.parse(match[1]);
           let radius = 'rounded-full';

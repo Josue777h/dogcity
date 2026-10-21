@@ -14,6 +14,7 @@ import {
 } from '../../lib/supabase';
 import { playNewOrderSound } from '../../lib/utils';
 import { useAuthStore, useToastStore, useBusinessStore } from '../../stores';
+import { readMigratedLocalStorage } from '../../lib/localStorage';
 
 // Modular Components
 import Sidebar from './components/Sidebar';
@@ -65,7 +66,7 @@ export default function AdminPage() {
   }, [session]);
 
   const notifyNewOrder = () => {
-    const soundOn = localStorage.getItem('camly_order_sound') !== 'false';
+    const soundOn = readMigratedLocalStorage('negu_order_sound', ['camly_order_sound']) !== 'false';
     if (soundOn) {
       playNewOrderSound();
     }

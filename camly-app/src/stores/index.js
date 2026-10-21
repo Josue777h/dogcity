@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { migratePersistedStorage } from '../lib/localStorage';
 
 // ══════════════════════════════════════════════
 // Cart Store — Multi-tenant (isolated by business)
@@ -22,7 +23,7 @@ export const useCartStore = create(
         let items = Array.isArray(c.items) ? [...c.items] : [];
         if (items.length === 0 && c.quantities && Object.keys(c.quantities).length > 0) {
           items = Object.entries(c.quantities)
-            .filter(([_, qty]) => qty > 0)
+            .filter(([, qty]) => qty > 0)
             .map(([pid, qty]) => ({
               cartItemId: `item_${pid}_legacy`,
               productId: pid,
@@ -233,7 +234,8 @@ export const useCartStore = create(
       })),
     }),
     { 
-      name: 'camly-multi-cart',
+      name: 'negu-multi-cart',
+      storage: createJSONStorage(() => migratePersistedStorage('camly-multi-cart')),
       partialize: (state) => ({ 
         carts: state.carts,
         customerName: state.customerName,

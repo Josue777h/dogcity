@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { X, Plus, Trash2, Bookmark, Check, Layers } from 'lucide-react';
 import { useBusinessStore, useToastStore } from '../../../stores';
+import { readMigratedLocalStorage } from '../../../lib/localStorage';
 
-const OPTIONS_LIBRARY_STORAGE_PREFIX = 'camly_options_lib_';
+const OPTIONS_LIBRARY_STORAGE_PREFIX = 'negu_options_lib_';
 
 export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], onSave, businessId }) {
   const [localGroups, setLocalGroups] = useState(opciones);
@@ -18,7 +19,7 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
   // Cargar biblioteca guardada
   const [savedLibrary, setSavedLibrary] = useState(() => {
     try {
-      const data = localStorage.getItem(libStorageKey) || localStorage.getItem(`camly_toppings_lib_${activeBizId}`);
+      const data = readMigratedLocalStorage(libStorageKey, [`camly_options_lib_${activeBizId}`, `camly_toppings_lib_${activeBizId}`]);
       return data ? JSON.parse(data) : [];
     } catch {
       return [];

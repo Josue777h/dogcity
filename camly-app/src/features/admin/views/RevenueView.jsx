@@ -7,6 +7,7 @@ import {
 import { formatMoney, exportOrdersToCSV } from '../../../lib/utils';
 import Select from '../../../components/ui/Select';
 import { useToastStore } from '../../../stores';
+import { readMigratedLocalStorage } from '../../../lib/localStorage';
 
 export default function RevenueView(props) {
   const outletCtx = useOutletContext() || {};
@@ -17,16 +18,16 @@ export default function RevenueView(props) {
   const addToast = useToastStore(s => s.addToast);
 
   // Local Storage Keys
-  const retentionKey = `camly_revenue_retention_${bizId}`;
-  const hiddenKey = `camly_revenue_hidden_${bizId}`;
+  const retentionKey = `negu_revenue_retention_${bizId}`;
+  const hiddenKey = `negu_revenue_hidden_${bizId}`;
 
   // Local State
   const [retention, setRetention] = useState(() => {
-    return localStorage.getItem(retentionKey) || 'all';
+    return readMigratedLocalStorage(retentionKey, [`camly_revenue_retention_${bizId}`]) || 'all';
   });
   const [hiddenOrderIds, setHiddenOrderIds] = useState(() => {
     try {
-      const stored = localStorage.getItem(hiddenKey);
+      const stored = readMigratedLocalStorage(hiddenKey, [`camly_revenue_hidden_${bizId}`]);
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];

@@ -29,7 +29,7 @@ function getFooterStyle(business) {
   if (typeof footerMessage !== 'string') return 'branded';
 
   try {
-    const match = footerMessage.match(/<!--CAMLY_DESIGN:(.*?)-->/);
+    const match = footerMessage.match(/<!--(?:NEGU|CAMLY)_DESIGN:(.*?)-->/);
     if (!match?.[1]) return 'branded';
     return JSON.parse(match[1]).footer_style === 'minimal' ? 'minimal' : 'branded';
   } catch {
@@ -44,8 +44,8 @@ export default function StoreFooter({ business, className = '', hasFloatingCart 
   const brandColor = business.theme_color || '#0284C7';
   const isBranded = getFooterStyle(business) === 'branded';
   const description = (business.footer_message || '')
-    .replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '')
-    .replace(/<!--CAMLY_DESIGN:[\s\S]*?-->/g, '')
+    .replace(/<!--(?:NEGU|CAMLY)_SCHEDULE:[\s\S]*?-->/g, '')
+    .replace(/<!--(?:NEGU|CAMLY)_DESIGN:[\s\S]*?-->/g, '')
     .replace(/<!--[\s\S]*?-->/g, '')
     .trim();
   const phone = String(business.telefono || '').trim();

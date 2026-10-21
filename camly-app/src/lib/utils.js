@@ -47,7 +47,7 @@ export function formatMoney(value) {
 
 export function getBusinessSlug() {
   const params = new URLSearchParams(window.location.search);
-  return params.get('negocio') || 'dogcity';
+  return params.get('negocio') || '';
 }
 
 /**
@@ -281,7 +281,7 @@ export function checkBusinessSchedule(business) {
   let schedule = business.horario && typeof business.horario === 'object' && Object.keys(business.horario).length ? business.horario : null;
   if (!schedule && typeof business.footer_message === 'string') {
     try {
-      const match = business.footer_message.match(/<!--CAMLY_SCHEDULE:(.*?)-->/);
+      const match = business.footer_message.match(/<!--(?:NEGU|CAMLY)_SCHEDULE:(.*?)-->/);
       if (match?.[1]) schedule = JSON.parse(match[1]);
     } catch { schedule = null; }
   }

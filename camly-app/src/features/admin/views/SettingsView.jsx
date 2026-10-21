@@ -7,7 +7,7 @@ import {
   Music2, Wallet, Truck, Navigation, Search, Clock, Sparkles,
   ShoppingBag, ShoppingCart, Eye, Store, Utensils, Plus, X
 } from 'lucide-react';
-import { getSupabase, uploadImage } from '../../../lib/supabase';
+import { getSupabase, updateBusiness, uploadImage } from '../../../lib/supabase';
 import { useToastStore, useAuthStore } from '../../../stores';
 import PremiumLock from '../../../components/ui/PremiumLock';
 
@@ -47,7 +47,7 @@ const BUSINESS_TYPES = [
   { id: 'pharmacy', label: 'Farmacia' }, { id: 'stationery', label: 'Papelería' }, { id: 'general', label: 'General' },
 ];
 const DEFAULT_DESIGN = { button_style: 'pill', font_family: 'sans', footer_style: 'branded' };
-const cleanFooterMessage = value => String(value || '').replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '').replace(/<!--CAMLY_DESIGN:[\s\S]*?-->/g, '').trim();
+const cleanFooterMessage = value => String(value || '').replace(/<!--(?:NEGU|CAMLY)_SCHEDULE:[\s\S]*?-->/g, '').replace(/<!--(?:NEGU|CAMLY)_DESIGN:[\s\S]*?-->/g, '').trim();
 
 export default function SettingsView(props) {
   const outletCtx = useOutletContext() || {};
@@ -64,7 +64,6 @@ export default function SettingsView(props) {
   const [isSearchingBiz, setIsSearchingBiz] = useState(false);
   const [bizSearchQuery, setBizSearchQuery] = useState('');
   
-  const mapContainerRef = useRef(null);
   const mapInstance = useRef(null);
   const markerRef = useRef(null);
 
@@ -96,9 +95,9 @@ export default function SettingsView(props) {
   const [designData, setDesignData] = useState(() => {
     const base = DEFAULT_DESIGN;
     if (business?.catalog_design && typeof business.catalog_design === 'object' && Object.keys(business.catalog_design).length) return { ...base, ...business.catalog_design };
-    if (typeof business?.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
+    if (typeof business?.footer_message === 'string' && /<!--(?:NEGU|CAMLY)_DESIGN:/.test(business.footer_message)) {
       try {
-        const match = business.footer_message.match(/<!--CAMLY_DESIGN:(.*?)-->/);
+        const match = business.footer_message.match(/<!--(?:NEGU|CAMLY)_DESIGN:(.*?)-->/);
         if (match && match[1]) {
           return { ...base, ...JSON.parse(match[1]) };
         }
@@ -125,9 +124,9 @@ export default function SettingsView(props) {
     if (business?.horario && typeof business.horario === 'object' && Object.keys(business.horario).length) {
       return { ...base, ...business.horario, dias: { ...base.dias, ...(business.horario.dias || {}) } };
     }
-    if (typeof business?.footer_message === 'string' && business.footer_message.includes('CAMLY_SCHEDULE:')) {
+    if (typeof business?.footer_message === 'string' && /<!--(?:NEGU|CAMLY)_SCHEDULE:/.test(business.footer_message)) {
       try {
-        const match = business.footer_message.match(/<!--CAMLY_SCHEDULE:(.*?)-->/);
+        const match = business.footer_message.match(/<!--(?:NEGU|CAMLY)_SCHEDULE:(.*?)-->/);
         if (match && match[1]) {
           const parsed = JSON.parse(match[1]);
           return { ...base, ...parsed, dias: { ...base.dias, ...(parsed.dias || {}) } };
@@ -174,9 +173,9 @@ export default function SettingsView(props) {
 
     if (business.catalog_design && typeof business.catalog_design === 'object' && Object.keys(business.catalog_design).length) {
       setDesignData({ ...DEFAULT_DESIGN, ...business.catalog_design });
-    } else if (typeof business.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
+    } else if (typeof business.footer_message === 'string' && /<!--(?:NEGU|CAMLY)_DESIGN:/.test(business.footer_message)) {
       try {
-        const match = business.footer_message.match(/<!--CAMLY_DESIGN:(.*?)-->/);
+        const match = business.footer_message.match(/<!--(?:NEGU|CAMLY)_DESIGN:(.*?)-->/);
         if (match && match[1]) {
           setDesignData(prev => ({ ...prev, ...JSON.parse(match[1]) }));
         }
@@ -187,9 +186,9 @@ export default function SettingsView(props) {
 
     if (business.horario && typeof business.horario === 'object' && Object.keys(business.horario).length) {
       setScheduleData(prev => ({ ...prev, ...business.horario, dias: { ...prev.dias, ...(business.horario.dias || {}) } }));
-    } else if (typeof business.footer_message === 'string' && business.footer_message.includes('CAMLY_SCHEDULE:')) {
+    } else if (typeof business.footer_message === 'string' && /<!--(?:NEGU|CAMLY)_SCHEDULE:/.test(business.footer_message)) {
       try {
-        const match = business.footer_message.match(/<!--CAMLY_SCHEDULE:(.*?)-->/);
+        const match = business.footer_message.match(/<!--(?:NEGU|CAMLY)_SCHEDULE:(.*?)-->/);
         if (match && match[1]) {
           const parsed = JSON.parse(match[1]);
           setScheduleData(prev => ({ ...prev, ...parsed, dias: { ...prev.dias, ...(parsed.dias || {}) } }));
@@ -318,18 +317,7 @@ export default function SettingsView(props) {
         domicilio_minimo: Number(formData.domicilio_minimo) || 0,
       };
 
-      const { data, error } = await getSupabase()
-        .from('negocios')
-        .update(payload)
-        .eq('id', business.id)
-        .select('id')
-        .maybeSingle();
-        
-      if (error) {
-        console.error('Supabase Error:', error);
-        addToast(`Error: ${error.message}`, 'error');
-        throw error;
-      }
+      const data = await updateBusiness(business.id, payload);
       if (!data) throw new Error('No se encontró el negocio o no tienes permiso para actualizarlo.');
       
       addToast('Diseño y configuración guardados', 'success');
@@ -1055,7 +1043,7 @@ export default function SettingsView(props) {
                 </div>
 
                 <div className="relative">
-                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  {isSearchingBiz ? <Loader2 size={15} className="absolute left-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400" /> : <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />}
                   <input 
                     type="text" 
                     value={bizSearchQuery}
@@ -1067,7 +1055,7 @@ export default function SettingsView(props) {
                     <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-border rounded-lg shadow-lg z-[100] max-h-48 overflow-y-auto p-1 divide-y divide-gray-100">
                       {bizSuggestions.map(f => (
                         <button 
-                          key={f.properties.osm_id + Math.random()}
+                          key={f.properties.osm_id}
                           type="button"
                           onClick={() => {
                             const [lng, lat] = f.geometry.coordinates;
@@ -1446,8 +1434,8 @@ export default function SettingsView(props) {
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Mensaje en el pie de página de la tienda</label>
                 <textarea 
                   value={(formData.footer_message || '')
-                    .replace(/<!--CAMLY_SCHEDULE:[\s\S]*?-->/g, '')
-                    .replace(/<!--CAMLY_DESIGN:[\s\S]*?-->/g, '')
+                    .replace(/<!--(?:NEGU|CAMLY)_SCHEDULE:[\s\S]*?-->/g, '')
+                    .replace(/<!--(?:NEGU|CAMLY)_DESIGN:[\s\S]*?-->/g, '')
                     .replace(/<!--[\s\S]*?-->/g, '')
                     .trim()} 
                   onChange={e => setFormData({...formData, footer_message: e.target.value})} 

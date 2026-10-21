@@ -1,16 +1,29 @@
-# React + Vite
+# NEGU
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicación web de NEGU construida con React, Vite, Tailwind CSS y Supabase. La SPA integra páginas públicas, catálogos multi-tenant, autenticación, panel de administración, gestión de pedidos y seguimiento del cliente.
 
-Currently, two official plugins are available:
+## Requisitos
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js compatible con Vite 8.
+- Variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en `.env.local`.
+- Esquema de base de datos aplicado desde [`supabase/schema.sql`](./supabase/schema.sql).
 
-## React Compiler
+## Desarrollo y publicación
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev
+npm run lint
+npm run build
+```
 
-## Expanding the ESLint configuration
+Netlify ejecuta el build definido en el `netlify.toml` de la raíz del repositorio y publica el directorio `dist` generado.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Organización
+
+- `src/features/marketing`: página principal y páginas informativas.
+- `src/features/auth`: registro e inicio de sesión.
+- `src/features/admin`: panel y operaciones del comercio.
+- `src/features/store`: catálogo público y seguimiento de pedidos.
+- `src/lib` y `src/services`: acceso a Supabase y lógica compartida.
+- `supabase/schema.sql`: instalación completa y reejecutable del esquema.

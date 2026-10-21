@@ -42,9 +42,9 @@ export default function ProductCard({
   const designConfig = useMemo(() => {
     const base = { button_style: 'pill', font_family: 'sans' };
     if (business?.catalog_design && typeof business.catalog_design === 'object' && Object.keys(business.catalog_design).length) return { ...base, ...business.catalog_design };
-    if (typeof business?.footer_message === 'string' && business.footer_message.includes('CAMLY_DESIGN:')) {
+    if (typeof business?.footer_message === 'string' && /<!--(?:NEGU|CAMLY)_DESIGN:/.test(business.footer_message)) {
       try {
-        const match = business.footer_message.match(/<!--CAMLY_DESIGN:(.*?)-->/);
+        const match = business.footer_message.match(/<!--(?:NEGU|CAMLY)_DESIGN:(.*?)-->/);
         if (match && match[1]) return { ...base, ...JSON.parse(match[1]) };
       } catch (err) {
         console.warn('Error parsing design config:', err);

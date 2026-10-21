@@ -19,6 +19,7 @@ const GestionPedidosPage = lazy(() => import('./features/marketing/GestionPedido
 const ParaRestaurantesPage = lazy(() => import('./features/marketing/ParaRestaurantesPage'));
 const ParaNegociosPage = lazy(() => import('./features/marketing/ParaNegociosPage'));
 const NotFoundPage = lazy(() => import('./features/marketing/NotFoundPage'));
+const TermsPage = lazy(() => import('./features/legal/TermsPage'));
 
 // Admin Views (Lazy Loaded)
 const DashboardView = lazy(() => import('./features/admin/views/DashboardView'));
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="/gestion-de-pedidos" element={<GestionPedidosPage />} />
           <Route path="/para-restaurantes" element={<ParaRestaurantesPage />} />
           <Route path="/para-negocios" element={<ParaNegociosPage />} />
+          <Route path="/terminos" element={<TermsPage />} />
 
           {/* ── AUTH & ONBOARDING ────────────────────────────── */}
           <Route path="/login" element={<LoginPage />} />

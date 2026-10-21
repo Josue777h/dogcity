@@ -1,5 +1,5 @@
 /**
- * CAMLY — Seed de base de datos completo
+ * NEGU — Seed de base de datos completo
  * Ejecutar: node scripts/seed-database.mjs
  *
  * Enriquece las 6 tablas: negocios, categorias, productos,
@@ -342,7 +342,7 @@ async function printSummary() {
 }
 
 async function main() {
-  console.log('\n🌱 CAMLY — Seed de base de datos\n');
+  console.log('\n🌱 NEGU — Seed de base de datos\n');
 
   for (const key of ['pizza', 'postre']) {
     console.log(`\n── ${NEGOCIOS[key].update.nombre_visible} ──`);

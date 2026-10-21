@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Store, Phone, Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { registerBusiness, signOut } from '../../lib/supabase';
-import { useToastStore, useAuthStore } from '../../stores';
+import { useToastStore, useAuthStore, useBusinessStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
 import SEO from '../../components/common/SEO';
 import { getPasswordStrength } from '../../lib/utils';
@@ -16,11 +16,13 @@ export default function RegisterPage() {
   const requestedSlug = searchParams.get('tienda') || '';
   const addToast   = useToastStore(s => s.addToast);
   const setSession = useAuthStore(s => s.setSession);
+  const setBusiness = useBusinessStore(s => s.setBusiness);
 
   const [loading,      setLoading]      = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState(1);
   const [slugEdited, setSlugEdited] = useState(Boolean(requestedSlug));
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [form, setForm] = useState({
     businessName: '',
     storeSlug: requestedSlug,
@@ -45,7 +47,7 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.businessName.trim() || !normalizedSlug || !form.phone.trim() || !form.email.trim() || !isPasswordValid) {
+    if (!form.businessName.trim() || !normalizedSlug || !form.phone.trim() || !form.email.trim() || !isPasswordValid || !termsAccepted) {
       addToast('Por favor completa todos los campos (contraseña mínimo 8 caracteres).', 'warning');
       return;
     }
@@ -54,6 +56,7 @@ export default function RegisterPage() {
       const res = await registerBusiness({ ...form, storeSlug: normalizedSlug });
       if (res?.session) {
         setSession(res?.session);
+        setBusiness(res?.negocio);
         addToast('¡Cuenta y negocio creados con éxito!', 'success');
         navigate('/bienvenido');
       } else {
@@ -268,7 +271,7 @@ export default function RegisterPage() {
 
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || !termsAccepted}
               fullWidth
             >
               {loading ? (
@@ -280,6 +283,18 @@ export default function RegisterPage() {
                 <span>Crear mi cuenta</span>
               )}
             </Button>
+            <label className="flex items-start gap-2.5 text-xs leading-5 text-slate-600">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={event => setTermsAccepted(event.target.checked)}
+                className="mt-1 size-4 shrink-0 accent-sky-700"
+                required
+              />
+              <span>
+                He leído y acepto los <Link to="/terminos" target="_blank" rel="noreferrer" className="font-semibold text-sky-700 underline underline-offset-2">Términos del servicio</Link> de NEGU.
+              </span>
+            </label>
             <Button type="button" variant="ghost" fullWidth onClick={() => setStep(1)}>Volver al negocio</Button>
             </>}
           </form>

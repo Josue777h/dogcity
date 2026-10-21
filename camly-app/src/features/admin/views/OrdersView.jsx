@@ -14,6 +14,7 @@ import { updateOrderStatus, getSupabase, deleteOrder } from '../../../lib/supaba
 import { OrderService } from '../../../services/orderService';
 import { getStatusCopy } from '../../../lib/status-labels';
 import { useBusinessStore, useToastStore } from '../../../stores';
+import { readMigratedLocalStorage } from '../../../lib/localStorage';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 
 const STATUS_TABS = [
@@ -450,7 +451,7 @@ export default function OrdersView(props) {
   const [deliveryFilter, setDeliveryFilter] = useState('all');
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [selectedOrderForDriver, setSelectedOrderForDriver] = useState(null);
-  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('camly_order_sound') !== 'false');
+  const [soundEnabled, setSoundEnabled] = useState(() => readMigratedLocalStorage('negu_order_sound', ['camly_order_sound']) !== 'false');
   const [printingBluetoothId, setPrintingBluetoothId] = useState(null);
   const [updatingStatusOrderId, setUpdatingStatusOrderId] = useState(null);
   const [receiptUrls, setReceiptUrls] = useState({});
@@ -754,7 +755,7 @@ export default function OrdersView(props) {
             onClick={() => {
               const next = !soundEnabled;
               setSoundEnabled(next);
-              localStorage.setItem('camly_order_sound', next ? 'true' : 'false');
+              localStorage.setItem('negu_order_sound', next ? 'true' : 'false');
               if (next) playNewOrderSound();
             }}
             title={soundEnabled ? 'Silenciar timbre de pedidos' : 'Activar timbre de pedidos'}

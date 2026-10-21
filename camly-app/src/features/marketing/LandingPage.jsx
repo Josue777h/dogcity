@@ -10,7 +10,7 @@ import {
   Shirt, Cake, Fish, PawPrint, Beef, Navigation,
   ChevronRight, ExternalLink, Play, CheckCircle
 } from 'lucide-react';
-import camlyPreview from '../../assets/ejemplo.jpeg';
+import storePreview from '../../assets/ejemplo.jpeg';
 import SaaSLogo from '../../components/common/SaaSLogo';
 import SEO from '../../components/common/SEO';
 import MarketingNavbar from './components/MarketingNavbar';
@@ -169,7 +169,7 @@ export default function LandingPage() {
                   {/* Speaker and Camera notch */}
                   <div className="relative rounded-[2.3rem] overflow-hidden bg-white aspect-[9/16] shadow-inner">
                     <img 
-                      src={camlyPreview} 
+                      src={storePreview}
                       alt="Vista previa catálogo Negu" 
                       className="w-full h-full object-cover object-top" 
                       loading="eager" 

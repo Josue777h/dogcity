@@ -84,6 +84,11 @@ export default function MarketingFooter() {
                   Rastreo de pedido en vivo
                 </Link>
               </li>
+              <li>
+                <Link to="/terminos" className="hover:text-white transition-colors">
+                  Términos del servicio
+                </Link>
+              </li>
             </ul>
           </div>
 
