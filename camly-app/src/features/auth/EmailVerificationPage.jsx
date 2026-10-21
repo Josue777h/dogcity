@@ -21,7 +21,17 @@ export default function EmailVerificationPage() {
       await resendSignupConfirmation(email);
       setSent(true);
     } catch (sendError) {
-      setError(sendError.message || 'No pudimos reenviar el correo. Espera un momento e inténtalo de nuevo.');
+      const message = String(sendError?.message || '');
+      const cooldown = message.match(/only request this after\s+(\d+)\s+seconds?/i);
+
+      if (cooldown) {
+        const seconds = Number(cooldown[1]);
+        setError(`Por seguridad, podrás solicitar otro correo en ${seconds} ${seconds === 1 ? 'segundo' : 'segundos'}.`);
+      } else if (/too many requests|rate limit/i.test(message)) {
+        setError('Has solicitado varios correos. Espera un momento antes de intentarlo de nuevo.');
+      } else {
+        setError('No pudimos reenviar el correo. Espera un momento e inténtalo de nuevo.');
+      }
     } finally {
       setSending(false);
     }
@@ -30,8 +40,8 @@ export default function EmailVerificationPage() {
   return (
     <main className="flex min-h-screen flex-col bg-slate-50 px-4 text-slate-950">
       <SEO title="Confirma tu correo | NEGU" description="Confirma el correo de tu cuenta para continuar con la creación de tu tienda en NEGU." canonical="https://negu.pro/verificar-correo" noindex />
-      <header className="mx-auto flex h-16 w-full max-w-6xl items-center">
-        <Link to="/" aria-label="NEGU, inicio"><SaaSLogo className="h-8" /></Link>
+      <header className="mx-auto flex min-h-[76px] w-full max-w-6xl items-center">
+        <Link to="/" aria-label="NEGU, inicio"><SaaSLogo className="h-10 sm:h-11" /></Link>
       </header>
       <section className="flex flex-1 items-center justify-center py-8">
         <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
