@@ -354,7 +354,7 @@ export async function getSession() {
 }
 
 // ── Register Business ──
-export async function registerBusiness({ email, password, businessName, phone, storeSlug, legalAcceptances }) {
+export async function registerBusiness({ email, password, businessName, ownerName, phone, storeSlug, legalAcceptances }) {
   const slug = String(storeSlug || businessName).toLowerCase().normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 35);
   if (!slug) throw new Error('El enlace de la tienda no es válido.');
@@ -367,6 +367,7 @@ export async function registerBusiness({ email, password, businessName, phone, s
     password,
     options: {
       data: {
+        full_name: String(ownerName || '').trim(),
         negu_terms_accepted_at: legalAcceptances?.acceptedAt || null,
         negu_terms_version: legalAcceptances?.termsVersion || null,
         negu_privacy_accepted_at: legalAcceptances?.acceptedAt || null,

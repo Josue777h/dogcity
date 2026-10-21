@@ -21,10 +21,10 @@ export default function RegisterPage() {
   const [loading,      setLoading]      = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState(1);
-  const [slugEdited, setSlugEdited] = useState(Boolean(requestedSlug));
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [form, setForm] = useState({
+    ownerName: '',
     businessName: '',
     storeSlug: requestedSlug,
     phone: '',
@@ -36,9 +36,8 @@ export default function RegisterPage() {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 35);
   const set = (field) => (e) => {
     const value = e.target.value;
-    if (field === 'storeSlug') setSlugEdited(true);
     setForm(current => ({ ...current, [field]: value,
-      ...(field === 'businessName' && !slugEdited ? { storeSlug: slugify(value) } : {}),
+      ...(field === 'businessName' ? { storeSlug: slugify(value) } : {}),
     }));
   };
   const normalizedSlug = slugify(form.storeSlug || form.businessName);
@@ -48,7 +47,7 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.businessName.trim() || !normalizedSlug || !form.phone.trim() || !form.email.trim() || !isPasswordValid || !termsAccepted || !privacyAccepted) {
+    if (!form.ownerName.trim() || !form.businessName.trim() || !normalizedSlug || !form.phone.trim() || !form.email.trim() || !isPasswordValid || !termsAccepted || !privacyAccepted) {
       addToast('Por favor completa todos los campos (contraseña mínimo 8 caracteres).', 'warning');
       return;
     }
@@ -57,6 +56,7 @@ export default function RegisterPage() {
       const acceptedAt = new Date().toISOString();
       const res = await registerBusiness({
         ...form,
+        ownerName: form.ownerName.trim(),
         storeSlug: normalizedSlug,
         legalAcceptances: {
           acceptedAt,
@@ -132,6 +132,11 @@ export default function RegisterPage() {
             </div>
             {step === 1 && <>
             <div>
+              <label htmlFor="reg-owner-name" className="block text-sm font-medium text-slate-700 mb-1.5">Tu nombre completo</label>
+              <Input id="reg-owner-name" type="text" placeholder="Ej: María Pérez" value={form.ownerName} onChange={set('ownerName')} className="py-3 px-5" autoComplete="name" required />
+            </div>
+
+            <div>
               <label htmlFor="reg-business" className="block text-sm font-medium text-slate-700 mb-1.5">
                 Nombre de tu negocio
               </label>
@@ -150,15 +155,6 @@ export default function RegisterPage() {
                   <CheckCircle2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600 pointer-events-none" />
                 )}
               </div>
-            </div>
-
-            <div>
-              <label htmlFor="reg-slug" className="block text-sm font-medium text-slate-700 mb-1.5">Enlace de tu tienda</label>
-              <div className="flex overflow-hidden rounded-lg border border-slate-200 focus-within:ring-2 focus-within:ring-slate-900/5">
-                <span className="flex items-center border-r border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-500">negu.pro/</span>
-                <input id="reg-slug" value={form.storeSlug} onChange={set('storeSlug')} placeholder="mi-negocio" className="min-w-0 flex-1 px-3 py-2.5 text-sm outline-none" required />
-              </div>
-              <p className="mt-1 text-xs text-slate-500">Tu catálogo quedará en negu.pro/{normalizedSlug || 'mi-negocio'}.</p>
             </div>
 
             <div>
@@ -183,8 +179,8 @@ export default function RegisterPage() {
             </div>
 
             <Button type="button" fullWidth onClick={() => {
-              if (!form.businessName.trim() || !normalizedSlug || !form.phone.trim()) {
-                addToast('Completa el nombre, el enlace y el WhatsApp para continuar.', 'warning');
+              if (!form.ownerName.trim() || !form.businessName.trim() || !form.phone.trim()) {
+                addToast('Completa tu nombre, el nombre del negocio y el WhatsApp para continuar.', 'warning');
                 return;
               }
               setStep(2);
@@ -279,20 +275,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <Button
-              type="submit"
-              disabled={loading || !termsAccepted || !privacyAccepted}
-              fullWidth
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  <span>Creando tu tienda...</span>
-                </>
-              ) : (
-                <span>Crear mi cuenta</span>
-              )}
-            </Button>
             <label className="flex items-start gap-2.5 text-xs leading-5 text-slate-600">
               <input
                 type="checkbox"
@@ -317,6 +299,9 @@ export default function RegisterPage() {
                 Autorizo el tratamiento de mis datos para crear y administrar mi cuenta según la <Link to="/privacidad" target="_blank" rel="noreferrer" className="font-semibold text-sky-700 underline underline-offset-2">Política de privacidad</Link>.
               </span>
             </label>
+            <Button type="submit" disabled={loading || !termsAccepted || !privacyAccepted} fullWidth>
+              {loading ? <><Loader2 size={16} className="animate-spin" /><span>Creando tu tienda...</span></> : <span>Crear mi tienda</span>}
+            </Button>
             <Button type="button" variant="ghost" fullWidth onClick={() => setStep(1)}>Volver al negocio</Button>
             </>}
           </form>
