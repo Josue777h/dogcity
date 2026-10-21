@@ -287,6 +287,32 @@
 @keyframes scale-in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 @keyframes slide-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes success-mark-pop {
+  0% { opacity: 0; transform: scale(.68); }
+  70% { opacity: 1; transform: scale(1.12); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes success-confetti-burst {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(.35) rotate(0deg); }
+  18% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(var(--confetti-x), var(--confetti-y), 0) scale(1) rotate(var(--confetti-rotate)); }
+}
+
+.success-mark-pop { animation: success-mark-pop 460ms cubic-bezier(.2,.8,.25,1.2) both; }
+.success-confetti { position: absolute; inset: 0; pointer-events: none; }
+.success-confetti span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 8px;
+  border-radius: 2px;
+  background: #0284c7;
+  animation: success-confetti-burst 720ms cubic-bezier(.18,.67,.35,1) both;
+}
+.success-confetti span:nth-child(2n) { background: #059669; }
+.success-confetti span:nth-child(3n) { background: #94a3b8; }
+.success-confetti span:nth-child(4n) { background: #0f172a; }
 
 .animate-fade-in     { animation: fade-in     200ms ease-out forwards; }
 .animate-fade-in-up  { animation: fade-in-up  220ms ease-out forwards; }
