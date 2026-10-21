@@ -354,7 +354,7 @@ export async function getSession() {
 }
 
 // ── Register Business ──
-export async function registerBusiness({ email, password, businessName, phone, storeSlug }) {
+export async function registerBusiness({ email, password, businessName, phone, storeSlug, legalAcceptances }) {
   const slug = String(storeSlug || businessName).toLowerCase().normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 35);
   if (!slug) throw new Error('El enlace de la tienda no es válido.');
@@ -362,7 +362,18 @@ export async function registerBusiness({ email, password, businessName, phone, s
     .from('negocios').select('id').eq('nombre', slug).maybeSingle();
   if (lookupError) throw lookupError;
   if (existingStore) throw new Error('Ese enlace ya está en uso. Elige otro nombre para tu tienda.');
-  const { data: authData, error: authError } = await getSupabase().auth.signUp({ email, password });
+  const { data: authData, error: authError } = await getSupabase().auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        negu_terms_accepted_at: legalAcceptances?.acceptedAt || null,
+        negu_terms_version: legalAcceptances?.termsVersion || null,
+        negu_privacy_accepted_at: legalAcceptances?.acceptedAt || null,
+        negu_privacy_version: legalAcceptances?.privacyVersion || null,
+      },
+    },
+  });
   if (authError) throw authError;
   const { data: negocio, error: negocioError } = await getSupabase()
     .from('negocios')

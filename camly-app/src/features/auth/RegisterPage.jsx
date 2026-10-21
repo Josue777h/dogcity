@@ -23,6 +23,7 @@ export default function RegisterPage() {
   const [step, setStep] = useState(1);
   const [slugEdited, setSlugEdited] = useState(Boolean(requestedSlug));
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [form, setForm] = useState({
     businessName: '',
     storeSlug: requestedSlug,
@@ -47,13 +48,22 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.businessName.trim() || !normalizedSlug || !form.phone.trim() || !form.email.trim() || !isPasswordValid || !termsAccepted) {
+    if (!form.businessName.trim() || !normalizedSlug || !form.phone.trim() || !form.email.trim() || !isPasswordValid || !termsAccepted || !privacyAccepted) {
       addToast('Por favor completa todos los campos (contraseña mínimo 8 caracteres).', 'warning');
       return;
     }
     setLoading(true);
     try {
-      const res = await registerBusiness({ ...form, storeSlug: normalizedSlug });
+      const acceptedAt = new Date().toISOString();
+      const res = await registerBusiness({
+        ...form,
+        storeSlug: normalizedSlug,
+        legalAcceptances: {
+          acceptedAt,
+          termsVersion: '2026-10-20-v1.1',
+          privacyVersion: '2026-10-20-v1.0',
+        },
+      });
       if (res?.session) {
         setSession(res?.session);
         setBusiness(res?.negocio);
@@ -271,7 +281,7 @@ export default function RegisterPage() {
 
             <Button
               type="submit"
-              disabled={loading || !termsAccepted}
+              disabled={loading || !termsAccepted || !privacyAccepted}
               fullWidth
             >
               {loading ? (
@@ -293,6 +303,18 @@ export default function RegisterPage() {
               />
               <span>
                 He leído y acepto los <Link to="/terminos" target="_blank" rel="noreferrer" className="font-semibold text-sky-700 underline underline-offset-2">Términos del servicio</Link> de NEGU.
+              </span>
+            </label>
+            <label className="flex items-start gap-2.5 text-xs leading-5 text-slate-600">
+              <input
+                type="checkbox"
+                checked={privacyAccepted}
+                onChange={event => setPrivacyAccepted(event.target.checked)}
+                className="mt-1 size-4 shrink-0 accent-sky-700"
+                required
+              />
+              <span>
+                Autorizo el tratamiento de mis datos para crear y administrar mi cuenta según la <Link to="/privacidad" target="_blank" rel="noreferrer" className="font-semibold text-sky-700 underline underline-offset-2">Política de privacidad</Link>.
               </span>
             </label>
             <Button type="button" variant="ghost" fullWidth onClick={() => setStep(1)}>Volver al negocio</Button>

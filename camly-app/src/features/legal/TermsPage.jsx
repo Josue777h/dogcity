@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Mail, MapPin, Phone } from 'lucide-react';
+import { ArrowLeft, Phone } from 'lucide-react';
 import SEO from '../../components/common/SEO';
 import SaaSLogo from '../../components/common/SaaSLogo';
 
@@ -81,16 +81,14 @@ export default function TermsPage() {
                 <h2 className="text-lg font-bold text-slate-950">15. Contacto</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">Para consultas relacionadas con estos términos o con tu cuenta, utiliza los siguientes canales:</p>
                 <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-                  <a className="flex items-center gap-2 rounded-lg bg-slate-50 p-3 text-sky-800" href="mailto:gerencia@systemnecs.com"><Mail size={16} /> gerencia@systemnecs.com</a>
-                  <a className="flex items-center gap-2 rounded-lg bg-slate-50 p-3 text-sky-800" href="https://wa.me/573219808553"><Phone size={16} /> +57 321 980 8553</a>
-                  <p className="flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-slate-600 sm:col-span-2"><MapPin size={16} className="mt-0.5 shrink-0" /> Calle 3 # 1855, Cúcuta, Norte de Santander, Colombia</p>
+                  <a className="flex items-center gap-2 rounded-lg bg-slate-50 p-3 text-sky-800 sm:col-span-2" href="https://wa.me/573143243707"><Phone size={16} /> WhatsApp: +57 314 324 3707</a>
                 </div>
-                <p className="mt-4 text-xs leading-5 text-slate-500">Operador de NEGU: Nelson Eduardo Castiblanco Sepúlveda · Identificación 1093775908. La titularidad y los canales de contacto se publican conforme a la información del sitio de SYSTEMNECS.</p>
+                <p className="mt-4 text-xs leading-5 text-slate-500">Creador y responsable de NEGU: Josue Sepulveda. No publicamos documentos personales. El correo empresarial, NIT y dirección para notificaciones se actualizarán cuando estén formalizados.</p>
               </section>
             </div>
           </article>
         </div>
-        <footer className="py-7 text-center text-xs text-slate-500">© {new Date().getFullYear()} NEGU · <Link className="text-sky-700 hover:underline" to="/">negu.pro</Link></footer>
+        <footer className="flex flex-wrap justify-center gap-x-5 gap-y-2 py-7 text-xs text-slate-500"><Link className="hover:text-sky-800" to="/">negu.pro</Link><Link className="hover:text-sky-800" to="/privacidad">Privacidad</Link><Link className="hover:text-sky-800" to="/cookies">Cookies</Link><span>© {new Date().getFullYear()} NEGU</span></footer>
       </div>
     </main>
   );

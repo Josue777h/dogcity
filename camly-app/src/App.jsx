@@ -20,6 +20,8 @@ const ParaRestaurantesPage = lazy(() => import('./features/marketing/ParaRestaur
 const ParaNegociosPage = lazy(() => import('./features/marketing/ParaNegociosPage'));
 const NotFoundPage = lazy(() => import('./features/marketing/NotFoundPage'));
 const TermsPage = lazy(() => import('./features/legal/TermsPage'));
+const PrivacyPage = lazy(() => import('./features/legal/PrivacyPage'));
+const CookiesPage = lazy(() => import('./features/legal/CookiesPage'));
 
 // Admin Views (Lazy Loaded)
 const DashboardView = lazy(() => import('./features/admin/views/DashboardView'));
@@ -65,6 +67,8 @@ export default function App() {
           <Route path="/para-restaurantes" element={<ParaRestaurantesPage />} />
           <Route path="/para-negocios" element={<ParaNegociosPage />} />
           <Route path="/terminos" element={<TermsPage />} />
+          <Route path="/privacidad" element={<PrivacyPage />} />
+          <Route path="/cookies" element={<CookiesPage />} />
 
           {/* ── AUTH & ONBOARDING ────────────────────────────── */}
           <Route path="/login" element={<LoginPage />} />

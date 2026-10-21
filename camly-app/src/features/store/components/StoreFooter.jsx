@@ -1,4 +1,5 @@
 import { Phone, MapPin, Instagram, Facebook, Music2, Store } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { createElement } from 'react';
 
 function WhatsAppMark({ size = 15 }) {
@@ -155,7 +156,12 @@ export default function StoreFooter({ business, className = '', hasFloatingCart 
 
           <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-black/5 pt-1.5 text-[9px] leading-tight text-slate-500">
             <p>© {new Date().getFullYear()} {storeName}</p>
-            <a href="https://sedeelectronica.sic.gov.co/temas/proteccion-al-consumidor" target="_blank" rel="noreferrer" className="font-medium underline underline-offset-2 hover:text-slate-800">Protección al consumidor (SIC)</a>
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              <Link to="/privacidad" className="font-medium underline underline-offset-2 hover:text-slate-800">Privacidad</Link>
+              <Link to="/terminos" className="font-medium underline underline-offset-2 hover:text-slate-800">Términos</Link>
+              <Link to="/cookies" className="font-medium underline underline-offset-2 hover:text-slate-800">Cookies</Link>
+              <a href="https://sedeelectronica.sic.gov.co/temas/proteccion-al-consumidor" target="_blank" rel="noreferrer" className="font-medium underline underline-offset-2 hover:text-slate-800">Protección al consumidor (SIC)</a>
+            </div>
             <p>Catálogo digital por <span className="font-semibold" style={{ color: isBranded ? brandColor : '#475569' }}>NEGU</span></p>
           </div>
         </section>

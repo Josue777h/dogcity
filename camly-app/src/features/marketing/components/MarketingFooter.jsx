@@ -89,6 +89,8 @@ export default function MarketingFooter() {
                   Términos del servicio
                 </Link>
               </li>
+              <li><Link to="/privacidad" className="hover:text-white transition-colors">Privacidad y datos personales</Link></li>
+              <li><Link to="/cookies" className="hover:text-white transition-colors">Cookies y almacenamiento</Link></li>
             </ul>
           </div>
 
