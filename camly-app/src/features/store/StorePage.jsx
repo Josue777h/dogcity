@@ -14,6 +14,7 @@ import PageLoading from '../../components/common/PageLoading';
 export default function StorePage() {
   const [searchParams] = useSearchParams();
   const slug = useParams().slug || searchParams.get('negocio') || '';
+  const mesaParam = searchParams.get('mesa') || '';
 
   const { business, products, categories, isLoading, setBusiness, setProducts, setCategories, setLoading, setError } = useBusinessStore();
   const bid = business?.id;
@@ -59,9 +60,11 @@ export default function StorePage() {
   // Apply brand color — tenant theming (do not remove)
   useEffect(() => {
     const color = business?.theme_color || '#0284C7';
+    const secondaryColor = business?.color_secundario || '#FFF7ED';
     document.documentElement.style.setProperty('--color-brand', color);
     document.documentElement.style.setProperty('--color-brand-dark', color);
-  }, [business?.theme_color]);
+    document.documentElement.style.setProperty('--color-brand-secondary', secondaryColor);
+  }, [business?.theme_color, business?.color_secundario]);
 
   const visibleCategories = useMemo(() => {
     if (categories?.length > 0) {
@@ -185,74 +188,115 @@ export default function StorePage() {
       />
 
       {/* ── Sticky header: logo, name, open/closed, search ── */}
-      <header className="sticky top-0 z-[80] border-b border-[#e7e3db] bg-white pt-safe">
-        <div className="fluid-container space-y-2.5 py-2.5 sm:space-y-3 sm:py-3">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            {business?.logo_url ? (
-              <img src={business.logo_url} className="h-10 w-[4.25rem] shrink-0 object-contain object-left sm:h-12 sm:w-20" alt={`Logo de ${business.nombre_visible || business.nombre}`} fetchPriority="high" />
-            ) : (
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12"
-                style={{ backgroundColor: brandColor }}
-              >
-                <Store size={20} className="text-white" />
-              </div>
-            )}
+      <header className="sticky top-0 z-[80] border-b border-[#e7e3db] bg-white pt-safe shadow-2xs">
+        <div className="fluid-container py-2.5 sm:py-3">
+          <div className="flex items-center justify-between gap-3 sm:gap-4">
+            
+            {/* Izquierda: Marca (Logo + Nombre + Estado agrupados) */}
+            <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 shrink-0">
+              {business?.logo_url ? (
+                <img
+                  src={business.logo_url}
+                  className="h-11 w-auto max-w-[5rem] sm:h-13 sm:max-w-[7.5rem] md:h-14 md:max-w-[9rem] shrink-0 object-contain object-left"
+                  alt={`Logo de ${business.nombre_visible || business.nombre}`}
+                  fetchPriority="high"
+                />
+              ) : (
+                <div
+                  className="flex h-11 w-11 sm:h-13 sm:w-13 shrink-0 items-center justify-center rounded-xl font-bold"
+                  style={{ backgroundColor: brandColor }}
+                >
+                  <Store size={22} className="text-white" />
+                </div>
+              )}
 
-            <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
-              <h1 className="truncate text-base font-semibold leading-tight text-slate-900 sm:text-lg">
-                {business?.nombre_visible || 'Menú Digital'}
-              </h1>
-              <div className="flex shrink-0 items-center">
-                <Badge variant={scheduleStatus.isOpen ? 'success' : 'warning'} className="px-1.5 py-0.5 text-[10px]">
+              <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                <h1 className="truncate text-base sm:text-lg font-bold leading-tight text-slate-900">
+                  {business?.nombre_visible || 'Menú Digital'}
+                </h1>
+                <Badge variant={scheduleStatus.isOpen ? 'success' : 'warning'} className="px-1.5 py-0.5 text-[10px] shrink-0">
                   <span className={`w-1.5 h-1.5 rounded-full ${scheduleStatus.isOpen ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                   {scheduleStatus.isOpen ? 'Abierto' : 'Cerrado'}
                 </Badge>
+                {mesaParam && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-900 text-white shadow-2xs shrink-0">
+                    🍽️ Mesa {mesaParam}
+                  </span>
+                )}
               </div>
             </div>
 
-            <button
-              onClick={() => setDrawerOpen(true)}
-              className={`hidden items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors md:flex ${
-                totalItems > 0
-                  ? 'text-white border-transparent'
-                  : 'border-[#e4e1da] bg-white text-slate-700 hover:bg-[#f7f6f2]'
-              }`}
-              style={totalItems > 0 ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
-              aria-label="Abrir carrito"
-            >
-              <ShoppingCart size={16} />
-              <span className="text-sm font-semibold tabular-nums">Pedido{totalItems > 0 ? ` · ${totalItems}` : ''}</span>
-            </button>
+            {/* Centro (Desktop): Barra de búsqueda integrada estilo OlaClick / Fudo */}
+            <div className="hidden md:flex flex-1 max-w-md lg:max-w-lg mx-3 lg:mx-6 relative">
+              <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar productos en el menú..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                aria-label="Buscar productos"
+                className="h-10 w-full rounded-xl border border-[#d9d5cd] bg-[#f7f6f2] pl-10 pr-9 text-sm text-slate-900 placeholder:text-slate-500 focus:border-slate-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/5 transition-all"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 hover:bg-black/5 hover:text-slate-800"
+                  aria-label="Limpiar búsqueda"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            {/* Derecha: Botón de Carrito / Pedido */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setDrawerOpen(true)}
+                className={`flex items-center gap-2 rounded-xl border px-3 sm:px-4 py-2 sm:py-2.5 transition-all text-xs sm:text-sm font-bold shadow-2xs cursor-pointer ${
+                  totalItems > 0
+                    ? 'text-white border-transparent'
+                    : 'border-[#e4e1da] bg-white text-slate-700 hover:bg-[#f7f6f2]'
+                }`}
+                style={totalItems > 0 ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
+                aria-label="Abrir pedido"
+              >
+                <ShoppingCart size={16} />
+                <span>
+                  <span className="hidden sm:inline">Ver </span>Pedido
+                  {totalItems > 0 ? ` (${totalItems})` : ''}
+                </span>
+              </button>
+            </div>
+
           </div>
 
-          {/* Search in sticky header */}
-          <div className="relative">
-            <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          {/* Móvil: Búsqueda abajo de la cabecera */}
+          <div className="relative md:hidden mt-2.5">
+            <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Buscar productos"
+              placeholder="Buscar productos..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               aria-label="Buscar productos"
-              className="h-10 w-full rounded-xl border border-[#d9d5cd] bg-[#f7f6f2] pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-500 focus:border-slate-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/5"
+              className="h-9.5 w-full rounded-xl border border-[#d9d5cd] bg-[#f7f6f2] pl-10 pr-9 text-xs text-slate-900 placeholder:text-slate-500 focus:border-slate-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/5"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 hover:bg-black/5 hover:text-slate-800"
+                className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 hover:bg-black/5 hover:text-slate-800"
                 aria-label="Limpiar búsqueda"
               >
-                <X size={14} />
+                <X size={13} />
               </button>
             )}
           </div>
         </div>
 
         {/* Horizontal category chips */}
-        <nav aria-label="Categorías de productos" className="border-t border-[#f0ede7]">
+        <nav aria-label="Categorías de productos" className="border-t border-[#f0ede7] bg-[#faf9f6]/60">
           <div className="fluid-container">
-            <div role="tablist" className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 py-1.5 hide-scrollbar no-scrollbar">
+            <div role="tablist" className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 py-2 hide-scrollbar no-scrollbar items-center">
               {visibleCategories.map(cat => {
                 const isActive = currentCategory === cat;
                 return (
@@ -262,9 +306,10 @@ export default function StorePage() {
                     type="button"
                     role="tab"
                     aria-selected={isActive}
-                    className={`min-h-9 shrink-0 snap-start whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                    style={isActive ? { backgroundColor: brandColor, borderColor: brandColor, color: '#ffffff' } : {}}
+                    className={`min-h-8.5 shrink-0 snap-start whitespace-nowrap rounded-full border px-3.5 py-1 text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                       isActive
-                        ? 'border-slate-900 bg-slate-900 text-white'
+                        ? 'text-white shadow-xs'
                         : 'border-[#d9d5cd] bg-white text-slate-700 hover:border-slate-400 hover:bg-[#f7f6f2]'
                     }`}
                   >
@@ -316,7 +361,7 @@ export default function StorePage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-3">
               {visible.map((p, i) => (
                 <ProductCard
                   key={p.id}
@@ -377,7 +422,12 @@ export default function StorePage() {
         </div>
       )}
 
-      <OrderDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} scheduleStatus={scheduleStatus} />
+      <OrderDrawer 
+        isOpen={drawerOpen} 
+        onClose={() => setDrawerOpen(false)} 
+        scheduleStatus={scheduleStatus} 
+        tableNumber={mesaParam}
+      />
     </div>
   );
 }

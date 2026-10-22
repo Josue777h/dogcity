@@ -62,16 +62,20 @@ export default function Sidebar({ business, onSignOut, isOpen, onClose }) {
         {/* Brand / Logo */}
         <div className="p-4 sm:p-5 flex items-center justify-between border-b border-gray-800/70 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-xs"
-              style={{ backgroundColor: business?.theme_color || '#EA580C' }}
-            >
-              {business?.logo_url ? (
-                <img src={business.logo_url} className="w-full h-full object-contain p-1" alt={business.nombre_visible} />
-              ) : (
-                <Store size={18} className="text-white" />
-              )}
-            </div>
+            {business?.logo_url ? (
+              <img
+                src={business.logo_url}
+                className="w-12 h-12 rounded-xl object-contain shrink-0"
+                alt={business.nombre_visible || 'Logo del negocio'}
+              />
+            ) : (
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: business?.theme_color || '#EA580C' }}
+              >
+                <Store size={22} className="text-white" />
+              </div>
+            )}
             <div className="min-w-0">
               <p className="text-xs font-bold text-white truncate leading-tight">
                 {business?.nombre_visible || 'Mi Negocio'}

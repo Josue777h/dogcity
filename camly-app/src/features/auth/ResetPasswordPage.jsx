@@ -101,13 +101,17 @@ export default function ResetPasswordPage() {
       navigate('/login', { replace: true, state: { email: user?.email || '', passwordUpdated: true } });
     } catch (updateError) {
       const message = String(updateError?.message || '');
-      if (/expired|invalid|session/i.test(message)) {
+      const code = String(updateError?.code || '');
+      if (code === 'same_password' || /different from the old password/i.test(message)) {
+        setError('Esa es la misma contraseña que ya tienes. Escribe una diferente para continuar.');
+      } else if (code === 'weak_password' || /password.*(weak|short|pwned|compromised|known)|weak password|at least|should contain/i.test(message)) {
+        setError('Esa contraseña no es lo bastante segura. Usa al menos 8 caracteres e incluye mayúsculas, minúsculas y números.');
+      } else if (/expired|invalid.*(token|jwt)|session.*(missing|not found|expired)|not authenticated/i.test(message)) {
         sessionStorage.removeItem(RECOVERY_SESSION_KEY);
         setHasRecoverySession(false);
         setError('El enlace venció o ya fue utilizado. Solicita uno nuevo para continuar.');
-      } else if (/password.*(weak|short)|weak password/i.test(message)) {
-        setError('Elige una contraseña más segura de al menos 8 caracteres.');
       } else {
+        console.error('Error al actualizar contraseña:', updateError);
         setError('No pudimos actualizar la contraseña. Inténtalo de nuevo.');
       }
     } finally {

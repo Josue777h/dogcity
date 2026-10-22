@@ -451,7 +451,10 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
                   <p className="text-xs font-bold text-gray-950 truncate">Opciones y Modificadores</p>
                   <p className="text-xs text-gray-700 font-medium truncate">
                     {formData.opciones?.length > 0 
-                      ? `${formData.opciones.length} grupo(s) · ${totalOptionsCount} opción(es) configuradas`
+                      ? (formData.opciones.length === 1 
+                          ? `${formData.opciones[0].titulo || 'Opciones'} · ${totalOptionsCount} ${totalOptionsCount === 1 ? 'opción' : 'opciones'}`
+                          : `${formData.opciones.map(g => g.titulo).filter(Boolean).slice(0, 3).join(', ')}${formData.opciones.length > 3 ? '...' : ''} · ${totalOptionsCount} opciones`
+                        )
                       : 'Sabores, tamaños, salsas o adicionales'}
                   </p>
                 </div>

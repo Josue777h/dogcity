@@ -82,30 +82,35 @@ export default function StoreFooter({ business, className = '', hasFloatingCart 
       className={`border-t ${className}`}
       style={{ backgroundColor: isBranded ? brandTint : '#ffffff', borderColor: brandBorder }}
     >
-      <div className={`fluid-container py-3 ${hasFloatingCart ? 'pb-24 md:pb-3' : ''}`}>
-        <section aria-label={`Información de ${storeName}`} className="min-w-0">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-white"
-              style={{ borderColor: brandBorder }}
-            >
-              {business.logo_url ? (
-                <img src={business.logo_url} alt={`Logo de ${storeName}`} className="h-full w-full object-contain p-1" loading="lazy" />
-              ) : (
-                <Store size={17} style={{ color: brandColor }} />
-              )}
+      <div className={`fluid-container py-6 sm:py-8 ${hasFloatingCart ? 'pb-28 md:pb-8' : ''}`}>
+        <section aria-label={`Información de ${storeName}`} className="min-w-0 space-y-4 sm:space-y-6">
+          
+          {/* Fila principal: Información del negocio + Redes y WhatsApp */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-white shadow-2xs"
+                style={{ borderColor: brandBorder }}
+              >
+                {business.logo_url ? (
+                  <img src={business.logo_url} alt={`Logo de ${storeName}`} className="h-full w-full object-contain p-1" loading="lazy" />
+                ) : (
+                  <Store size={22} style={{ color: brandColor }} />
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <h2 className="truncate text-base sm:text-lg font-bold leading-tight text-slate-900">{storeName}</h2>
+                <p className="mt-0.5 line-clamp-1 text-xs sm:text-sm text-slate-600">
+                  {description || 'Catálogo y pedidos directos'}
+                </p>
+              </div>
             </div>
 
-            <div className="min-w-0 flex-1">
-              <h2 className="truncate text-xs font-bold leading-tight text-slate-900 sm:text-sm">{storeName}</h2>
-              <p className="mt-0.5 line-clamp-1 text-[10px] leading-tight text-slate-500">
-                {description || 'Catálogo y pedidos directos'}
-              </p>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-0.5">
+            {/* Redes sociales y WhatsApp */}
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
               {socialLinks.length > 0 && (
-                <nav aria-label={`Redes sociales de ${storeName}`} className="flex items-center gap-0.5">
+                <nav aria-label={`Redes sociales de ${storeName}`} className="flex items-center gap-1">
                   {socialLinks.map(({ label, href, Icon }) => (
                     <a
                       key={label}
@@ -113,10 +118,10 @@ export default function StoreFooter({ business, className = '', hasFloatingCart 
                       target="_blank"
                       rel="noreferrer"
                       aria-label={label}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-black/5"
-                      style={{ color: isBranded ? brandColor : '#64748b' }}
+                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-black/5 bg-white transition-colors hover:bg-black/5 text-slate-700 shadow-2xs"
+                      style={{ color: isBranded ? brandColor : '#475569' }}
                     >
-                      {createElement(Icon, { size: 16, strokeWidth: 1.8 })}
+                      {createElement(Icon, { size: 18, strokeWidth: 1.8 })}
                     </a>
                   ))}
                 </nav>
@@ -127,42 +132,48 @@ export default function StoreFooter({ business, className = '', hasFloatingCart 
                   target="_blank"
                   rel="noreferrer"
                   aria-label={`Contactar a ${storeName} por WhatsApp`}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-white transition-opacity hover:opacity-85 sm:w-auto sm:gap-1.5 sm:px-2"
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-xl text-white font-bold text-xs sm:text-sm px-3.5 shadow-2xs transition-opacity hover:opacity-90"
                   style={{ backgroundColor: brandColor }}
                 >
-                  <WhatsAppMark size={15} />
-                  <span className="hidden text-[10px] font-semibold sm:inline">WhatsApp</span>
+                  <WhatsAppMark size={16} />
+                  <span>WhatsApp</span>
                 </a>
               )}
             </div>
           </div>
 
+          {/* Fila secundaria: Teléfono y Dirección */}
           {(phone || business.direccion) && (
-            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 border-t border-black/5 pt-2 text-[11px] leading-snug text-slate-600">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-black/5 pt-3 sm:pt-4 text-xs sm:text-sm text-slate-700 font-medium">
               {phone && (
-                <a href={`tel:${phoneHref}`} className="inline-flex min-h-7 min-w-0 items-center gap-1.5 font-medium hover:text-slate-950">
-                  <Phone size={12} className="shrink-0" style={{ color: brandColor }} />
-                  <span className="break-all">{phone}</span>
+                <a href={`tel:${phoneHref}`} className="inline-flex items-center gap-2 hover:text-slate-950 transition-colors">
+                  <Phone size={15} className="shrink-0" style={{ color: brandColor }} />
+                  <span>{phone}</span>
                 </a>
               )}
               {business.direccion && (
-                <div className="flex min-h-7 min-w-0 flex-1 basis-full items-center gap-1.5 sm:basis-auto">
-                  <MapPin size={12} className="shrink-0" style={{ color: brandColor }} />
-                  <span className="line-clamp-1 break-words">{business.direccion}</span>
+                <div className="flex items-center gap-2">
+                  <MapPin size={15} className="shrink-0" style={{ color: brandColor }} />
+                  <span>{business.direccion}</span>
                 </div>
               )}
             </div>
           )}
 
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-black/5 pt-1.5 text-[9px] leading-tight text-slate-500">
-            <p>© {new Date().getFullYear()} {storeName}</p>
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          {/* Pie legal y autoría: Legible, claro y proporcionado */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-x-4 gap-y-2.5 border-t border-black/5 pt-3 sm:pt-4 text-xs text-slate-500">
+            <p>© {new Date().getFullYear()} {storeName} · Catálogo activo</p>
+            
+            <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1">
               <Link to="/privacidad" className="font-medium underline underline-offset-2 hover:text-slate-800">Privacidad</Link>
               <Link to="/terminos" className="font-medium underline underline-offset-2 hover:text-slate-800">Términos</Link>
               <Link to="/cookies" className="font-medium underline underline-offset-2 hover:text-slate-800">Cookies</Link>
               <a href="https://sedeelectronica.sic.gov.co/temas/proteccion-al-consumidor" target="_blank" rel="noreferrer" className="font-medium underline underline-offset-2 hover:text-slate-800">Protección al consumidor (SIC)</a>
             </div>
-            <p>Catálogo digital por <span className="font-semibold" style={{ color: isBranded ? brandColor : '#475569' }}>NEGU</span></p>
+
+            <p>
+              Catálogo digital con <span className="font-bold" style={{ color: isBranded ? brandColor : '#0f172a' }}>NEGU</span>
+            </p>
           </div>
         </section>
       </div>

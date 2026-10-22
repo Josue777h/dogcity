@@ -26,6 +26,16 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
     }
   });
 
+  const dismissedStorageKey = `negu_options_dismissed_${activeBizId}`;
+  const [dismissedTitles, setDismissedTitles] = useState(() => {
+    try {
+      const data = localStorage.getItem(dismissedStorageKey);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  });
+
   // Opciones detectadas en otros productos del negocio
   const existingProductGroups = useMemo(() => {
     if (!products || !Array.isArray(products)) return [];
@@ -45,22 +55,24 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
     return Array.from(map.values());
   }, [products]);
 
-  // Lista combinada de biblioteca
+  // Lista combinada de biblioteca filtrando elementos descartados
   const allLibraryItems = useMemo(() => {
-    const items = [...savedLibrary];
+    const dismissedSet = new Set(dismissedTitles.map(t => t.trim().toLowerCase()));
+    const items = savedLibrary.filter(i => !dismissedSet.has(i.titulo.trim().toLowerCase()));
     const existingTitles = new Set(items.map(i => i.titulo.trim().toLowerCase()));
     
     existingProductGroups.forEach(eg => {
-      if (!existingTitles.has(eg.titulo.trim().toLowerCase())) {
+      const normTitle = eg.titulo.trim().toLowerCase();
+      if (!existingTitles.has(normTitle) && !dismissedSet.has(normTitle)) {
         items.push({
           ...eg,
-          id: `prod_${eg.titulo.toLowerCase().replace(/\s+/g, '_')}`,
+          id: `prod_${normTitle.replace(/\s+/g, '_')}`,
           isFromProduct: true
         });
       }
     });
     return items;
-  }, [savedLibrary, existingProductGroups]);
+  }, [savedLibrary, existingProductGroups, dismissedTitles]);
 
   if (!isOpen) return null;
 
@@ -116,14 +128,23 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
     }
   };
 
-  // Eliminar de la biblioteca
-  const handleDeleteFromLibrary = (libId) => {
-    const updated = savedLibrary.filter(item => item.id !== libId);
-    setSavedLibrary(updated);
-    try {
-      localStorage.setItem(libStorageKey, JSON.stringify(updated));
-      addToast('Opción eliminada de la biblioteca', 'info');
-    } catch {}
+  // Eliminar de la biblioteca (guardadas o descartar sugerencias)
+  const handleDeleteFromLibrary = (item) => {
+    const normTitle = (item.titulo || '').trim().toLowerCase();
+    if (!item.isFromProduct) {
+      const updated = savedLibrary.filter(libItem => libItem.id !== item.id && libItem.titulo.trim().toLowerCase() !== normTitle);
+      setSavedLibrary(updated);
+      try {
+        localStorage.setItem(libStorageKey, JSON.stringify(updated));
+      } catch {}
+    } else {
+      const updatedDismissed = Array.from(new Set([...dismissedTitles, normTitle]));
+      setDismissedTitles(updatedDismissed);
+      try {
+        localStorage.setItem(dismissedStorageKey, JSON.stringify(updatedDismissed));
+      } catch {}
+    }
+    addToast(`"${item.titulo}" eliminado de la biblioteca`, 'info');
   };
 
   // Usar desde la biblioteca
@@ -521,16 +542,15 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
                         + Usar
                       </button>
 
-                      {!item.isFromProduct && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteFromLibrary(item.id)}
-                          className="w-8 h-8 rounded-lg text-gray-600 hover:text-red-700 hover:bg-red-50 border border-gray-200 hover:border-red-200 flex items-center justify-center transition-colors cursor-pointer"
-                          title="Eliminar de la biblioteca"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteFromLibrary(item)}
+                        className="w-8 h-8 rounded-lg text-gray-500 hover:text-red-700 hover:bg-red-50 border border-gray-200 hover:border-red-200 flex items-center justify-center transition-colors cursor-pointer"
+                        title="Eliminar de la biblioteca"
+                        aria-label={`Eliminar ${item.titulo} de la biblioteca`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
                 ))}

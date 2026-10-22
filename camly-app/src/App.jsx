@@ -46,8 +46,12 @@ export default function App() {
   useEffect(() => {
     const root = document.documentElement;
     const primary = business?.theme_color || '#0284C7';
+    const secondary = business?.color_secundario || '#FFF7ED';
     
     root.style.setProperty('--primary-brand', primary);
+    root.style.setProperty('--secondary-brand', secondary);
+    root.style.setProperty('--color-brand', primary);
+    root.style.setProperty('--color-brand-secondary', secondary);
   }, [business?.theme_color, business?.color_secundario]);
 
   return (

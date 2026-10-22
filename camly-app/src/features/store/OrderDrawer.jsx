@@ -2,7 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import {
   User, Phone, MapPin, Navigation, MessageCircle,
   Copy, Check, Trash2, X, Wallet, ShoppingBag, Truck,
-  CheckCircle2, ShoppingCart, Minus, Plus, CreditCard, AlertCircle
+  CheckCircle2, ShoppingCart, Minus, Plus, CreditCard, AlertCircle, Smartphone, Utensils
 } from 'lucide-react';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
 import { formatMoney, openWhatsApp, reverseGeocode, formatWhatsAppMessage } from '../../lib/utils';
@@ -32,7 +32,7 @@ function WhatsAppIcon({ size = 20 }) {
   );
 }
 
-export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
+export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumber = '' }) {
   const business  = useBusinessStore(s => s.business);
   const products  = useBusinessStore(s => s.products);
   const bid       = business?.id;
@@ -44,8 +44,14 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
     getSelectedItems, clearCart, increment, decrement
   } = useCartStore();
 
-  const [deliveryMethod, setDeliveryMethod] = useState('');
+  const [deliveryMethod, setDeliveryMethod] = useState(() => tableNumber ? 'mesa' : '');
   const [paymentMethod,  setPaymentMethod]  = useState('');
+
+  useEffect(() => {
+    if (tableNumber && !deliveryMethod) {
+      setDeliveryMethod('mesa');
+    }
+  }, [tableNumber]);
   const [isSubmitting,   setIsSubmitting]   = useState(false);
   const [orderResult,    setOrderResult]    = useState(null);
   const [hasCopiedAccount, setHasCopiedAccount] = useState(false);
@@ -116,7 +122,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
     return formatWhatsAppMessage(`PEDIDO #${orderId} | ${bizName}`, [
       { title: 'Productos', lines: itemsLines },
       { title: 'Entrega', lines: [
-        deliveryMethod === 'envio' ? `Dirección: ${addressLine}` : 'Modalidad: Recoger en tienda',
+        deliveryMethod === 'mesa' || tableNumber ? `Modalidad: Servicio en Mesa (Mesa ${tableNumber})` : (deliveryMethod === 'envio' ? `Dirección: ${addressLine}` : 'Modalidad: Recoger en tienda'),
         deliveryMethod === 'envio' && locationLink ? `Mapa: ${locationLink}` : '',
         deliveryMethod === 'envio' ? `Domicilio: ${quotePending ? 'Pendiente de cotización' : formatMoney(deliveryFee)}` : '',
       ] },
@@ -124,7 +130,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
         `Subtotal: ${formatMoney(subtotal)}`,
         deliveryMethod === 'envio' && !quotePending ? `Domicilio: ${formatMoney(deliveryFee)}` : '',
         quotePending ? 'Total: Pendiente de cotización del envío' : `Total: ${formatMoney(total)}`,
-        `Pago: ${paymentMethod === 'transferencia' ? `Transferencia (${business?.pago_banco || 'Nequi'})` : 'Efectivo'}`,
+        `Pago: ${paymentMethod === 'transferencia' ? `Transferencia (${business?.pago_banco || 'Nequi'})` : paymentMethod === 'datafono' ? 'Datáfono contra entrega' : 'Efectivo'}`,
       ] },
       { title: 'Cliente', lines: [`Nombre: ${customerName}`, `Contacto: ${customerPhone}`, cart.comment ? `Nota: ${cart.comment}` : ''] },
       { title: 'Seguimiento', lines: [trackingUrl] },
@@ -197,25 +203,27 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
       requestGps();
       return;
     }
-    if (!paymentMethod)              { addToast('Selecciona la forma de pago (Efectivo o Transferencia)', 'warning'); return; }
+    if (!paymentMethod)              { addToast('Selecciona la forma de pago', 'warning'); return; }
 
     setIsSubmitting(true);
     try {
       const token   = crypto.randomUUID();
       const isCustomQuote = deliveryMethod === 'envio' && tipoDom === 'manual';
       const initialStatus = isCustomQuote ? 'COTIZACION_PENDIENTE' : 'nuevo';
-      const deliveryType = deliveryMethod === 'recogida'
-        ? 'pickup'
-        : isCustomQuote
-          ? 'custom_quote'
-          : tipoDom === 'fijo'
-            ? 'fixed'
-            : 'per_km';
+      const deliveryType = deliveryMethod === 'mesa'
+        ? 'dine_in'
+        : deliveryMethod === 'recogida'
+          ? 'pickup'
+          : isCustomQuote
+            ? 'custom_quote'
+            : tipoDom === 'fijo'
+              ? 'fixed'
+              : 'per_km';
 
       const payload = {
         nombre: customerName.trim(),
         telefono: customerPhone.trim(),
-        direccion: deliveryMethod === 'envio' ? customerAddress : 'Retiro en local',
+        direccion: deliveryMethod === 'mesa' ? `Servicio en Mesa ${tableNumber}` : (deliveryMethod === 'envio' ? customerAddress : 'Retiro en local'),
         ubicacion_link: locationLink,
         comentarios: (cart.comment || '').trim(),
         total,
@@ -239,7 +247,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
           ? (/daviplata/i.test(business?.pago_banco || '') ? 'transfer_daviplata'
             : /bancolombia/i.test(business?.pago_banco || '') ? 'transfer_bancolombia'
               : 'transfer_nequi')
-          : 'cash',
+          : paymentMethod === 'datafono' ? 'card_terminal' : 'cash',
         payment_status: 'pending',
         token,
         negocio_id: bid,
@@ -475,8 +483,9 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
                 <p className="caps-label mb-2">Datos de entrega</p>
                 <div className="space-y-3">
                   {/* Method selector */}
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className={`grid gap-2 ${tableNumber ? 'grid-cols-3' : 'grid-cols-2'}`}>
                     {[
+                      ...(tableNumber ? [{ id: 'mesa', label: `Mesa ${tableNumber}`, icon: Utensils }] : []),
                       { id: 'envio', label: 'A domicilio', icon: Truck },
                       { id: 'recogida', label: 'Recoger en local', icon: ShoppingBag },
                     ].map(m => (
@@ -485,7 +494,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
                         type="button"
                         onClick={() => {
                           setDeliveryMethod(m.id);
-                          if (m.id === 'recogida') {
+                          if (m.id === 'recogida' || m.id === 'mesa') {
                             setLocation('', '');
                             setDeliveryFee(0);
                             setDistanceKm(null);
@@ -669,10 +678,11 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus }) {
               {/* ── PAYMENT ── */}
               <div>
                 <p className="caps-label mb-2">Forma de pago</p>
-                <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
                   {[
                     { id: 'efectivo', label: 'Efectivo', icon: Wallet, show: enabledPayments.includes('efectivo') },
                     { id: 'transferencia', label: 'Transferencia', icon: CreditCard, show: enabledPayments.includes('transferencia') },
+                    { id: 'datafono', label: 'Datáfono', icon: Smartphone, show: enabledPayments.includes('datafono') },
                   ].filter(m => m.show).map(m => (
                     <button
                       key={m.id}

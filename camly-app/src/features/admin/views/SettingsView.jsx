@@ -5,8 +5,10 @@ import {
   Instagram, Facebook, MessageSquare, Palette,
   CheckCircle2, CreditCard, Upload, Smartphone, Check, Settings,
   Music2, Wallet, Truck, Navigation, Search, Clock, Sparkles,
-  ShoppingBag, ShoppingCart, Eye, Store, Utensils, Plus, X
+  ShoppingBag, ShoppingCart, Eye, Store, Utensils, Plus, X,
+  QrCode, Printer, Download, ExternalLink, Copy, HelpCircle
 } from 'lucide-react';
+import QRCode from 'qrcode';
 import { getSupabase, updateBusiness, uploadImage } from '../../../lib/supabase';
 import { useToastStore, useAuthStore } from '../../../stores';
 import PremiumLock from '../../../components/ui/PremiumLock';
@@ -23,6 +25,19 @@ const CURATED_COLORS = [
   { hex: '#7C3AED', label: 'Violeta' },
   { hex: '#DB2777', label: 'Fucsia Dulce' },
   { hex: '#78350F', label: 'Café Tostado' },
+];
+
+const CURATED_SECONDARY_COLORS = [
+  { hex: '#FFFBF5', label: 'Blanco Crema' },
+  { hex: '#FFF7ED', label: 'Naranja Suave' },
+  { hex: '#FEF2F2', label: 'Rojo Suave' },
+  { hex: '#FEFCE8', label: 'Miel Claro' },
+  { hex: '#F0FDF4', label: 'Menta Suave' },
+  { hex: '#EFF6FF', label: 'Azul Hielo' },
+  { hex: '#F5F3FF', label: 'Lavanda' },
+  { hex: '#FDF2F8', label: 'Rosa Seda' },
+  { hex: '#F8FAFC', label: 'Gris Glacial' },
+  { hex: '#F5F5F4', label: 'Arena' },
 ];
 
 const FONT_OPTIONS = [
@@ -143,6 +158,193 @@ export default function SettingsView(props) {
   const hasUnsavedChanges = savedSnapshot !== null && currentSnapshot !== savedSnapshot;
   useEffect(() => { setSavedSnapshot(null); }, [business?.id]);
   useEffect(() => { if (savedSnapshot === null) setSavedSnapshot(currentSnapshot); }, [currentSnapshot, savedSnapshot]);
+
+  // ── QR CODE INTERACTIVO ──────────────────────────────────────────────
+  const [qrMode, setQrMode] = useState('general'); // 'general' | 'mesa'
+  const [tableNumber, setTableNumber] = useState('1');
+  const [qrColorMode, setQrColorMode] = useState('brand'); // 'brand' | 'dark'
+  const [includeLogoInQr, setIncludeLogoInQr] = useState(true);
+  const [qrDataUrl, setQrDataUrl] = useState('');
+  const [isGeneratingQr, setIsGeneratingQr] = useState(false);
+
+  const getCatalogBaseUrl = () => {
+    const slug = business?.nombre || '';
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      return `${window.location.origin}/${slug}`;
+    }
+    return `https://negu.pro/${slug}`;
+  };
+
+  const getFullQrUrl = () => {
+    const base = getCatalogBaseUrl();
+    if (qrMode === 'mesa' && tableNumber.trim()) {
+      return `${base}?mesa=${encodeURIComponent(tableNumber.trim())}`;
+    }
+    return base;
+  };
+
+  useEffect(() => {
+    let isCancelled = false;
+    const generate = async () => {
+      setIsGeneratingQr(true);
+      try {
+        const url = getFullQrUrl();
+        const activeColor = qrColorMode === 'brand' ? (formData.theme_color || '#0F172A') : '#0F172A';
+        
+        const baseQr = await QRCode.toDataURL(url, {
+          width: 700,
+          margin: 2,
+          color: {
+            dark: activeColor,
+            light: '#FFFFFF'
+          },
+          errorCorrectionLevel: 'H'
+        });
+
+        if (!includeLogoInQr || !formData.logo_url) {
+          if (!isCancelled) setQrDataUrl(baseQr);
+          return;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 700;
+        canvas.height = 700;
+        const ctx = canvas.getContext('2d');
+        const qrImg = new Image();
+        qrImg.crossOrigin = 'anonymous';
+        qrImg.onload = () => {
+          if (isCancelled) return;
+          ctx.drawImage(qrImg, 0, 0, 700, 700);
+
+          const logoImg = new Image();
+          logoImg.crossOrigin = 'anonymous';
+          logoImg.onload = () => {
+            if (isCancelled) return;
+            const logoSize = 140;
+            const center = (700 - logoSize) / 2;
+            const pad = 12;
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            if (ctx.roundRect) {
+              ctx.roundRect(center - pad, center - pad, logoSize + pad * 2, logoSize + pad * 2, 22);
+            } else {
+              ctx.rect(center - pad, center - pad, logoSize + pad * 2, logoSize + pad * 2);
+            }
+            ctx.fill();
+
+            ctx.strokeStyle = '#E2E8F0';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.save();
+            ctx.beginPath();
+            if (ctx.roundRect) {
+              ctx.roundRect(center, center, logoSize, logoSize, 14);
+            } else {
+              ctx.rect(center, center, logoSize, logoSize);
+            }
+            ctx.clip();
+            ctx.drawImage(logoImg, center, center, logoSize, logoSize);
+            ctx.restore();
+
+            if (!isCancelled) setQrDataUrl(canvas.toDataURL('image/png'));
+          };
+          logoImg.onerror = () => {
+            if (!isCancelled) setQrDataUrl(baseQr);
+          };
+          logoImg.src = formData.logo_url;
+        };
+        qrImg.onerror = () => {
+          if (!isCancelled) setQrDataUrl(baseQr);
+        };
+        qrImg.src = baseQr;
+      } catch (err) {
+        console.warn('Error generating QR:', err);
+      } finally {
+        if (!isCancelled) setIsGeneratingQr(false);
+      }
+    };
+
+    generate();
+    return () => { isCancelled = true; };
+  }, [business?.nombre, qrMode, tableNumber, qrColorMode, includeLogoInQr, formData.theme_color, formData.logo_url]);
+
+  const handleDownloadQr = () => {
+    if (!qrDataUrl) return;
+    const a = document.createElement('a');
+    a.href = qrDataUrl;
+    const filename = `qr-${(business?.nombre || 'catalogo')}${qrMode === 'mesa' ? `-mesa-${tableNumber}` : ''}.png`;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    addToast('¡Código QR descargado con éxito!', 'success');
+  };
+
+  const handleCopyQrUrl = async () => {
+    const url = getFullQrUrl();
+    try {
+      await navigator.clipboard.writeText(url);
+      addToast('¡Enlace copiado al portapapeles!', 'success');
+    } catch {
+      addToast('No se pudo copiar el enlace', 'error');
+    }
+  };
+
+  const handlePrintTableStand = () => {
+    const printWindow = window.open('', '_blank', 'width=650,height=800');
+    if (!printWindow) {
+      addToast('Permite ventanas emergentes para imprimir el hablador.', 'warning');
+      return;
+    }
+    const storeName = formData.nombre_visible || business?.nombre || 'Menú Digital';
+    const isMesa = qrMode === 'mesa';
+    const color = formData.theme_color || '#EA580C';
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Hablador QR - ${storeName}</title>
+          <style>
+            @page { size: A5 portrait; margin: 12mm; }
+            * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+            body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #fff; padding: 20px; }
+            .stand { border: 2.5px dashed #cbd5e1; border-radius: 28px; padding: 40px 32px; width: 100%; max-width: 400px; text-align: center; }
+            .logo-wrap { width: 80px; height: 80px; margin: 0 auto 14px; border-radius: 18px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+            .logo-wrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
+            h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+            .tag { display: inline-block; background: ${color}15; color: ${color}; font-weight: 700; font-size: 14px; padding: 6px 16px; border-radius: 9999px; margin-bottom: 22px; }
+            .qr-frame { background: #ffffff; border: 2px solid #e2e8f0; border-radius: 22px; padding: 14px; display: inline-block; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+            .qr-frame img { width: 240px; height: 240px; display: block; }
+            .instruction { font-size: 14px; font-weight: 700; color: #1e293b; line-height: 1.4; margin-bottom: 6px; }
+            .hint { font-size: 12px; color: #64748b; }
+            .brand-footer { margin-top: 26px; font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+          </style>
+        </head>
+        <body>
+          <div class="stand">
+            ${formData.logo_url ? `<div class="logo-wrap"><img src="${formData.logo_url}" alt="Logo" /></div>` : ''}
+            <h1>${storeName}</h1>
+            <div class="tag">${isMesa ? `Mesa ${tableNumber} · Carta Digital` : 'Menú Digital Interactivo'}</div>
+            <div class="qr-frame">
+              <img src="${qrDataUrl}" alt="QR Menú" />
+            </div>
+            <p class="instruction">📱 Escanea con la cámara de tu celular<br/>para ver nuestra carta y realizar tu pedido</p>
+            <p class="hint">Sin descargar apps · Abre al instante en tu navegador</p>
+            <p class="brand-footer">Powered by NEGU</p>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   useEffect(() => {
     if (!business) return;
@@ -448,8 +650,9 @@ export default function SettingsView(props) {
         {[
           { id: 'perfil', label: 'General', icon: User },
           { id: 'marca', label: 'Diseño del Catálogo', icon: Palette },
-          { id: 'horario', label: 'Horarios y Estado', icon: Clock },
+          { id: 'qr', label: 'Código QR Interactivo', icon: QrCode },
           { id: 'pagos', label: 'Formas de Pago', icon: CreditCard },
+          { id: 'horario', label: 'Horarios y Estado', icon: Clock },
           { id: 'logistica', label: 'Domicilios y GPS', icon: Truck },
           { id: 'redes', label: 'Redes Sociales', icon: Instagram },
         ].map(tab => (
@@ -665,9 +868,46 @@ export default function SettingsView(props) {
                       </div>
                     </div>
 
-                    <div className="p-3.5 sm:p-4 rounded-xl border border-gray-200 bg-white shadow-2xs flex items-center justify-between gap-3">
-                      <div><h4 className="text-xs font-bold text-gray-900">Color secundario</h4><p className="text-[11px] text-gray-500">Fondos y acentos suaves del catálogo.</p></div>
-                      <input aria-label="Color secundario de marca" type="color" value={formData.color_secundario || '#FFF7ED'} onChange={e => setFormData(prev => ({ ...prev, color_secundario: e.target.value }))} className="h-9 w-12 rounded border border-gray-300 bg-white p-1" />
+                    <div className="p-3.5 sm:p-4 rounded-xl border border-gray-200 bg-white shadow-2xs space-y-2.5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h4 className="text-xs font-bold text-gray-900">Color secundario</h4>
+                          <p className="text-[11px] text-gray-500">Tono suave para fondos de categorías, badges y acentos del catálogo.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input 
+                            aria-label="Color secundario de marca" 
+                            type="color" 
+                            value={formData.color_secundario || '#FFF7ED'} 
+                            onChange={e => setFormData(prev => ({ ...prev, color_secundario: e.target.value }))} 
+                            className="h-8 w-10 rounded border border-gray-300 bg-white p-0.5 cursor-pointer shrink-0" 
+                          />
+                          <span className="text-[11px] font-mono font-bold text-gray-700 uppercase">
+                            {formData.color_secundario || '#FFF7ED'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Swatches Rápidos de Tonos Secundarios */}
+                      <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                        {CURATED_SECONDARY_COLORS.map(c => {
+                          const isSelected = (formData.color_secundario || '#FFF7ED').toLowerCase() === c.hex.toLowerCase();
+                          return (
+                            <button
+                              key={c.hex}
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, color_secundario: c.hex }))}
+                              className={`w-7 h-7 rounded-full shrink-0 border-2 transition-transform active:scale-90 flex items-center justify-center ${
+                                isSelected ? 'border-gray-950 ring-2 ring-gray-950/20 scale-110 shadow-xs' : 'border-gray-200 shadow-2xs hover:scale-105'
+                              }`}
+                              style={{ backgroundColor: c.hex }}
+                              title={c.label}
+                            >
+                              {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-gray-950" />}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
                     {/* 2. Estilos de Botones (4 Estilos Totalmente Diferenciados) */}
@@ -902,7 +1142,7 @@ export default function SettingsView(props) {
                         </div>
                       </div>
 
-                      {/* Categorías simuladas */}
+                      {/* Categorías simuladas con color primario y secundario en vivo */}
                       <div className="p-2 bg-gray-50/50 border-b border-gray-100 flex gap-1.5 overflow-hidden">
                         <span 
                           style={{ backgroundColor: formData.theme_color || '#0284C7', color: '#ffffff' }}
@@ -910,10 +1150,22 @@ export default function SettingsView(props) {
                         >
                           Todos
                         </span>
-                        <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-white border border-gray-200 text-gray-600 shrink-0">
+                        <span 
+                          style={{ 
+                            backgroundColor: formData.color_secundario || '#FFF7ED', 
+                            borderColor: `${formData.theme_color || '#0284C7'}25` 
+                          }}
+                          className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border text-gray-700 shrink-0"
+                        >
                           Especiales
                         </span>
-                        <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-white border border-gray-200 text-gray-600 shrink-0">
+                        <span 
+                          style={{ 
+                            backgroundColor: formData.color_secundario || '#FFF7ED', 
+                            borderColor: `${formData.theme_color || '#0284C7'}25` 
+                          }}
+                          className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border text-gray-700 shrink-0"
+                        >
                           Bebidas
                         </span>
                       </div>
@@ -1023,7 +1275,305 @@ export default function SettingsView(props) {
               </div>
           )}
 
-          {/* ── LOGÍSTICA & GPS ── */}
+          {/* ── CÓDIGO QR INTERACTIVO ── */}
+          {activeTab === 'qr' && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="border-b border-gray-100 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div 
+                    style={{ backgroundColor: `${formData.theme_color || '#EA580C'}18`, color: formData.theme_color || '#EA580C' }}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-2xs"
+                  >
+                    <QrCode size={19} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900">Código QR Interactivo de tu Catálogo</h3>
+                    <p className="text-xs text-gray-500">Genera, personaliza y descarga el QR de tu menú o imprime habladores acrílicos listos para tus mesas.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                {/* Columna Izquierda: Configuración del QR */}
+                <div className="lg:col-span-7 space-y-4">
+                  
+                  {/* Selector de Modalidad */}
+                  <div className="p-4 rounded-xl border border-gray-200 bg-white shadow-2xs space-y-3">
+                    <label className="block text-xs font-bold text-gray-900">
+                      1. Modalidad del código QR
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setQrMode('general')}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                          qrMode === 'general'
+                            ? 'border-gray-950 bg-gray-950 text-white shadow-xs'
+                            : 'border-gray-200 bg-gray-50/70 text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <Smartphone size={16} className={qrMode === 'general' ? 'text-white' : 'text-gray-500'} />
+                          {qrMode === 'general' && <Check size={14} className="text-emerald-400" />}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold">Catálogo General</p>
+                          <p className={`text-[10px] ${qrMode === 'general' ? 'text-gray-300' : 'text-gray-500'}`}>
+                            Para volantes, stickers de empaque, Instagram y domicilio.
+                          </p>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setQrMode('mesa')}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                          qrMode === 'mesa'
+                            ? 'border-gray-950 bg-gray-950 text-white shadow-xs'
+                            : 'border-gray-200 bg-gray-50/70 text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <Utensils size={16} className={qrMode === 'mesa' ? 'text-white' : 'text-gray-500'} />
+                          {qrMode === 'mesa' && <Check size={14} className="text-emerald-400" />}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold">Mesa Específica</p>
+                          <p className={`text-[10px] ${qrMode === 'mesa' ? 'text-gray-300' : 'text-gray-500'}`}>
+                            Para acrílicos de mesa. El cliente pide con número de mesa.
+                          </p>
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Si eligió mesa, selector de número de mesa */}
+                    {qrMode === 'mesa' && (
+                      <div className="pt-2 border-t border-gray-100 space-y-2 animate-fade-in">
+                        <label className="block text-xs font-semibold text-gray-700">
+                          Número o nombre de la mesa / zona:
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={tableNumber}
+                            onChange={e => setTableNumber(e.target.value)}
+                            placeholder="Ej: 1, 2, Barra, Terraza 3"
+                            className="input-field text-xs font-bold w-full max-w-xs"
+                          />
+                        </div>
+                        {/* Chips rápidos de mesas */}
+                        <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                          <span className="text-[10px] text-gray-500 font-semibold mr-1">Rápidos:</span>
+                          {['1', '2', '3', '4', '5', '6', 'Barra', 'Terraza'].map(m => (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() => setTableNumber(m)}
+                              className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border transition-colors cursor-pointer ${
+                                tableNumber === m
+                                  ? 'bg-gray-900 text-white border-gray-900'
+                                  : 'bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              {m}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Personalización visual del QR */}
+                  <div className="p-4 rounded-xl border border-gray-200 bg-white shadow-2xs space-y-3">
+                    <label className="block text-xs font-bold text-gray-900">
+                      2. Estilo y Personalización de Marca
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <span className="block text-xs text-gray-600 mb-1.5 font-medium">Color del código QR:</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setQrColorMode('brand')}
+                            className={`flex-1 py-1.5 px-2.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                              qrColorMode === 'brand'
+                                ? 'border-gray-950 bg-gray-900 text-white shadow-xs'
+                                : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            <span 
+                              style={{ backgroundColor: formData.theme_color || '#EA580C' }} 
+                              className="w-3.5 h-3.5 rounded-full inline-block border border-white"
+                            />
+                            <span>Tu Marca</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setQrColorMode('dark')}
+                            className={`flex-1 py-1.5 px-2.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                              qrColorMode === 'dark'
+                                ? 'border-gray-950 bg-gray-900 text-white shadow-xs'
+                                : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            <span className="w-3.5 h-3.5 rounded-full bg-slate-900 inline-block border border-white" />
+                            <span>Carbón</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="block text-xs text-gray-600 mb-1.5 font-medium">Logo central:</span>
+                        <button
+                          type="button"
+                          onClick={() => setIncludeLogoInQr(!includeLogoInQr)}
+                          className={`w-full py-1.5 px-3 rounded-lg border text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer ${
+                            includeLogoInQr
+                              ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold'
+                              : 'border-gray-200 bg-gray-50 text-gray-600'
+                          }`}
+                        >
+                          <span>{includeLogoInQr ? '✓ Logo en el centro' : 'Sin logo centrado'}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${includeLogoInQr ? 'bg-emerald-200 text-emerald-800' : 'bg-gray-200 text-gray-600'}`}>
+                            {includeLogoInQr ? 'Activo' : 'Oculto'}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Enlace generado con acciones directas */}
+                  <div className="p-4 rounded-xl border border-gray-200 bg-gray-50/70 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-gray-800">Enlace codificado en el QR:</span>
+                      <button
+                        type="button"
+                        onClick={handleCopyQrUrl}
+                        className="text-xs font-bold text-gray-900 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Copy size={13} />
+                        Copiar link
+                      </button>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-white border border-gray-200 font-mono text-xs text-gray-800 break-all select-all flex items-center justify-between gap-2">
+                      <span className="truncate">{getFullQrUrl()}</span>
+                      <a 
+                        href={getFullQrUrl()} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-gray-500 hover:text-gray-900 shrink-0"
+                        title="Probar en nueva pestaña"
+                      >
+                        <ExternalLink size={14} />
+                      </a>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Columna Derecha: Vista Previa Realista del Hablador de Mesa / QR */}
+                <div className="lg:col-span-5 flex flex-col items-center">
+                  <div className="w-full flex items-center justify-between mb-2 px-1">
+                    <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                      <Eye size={14} className="text-gray-600" />
+                      Vista previa del hablador
+                    </span>
+                    <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                      Listo para usar
+                    </span>
+                  </div>
+
+                  {/* Tarjeta Simulación Hablador Acrílico */}
+                  <div className="w-full max-w-[320px] bg-white rounded-3xl border-2 border-slate-200 shadow-xl p-5 text-center flex flex-col items-center relative overflow-hidden select-none">
+                    
+                    {/* Borde superior de marca */}
+                    <div 
+                      style={{ backgroundColor: formData.theme_color || '#EA580C' }}
+                      className="absolute top-0 left-0 right-0 h-2" 
+                    />
+
+                    {/* Logo de la tienda */}
+                    <div className="w-14 h-14 rounded-2xl bg-white border border-gray-200/90 shadow-2xs flex items-center justify-center p-1.5 mb-2.5 overflow-hidden shrink-0 mt-2">
+                      {formData.logo_url ? (
+                        <img src={formData.logo_url} alt="Logo" className="w-full h-full object-contain" />
+                      ) : (
+                        <Store size={22} className="text-gray-400" />
+                      )}
+                    </div>
+
+                    <h4 className="text-base font-extrabold text-gray-950 truncate max-w-full leading-tight mb-1">
+                      {formData.nombre_visible || business?.nombre || 'Nombre de tu negocio'}
+                    </h4>
+
+                    {/* Badge de Modalidad */}
+                    <div 
+                      style={{ 
+                        backgroundColor: `${formData.theme_color || '#EA580C'}15`, 
+                        color: formData.theme_color || '#EA580C' 
+                      }}
+                      className="text-[11px] font-bold px-3 py-0.5 rounded-full mb-3 inline-flex items-center gap-1"
+                    >
+                      {qrMode === 'mesa' ? `Mesa ${tableNumber} · Menú Digital` : 'Menú Digital Interactivo'}
+                    </div>
+
+                    {/* Código QR Generado */}
+                    <div className="p-3 bg-white border-2 border-gray-100 rounded-2xl shadow-sm mb-3">
+                      {!isGeneratingQr && qrDataUrl ? (
+                        <img 
+                          src={qrDataUrl} 
+                          alt="Código QR del catálogo" 
+                          className="w-48 h-48 sm:w-52 sm:h-52 object-contain"
+                        />
+                      ) : (
+                        <div className="w-48 h-48 flex items-center justify-center">
+                          <LoadingSpinner size={24} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Indicaciones para el cliente */}
+                    <p className="text-xs font-bold text-gray-800 leading-snug mb-1">
+                      📱 Escanea con la cámara de tu celular
+                    </p>
+                    <p className="text-[11px] text-gray-500 leading-tight">
+                      Consulta la carta, personaliza tus platos y haz tu pedido al instante
+                    </p>
+
+                    <div className="mt-3 pt-2 border-t border-gray-100 w-full flex items-center justify-center gap-1 text-[9px] font-semibold text-gray-400 tracking-wider uppercase">
+                      <span>Powered by NEGU</span>
+                    </div>
+                  </div>
+
+                  {/* Botones de Acción para Descargar e Imprimir */}
+                  <div className="w-full max-w-[320px] mt-4 flex flex-col sm:flex-row gap-2">
+                    <button
+                      type="button"
+                      onClick={handleDownloadQr}
+                      disabled={!qrDataUrl}
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-gray-900 text-white hover:bg-black font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <Download size={14} />
+                      <span>Descargar PNG</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handlePrintTableStand}
+                      disabled={!qrDataUrl}
+                      className="flex-1 py-2.5 px-3 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-gray-800 font-bold text-xs shadow-2xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <Printer size={14} />
+                      <span>Imprimir Hablador</span>
+                    </button>
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+          )}
           {activeTab === 'logistica' && (
             <div className="space-y-4">
               <div className="space-y-3">
@@ -1162,13 +1712,22 @@ export default function SettingsView(props) {
 
           {/* ── PAGOS ── */}
           {activeTab === 'pagos' && (
-            <div className="space-y-4 max-w-xl">
+            <div className="space-y-5 max-w-2xl animate-fade-in">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Métodos habilitados para el cliente</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <h3 className="text-sm font-bold text-gray-900 mb-0.5">Formas de Pago para tus Clientes</h3>
+                <p className="text-xs text-gray-500">
+                  Configura qué métodos de pago ofreces a tus clientes cuando arman su pedido desde el catálogo.
+                </p>
+              </div>
+
+              {/* Selector de Métodos Principales */}
+              <div className="space-y-3">
+                <label className="block text-xs font-bold text-gray-900">Métodos habilitados en tu catálogo</label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {[
-                    { id: 'efectivo', label: 'Efectivo contra entrega', icon: Wallet },
-                    { id: 'transferencia', label: 'Transferencia bancaria / Nequi', icon: CreditCard },
+                    { id: 'efectivo', label: 'Efectivo contra entrega', desc: 'Pago al repartidor o en local', icon: Wallet },
+                    { id: 'transferencia', label: 'Transferencia / Billeteras', desc: 'Nequi, Daviplata, Bancolombia', icon: CreditCard },
+                    { id: 'datafono', label: 'Datáfono contra entrega', desc: 'Tarjeta débito o crédito', icon: Smartphone },
                   ].map(m => {
                     const current = Array.isArray(formData.metodos_pago) ? formData.metodos_pago : [];
                     const active = current.includes(m.id);
@@ -1184,50 +1743,117 @@ export default function SettingsView(props) {
                               : [...current, m.id]
                           });
                         }}
-                        className={`flex items-center justify-between p-3.5 rounded-lg border text-left transition-colors
-                          ${active ? 'border-orange-500 bg-orange-50/50' : 'border-border bg-white text-gray-400'}`}
+                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5
+                          ${active 
+                            ? 'border-gray-950 bg-gray-900 text-white shadow-xs' 
+                            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}
                       >
-                        <div className="flex items-center gap-2.5">
-                          <m.icon size={16} className={active ? 'text-orange-600' : 'text-gray-400'} />
-                          <span className={`text-xs font-medium ${active ? 'text-gray-900' : 'text-gray-400'}`}>{m.label}</span>
+                        <div className="flex items-center justify-between w-full">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${active ? 'bg-white/15 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                            <m.icon size={16} />
+                          </div>
+                          {active && (
+                            <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">
+                              ✓
+                            </span>
+                          )}
                         </div>
-                        {active && <Check size={16} className="text-orange-600" />}
+                        <div>
+                          <p className="text-xs font-bold leading-tight">{m.label}</p>
+                          <p className={`text-[10px] mt-0.5 leading-snug ${active ? 'text-gray-300' : 'text-gray-500'}`}>{m.desc}</p>
+                        </div>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
+              {/* Detalle y configuración de Transferencias si está activo */}
               {formData.metodos_pago.includes('transferencia') && (
-                <div className="card p-4 bg-gray-50/50 space-y-3">
-                  <h5 className="text-xs font-semibold text-gray-800">Datos para transferencia</h5>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 bg-gray-50/70 space-y-4 animate-fade-in">
+                  <div className="flex items-center gap-2">
+                    <CreditCard size={17} className="text-gray-800" />
+                    <h4 className="text-xs font-bold text-gray-900">Datos para Transferencias y Billeteras Digitales</h4>
+                  </div>
+
+                  {/* Chips rápidos de billeteras en Colombia */}
+                  <div>
+                    <span className="block text-[11px] font-semibold text-gray-600 mb-1.5">Sugerencias rápidas de entidad:</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {['Nequi', 'Bancolombia', 'Daviplata', 'Davivienda', 'Dale', 'Llave Bre-B'].map(bankName => (
+                        <button
+                          key={bankName}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, pago_banco: bankName })}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                            (formData.pago_banco || '').toLowerCase().includes(bankName.toLowerCase())
+                              ? 'bg-gray-900 text-white border-gray-900 shadow-2xs'
+                              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          {bankName}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
-                      <label className="block text-xs text-gray-600 mb-1">Banco o Billetera</label>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">
+                        Banco, Billetera o Llave
+                      </label>
                       <input 
                         type="text" 
                         value={formData.pago_banco} 
                         onChange={e => setFormData({...formData, pago_banco: e.target.value})} 
-                        placeholder="Ej: Nequi / Bancolombia"
-                        className="input-field text-xs" 
+                        placeholder="Ej: Nequi / Bancolombia / Daviplata"
+                        className="input-field text-xs font-medium" 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-600 mb-1">Número de cuenta o alias</label>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">
+                        Número de cuenta, celular o llave
+                      </label>
                       <input 
                         type="text" 
                         value={formData.pago_alias} 
                         onChange={e => setFormData({...formData, pago_alias: e.target.value})} 
-                        placeholder="Ej: 300 123 4567"
-                        className="input-field text-xs font-mono" 
+                        placeholder="Ej: 314 324 3707"
+                        className="input-field text-xs font-mono font-bold" 
                       />
                     </div>
                   </div>
-                  <p className="text-[10px] text-gray-500">
-                    El cliente podrá copiar este número con un solo clic y transferirte antes de confirmar por WhatsApp.
+
+                  {/* Preview de cómo lo ve el cliente */}
+                  <div className="p-3 bg-white rounded-xl border border-gray-200/90 flex items-center justify-between gap-3 shadow-2xs">
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">
+                        Así lo verá tu cliente en el carrito:
+                      </p>
+                      <p className="text-xs font-bold text-gray-900 truncate">
+                        {formData.pago_banco || 'Nequi'}: <span className="font-mono">{formData.pago_alias || '300 123 4567'}</span>
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-gray-700 bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-md shrink-0 flex items-center gap-1">
+                      <Copy size={11} />
+                      Botón Copiar
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                    💡 Tus clientes podrán copiar tu número de cuenta con un solo clic y hacer la transferencia antes de finalizar su pedido por WhatsApp.
                   </p>
                 </div>
               )}
+
+              {/* Mensaje de confirmación de pedido */}
+              <div className="p-3.5 rounded-xl border border-amber-200/80 bg-amber-50/50 flex items-start gap-2.5 text-xs text-amber-900">
+                <CheckCircle2 size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                <div className="leading-snug">
+                  <span className="font-bold">Recordatorio automático en WhatsApp:</span> Cuando el cliente confirme su pedido, el mensaje enviado a tu WhatsApp incluirá automáticamente la forma de pago elegida y le solicitará adjuntar su comprobante de transferencia si aplica.
+                </div>
+              </div>
+
             </div>
           )}
 

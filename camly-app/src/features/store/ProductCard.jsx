@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
-import { ShoppingCart, Plus, Minus, X, PackageCheck, Check, Layers, AlertCircle, Sparkles } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, X, PackageCheck, Check, Layers, AlertCircle, Sparkles, ChevronDown } from 'lucide-react';
 import { formatMoney } from '../../lib/utils';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
 
 export default function ProductCard({ 
   product, 
-  index = 0, 
+  _index = 0, 
   isStoreOpen = true, 
   storeClosedMessage = '' 
 }) {
@@ -33,9 +33,11 @@ export default function ProductCard({
     return initial;
   };
 
-  // Estado de selecciones dentro del modal de personalización (100% limpio desde cero)
+  // Estado de selecciones dentro del modal de personalización y detalle
   const [selectedOptions, setSelectedOptions] = useState(getDefaultOptions);
   const [tempNote, setTempNote] = useState('');
+  const [modalQty, setModalQty] = useState(1);
+  const [expandedGroups, setExpandedGroups] = useState({});
 
   const brandColor = business?.theme_color || '#0284C7';
 
@@ -57,9 +59,37 @@ export default function ProductCard({
 
   if (!bid) return null;
 
+  // Inicializar grupos desplegados de forma inteligente
+  const initializeExpandedGroups = () => {
+    if (!hasOptions) return {};
+    const total = product.opciones.length;
+    const initial = {};
+    if (total <= 2) {
+      // 1 o 2 grupos: todos abiertos de inmediato
+      product.opciones.forEach(g => { initial[g.id] = true; });
+    } else {
+      // 3 o más grupos (ej. 5 toppings): abrir el primero o el primero obligatorio
+      const firstReqIndex = product.opciones.findIndex(g => g.requerido);
+      const targetIndex = firstReqIndex !== -1 ? firstReqIndex : 0;
+      product.opciones.forEach((g, idx) => {
+        initial[g.id] = idx === targetIndex;
+      });
+    }
+    return initial;
+  };
+
+  const toggleGroup = (groupId) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupId]: !prev[groupId]
+    }));
+  };
+
   const openCustomizationModal = () => {
     setSelectedOptions(getDefaultOptions());
+    setExpandedGroups(initializeExpandedGroups());
     setTempNote('');
+    setModalQty(1);
     setShowModal(true);
   };
 
@@ -70,7 +100,7 @@ export default function ProductCard({
 
   const finalUnitPrice = Number(product.price) + extraToppingsCost;
 
-  // Manejar selección única (radio / sabores)
+  // Manejar selección única (radio / sabores) con auto-avance inteligente
   const handleSelectRadio = (group, option) => {
     setSelectedOptions(prev => {
       const current = prev[group.id] || [];
@@ -89,6 +119,24 @@ export default function ProductCard({
         }] 
       };
     });
+
+    // Si tiene 3 o más grupos, auto-avanzar al siguiente grupo que aún no tenga selecciones
+    if (hasOptions && product.opciones.length > 2) {
+      const currentIndex = product.opciones.findIndex(g => g.id === group.id);
+      const nextGroup = product.opciones.slice(currentIndex + 1).find(g => {
+        const sel = selectedOptions[g.id] || [];
+        return sel.length === 0;
+      });
+      if (nextGroup) {
+        setTimeout(() => {
+          setExpandedGroups(prev => ({
+            ...prev,
+            [group.id]: false,
+            [nextGroup.id]: true
+          }));
+        }, 120);
+      }
+    }
   };
 
   // Manejar selección múltiple (checkbox / toppings) con control estricto de máximo
@@ -155,9 +203,13 @@ export default function ProductCard({
     }
 
     const flatOptions = Object.values(selectedOptions).flat();
-    addItem(bid, product, { options: flatOptions, note: tempNote.trim(), quantity: 1 });
+    addItem(bid, product, { 
+      options: flatOptions, 
+      note: tempNote.trim(), 
+      quantity: modalQty 
+    });
     setShowModal(false);
-    addToast(`¡${product.name} agregado al pedido!`, 'success');
+    addToast(modalQty > 1 ? `¡${modalQty}x ${product.name} agregados!` : `¡${product.name} agregado al pedido!`, 'success');
   };
 
   const getAddButtonProps = () => {
@@ -185,33 +237,7 @@ export default function ProductCard({
     }
   };
 
-  const getModalButtonProps = () => {
-    switch (buttonStyle) {
-      case 'square':
-        return {
-          className: "py-2.5 px-4 sm:py-3 sm:px-6 text-xs sm:text-sm font-black uppercase tracking-wider rounded-none shadow-none text-white flex items-center justify-center gap-1.5 transition-transform active:scale-95 shrink-0",
-          style: { backgroundColor: brandColor }
-        };
-      case 'soft':
-        return {
-          className: "py-2.5 px-4 sm:py-3 sm:px-6 text-xs sm:text-sm font-semibold rounded-md shadow-2xs text-white flex items-center justify-center gap-1.5 transition-transform active:scale-95 shrink-0",
-          style: { backgroundColor: brandColor }
-        };
-      case 'outline':
-        return {
-          className: "py-2 px-4 sm:py-2.5 sm:px-6 text-xs sm:text-sm font-bold rounded-lg border-2 bg-white flex items-center justify-center gap-1.5 transition-transform active:scale-95 shrink-0",
-          style: { borderColor: brandColor, color: brandColor }
-        };
-      default: // pill
-        return {
-          className: "py-2.5 px-4 sm:py-3 sm:px-6 text-xs sm:text-sm font-bold rounded-full shadow-md text-white flex items-center justify-center gap-1.5 transition-transform active:scale-95 shrink-0",
-          style: { backgroundColor: brandColor }
-        };
-    }
-  };
-
   const btnProps = getAddButtonProps();
-  const modalBtnProps = getModalButtonProps();
 
   return (
     <>
@@ -224,7 +250,7 @@ export default function ProductCard({
         {/* Product Image */}
         <div
           className="group relative aspect-[8/5] cursor-pointer overflow-hidden bg-[#e8dfd1]"
-          onClick={() => hasOptions ? openCustomizationModal() : handleCardAdd()}
+          onClick={openCustomizationModal}
         >
           {!imgError && product.image ? (
             <img
@@ -244,7 +270,7 @@ export default function ProductCard({
           {/* Badge si tiene opciones o personalizaciones */}
           {hasOptions && (
             <div 
-              className="absolute left-2 top-2 flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold text-white"
+              className="absolute left-2 top-2 flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold text-white shadow-xs"
               style={{ backgroundColor: brandColor }}
             >
               <Layers size={10} />
@@ -255,7 +281,7 @@ export default function ProductCard({
           {/* Quantity pill on image */}
           {isSelected && (
             <div 
-              className="absolute right-2 top-2 flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-xs font-bold text-white"
+              className="absolute right-2 top-2 flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-xs font-bold text-white shadow-xs"
               style={{ backgroundColor: brandColor }}
             >
               {totalProductQty}
@@ -272,8 +298,8 @@ export default function ProductCard({
 
         {/* Content */}
         <div className="flex flex-1 flex-col p-2.5 font-sans sm:p-3">
-          <div className="mb-2 min-w-0 flex-1 cursor-pointer" onClick={() => hasOptions ? openCustomizationModal() : handleCardAdd()}>
-            <h3 className="mb-1 line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-tight text-slate-900 sm:text-base">
+          <div className="mb-2 min-w-0 flex-1 cursor-pointer" onClick={openCustomizationModal}>
+            <h3 className="mb-1 line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-tight text-slate-900 sm:text-base hover:text-blue-600 transition-colors">
               {product.name}
             </h3>
             {product.description && (
@@ -345,138 +371,213 @@ export default function ProductCard({
 
           <div className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[#e1ddd5] bg-white shadow-2xl animate-scale-in max-h-[calc(100dvh-env(safe-area-inset-top,0px)-2rem)] sm:max-h-[min(88dvh,48rem)]">
             
-            {/* Botón cerrar */}
+            {/* Botón cerrar flotante */}
             <button
               onClick={() => setShowModal(false)}
-              className="absolute right-3 top-3 z-30 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-[#e1ddd5] bg-white text-slate-600 transition-colors hover:bg-[#f7f6f2]"
+              className="absolute right-3.5 top-3.5 z-30 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-black/60 hover:bg-black/80 text-white transition-colors backdrop-blur-xs shadow-md"
               aria-label="Cerrar"
             >
-              <X size={16} />
+              <X size={18} />
             </button>
 
-            {/* Cabecera con imagen si existe */}
-            <div className="flex min-h-[5.5rem] shrink-0 items-center gap-3 border-b border-[#f0ede7] bg-white px-4 py-3 pr-16 sm:min-h-28 sm:gap-4 sm:px-5">
+            {/* CONTENEDOR DESPLAZABLE ÚNICO (TODO HACE SCROLL SUAVE Y NATURAL) */}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+
+              {/* Hero Image del producto si existe */}
               {!imgError && product.image ? (
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="h-16 w-16 shrink-0 rounded-xl border border-[#e7e3db] object-cover sm:h-20 sm:w-20"
-                  onError={() => setImgError(true)}
-                />
-              ) : (
-                <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border border-[#e7e3db] bg-[#f2eee7] text-slate-500 sm:h-20 sm:w-20">
-                  <PackageCheck size={22} strokeWidth={1.5} />
-                  <span className="text-center text-[9px] font-medium leading-tight">Sin foto</span>
+                <div className="relative aspect-[16/9] max-h-48 sm:max-h-56 w-full bg-[#f2eee7] overflow-hidden">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="h-full w-full object-cover"
+                    onError={() => setImgError(true)}
+                  />
+                  {product.categoria && (
+                    <span className="absolute bottom-2.5 left-3 rounded-md bg-black/75 backdrop-blur-xs px-2.5 py-1 text-xs font-semibold text-white">
+                      {product.categoria}
+                    </span>
+                  )}
                 </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <span className="mb-1 inline-block max-w-full truncate rounded-md bg-[#f2f0eb] px-2 py-1 text-[10px] font-semibold text-slate-600">
-                  {product.categoria || 'Menú'}
-                </span>
-                <h2 className="line-clamp-2 text-base font-semibold leading-tight text-slate-900 sm:text-lg">
-                  {product.name}
-                </h2>
+              ) : null}
+
+              {/* Cabecera con Título, Precio y Descripción limpia */}
+              <div className="p-4 sm:p-5 border-b border-[#f0ede7] space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    {(!product.image || imgError) && product.categoria && (
+                      <span className="mb-1 inline-block rounded-md bg-[#f2f0eb] px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                        {product.categoria}
+                      </span>
+                    )}
+                    <h2 className="text-lg sm:text-xl font-bold leading-tight text-slate-900">
+                      {product.name}
+                    </h2>
+                  </div>
+                  <span className="text-base sm:text-lg font-extrabold text-slate-900 shrink-0 tabular-nums">
+                    {formatMoney(product.price)}
+                  </span>
+                </div>
+
+                {/* Descripción e ingredientes legible y sin recuadros pesados */}
                 {product.description && (
-                  <p className="mt-1 line-clamp-1 text-xs text-slate-500">{product.description}</p>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line pt-0.5">
+                    {product.description}
+                  </p>
                 )}
               </div>
-            </div>
 
-            {/* Cuerpo desplazable con opciones */}
-            <div className="min-h-0 max-h-[min(48dvh,26rem)] space-y-3 overflow-y-auto overscroll-contain px-4 py-4 text-xs sm:space-y-3.5 sm:px-5 sm:py-5">
-              {/* Grupos de opciones (Sabores / Toppings) */}
-              {hasOptions && (
-                <div className="space-y-3 pt-0.5 font-sans">
-                  {product.opciones.map(group => {
+              {/* Opciones y notas en el mismo flujo de scroll */}
+              <div className="p-4 sm:p-5 space-y-4">
+                {/* Grupos de opciones (Sabores / Toppings) con Acordeón Inteligente */}
+                {hasOptions && (
+                <div className="space-y-2.5 pt-0.5 font-sans">
+                  {product.opciones.map((group, groupIdx) => {
                     const isRadio = group.tipo === 'unica';
                     const currentSelected = selectedOptions[group.id] || [];
                     const maxLimit = Number(group.max_opciones) || null;
+                    const isOpen = expandedGroups[group.id] ?? (product.opciones.length <= 2 || groupIdx === 0);
+                    const isCompleted = isRadio ? currentSelected.length > 0 : (group.min_opciones ? currentSelected.length >= Number(group.min_opciones) : currentSelected.length > 0);
+                    const isRequiredPending = group.requerido && currentSelected.length === 0;
 
                     return (
-                      <div key={group.id} className="space-y-2.5 rounded-xl border border-[#e7e3db] bg-[#fbfaf8] p-3 sm:p-4">
-                        <div className="flex items-center justify-between gap-2">
-                          <div>
-                            <h4 className="text-sm font-semibold text-slate-900">
-                              {group.titulo}
-                            </h4>
-                            <p className="mt-0.5 text-xs text-slate-500">
-                              {isRadio 
-                                ? 'Elige 1 opción' 
-                                : maxLimit 
-                                  ? `Hasta ${maxLimit} opciones (${currentSelected.length}/${maxLimit})` 
-                                  : 'Elige las que desees'}
-                            </p>
+                      <div 
+                        key={group.id} 
+                        className={`rounded-xl border transition-all duration-200 overflow-hidden ${
+                          isOpen 
+                            ? 'border-slate-300 bg-white shadow-2xs ring-1 ring-black/[0.03]' 
+                            : isRequiredPending
+                              ? 'border-amber-200/90 bg-amber-50/20'
+                              : 'border-[#e7e3db] bg-[#fbfaf8] hover:border-slate-300'
+                        }`}
+                      >
+                        {/* Cabecera interactiva del grupo */}
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(group.id)}
+                          className="w-full flex items-center justify-between gap-2.5 p-3 sm:p-3.5 text-left cursor-pointer transition-colors select-none"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-sm font-bold text-slate-900 leading-snug">
+                                {group.titulo}
+                              </h4>
+                              
+                              {/* Badge de estado del grupo */}
+                              {isRequiredPending ? (
+                                <span className="rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                                  Obligatorio
+                                </span>
+                              ) : isCompleted ? (
+                                <span className="rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 flex items-center gap-0.5">
+                                  <Check size={10} strokeWidth={3} />
+                                  Listo
+                                </span>
+                              ) : (
+                                <span className="rounded-md border border-[#e7e3db] bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
+                                  Opcional
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Resumen dinámico en vivo */}
+                            {!isOpen && currentSelected.length > 0 ? (
+                              <p className="mt-1 text-xs font-semibold text-emerald-700 flex items-center gap-1 truncate">
+                                <span className="truncate">
+                                  {currentSelected.map(o => o.nombre).join(', ')}
+                                </span>
+                              </p>
+                            ) : (
+                              <p className="mt-0.5 text-xs text-slate-500">
+                                {isRadio 
+                                  ? 'Elige 1 opción' 
+                                  : maxLimit 
+                                    ? `Hasta ${maxLimit} opciones (${currentSelected.length}/${maxLimit})` 
+                                    : 'Elige las que desees'}
+                              </p>
+                            )}
                           </div>
-                          <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold ${
-                            group.requerido 
-                              ? 'border-amber-200 bg-amber-50 text-amber-800'
-                              : 'border-[#e7e3db] bg-white text-slate-600'
-                          }`}>
-                            {group.requerido ? 'Obligatorio' : 'Opcional'}
-                          </span>
-                        </div>
 
-                        {/* Opciones dentro del grupo */}
-                        <div className="space-y-1.5">
-                          {group.opciones?.map(opt => {
-                            const isChecked = currentSelected.some(o => o.id === opt.id);
-                            const isMaxReached = !isRadio && maxLimit && currentSelected.length >= maxLimit && !isChecked;
-
-                            return (
-                              <label
-                                key={opt.id}
-                                onClick={() => {
-                                  if (isMaxReached) {
-                                    addToast(`Límite de ${maxLimit} opciones alcanzado en "${group.titulo}"`, 'warning');
-                                    return;
-                                  }
-                                  if (isRadio) {
-                                    handleSelectRadio(group, opt);
-                                  } else {
-                                    handleToggleCheckbox(group, opt);
-                                  }
-                                }}
-                                style={{
-                                  borderColor: isChecked ? brandColor : undefined,
-                                  backgroundColor: isChecked ? `${brandColor}08` : undefined
-                                }}
-                                className={`flex min-h-11 items-center justify-between gap-2 rounded-lg border px-3 py-2 transition-colors select-none ${
-                                  isMaxReached 
-                                    ? 'cursor-not-allowed border-[#e7e3db] bg-[#f2f0eb] opacity-60'
-                                    : 'cursor-pointer bg-white hover:border-slate-400'
-                                } ${
-                                  isChecked 
-                                    ? 'font-medium text-slate-950'
-                                    : 'border-[#e7e3db] text-slate-700'
-                                }`}
+                          {/* Indicador numérico y flecha acordeón */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            {currentSelected.length > 0 && (
+                              <span 
+                                style={{ backgroundColor: `${brandColor}15`, color: brandColor }}
+                                className="text-[11px] font-extrabold px-2 py-0.5 rounded-full tabular-nums"
                               >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <div 
-                                    style={isChecked ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
-                                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-${isRadio ? 'full' : 'sm'} border transition-colors ${
-                                      isChecked ? 'text-white' : 'border-[#c9c4bb] bg-white'
+                                {isRadio ? '1/1' : `${currentSelected.length}${maxLimit ? `/${maxLimit}` : ''}`}
+                              </span>
+                            )}
+                            <div className={`p-1 rounded-md text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-slate-700' : ''}`}>
+                              <ChevronDown size={17} />
+                            </div>
+                          </div>
+                        </button>
+
+                        {/* Opciones dentro del grupo (se despliega si está abierto) */}
+                        {isOpen && (
+                          <div className="p-3 sm:p-3.5 pt-0 space-y-1.5 border-t border-slate-100/80 animate-fade-in">
+                            <div className="pt-2 space-y-1.5">
+                              {group.opciones?.map(opt => {
+                                const isChecked = currentSelected.some(o => o.id === opt.id);
+                                const isMaxReached = !isRadio && maxLimit && currentSelected.length >= maxLimit && !isChecked;
+
+                                return (
+                                  <label
+                                    key={opt.id}
+                                    onClick={() => {
+                                      if (isMaxReached) {
+                                        addToast(`Límite de ${maxLimit} opciones alcanzado en "${group.titulo}"`, 'warning');
+                                        return;
+                                      }
+                                      if (isRadio) {
+                                        handleSelectRadio(group, opt);
+                                      } else {
+                                        handleToggleCheckbox(group, opt);
+                                      }
+                                    }}
+                                    style={{
+                                      borderColor: isChecked ? brandColor : undefined,
+                                      backgroundColor: isChecked ? `${brandColor}08` : undefined
+                                    }}
+                                    className={`flex min-h-11 items-center justify-between gap-2 rounded-lg border px-3 py-2 transition-colors select-none ${
+                                      isMaxReached 
+                                        ? 'cursor-not-allowed border-[#e7e3db] bg-[#f2f0eb] opacity-60'
+                                        : 'cursor-pointer bg-white hover:border-slate-400'
+                                    } ${
+                                      isChecked 
+                                        ? 'font-medium text-slate-950'
+                                        : 'border-[#e7e3db] text-slate-700'
                                     }`}
                                   >
-                                    {isChecked && (
-                                      isRadio 
-                                        ? <div className="w-1.5 h-1.5 rounded-full bg-white" /> 
-                                        : <Check size={11} strokeWidth={3} />
-                                    )}
-                                  </div>
-                                  <span className="truncate text-sm text-slate-900">
-                                    {opt.nombre}
-                                  </span>
-                                </div>
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div 
+                                        style={isChecked ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
+                                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-${isRadio ? 'full' : 'sm'} border transition-colors ${
+                                          isChecked ? 'text-white' : 'border-[#c9c4bb] bg-white'
+                                        }`}
+                                      >
+                                        {isChecked && (
+                                          isRadio 
+                                            ? <div className="w-1.5 h-1.5 rounded-full bg-white" /> 
+                                            : <Check size={11} strokeWidth={3} />
+                                        )}
+                                      </div>
+                                      <span className="truncate text-sm text-slate-900">
+                                        {opt.nombre}
+                                      </span>
+                                    </div>
 
-                                <span className={`text-xs tabular-nums shrink-0 ml-2 ${
-                                  Number(opt.precio) > 0 ? 'font-semibold text-slate-900' : 'font-normal text-slate-500'
-                                }`}>
-                                  {Number(opt.precio) > 0 ? `+${formatMoney(opt.precio)}` : 'Incluido'}
-                                </span>
-                              </label>
-                            );
-                          })}
-                        </div>
+                                    <span className={`text-xs tabular-nums shrink-0 ml-2 ${
+                                      Number(opt.precio) > 0 ? 'font-semibold text-slate-900' : 'font-normal text-slate-500'
+                                    }`}>
+                                      {Number(opt.precio) > 0 ? `+${formatMoney(opt.precio)}` : 'Incluido'}
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -497,23 +598,38 @@ export default function ProductCard({
                 />
               </div>
             </div>
+          </div>
 
-            {/* Footer con precio dinámico y botón de confirmación */}
-            <div className="flex shrink-0 items-center justify-between gap-2.5 border-t border-[#e7e3db] bg-white px-4 py-3 sm:gap-4 sm:p-5 pb-safe">
-              <div className="shrink-0 min-w-0 pr-1">
-                <span className="text-[10px] sm:text-[11px] text-gray-400 font-semibold block uppercase tracking-wider">
-                  Total producto
+          {/* Footer con Stepper de cantidad y botón Agregar dinámico */}
+            <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[#e7e3db] bg-white px-4 py-3 sm:p-5 pb-safe">
+              {/* Stepper de cantidad */}
+              <div className="flex items-center rounded-xl border border-[#d9d5cd] bg-[#f7f6f2] p-0.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setModalQty(q => Math.max(1, q - 1))}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 hover:bg-black/5 active:scale-95 cursor-pointer"
+                  aria-label="Disminuir cantidad"
+                >
+                  <Minus size={15} />
+                </button>
+                <span className="w-8 text-center text-sm font-bold text-slate-900 tabular-nums">
+                  {modalQty}
                 </span>
-                <span className="text-base sm:text-xl font-black text-gray-950 tabular-nums">
-                  {formatMoney(finalUnitPrice)}
-                </span>
+                <button
+                  type="button"
+                  onClick={() => setModalQty(q => q + 1)}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 hover:bg-black/5 active:scale-95 cursor-pointer"
+                  aria-label="Aumentar cantidad"
+                >
+                  <Plus size={15} />
+                </button>
               </div>
 
               {!isStoreOpen ? (
                 <button
                   type="button"
                   disabled
-                  className="py-2.5 px-4 text-xs font-bold rounded-xl bg-gray-100 text-gray-500 border border-gray-200 cursor-not-allowed shrink-0"
+                  className="flex-1 py-2.5 px-4 text-xs font-bold rounded-xl bg-gray-100 text-gray-500 border border-gray-200 cursor-not-allowed shrink-0"
                 >
                   Tienda en pausa
                 </button>
@@ -521,11 +637,13 @@ export default function ProductCard({
                 <button
                   type="button"
                   onClick={handleConfirmCustomization}
-                  style={modalBtnProps.style}
-                  className={`${modalBtnProps.className} min-h-12 rounded-lg px-3 text-xs shadow-none sm:min-h-12 sm:px-5 sm:text-sm cursor-pointer hover:opacity-95`}
+                  style={{ backgroundColor: brandColor }}
+                  className="flex-1 min-h-11 sm:min-h-12 rounded-xl text-white font-bold text-xs sm:text-sm px-4 flex items-center justify-between gap-2 shadow-sm hover:opacity-95 active:scale-98 cursor-pointer transition-all"
                 >
-                  <Plus size={15} className="shrink-0" />
                   <span>Agregar al pedido</span>
+                  <span className="tabular-nums font-extrabold text-sm sm:text-base">
+                    {formatMoney(finalUnitPrice * modalQty)}
+                  </span>
                 </button>
               )}
             </div>

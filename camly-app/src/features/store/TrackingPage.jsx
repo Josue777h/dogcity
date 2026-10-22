@@ -134,17 +134,19 @@ export default function TrackingPage() {
     OrderService.getReceiptUrl(path).then(setReceiptDisplayUrl).catch(console.error);
   }, [currentOrder.payment_receipt_url, isDemo]);
 
-  // Ventana de gracia de 30 segundos calculada desde confirmed_at.
+  // Ventana de gracia de 30 segundos calculada desde confirmed_at o momento actual
   useEffect(() => {
-    if (statusStr !== 'CONFIRMADO_GRACIA' || !currentOrder.confirmed_at) return;
+    if (statusStr !== 'CONFIRMADO_GRACIA') return;
 
     const GRACE_PERIOD_SECONDS = 30;
 
     // Calcular el timestamp base
     let startMs = Date.now();
-    if (currentOrder.confirmed_at) {
-      const parsed = new Date(currentOrder.confirmed_at).getTime();
-      if (!isNaN(parsed)) {
+    const rawTime = currentOrder.confirmed_at || currentOrder.updated_at || currentOrder.created_at;
+    if (rawTime) {
+      const parsed = new Date(rawTime).getTime();
+      // Solo usar el timestamp si es válido y no está en el futuro por desfase horario
+      if (!isNaN(parsed) && parsed <= Date.now()) {
         startMs = parsed;
       }
     }
@@ -169,8 +171,6 @@ export default function TrackingPage() {
           }
           setOrder(prev => prev ? { ...prev, status: 'EN_PREPARACION', estado: 'EN_PREPARACION' } : prev);
         } catch (err) {
-          // El servidor es la autoridad del tiempo. Si aún no han pasado 30 s
-          // según su reloj o hay un fallo temporal, conserva el estado y reintenta.
           nextAdvanceAttemptAt = Date.now() + 2000;
           console.warn('Reintentaremos avanzar el pedido al terminar la ventana de gracia:', err);
         } finally {
@@ -179,11 +179,10 @@ export default function TrackingPage() {
       }
     };
 
-    const initialTimer = window.setTimeout(tick, 0);
+    tick();
     const timer = window.setInterval(tick, 1000);
 
     return () => {
-      window.clearTimeout(initialTimer);
       window.clearInterval(timer);
     };
   }, [statusStr, currentOrder.confirmed_at, currentOrder.id, currentOrder.token, isDemo]);
@@ -347,31 +346,41 @@ export default function TrackingPage() {
         canonical="https://negu.pro/tracking"
         noindex={true}
       />
-      <div className="max-w-xl mx-auto space-y-4 animate-fade-in-up">
+      <div className="max-w-2xl mx-auto space-y-4 animate-fade-in-up">
         
         {/* Barra superior de navegación */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3 bg-white border border-gray-200/90 rounded-2xl p-3 sm:p-4 shadow-2xs">
           <Link
             to={business?.nombre ? `/${business.nombre}` : '/'}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-gray-200/60"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-700 hover:text-gray-950 transition-colors py-2 px-3 sm:px-4 rounded-xl border border-gray-200 hover:bg-gray-100/80 shadow-2xs"
           >
-            <ArrowLeft size={15} /> Volver a la tienda
+            <ArrowLeft size={16} />
+            <span>Volver a la tienda</span>
           </Link>
           
-          <div className="flex items-center gap-2">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-white overflow-hidden shadow-xs"
-              style={{ backgroundColor: brandColor }}
-            >
-              {business?.logo_url ? (
-                <img src={business.logo_url} alt="" className="w-full h-full object-contain p-0.5" />
-              ) : (
-                <Store size={14} />
-              )}
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            {business?.logo_url ? (
+              <img
+                src={business.logo_url}
+                alt={`Logo de ${business?.nombre_visible || 'tienda'}`}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-contain shrink-0"
+              />
+            ) : (
+              <div
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white shrink-0 font-bold"
+                style={{ backgroundColor: brandColor }}
+              >
+                <Store size={20} />
+              </div>
+            )}
+            <div className="min-w-0 text-right sm:text-left">
+              <span className="text-xs sm:text-base font-bold text-gray-900 truncate block">
+                {business?.nombre_visible || 'Tienda'}
+              </span>
+              <span className="text-[10px] sm:text-xs text-gray-500 font-medium hidden sm:block">
+                Seguimiento en vivo
+              </span>
             </div>
-            <span className="text-xs font-bold text-gray-800 truncate max-w-[160px]">
-              {business?.nombre_visible || 'Tienda'}
-            </span>
           </div>
         </div>
 
@@ -443,8 +452,8 @@ export default function TrackingPage() {
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-bold text-xs sm:text-sm text-gray-900 truncate">Pedido confirmado</h3>
-                  <p className="text-[11px] text-gray-500 truncate">
-                    {statusCopy.graceBanner(graceSeconds)}
+                  <p className="text-xs text-gray-600 truncate">
+                    Entrando a preparación en <strong className="text-blue-700 font-bold">{graceSeconds}s</strong>...
                   </p>
                 </div>
               </div>
