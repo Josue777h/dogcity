@@ -3,6 +3,7 @@ import { useEffect, Suspense, lazy } from 'react';
 import AuthGuard from './features/auth/AuthGuard';
 import ToastContainer from './components/ui/ToastContainer';
 import PageLoading from './components/common/PageLoading';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Code Splitting (Lazy Loading)
 const StorePage = lazy(() => import('./features/store/StorePage'));
@@ -57,8 +58,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <ToastContainer />
-      <Suspense fallback={<PageLoading label="Cargando página" />}>
-        <Routes>
+      <ErrorBoundary>
+        <Suspense fallback={<PageLoading label="Cargando página" />}>
+          <Routes>
           {/* ── MARKETING & PUBLIC SEO ───────────────────────── */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/menu-digital" element={<MenuDigitalPage />} />
@@ -122,7 +124,8 @@ export default function App() {
           {/* Fallback 404 Profesional (sin redirecciones silenciosas a /) */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
-      </Suspense>
+        </Suspense>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

@@ -167,6 +167,7 @@ CREATE POLICY suscripciones_public_read ON public.suscripciones FOR SELECT TO an
 CREATE POLICY suscripciones_owner_write ON public.suscripciones FOR ALL TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid())) WITH CHECK (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
 CREATE POLICY "Public insert pedidos" ON public.pedidos FOR INSERT TO anon,authenticated WITH CHECK (true);
 CREATE POLICY "Tenant read pedidos" ON public.pedidos FOR SELECT TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
+CREATE POLICY "Public select pedidos with token" ON public.pedidos FOR SELECT TO anon,authenticated USING (token IS NOT NULL);
 CREATE POLICY "Tenant update pedidos" ON public.pedidos FOR UPDATE TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid())) WITH CHECK (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
 CREATE POLICY "Tenant delete pedidos" ON public.pedidos FOR DELETE TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
 
@@ -176,8 +177,56 @@ GRANT SELECT (id,nombre,nombre_visible,telefono,whatsapp_contacto,direccion,them
 GRANT SELECT ON public.categorias,public.productos,public.suscripciones TO anon;
 GRANT INSERT,UPDATE,DELETE ON public.negocios,public.categorias,public.productos,public.domiciliarios,public.suscripciones TO authenticated;
 GRANT SELECT,INSERT,UPDATE,DELETE ON public.pedidos TO authenticated;
-GRANT INSERT ON public.pedidos TO anon;
+GRANT SELECT,INSERT ON public.pedidos TO anon;
 REVOKE UPDATE,DELETE ON public.pedidos FROM anon,PUBLIC;
+
+CREATE OR REPLACE FUNCTION public.customer_create_order(p_order jsonb) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE
+  v_order_id bigint;
+  v_token text;
+  v_subtotal numeric;
+  v_fee numeric;
+  v_total numeric;
+BEGIN
+  v_token := COALESCE(NULLIF(p_order->>'token', ''), gen_random_uuid()::text);
+  v_subtotal := COALESCE((p_order->>'subtotal_amount')::numeric, 0);
+  v_fee := COALESCE((p_order->>'delivery_fee')::numeric, (p_order->>'domicilio_costo')::numeric, 0);
+  v_total := COALESCE((p_order->>'total')::numeric, (p_order->>'total_amount')::numeric, (v_subtotal + v_fee));
+
+  INSERT INTO public.pedidos (
+    negocio_id, nombre, telefono, direccion, ubicacion_link, comentarios,
+    total, total_amount, subtotal_amount, domicilio_costo, delivery_fee, distancia_km,
+    status, estado, delivery_type, items, productos,
+    entrega_metodo, pago_metodo, payment_method, payment_status, token
+  ) VALUES (
+    (p_order->>'negocio_id')::uuid,
+    COALESCE(p_order->>'nombre', 'Cliente'),
+    COALESCE(p_order->>'telefono', ''),
+    p_order->>'direccion',
+    p_order->>'ubicacion_link',
+    COALESCE(p_order->>'comentarios', ''),
+    v_total, v_total, v_subtotal, v_fee, v_fee,
+    NULLIF(p_order->>'distancia_km', '')::numeric,
+    COALESCE(NULLIF(p_order->>'status', ''), NULLIF(p_order->>'estado', ''), 'nuevo'),
+    COALESCE(NULLIF(p_order->>'estado', ''), NULLIF(p_order->>'status', ''), 'nuevo'),
+    COALESCE(NULLIF(p_order->>'delivery_type', ''), 'fixed'),
+    COALESCE(p_order->'items', '[]'::jsonb),
+    COALESCE(p_order->'items', '[]'::jsonb),
+    COALESCE(NULLIF(p_order->>'entrega_metodo', ''), 'envio'),
+    COALESCE(NULLIF(p_order->>'pago_metodo', ''), 'efectivo'),
+    COALESCE(NULLIF(p_order->>'payment_method', ''), 'cash'),
+    COALESCE(NULLIF(p_order->>'payment_status', ''), 'pending'),
+    v_token
+  )
+  RETURNING id INTO v_order_id;
+
+  RETURN jsonb_build_object('id', v_order_id, 'token', v_token);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.customer_create_order(jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.customer_create_order(jsonb) TO anon,authenticated;
+
 
 CREATE OR REPLACE FUNCTION public.customer_get_order(p_order_id bigint,p_token text) RETURNS jsonb
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$

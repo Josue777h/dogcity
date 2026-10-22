@@ -4,58 +4,95 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Navigation } from 'lucide-react';
 
-// Pin idéntico al estilo Google Maps moderno
-const googlePinIcon = new L.divIcon({
-  className: 'bg-transparent border-none',
-  html: `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:36px; height:46px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.40)); cursor:pointer;">
-           <svg width="36" height="46" viewBox="0 0 36 46" fill="none" xmlns="http://www.w3.org/2000/svg">
-             <path d="M18 0C8.06 0 0 8.06 0 18C0 31.5 18 46 18 46C18 46 36 31.5 36 18C36 8.06 27.94 0 18 0Z" fill="#EA4335"/>
-             <circle cx="18" cy="18" r="8" fill="#FFFFFF"/>
-             <circle cx="18" cy="18" r="4" fill="#B31412"/>
-           </svg>
-         </div>`,
-  iconSize: [36, 46],
-  iconAnchor: [18, 46]
-});
+function createGooglePinIcon() {
+  try {
+    return new L.divIcon({
+      className: 'bg-transparent border-none',
+      html: `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:36px; height:46px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.40)); cursor:pointer;">
+               <svg width="36" height="46" viewBox="0 0 36 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+                 <path d="M18 0C8.06 0 0 8.06 0 18C0 31.5 18 46 18 46C18 46 36 31.5 36 18C36 8.06 27.94 0 18 0Z" fill="#EA4335"/>
+                 <circle cx="18" cy="18" r="8" fill="#FFFFFF"/>
+                 <circle cx="18" cy="18" r="4" fill="#B31412"/>
+               </svg>
+             </div>`,
+      iconSize: [36, 46],
+      iconAnchor: [18, 46],
+    });
+  } catch {
+    return undefined;
+  }
+}
 
 // Componente para re-centrar el mapa y escuchar clics directos
 function MapController({ center, onLocationChange }) {
   const map = useMap();
 
   useEffect(() => {
-    if (center && center[0] && center[1]) {
-      map.setView(center, map.getZoom(), { animate: true });
+    if (!map) return;
+    try {
+      if (
+        Array.isArray(center) &&
+        Number.isFinite(center[0]) &&
+        Number.isFinite(center[1])
+      ) {
+        const currentZoom = typeof map.getZoom === 'function' ? (map.getZoom() || 16) : 16;
+        map.setView(center, currentZoom, { animate: true });
+      }
+      const t = setTimeout(() => {
+        try {
+          if (map && typeof map.invalidateSize === 'function') {
+            map.invalidateSize();
+          }
+        } catch {}
+      }, 250);
+      return () => clearTimeout(t);
+    } catch (err) {
+      console.warn('MapController update error:', err);
     }
-    const t = setTimeout(() => {
-      map.invalidateSize();
-    }, 200);
-    return () => clearTimeout(t);
   }, [center, map]);
 
   useMapEvents({
     click(e) {
-      if (onLocationChange && e.latlng) {
-        onLocationChange(e.latlng.lat, e.latlng.lng);
+      try {
+        if (onLocationChange && e?.latlng) {
+          const lat = Number(e.latlng.lat);
+          const lng = Number(e.latlng.lng);
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            onLocationChange(lat, lng);
+          }
+        }
+      } catch (err) {
+        console.warn('Map click error:', err);
       }
-    }
+    },
   });
 
   return null;
 }
 
 export default function LocationPickerMap({ lat, lng, onLocationChange, onGpsClick }) {
-  const validLat = parseFloat(lat) || 7.89391;
-  const validLng = parseFloat(lng) || -72.50782;
+  const parsedLat = parseFloat(lat);
+  const parsedLng = parseFloat(lng);
+  const validLat = Number.isFinite(parsedLat) ? parsedLat : 7.89391;
+  const validLng = Number.isFinite(parsedLng) ? parsedLng : -72.50782;
+
   const center = useMemo(() => [validLat, validLng], [validLat, validLng]);
   const markerRef = useRef(null);
+  const pinIcon = useMemo(() => createGooglePinIcon(), []);
 
   const eventHandlers = useMemo(
     () => ({
       dragend() {
-        const marker = markerRef.current;
-        if (marker != null) {
-          const newPos = marker.getLatLng();
-          onLocationChange(newPos.lat, newPos.lng);
+        try {
+          const marker = markerRef.current;
+          if (marker != null) {
+            const newPos = marker.getLatLng();
+            if (newPos && Number.isFinite(newPos.lat) && Number.isFinite(newPos.lng)) {
+              onLocationChange(newPos.lat, newPos.lng);
+            }
+          }
+        } catch (err) {
+          console.warn('Marker drag error:', err);
         }
       },
     }),
@@ -64,24 +101,24 @@ export default function LocationPickerMap({ lat, lng, onLocationChange, onGpsCli
 
   return (
     <div
-      className="w-full h-[220px] sm:h-[240px] mt-2 mb-2 overflow-hidden relative isolate flex items-center justify-center"
+      className="w-full h-[220px] sm:h-[240px] mt-2 mb-2 overflow-hidden relative isolate flex items-center justify-center rounded-xl"
       style={{
         backgroundColor: '#e5e3df',
         border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-md)',
-        boxShadow: 'var(--shadow-xs)'
+        boxShadow: 'var(--shadow-xs)',
       }}
     >
       <div className="absolute inset-0 z-0">
-        <MapContainer 
-          center={center} 
-          zoom={16} 
-          scrollWheelZoom={false} 
+        <MapContainer
+          key="order-location-map"
+          center={center}
+          zoom={16}
+          scrollWheelZoom={false}
           style={{ height: '100%', width: '100%', zIndex: 0 }}
         >
-          {/* Capa oficial de Google Maps (sin API key requerida) */}
+          {/* Capa de Google Maps */}
           <TileLayer
-            attribution='&copy; Google Maps'
+            attribution="&copy; Google Maps"
             url="https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
             subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
             maxZoom={20}
@@ -91,13 +128,13 @@ export default function LocationPickerMap({ lat, lng, onLocationChange, onGpsCli
             eventHandlers={eventHandlers}
             position={center}
             ref={markerRef}
-            icon={googlePinIcon}
+            icon={pinIcon}
           />
           <MapController center={center} onLocationChange={onLocationChange} />
         </MapContainer>
       </div>
 
-      {/* Botón flotante estilo Google Maps para auto-centrar GPS */}
+      {/* Botón flotante para auto-centrar GPS */}
       {onGpsClick && (
         <button
           type="button"
@@ -107,7 +144,7 @@ export default function LocationPickerMap({ lat, lng, onLocationChange, onGpsCli
           style={{
             backgroundColor: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
-            boxShadow: 'var(--shadow-sm)'
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
           <Navigation size={16} style={{ color: 'var(--color-brand)' }} />
@@ -120,7 +157,7 @@ export default function LocationPickerMap({ lat, lng, onLocationChange, onGpsCli
         style={{
           backgroundColor: 'rgba(17,24,39,0.85)',
           backdropFilter: 'blur(4px)',
-          border: '1px solid rgba(255,255,255,0.1)'
+          border: '1px solid rgba(255,255,255,0.1)',
         }}
       >
         Toca el mapa o arrastra el pin

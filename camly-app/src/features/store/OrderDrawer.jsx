@@ -9,6 +9,7 @@ import { formatMoney, openWhatsApp, reverseGeocode, formatWhatsAppMessage } from
 import { saveOrder } from '../../lib/supabase';
 import { WHATSAPP_FALLBACK_PHONE } from '../../lib/constants';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import ErrorBoundary from '../../components/common/ErrorBoundary';
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -138,50 +139,88 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
   }
 
   function updateLocationFromCoords(lat, lng, label = 'Ubicación ajustada') {
-    setLocation(`https://maps.google.com/?q=${lat},${lng}`, label);
-    setMapCoords({ lat, lng });
-    if (!customerAddress?.trim()) {
-      reverseGeocode(lat, lng).then(addr => { if (addr) setCustomer('customerAddress', addr); });
-    }
-    const bizLat = parseFloat(business?.lat);
-    const bizLng = parseFloat(business?.lng);
-    if (tipoDom === 'fijo') {
-      setDeliveryFee(Number(business?.precio_domicilio) || 0);
-    } else if (tipoDom === 'manual') {
-      setDeliveryFee(0);
-    } else {
-      let dist = 1.0;
-      if (bizLat && bizLng && !isNaN(bizLat) && !isNaN(bizLng)) {
-        dist = calculateDistance(bizLat, bizLng, lat, lng);
+    const validLat = parseFloat(lat);
+    const validLng = parseFloat(lng);
+    if (!Number.isFinite(validLat) || !Number.isFinite(validLng)) return;
+
+    try {
+      setLocation(`https://maps.google.com/?q=${validLat},${validLng}`, label);
+      setMapCoords({ lat: validLat, lng: validLng });
+
+      if (!customerAddress?.trim()) {
+        reverseGeocode(validLat, validLng)
+          .then(addr => { if (addr) setCustomer('customerAddress', addr); })
+          .catch(() => {});
       }
-      setDistanceKm(dist);
-      const costPerKm   = Number(business?.costo_por_km) || 1200;
-      const minFee      = Number(business?.domicilio_minimo) || 3000;
-      const calculatedFee = Math.max(minFee, Math.round((dist * costPerKm) / 100) * 100);
-      setDeliveryFee(calculatedFee);
+
+      const bizLat = parseFloat(business?.lat);
+      const bizLng = parseFloat(business?.lng);
+
+      if (tipoDom === 'fijo') {
+        setDeliveryFee(Number(business?.precio_domicilio) || 0);
+      } else if (tipoDom === 'manual') {
+        setDeliveryFee(0);
+      } else {
+        let dist = 1.0;
+        if (Number.isFinite(bizLat) && Number.isFinite(bizLng)) {
+          try {
+            dist = calculateDistance(bizLat, bizLng, validLat, validLng);
+          } catch {
+            dist = 1.0;
+          }
+        }
+        setDistanceKm(dist);
+        const costPerKm = Number(business?.costo_por_km) || 1200;
+        const minFee = Number(business?.domicilio_minimo) || 3000;
+        const calculatedFee = Math.max(minFee, Math.round((dist * costPerKm) / 100) * 100);
+        setDeliveryFee(calculatedFee);
+      }
+    } catch (err) {
+      console.warn('Error en updateLocationFromCoords:', err);
     }
   }
 
   function requestGps() {
-    if (!navigator.geolocation) {
+    if (typeof window === 'undefined' || !navigator?.geolocation) {
       addToast('GPS no disponible en este dispositivo o navegador', 'error');
       return;
     }
     setIsCalculating(true);
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        updateLocationFromCoords(pos.coords.latitude, pos.coords.longitude, 'GPS capturado');
-        addToast('Ubicación GPS capturada con éxito', 'success');
-        setIsCalculating(false);
-      },
-      err => {
-        let msg = 'No se pudo acceder al GPS. Asegúrate de permitir el acceso a tu ubicación.';
-        if (err.code === 1) msg = 'Permiso de ubicación denegado. Actívalo en tu navegador para continuar.';
-        addToast(msg, 'warning');
-        setIsCalculating(false);
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-    );
+    try {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          try {
+            if (pos?.coords) {
+              const { latitude, longitude } = pos.coords;
+              if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+                updateLocationFromCoords(latitude, longitude, 'GPS capturado');
+                addToast('Ubicación GPS capturada con éxito', 'success');
+              } else {
+                addToast('Coordenadas GPS no válidas', 'warning');
+              }
+            }
+          } catch (e) {
+            console.warn('Error al procesar ubicación GPS:', e);
+            addToast('Error al leer coordenadas GPS', 'error');
+          } finally {
+            setIsCalculating(false);
+          }
+        },
+        err => {
+          let msg = 'No se pudo acceder al GPS. Asegúrate de permitir el acceso a tu ubicación.';
+          if (err?.code === 1) msg = 'Permiso de ubicación denegado. Actívalo en los permisos del navegador.';
+          else if (err?.code === 2) msg = 'Ubicación no disponible en este momento. Intenta de nuevo.';
+          else if (err?.code === 3) msg = 'Tiempo de espera agotado al leer el GPS. Vuelve a tocar el botón.';
+          addToast(msg, 'warning');
+          setIsCalculating(false);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+      );
+    } catch (e) {
+      console.warn('Error al solicitar GPS:', e);
+      addToast('Error al iniciar el servicio GPS', 'error');
+      setIsCalculating(false);
+    }
   }
 
   function handleCopyAccount() {
@@ -204,6 +243,11 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
       return;
     }
     if (!paymentMethod)              { addToast('Selecciona la forma de pago', 'warning'); return; }
+
+    if (!bid) {
+      addToast('No se identificó el negocio activo. Por favor recarga el catálogo.', 'error');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -619,23 +663,45 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
 
                       {/* Map - rendered ONLY when customer GPS is captured */}
                       {mapCoords && locationLink && (
-                        <Suspense
+                        <ErrorBoundary
                           fallback={
-                            <div
-                              className="h-48 rounded-lg flex items-center justify-center"
-                              style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
-                            >
-                              <LoadingSpinner size={20} style={{ color: 'var(--color-brand)' }} />
+                            <div className="p-3 my-2 rounded-xl bg-emerald-50 border border-emerald-200 text-xs flex items-center justify-between">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="font-bold text-emerald-900 leading-tight">Ubicación GPS registrada</p>
+                                  <p className="text-[11px] text-emerald-700 truncate">Punto de entrega guardado con éxito</p>
+                                </div>
+                              </div>
+                              <a
+                                href={locationLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-bold text-sky-600 underline text-xs shrink-0 hover:text-sky-800"
+                              >
+                                Ver mapa
+                              </a>
                             </div>
                           }
                         >
-                          <LocationPickerMap
-                            lat={mapCoords.lat}
-                            lng={mapCoords.lng}
-                            onLocationChange={(lat, lng) => updateLocationFromCoords(lat, lng, 'Pin ajustado')}
-                            onGpsClick={requestGps}
-                          />
-                        </Suspense>
+                          <Suspense
+                            fallback={
+                              <div
+                                className="h-48 rounded-lg flex items-center justify-center"
+                                style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
+                              >
+                                <LoadingSpinner size={20} style={{ color: 'var(--color-brand)' }} />
+                              </div>
+                            }
+                          >
+                            <LocationPickerMap
+                              lat={mapCoords.lat}
+                              lng={mapCoords.lng}
+                              onLocationChange={(lat, lng) => updateLocationFromCoords(lat, lng, 'Pin ajustado')}
+                              onGpsClick={requestGps}
+                            />
+                          </Suspense>
+                        </ErrorBoundary>
                       )}
 
                       {/* Delivery fee */}
