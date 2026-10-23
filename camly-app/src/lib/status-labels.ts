@@ -520,6 +520,14 @@ export function getStatusCopy(status?: string | null, businessType?: string | nu
  */
 export function getStepperSteps(businessType?: string | null, deliveryMethod?: string | null): StepperStep[] {
   const bType = normalizeBusinessType(businessType);
+  if (deliveryMethod === 'mesa' || deliveryMethod === 'dine_in') {
+    return [
+      { id: 'nuevo', label: 'Recibido', desc: 'Comanda en cola' },
+      { id: 'preparando', label: 'En cocina', desc: 'Preparando tu orden' },
+      { id: 'listo', label: 'Emplatando', desc: 'Listo para llevar a mesa' },
+      { id: 'entregado', label: 'En tu mesa', desc: '¡Buen provecho!' },
+    ];
+  }
   if (deliveryMethod === 'recogida' || deliveryMethod === 'pickup') {
     return [
       { id: 'nuevo', label: 'Recibido', desc: 'Pedido recibido' },

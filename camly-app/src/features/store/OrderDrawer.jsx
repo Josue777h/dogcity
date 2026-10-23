@@ -49,10 +49,15 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
   const [paymentMethod,  setPaymentMethod]  = useState('');
 
   useEffect(() => {
-    if (tableNumber && !deliveryMethod) {
+    if (tableNumber) {
       setDeliveryMethod('mesa');
+      setLocation('', '');
+      setDeliveryFee(0);
+      setDistanceKm(null);
+      setMapCoords(null);
     }
   }, [tableNumber]);
+
   const [isSubmitting,   setIsSubmitting]   = useState(false);
   const [orderResult,    setOrderResult]    = useState(null);
   const [hasCopiedAccount, setHasCopiedAccount] = useState(false);
@@ -71,7 +76,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
   const handleClose = () => {
     setOrderResult(null);
     setLocation('', '');
-    setDeliveryMethod('');
+    setDeliveryMethod(tableNumber ? 'mesa' : '');
     setPaymentMethod('');
     setMapCoords(null);
     onClose();
@@ -81,11 +86,11 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
     if (!isOpen) {
       setOrderResult(null);
       setLocation('', '');
-      setDeliveryMethod('');
+      setDeliveryMethod(tableNumber ? 'mesa' : '');
       setPaymentMethod('');
       setMapCoords(null);
     }
-  }, [isOpen]);
+  }, [isOpen, tableNumber]);
 
   useEffect(() => {
     if (isOpen) {
@@ -120,22 +125,57 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
     const trackingUrl  = `${window.location.origin}/tracking/${orderId}?token=${encodeURIComponent(token)}`;
     const addressLine  = customerAddress?.trim() || (locationLink ? 'Ver ubicación GPS en el mapa' : 'No especificada');
     const quotePending = tipoDom === 'manual' && deliveryMethod === 'envio';
-    return formatWhatsAppMessage(`PEDIDO #${orderId} | ${bizName}`, [
+
+    const sections = [
       { title: 'Productos', lines: itemsLines },
-      { title: 'Entrega', lines: [
-        deliveryMethod === 'mesa' || tableNumber ? `Modalidad: Servicio en Mesa (Mesa ${tableNumber})` : (deliveryMethod === 'envio' ? `Dirección: ${addressLine}` : 'Modalidad: Recoger en tienda'),
-        deliveryMethod === 'envio' && locationLink ? `Mapa: ${locationLink}` : '',
-        deliveryMethod === 'envio' ? `Domicilio: ${quotePending ? 'Pendiente de cotización' : formatMoney(deliveryFee)}` : '',
-      ] },
-      { title: 'Resumen y pago', lines: [
+    ];
+
+    if (tableNumber || deliveryMethod === 'mesa') {
+      sections.push({
+        title: 'Servicio en el restaurante',
+        lines: [`Modalidad: Mesa #${tableNumber || '1'}`]
+      });
+    } else if (deliveryMethod === 'envio') {
+      sections.push({
+        title: 'Entrega a domicilio',
+        lines: [
+          `Dirección: ${addressLine}`,
+          locationLink ? `Mapa: ${locationLink}` : '',
+          `Domicilio: ${quotePending ? 'Pendiente de cotización' : formatMoney(deliveryFee)}`
+        ].filter(Boolean)
+      });
+    } else {
+      sections.push({
+        title: 'Modalidad',
+        lines: ['Retiro / Recoger en tienda']
+      });
+    }
+
+    sections.push({
+      title: 'Resumen y pago',
+      lines: [
         `Subtotal: ${formatMoney(subtotal)}`,
         deliveryMethod === 'envio' && !quotePending ? `Domicilio: ${formatMoney(deliveryFee)}` : '',
         quotePending ? 'Total: Pendiente de cotización del envío' : `Total: ${formatMoney(total)}`,
-        `Pago: ${paymentMethod === 'transferencia' ? `Transferencia (${business?.pago_banco || 'Nequi'})` : paymentMethod === 'datafono' ? 'Datáfono contra entrega' : 'Efectivo'}`,
-      ] },
-      { title: 'Cliente', lines: [`Nombre: ${customerName}`, `Contacto: ${customerPhone}`, cart.comment ? `Nota: ${cart.comment}` : ''] },
-      { title: 'Seguimiento', lines: [trackingUrl] },
-    ]);
+        `Pago: ${paymentMethod === 'transferencia' ? `Transferencia (${business?.pago_banco || 'Nequi'})` : paymentMethod === 'datafono' ? 'Datáfono' : 'Efectivo'}`,
+      ].filter(Boolean)
+    });
+
+    sections.push({
+      title: 'Cliente',
+      lines: [
+        `Nombre: ${customerName}`,
+        customerPhone?.trim() ? `Contacto: ${customerPhone}` : (tableNumber ? 'Contacto: En mesa' : ''),
+        cart.comment ? `Nota: ${cart.comment}` : ''
+      ].filter(Boolean)
+    });
+
+    sections.push({
+      title: 'Seguimiento',
+      lines: [trackingUrl]
+    });
+
+    return formatWhatsAppMessage(`PEDIDO #${orderId} | ${bizName}`, sections);
   }
 
   function updateLocationFromCoords(lat, lng, label = 'Ubicación ajustada') {
@@ -234,9 +274,9 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
 
   async function handleSubmit() {
     if (selectedItems.length === 0)  { addToast('Agrega al menos un producto', 'warning'); return; }
-    if (!deliveryMethod)             { addToast('Elige cómo recibir tu pedido (A domicilio o Recoger en local)', 'warning'); return; }
-    if (!customerName.trim())        { addToast('¿Cuál es tu nombre?', 'warning'); return; }
-    if (!customerPhone.trim())       { addToast('¿Cuál es tu teléfono?', 'warning'); return; }
+    if (!deliveryMethod && !tableNumber) { addToast('Elige cómo recibir tu pedido', 'warning'); return; }
+    if (!customerName.trim())        { addToast(tableNumber ? '¿A nombre de quién llevamos la orden?' : '¿Cuál es tu nombre?', 'warning'); return; }
+    if (!tableNumber && !customerPhone.trim()) { addToast('¿Cuál es tu teléfono?', 'warning'); return; }
     if (deliveryMethod === 'envio' && !locationLink) {
       addToast('Debes leer tu ubicación por GPS antes de hacer el pedido', 'warning');
       requestGps();
@@ -377,10 +417,10 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-semibold" style={{ color: 'var(--color-text-1)' }}>
-                Finalizar pedido
+                {tableNumber ? `Finalizar orden (Mesa ${tableNumber})` : 'Finalizar pedido'}
               </h2>
               <p className="text-[11px] sm:text-xs" style={{ color: 'var(--color-text-2)' }}>
-                Se enviará por WhatsApp
+                {tableNumber ? 'Servicio directo a tu mesa' : 'Se enviará por WhatsApp'}
               </p>
             </div>
           </div>
@@ -524,50 +564,70 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
 
               {/* ── DELIVERY + DATA ── */}
               <div>
-                <p className="caps-label mb-2">Datos de entrega</p>
+                <p className="caps-label mb-2">
+                  {tableNumber ? 'Servicio a la mesa' : 'Datos de entrega'}
+                </p>
                 <div className="space-y-3">
-                  {/* Method selector */}
-                  <div className={`grid gap-2 ${tableNumber ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                    {[
-                      ...(tableNumber ? [{ id: 'mesa', label: `Mesa ${tableNumber}`, icon: Utensils }] : []),
-                      { id: 'envio', label: 'A domicilio', icon: Truck },
-                      { id: 'recogida', label: 'Recoger en local', icon: ShoppingBag },
-                    ].map(m => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => {
-                          setDeliveryMethod(m.id);
-                          if (m.id === 'recogida' || m.id === 'mesa') {
-                            setLocation('', '');
-                            setDeliveryFee(0);
-                            setDistanceKm(null);
-                            setMapCoords(null);
-                          }
-                        }}
-                        style={deliveryMethod === m.id ? {
-                          borderColor: business?.theme_color || '#0284C7',
-                          backgroundColor: `${business?.theme_color || '#0284C7'}10`,
-                          color: business?.theme_color || '#0284C7'
-                        } : {}}
-                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-sm font-semibold transition-all ${
-                          deliveryMethod === m.id
-                            ? 'shadow-2xs'
-                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <m.icon size={18} strokeWidth={1.5} />
-                        <span>{m.label}</span>
-                      </button>
-                    ))}
-                  </div>
+                  {/* Si es mesa, tarjeta exclusiva y elegante; si no, selector de envío / recogida */}
+                  {tableNumber ? (
+                    <div className="p-3.5 rounded-xl bg-slate-900 text-white flex items-center justify-between gap-3 shadow-2xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center shrink-0 text-amber-400 font-bold">
+                          <Utensils size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-extrabold text-white">Mesa #{tableNumber}</p>
+                            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              En sala
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 truncate mt-0.5">Llevaremos tu pedido directamente a tu mesa</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: 'envio', label: 'A domicilio', icon: Truck },
+                        { id: 'recogida', label: 'Recoger en local', icon: ShoppingBag },
+                      ].map(m => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => {
+                            setDeliveryMethod(m.id);
+                            if (m.id === 'recogida') {
+                              setLocation('', '');
+                              setDeliveryFee(0);
+                              setDistanceKm(null);
+                              setMapCoords(null);
+                            }
+                          }}
+                          style={deliveryMethod === m.id ? {
+                            borderColor: business?.theme_color || '#0284C7',
+                            backgroundColor: `${business?.theme_color || '#0284C7'}10`,
+                            color: business?.theme_color || '#0284C7'
+                          } : {}}
+                          className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
+                            deliveryMethod === m.id
+                              ? 'shadow-2xs'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <m.icon size={18} strokeWidth={1.5} />
+                          <span>{m.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Name */}
                   <div className="relative">
                     <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-3)' }} />
                     <input
                       type="text"
-                      placeholder="Tu nombre"
+                      placeholder={tableNumber ? "¿A nombre de quién llevamos el pedido?" : "Tu nombre"}
                       value={customerName}
                       onChange={e => setCustomer('customerName', e.target.value)}
                       className="input-field pl-9"
@@ -579,7 +639,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                     <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-3)' }} />
                     <input
                       type="tel"
-                      placeholder="Tu teléfono / WhatsApp"
+                      placeholder={tableNumber ? "Teléfono o WhatsApp (opcional)" : "Tu teléfono / WhatsApp"}
                       value={customerPhone}
                       onChange={e => setCustomer('customerPhone', e.target.value)}
                       className="input-field pl-9"
@@ -839,7 +899,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
             {/* Total */}
             <div className="flex items-center justify-between mb-2.5 sm:mb-3">
               <span className="text-xs sm:text-sm" style={{ color: 'var(--color-text-2)' }}>
-                Total{deliveryMethod === 'envio' && tipoDom !== 'manual' ? ' (con envío)' : ''}
+                Total{tableNumber ? ` (Mesa ${tableNumber})` : deliveryMethod === 'envio' && tipoDom !== 'manual' ? ' (con envío)' : ''}
               </span>
               <span className="text-lg sm:text-xl font-bold tabular-nums" style={{ color: 'var(--color-text-1)' }}>
                 {tipoDom === 'manual' && deliveryMethod === 'envio'
@@ -882,7 +942,9 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                         ? 'Activar GPS para enviar pedido'
                         : !paymentMethod
                           ? 'Selecciona la forma de pago'
-                          : 'Enviar pedido por WhatsApp'
+                          : tableNumber
+                            ? `Confirmar orden para Mesa #${tableNumber}`
+                            : 'Enviar pedido por WhatsApp'
                     }
                   </span>
                 </>
@@ -891,7 +953,9 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
             <p className="text-center text-xs mt-2" style={{ color: 'var(--color-text-3)' }}>
               {scheduleStatus?.isOpen === false 
                 ? 'Podrás enviar tu pedido cuando el comercio abra nuevamente' 
-                : 'Se abrirá WhatsApp con tu pedido listo'}
+                : tableNumber
+                  ? 'Se notificará al restaurante con tu orden y mesa'
+                  : 'Se abrirá WhatsApp con tu pedido listo'}
             </p>
           </div>
         )}

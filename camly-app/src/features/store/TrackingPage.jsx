@@ -5,7 +5,7 @@ import {
   AlertCircle, ArrowLeft, Store, MessageCircle,
   MapPin, ShoppingCart, Sparkles,
   X, RotateCcw, Copy, Check, Upload, FileText,
-  ExternalLink, Ban, ChevronRight
+  ExternalLink, Ban, ChevronRight, Utensils
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { formatMoney, getOrderSubtotal } from '../../lib/utils';
@@ -117,9 +117,10 @@ export default function TrackingPage() {
   }, [id, token, isDemo, retryCount, searchParams]);
 
   const currentOrder = order || DEMO_ORDER;
-  const deliveryMethod = currentOrder.delivery_type === 'pickup' || currentOrder.entrega_metodo === 'recogida' ? 'pickup' : 'envio';
+  const isMesa = currentOrder.delivery_type === 'dine_in' || currentOrder.entrega_metodo === 'mesa' || (typeof currentOrder.direccion === 'string' && currentOrder.direccion.includes('Mesa'));
+  const deliveryMethod = isMesa ? 'mesa' : (currentOrder.delivery_type === 'pickup' || currentOrder.entrega_metodo === 'recogida' ? 'pickup' : 'envio');
   const rawStatus = (currentOrder.status || currentOrder.estado || '').toString();
-  const statusStr = deliveryMethod === 'pickup' && ['EN_CAMINO', 'en_camino', 'enviado'].includes(rawStatus) ? 'LISTO_PARA_RECOGER' : rawStatus;
+  const statusStr = (deliveryMethod === 'pickup' || deliveryMethod === 'mesa') && ['EN_CAMINO', 'en_camino', 'enviado'].includes(rawStatus) ? (deliveryMethod === 'mesa' ? 'ENTREGADO' : 'LISTO_PARA_RECOGER') : rawStatus;
   const business = currentOrder.negocios || DEMO_ORDER.negocios;
   const items = typeof currentOrder.items === 'string' ? JSON.parse(currentOrder.items) : (currentOrder.items || currentOrder.productos || []);
   const brandColor = business?.theme_color || '#EA580C';
@@ -336,7 +337,7 @@ export default function TrackingPage() {
   const businessType = business?.business_type || 'general';
   const statusCopy = getStatusCopy(statusStr, businessType, deliveryMethod);
   const steps = getStepperSteps(businessType, deliveryMethod);
-  const stepIcons = deliveryMethod === 'pickup' ? [Clock, Package, Store, CheckCircle2] : STEP_ICONS;
+  const stepIcons = deliveryMethod === 'mesa' ? [Clock, Utensils, Utensils, CheckCircle2] : deliveryMethod === 'pickup' ? [Clock, Package, Store, CheckCircle2] : STEP_ICONS;
 
   return (
     <div className="min-h-screen bg-gray-50 py-5 sm:py-8 px-4 sm:px-6">
@@ -557,11 +558,14 @@ export default function TrackingPage() {
             {/* Banner de estado dinámico por rubro */}
             <div className="p-3.5 rounded-xl bg-orange-50/70 border border-orange-200 border-l-4 border-l-orange-500 flex items-center gap-3 text-xs">
               <div className="w-8 h-8 rounded-lg bg-orange-600 text-white flex items-center justify-center shrink-0">
-                {deliveryMethod === 'pickup' ? <Store size={16} /> : <Truck size={16} />}
+                {deliveryMethod === 'mesa' ? <Utensils size={16} /> : deliveryMethod === 'pickup' ? <Store size={16} /> : <Truck size={16} />}
               </div>
               <div>
                 <p className="font-bold text-gray-900 leading-snug">
-                  {statusCopy.subtitle}
+                  {deliveryMethod === 'mesa'
+                    ? (currentStepIdx >= 3 ? '¡Tu orden ya fue entregada en tu mesa! Buen provecho.' : `${currentOrder.direccion || 'Servicio en Mesa'} · Preparando comanda para llevar a tu mesa.`)
+                    : statusCopy.subtitle
+                  }
                 </p>
                 <p className="text-gray-500 mt-0.5 text-[11px]">Sincronizado automáticamente en tiempo real.</p>
               </div>

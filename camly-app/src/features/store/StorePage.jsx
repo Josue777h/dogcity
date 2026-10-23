@@ -169,7 +169,7 @@ export default function StorePage() {
   return (
     <div
       style={fontStyle}
-      className="flex min-h-dvh flex-col bg-[#f7f6f2] text-slate-900"
+      className="flex min-h-dvh flex-col bg-[#f7f6f2] text-slate-900 w-full max-w-full overflow-x-hidden"
     >
       <SEO
         title={`${business.nombre_visible || business.nombre} | Menú digital en NEGU`}
@@ -188,41 +188,41 @@ export default function StorePage() {
       />
 
       {/* ── Sticky header: logo, name, open/closed, search ── */}
-      <header className="sticky top-0 z-[80] border-b border-[#e7e3db] bg-white pt-safe shadow-2xs">
-        <div className="fluid-container py-2.5 sm:py-3">
-          <div className="flex items-center justify-between gap-3 sm:gap-4">
+      <header className="sticky top-0 z-[80] border-b border-[#e7e3db] bg-white pt-safe shadow-2xs w-full max-w-full">
+        <div className="fluid-container py-2 sm:py-2.5">
+          <div className="flex items-center justify-between gap-2.5 sm:gap-4 min-w-0">
             
-            {/* Izquierda: Marca (Logo + Nombre + Estado agrupados) */}
-            <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 shrink-0">
+            {/* Izquierda: Marca (Logo + Nombre + Estado) */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               {business?.logo_url ? (
                 <img
                   src={business.logo_url}
-                  className="h-11 w-auto max-w-[5rem] sm:h-13 sm:max-w-[7.5rem] md:h-14 md:max-w-[9rem] shrink-0 object-contain object-left"
+                  className="h-9 w-auto max-w-[3.5rem] sm:h-12 sm:max-w-[6.5rem] md:h-13 md:max-w-[8rem] shrink-0 object-contain object-left"
                   alt={`Logo de ${business.nombre_visible || business.nombre}`}
                   fetchPriority="high"
                 />
               ) : (
                 <div
-                  className="flex h-11 w-11 sm:h-13 sm:w-13 shrink-0 items-center justify-center rounded-xl font-bold"
+                  className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl font-bold"
                   style={{ backgroundColor: brandColor }}
                 >
-                  <Store size={22} className="text-white" />
+                  <Store size={18} className="text-white" />
                 </div>
               )}
 
-              <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                <h1 className="truncate text-base sm:text-lg font-bold leading-tight text-slate-900">
-                  {business?.nombre_visible || 'Menú Digital'}
-                </h1>
-                <Badge variant={scheduleStatus.isOpen ? 'success' : 'warning'} className="px-1.5 py-0.5 text-[10px] shrink-0">
-                  <span className={`w-1.5 h-1.5 rounded-full ${scheduleStatus.isOpen ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                  {scheduleStatus.isOpen ? 'Abierto' : 'Cerrado'}
-                </Badge>
-                {mesaParam && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-900 text-white shadow-2xs shrink-0">
-                    🍽️ Mesa {mesaParam}
-                  </span>
-                )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <h1 className="truncate text-sm sm:text-base md:text-lg font-bold leading-tight text-slate-900">
+                    {business?.nombre_visible || 'Menú Digital'}
+                  </h1>
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${scheduleStatus.isOpen ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                    title={scheduleStatus.isOpen ? 'Abierto' : 'Cerrado'}
+                  />
+                </div>
+                <p className="text-[11px] text-slate-500 truncate hidden sm:block">
+                  {business?.descripcion || 'Catálogo interactivo'}
+                </p>
               </div>
             </div>
 
@@ -322,6 +322,27 @@ export default function StorePage() {
         </nav>
       </header>
 
+      {/* Franja destacada para Servicio en Mesa */}
+      {mesaParam && (
+        <aside
+          aria-label="Mesa asignada"
+          className="bg-slate-950 text-white border-b border-slate-850 px-3.5 sm:px-4 py-2 flex items-center justify-between text-xs shadow-xs w-full max-w-full"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-xs shrink-0">
+              🍽️
+            </span>
+            <div className="min-w-0 truncate">
+              <span className="font-extrabold text-white text-xs">Mesa #{mesaParam}</span>
+              <span className="text-slate-300 text-[11px] ml-1.5 hidden xs:inline">· Pide desde tu celular y te lo llevamos</span>
+            </div>
+          </div>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+            Servicio en mesa
+          </span>
+        </aside>
+      )}
+
       {/* Closed / paused banner */}
       {!scheduleStatus.isOpen && (
         <div className="bg-amber-50 border-b border-amber-200 text-amber-950 px-4 py-2.5 text-xs font-medium flex items-center justify-center gap-2 text-center">
@@ -378,7 +399,11 @@ export default function StorePage() {
           <div className="mt-6 hidden items-center justify-between gap-4 rounded-xl border border-[#e4e1da] bg-white px-4 py-3 sm:flex">
             <div className="flex items-center gap-2.5 text-xs text-slate-600">
               <MessageCircle size={15} className="text-emerald-600 shrink-0" />
-              <span>Pedido directo a la tienda · Entrega o recogida según disponibilidad</span>
+              <span>
+                {mesaParam
+                  ? `Servicio a la Mesa #${mesaParam} · Tu orden será entregada directamente en tu mesa`
+                  : 'Pedido directo a la tienda · Entrega o recogida según disponibilidad'}
+              </span>
             </div>
             <a
               href={`https://wa.me/${business?.whatsapp_contacto || business?.telefono || '573143243707'}`}
@@ -412,7 +437,9 @@ export default function StorePage() {
               <span className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-sm font-bold tabular-nums shrink-0">
                 {totalItems}
               </span>
-              <span className="text-sm font-semibold truncate">Ver pedido</span>
+              <span className="text-sm font-semibold truncate">
+                {mesaParam ? `Ver orden (Mesa ${mesaParam})` : 'Ver pedido'}
+              </span>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <span className="text-sm font-bold tabular-nums">{formatMoney(totalPrice)}</span>
