@@ -200,6 +200,43 @@ export function playNewOrderSound() {
 }
 
 /**
+ * Alerta sonora de llamado de mesa / mesero (Web Audio API nativa)
+ * Toca un tono brillante de doble campana de servicio (A5 - D6)
+ */
+export function playTableCallSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    
+    // Doble campana de servicio de restaurante (Ding-Ding)
+    const dings = [880, 1174.66, 1174.66];
+    dings.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      const startTime = ctx.currentTime + idx * 0.18;
+      const duration = 0.4;
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, startTime);
+      
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.4, startTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    });
+  } catch (err) {
+    console.warn('Audio alert not allowed or failed:', err);
+  }
+}
+
+/**
  * Exportar pedidos a formato CSV con codificación UTF-8 BOM compatible con Excel
  */
 export function exportOrdersToCSV(orders, businessName = 'Negu') {

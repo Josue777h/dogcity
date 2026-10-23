@@ -130,10 +130,13 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
       { title: 'Productos', lines: itemsLines },
     ];
 
-    if (tableNumber || deliveryMethod === 'mesa') {
+    const isMesa = Boolean((tableNumber && String(tableNumber).trim()) || deliveryMethod === 'mesa');
+    const tableVal = (tableNumber || (typeof deliveryMethod === 'string' && deliveryMethod.match(/\d+/)?.[0]) || '1').toString().trim();
+
+    if (isMesa) {
       sections.push({
         title: 'Servicio en el restaurante',
-        lines: [`Modalidad: Mesa #${tableNumber || '1'}`]
+        lines: [`Modalidad: Mesa #${tableVal}`]
       });
     } else if (deliveryMethod === 'envio') {
       sections.push({
@@ -292,11 +295,14 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
     setIsSubmitting(true);
     try {
       const token   = crypto.randomUUID();
-      const isCustomQuote = deliveryMethod === 'envio' && tipoDom === 'manual';
+      const isMesa = Boolean((tableNumber && String(tableNumber).trim()) || deliveryMethod === 'mesa');
+      const tableVal = (tableNumber || (typeof deliveryMethod === 'string' && deliveryMethod.match(/\d+/)?.[0]) || '1').toString().trim();
+      const effectiveDeliveryMethod = isMesa ? 'mesa' : (deliveryMethod || 'envio');
+      const isCustomQuote = !isMesa && effectiveDeliveryMethod === 'envio' && tipoDom === 'manual';
       const initialStatus = isCustomQuote ? 'COTIZACION_PENDIENTE' : 'nuevo';
-      const deliveryType = deliveryMethod === 'mesa'
+      const effectiveDeliveryType = isMesa
         ? 'dine_in'
-        : deliveryMethod === 'recogida'
+        : effectiveDeliveryMethod === 'recogida'
           ? 'pickup'
           : isCustomQuote
             ? 'custom_quote'
@@ -304,28 +310,32 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
               ? 'fixed'
               : 'per_km';
 
+      const effectiveAddress = isMesa 
+        ? `Servicio en Mesa ${tableVal}` 
+        : (effectiveDeliveryMethod === 'envio' ? (customerAddress?.trim() || locationLink || 'Dirección no especificada') : 'Retiro en local');
+
       const payload = {
         nombre: customerName.trim(),
-        telefono: customerPhone.trim(),
-        direccion: deliveryMethod === 'mesa' ? `Servicio en Mesa ${tableNumber}` : (deliveryMethod === 'envio' ? customerAddress : 'Retiro en local'),
-        ubicacion_link: locationLink,
+        telefono: customerPhone.trim() || (isMesa ? 'En mesa' : ''),
+        direccion: effectiveAddress,
+        ubicacion_link: isMesa ? null : locationLink,
         comentarios: (cart.comment || '').trim(),
-        total,
-        total_amount: total,
+        total: isMesa ? subtotal : total,
+        total_amount: isMesa ? subtotal : total,
         subtotal_amount: subtotal,
-        domicilio_costo: deliveryMethod === 'envio' ? deliveryFee : 0,
-        delivery_fee: deliveryMethod === 'envio' ? deliveryFee : 0,
-        distancia_km: distanceKm,
+        domicilio_costo: isMesa ? 0 : (effectiveDeliveryMethod === 'envio' ? deliveryFee : 0),
+        delivery_fee: isMesa ? 0 : (effectiveDeliveryMethod === 'envio' ? deliveryFee : 0),
+        distancia_km: isMesa ? null : distanceKm,
         status: initialStatus,
         estado: initialStatus,
-        delivery_type: deliveryType,
+        delivery_type: effectiveDeliveryType,
         items: selectedItems.map(i => ({
           id: i.id, nombre: i.name, cantidad: i.quantity, precio: i.price,
           nota: (i.note || cart.notes?.[i.id] || '').trim(),
           opciones_texto: i.opciones_texto || '',
           opciones: i.options || []
         })),
-        entrega_metodo: deliveryMethod,
+        entrega_metodo: effectiveDeliveryMethod,
         pago_metodo: paymentMethod,
         payment_method: paymentMethod === 'transferencia'
           ? (/daviplata/i.test(business?.pago_banco || '') ? 'transfer_daviplata'

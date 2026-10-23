@@ -7,7 +7,8 @@ export default function ProductCard({
   product, 
   _index = 0, 
   isStoreOpen = true, 
-  storeClosedMessage = '' 
+  storeClosedMessage = '',
+  isTableMode = false
 }) {
   const business = useBusinessStore(s => s.business);
   const bid      = business?.id;
@@ -314,7 +315,16 @@ export default function ProductCard({
               {formatMoney(product.price)}
             </span>
 
-            {!isStoreOpen ? (
+            {isTableMode ? (
+              <button
+                type="button"
+                onClick={openCustomizationModal}
+                className="flex min-h-9 sm:min-h-10 w-full items-center justify-between rounded-lg border border-slate-200 bg-white hover:bg-slate-50 px-3 text-xs font-semibold text-slate-700 transition-colors shadow-2xs"
+              >
+                <span>Ver plato</span>
+                <ChevronDown size={14} className="text-slate-400 -rotate-90" />
+              </button>
+            ) : !isStoreOpen ? (
               <button
                 type="button"
                 onClick={handleCardAdd}
@@ -584,23 +594,46 @@ export default function ProductCard({
                 </div>
               )}
 
-              {/* Instrucción o nota especial */}
-              <div className="pt-1">
-                <label className="mb-1.5 block text-xs font-semibold text-slate-800">
-                  Notas especiales o instrucciones:
-                </label>
-                <input
-                  type="text"
-                  value={tempNote}
-                  onChange={e => setTempNote(e.target.value)}
-                  placeholder="Escribe indicaciones para la tienda"
-                  className="min-h-11 w-full rounded-lg border border-[#d9d5cd] bg-white p-2.5 text-xs text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-900/5 sm:text-sm"
-                />
-              </div>
+              {/* Instrucción o nota especial (Solo para delivery/online) */}
+              {!isTableMode ? (
+                <div className="pt-1">
+                  <label className="mb-1.5 block text-xs font-semibold text-slate-800">
+                    Notas especiales o instrucciones:
+                  </label>
+                  <input
+                    type="text"
+                    value={tempNote}
+                    onChange={e => setTempNote(e.target.value)}
+                    placeholder="Escribe indicaciones para la tienda"
+                    className="min-h-11 w-full rounded-lg border border-[#d9d5cd] bg-white p-2.5 text-xs text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-900/5 sm:text-sm"
+                  />
+                </div>
+              ) : hasOptions ? (
+                <p className="text-[11px] text-slate-500 italic pt-1">
+                  Indícale a tu mesero tus preferencias de ingredientes o adiciones al momento de ordenar en tu mesa.
+                </p>
+              ) : null}
             </div>
           </div>
 
-          {/* Footer con Stepper de cantidad y botón Agregar dinámico */}
+          {/* Footer: En Mesa es botón Cerrar; En Tienda online es Stepper y Agregar */}
+          {isTableMode ? (
+            <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[#e7e3db] bg-white px-4 py-3 sm:px-5 pb-safe">
+              <div>
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Precio</span>
+                <span className="text-base sm:text-lg font-bold text-slate-900 tabular-nums">
+                  {formatMoney(product.price)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-2xs"
+              >
+                Cerrar detalle
+              </button>
+            </div>
+          ) : (
             <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[#e7e3db] bg-white px-4 py-3 sm:p-5 pb-safe">
               {/* Stepper de cantidad */}
               <div className="flex items-center rounded-xl border border-[#d9d5cd] bg-[#f7f6f2] p-0.5 shrink-0">
@@ -647,6 +680,7 @@ export default function ProductCard({
                 </button>
               )}
             </div>
+          )}
 
           </div>
         </div>

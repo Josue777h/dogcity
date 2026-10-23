@@ -12,7 +12,7 @@ import {
   fetchSubscription,
   fetchCategories
 } from '../../lib/supabase';
-import { playNewOrderSound } from '../../lib/utils';
+import { playNewOrderSound, playTableCallSound } from '../../lib/utils';
 import { useAuthStore, useToastStore, useBusinessStore } from '../../stores';
 import { readMigratedLocalStorage } from '../../lib/localStorage';
 
@@ -64,11 +64,34 @@ export default function AdminPage() {
       playNewOrderSound();
     }
     const prevTitle = document.title;
-    document.title = '🔔 (1) ¡Nuevo Pedido! - NEGU';
+    document.title = '(1) ¡Nuevo Pedido! - NEGU';
     setTimeout(() => {
       document.title = prevTitle;
     }, 8000);
-    addToast('🔔 ¡Tienes un nuevo pedido entrante!', 'success');
+    addToast('¡Tienes un nuevo pedido entrante!', 'success');
+  };
+
+  const lastCallNotifiedRef = useState({})[0];
+
+  const notifyTableCall = (mesa) => {
+    const strMesa = String(mesa || '');
+    if (!strMesa) return;
+    const now = Date.now();
+    if (lastCallNotifiedRef[strMesa] && now - lastCallNotifiedRef[strMesa] < 30000) {
+      return;
+    }
+    lastCallNotifiedRef[strMesa] = now;
+
+    const soundOn = readMigratedLocalStorage('negu_order_sound', ['camly_order_sound']) !== 'false';
+    if (soundOn) {
+      playTableCallSound();
+    }
+    const prevTitle = document.title;
+    document.title = `(Mesa ${strMesa}) Mesero solicitado - NEGU`;
+    setTimeout(() => {
+      document.title = prevTitle;
+    }, 6000);
+    addToast(`La Mesa #${strMesa} solicita atención del mesero`, 'info');
   };
 
   useEffect(() => {
@@ -89,6 +112,19 @@ export default function AdminPage() {
           if (msg?.data?.type === 'NEW_ORDER' && (!msg.data.negocioId || msg.data.negocioId === business.id)) {
             loadData(session.user.id, false);
             notifyNewOrder();
+          } else if (msg?.data?.type === 'CALL_WAITER' && (!msg.data.businessId || msg.data.businessId === business.id)) {
+            notifyTableCall(msg.data.mesa);
+          } else if (msg?.data?.type === 'RESOLVE_WAITER_CALL') {
+            delete lastCallNotifiedRef[String(msg.data.mesa)];
+            try {
+              const stored = localStorage.getItem('negu_active_table_calls');
+              if (stored) {
+                const parsed = JSON.parse(stored);
+                delete parsed[String(msg.data.mesa)];
+                localStorage.setItem('negu_active_table_calls', JSON.stringify(parsed));
+              }
+              localStorage.removeItem('negu_table_call_event');
+            } catch (_) {}
           }
         };
       } catch {}
@@ -101,6 +137,13 @@ export default function AdminPage() {
             if (!parsed.bid || parsed.bid === business.id) {
               loadData(session.user.id, false);
               notifyNewOrder();
+            }
+          } catch {}
+        } else if (e.key === 'negu_table_call_event' && e.newValue) {
+          try {
+            const parsed = JSON.parse(e.newValue);
+            if (!parsed.businessId || parsed.businessId === business.id) {
+              notifyTableCall(parsed.mesa);
             }
           } catch {}
         }
@@ -294,6 +337,8 @@ export default function AdminPage() {
         onNavigateTab={(tab) => {
           const tabToPath = {
             dashboard: '/admin/dashboard',
+            comandero: '/admin/comandero',
+            mesas: '/admin/comandero',
             orders: '/admin/pedidos',
             pedidos: '/admin/pedidos',
             products: '/admin/productos',

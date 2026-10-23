@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
-import { ShoppingCart, Search, Store, Clock, X, ChevronRight, Phone, MessageCircle } from 'lucide-react';
+import { ShoppingCart, Search, Store, Clock, X, ChevronRight, Phone, MessageCircle, Bell, Utensils } from 'lucide-react';
 import { useBusinessStore, useCartStore, useToastStore } from '../../stores';
 import Badge from '../../components/ui/Badge';
 import { fetchBusiness, fetchProducts, fetchSubscription, fetchCategories } from '../../lib/supabase';
@@ -14,7 +14,25 @@ import PageLoading from '../../components/common/PageLoading';
 export default function StorePage() {
   const [searchParams] = useSearchParams();
   const slug = useParams().slug || searchParams.get('negocio') || '';
-  const mesaParam = searchParams.get('mesa') || '';
+  const rawMesa = 
+    searchParams.get('mesa') || 
+    searchParams.get('Mesa') || 
+    searchParams.get('MESA') || 
+    searchParams.get('table') || 
+    searchParams.get('m') || 
+    '';
+
+  const mesaParam = useMemo(() => {
+    if (rawMesa) {
+      try { sessionStorage.setItem(`negu_mesa_${slug || 'active'}`, rawMesa); } catch (_) {}
+      return rawMesa;
+    }
+    try {
+      return sessionStorage.getItem(`negu_mesa_${slug || 'active'}`) || '';
+    } catch (_) {
+      return '';
+    }
+  }, [rawMesa, slug]);
 
   const { business, products, categories, isLoading, setBusiness, setProducts, setCategories, setLoading, setError } = useBusinessStore();
   const bid = business?.id;
@@ -26,6 +44,60 @@ export default function StorePage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [currentCategory, setCurrentCategory] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
+  const [waiterCalledCooldown, setWaiterCalledCooldown] = useState(0);
+
+  const handleCallWaiter = () => {
+    if (waiterCalledCooldown > 0) return;
+    setWaiterCalledCooldown(45);
+
+    const eventPayload = {
+      type: 'CALL_WAITER',
+      mesa: mesaParam,
+      businessId: bid,
+      timestamp: Date.now()
+    };
+
+    // 1. Notificación instantánea por BroadcastChannel entre pestañas / meseros
+    try {
+      const bc = new BroadcastChannel('negu_orders_channel');
+      bc.postMessage(eventPayload);
+      setTimeout(() => bc.close(), 1000);
+    } catch (_) {}
+
+    // 2. Evento en localStorage para sincronización entre ventanas
+    try {
+      localStorage.setItem('negu_table_call_event', JSON.stringify(eventPayload));
+    } catch (_) {}
+
+    addToast(`Mesero avisado para la Mesa #${mesaParam}. En breve se acercarán a atenderte.`, 'success');
+  };
+
+  useEffect(() => {
+    if (waiterCalledCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setWaiterCalledCooldown(prev => (prev > 1 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [waiterCalledCooldown]);
+
+  // Escuchar cuando el mesero atiende la mesa para resetear la llamada
+  useEffect(() => {
+    let bc;
+    try {
+      bc = new BroadcastChannel('negu_orders_channel');
+      bc.onmessage = (msg) => {
+        if (msg?.data?.type === 'RESOLVE_WAITER_CALL' && String(msg.data.mesa) === String(mesaParam)) {
+          setWaiterCalledCooldown(0);
+          try { localStorage.removeItem('negu_table_call_event'); } catch (_) {}
+          addToast(`Mesa #${mesaParam} atendida por el mesero`, 'info');
+        }
+      };
+    } catch (_) {}
+
+    return () => {
+      if (bc) bc.close();
+    };
+  }, [mesaParam, addToast]);
 
   const scheduleStatus = useMemo(() => checkBusinessSchedule(business), [business]);
 
@@ -248,24 +320,41 @@ export default function StorePage() {
               )}
             </div>
 
-            {/* Derecha: Botón de Carrito / Pedido */}
+            {/* Derecha: Botón de Llamar al Mesero (Mesa) o Carrito / Pedido (Online) */}
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => setDrawerOpen(true)}
-                className={`flex items-center gap-2 rounded-xl border px-3 sm:px-4 py-2 sm:py-2.5 transition-all text-xs sm:text-sm font-bold shadow-2xs cursor-pointer ${
-                  totalItems > 0
-                    ? 'text-white border-transparent'
-                    : 'border-[#e4e1da] bg-white text-slate-700 hover:bg-[#f7f6f2]'
-                }`}
-                style={totalItems > 0 ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
-                aria-label="Abrir pedido"
-              >
-                <ShoppingCart size={16} />
-                <span>
-                  <span className="hidden sm:inline">Ver </span>Pedido
-                  {totalItems > 0 ? ` (${totalItems})` : ''}
-                </span>
-              </button>
+              {mesaParam ? (
+                <button
+                  type="button"
+                  onClick={handleCallWaiter}
+                  disabled={waiterCalledCooldown > 0}
+                  className={`flex items-center gap-1.5 rounded-xl border px-3 sm:px-4 py-2 sm:py-2.5 transition-all text-xs sm:text-sm font-semibold shadow-2xs cursor-pointer ${
+                    waiterCalledCooldown > 0
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-slate-900 text-white border-slate-900 hover:bg-slate-800 active:scale-95'
+                  }`}
+                  aria-label="Llamar al mesero"
+                >
+                  <Bell size={15} className={waiterCalledCooldown > 0 ? 'animate-pulse' : ''} />
+                  <span>{waiterCalledCooldown > 0 ? `Mesero avisado (${waiterCalledCooldown}s)` : 'Llamar al mesero'}</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setDrawerOpen(true)}
+                  className={`flex items-center gap-2 rounded-xl border px-3 sm:px-4 py-2 sm:py-2.5 transition-all text-xs sm:text-sm font-bold shadow-2xs cursor-pointer ${
+                    totalItems > 0
+                      ? 'text-white border-transparent'
+                      : 'border-[#e4e1da] bg-white text-slate-700 hover:bg-[#f7f6f2]'
+                  }`}
+                  style={totalItems > 0 ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
+                  aria-label="Abrir pedido"
+                >
+                  <ShoppingCart size={16} />
+                  <span>
+                    <span className="hidden sm:inline">Ver </span>Pedido
+                    {totalItems > 0 ? ` (${totalItems})` : ''}
+                  </span>
+                </button>
+              )}
             </div>
 
           </div>
@@ -322,23 +411,24 @@ export default function StorePage() {
         </nav>
       </header>
 
-      {/* Franja destacada para Servicio en Mesa */}
+      {/* Franja de Servicio en Mesa (Carta Digital) */}
       {mesaParam && (
         <aside
           aria-label="Mesa asignada"
-          className="bg-slate-950 text-white border-b border-slate-850 px-3.5 sm:px-4 py-2 flex items-center justify-between text-xs shadow-xs w-full max-w-full"
+          className="bg-white border-b border-[#e7e3db] px-3.5 sm:px-4 py-2 flex items-center justify-between text-xs w-full max-w-full"
         >
           <div className="flex items-center gap-2 min-w-0">
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-xs shrink-0">
-              🍽️
-            </span>
-            <div className="min-w-0 truncate">
-              <span className="font-extrabold text-white text-xs">Mesa #{mesaParam}</span>
-              <span className="text-slate-300 text-[11px] ml-1.5 hidden xs:inline">· Pide desde tu celular y te lo llevamos</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-slate-700 shrink-0">
+              <Utensils size={13} />
+            </div>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-bold text-slate-900 shrink-0">Mesa {mesaParam}</span>
+              <span className="text-slate-300">·</span>
+              <span className="text-slate-600 font-medium truncate">Carta digital interactiva</span>
             </div>
           </div>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
-            Servicio en mesa
+          <span className="text-[11px] text-slate-500 hidden sm:inline shrink-0">
+            El mesero tomará tu orden directamente en tu mesa
           </span>
         </aside>
       )}
@@ -390,71 +480,91 @@ export default function StorePage() {
                   index={i}
                   isStoreOpen={scheduleStatus.isOpen}
                   storeClosedMessage={scheduleStatus.message}
+                  isTableMode={Boolean(mesaParam)}
                 />
               ))}
             </div>
           )}
 
           {/* Desktop help strip */}
-          <div className="mt-6 hidden items-center justify-between gap-4 rounded-xl border border-[#e4e1da] bg-white px-4 py-3 sm:flex">
-            <div className="flex items-center gap-2.5 text-xs text-slate-600">
-              <MessageCircle size={15} className="text-emerald-600 shrink-0" />
-              <span>
-                {mesaParam
-                  ? `Servicio a la Mesa #${mesaParam} · Tu orden será entregada directamente en tu mesa`
-                  : 'Pedido directo a la tienda · Entrega o recogida según disponibilidad'}
-              </span>
+          {!mesaParam && (
+            <div className="mt-6 hidden items-center justify-between gap-4 rounded-xl border border-[#e4e1da] bg-white px-4 py-3 sm:flex">
+              <div className="flex items-center gap-2.5 text-xs text-slate-600">
+                <MessageCircle size={15} className="text-emerald-600 shrink-0" />
+                <span>Pedido directo a la tienda · Entrega o recogida según disponibilidad</span>
+              </div>
+              <a
+                href={`https://wa.me/${business?.whatsapp_contacto || business?.telefono || '573143243707'}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+              >
+                <Phone size={13} />
+                Preguntar
+              </a>
             </div>
-            <a
-              href={`https://wa.me/${business?.whatsapp_contacto || business?.telefono || '573143243707'}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
-            >
-              <Phone size={13} />
-              Preguntar
-            </a>
-          </div>
+          )}
         </div>
-        <StoreFooter business={business} hasFloatingCart={totalItems > 0} />
+        <StoreFooter business={business} hasFloatingCart={!mesaParam && totalItems > 0} />
       </main>
 
-      {/* Floating cart bar — tenant brand color */}
-      {!drawerOpen && totalItems > 0 && (
-        <div className="fixed bottom-3 left-3 right-3 z-[90] mx-auto max-w-lg animate-slide-up pb-safe md:hidden">
+      {/* Botón flotante para llamar al mesero en móvil (Mesa) o Carrito flotante (Online) */}
+      {mesaParam ? (
+        <div className="fixed bottom-4 right-4 z-40 md:hidden animate-slide-up pb-safe">
           <button
-            onClick={() => setDrawerOpen(true)}
-            className={`flex min-h-14 w-full items-center justify-between gap-3 px-4 py-2.5 text-white shadow-lg shadow-black/10 transition-transform active:scale-[0.99] ${
-              designConfig.button_style === 'square'
-                ? 'rounded-none'
-                : designConfig.button_style === 'soft'
-                  ? 'rounded-lg'
-                  : 'rounded-xl'
+            type="button"
+            onClick={handleCallWaiter}
+            disabled={waiterCalledCooldown > 0}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold shadow-lg transition-all active:scale-95 cursor-pointer ${
+              waiterCalledCooldown > 0
+                ? 'bg-emerald-600 text-white shadow-emerald-900/20'
+                : 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/25'
             }`}
-            style={{ backgroundColor: brandColor }}
           >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-sm font-bold tabular-nums shrink-0">
-                {totalItems}
-              </span>
-              <span className="text-sm font-semibold truncate">
-                {mesaParam ? `Ver orden (Mesa ${mesaParam})` : 'Ver pedido'}
-              </span>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <span className="text-sm font-bold tabular-nums">{formatMoney(totalPrice)}</span>
-              <ChevronRight size={16} className="opacity-80" />
-            </div>
+            <Bell size={14} className={waiterCalledCooldown > 0 ? 'animate-pulse' : ''} />
+            <span>{waiterCalledCooldown > 0 ? `Mesero avisado (${waiterCalledCooldown}s)` : 'Llamar al mesero'}</span>
           </button>
         </div>
+      ) : (
+        !drawerOpen && totalItems > 0 && (
+          <div className="fixed bottom-3 left-3 right-3 z-[90] mx-auto max-w-lg animate-slide-up pb-safe md:hidden">
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className={`flex min-h-14 w-full items-center justify-between gap-3 px-4 py-2.5 text-white shadow-lg shadow-black/10 transition-transform active:scale-[0.99] ${
+                designConfig.button_style === 'square'
+                  ? 'rounded-none'
+                  : designConfig.button_style === 'soft'
+                    ? 'rounded-lg'
+                    : 'rounded-xl'
+              }`}
+              style={{ backgroundColor: brandColor }}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-sm font-bold tabular-nums shrink-0">
+                  {totalItems}
+                </span>
+                <span className="text-sm font-semibold truncate">
+                  Ver pedido
+                </span>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="text-sm font-bold tabular-nums">{formatMoney(totalPrice)}</span>
+                <ChevronRight size={16} className="opacity-80" />
+              </div>
+            </button>
+          </div>
+        )
       )}
 
-      <OrderDrawer 
-        isOpen={drawerOpen} 
-        onClose={() => setDrawerOpen(false)} 
-        scheduleStatus={scheduleStatus} 
-        tableNumber={mesaParam}
-      />
+      {/* Drawer exclusivo para pedidos a domicilio o recogida */}
+      {!mesaParam && (
+        <OrderDrawer 
+          isOpen={drawerOpen} 
+          onClose={() => setDrawerOpen(false)} 
+          scheduleStatus={scheduleStatus} 
+          tableNumber=""
+        />
+      )}
     </div>
   );
 }

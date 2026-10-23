@@ -23,7 +23,7 @@ const STATUS_TABS = [
   { id: 'nuevo', label: 'Nuevos' },
   { id: 'cotizacion', label: 'Por Cotizar' },
   { id: 'preparando', label: 'En Preparación' },
-  { id: 'ready_pickup', label: 'Listos / Para servir' },
+  { id: 'ready_pickup', label: 'En Mesa / Listos' },
   { id: 'enviado', label: 'En Camino' },
   { id: 'entregado', label: 'Entregados' },
   { id: 'cancelado', label: 'Cancelados' },
@@ -32,8 +32,13 @@ const STATUS_TABS = [
 const STATUS_STEPS = ['nuevo', 'preparando', 'enviado', 'entregado'];
 const STATUS_LABELS = { nuevo: 'Nuevo', preparando: 'Preparando', enviado: 'Enviado', entregado: 'Entregado' };
 
-function getStepIndex(rawStatus) {
+function getStepIndex(rawStatus, deliveryMethod) {
   const s = (rawStatus || '').toString().toLowerCase();
+  if (deliveryMethod === 'mesa') {
+    if (['entregado'].includes(s)) return 2;
+    if (['listo_para_recoger', 'ready_for_pickup', 'en_camino', 'enviado', 'listo'].includes(s)) return 1;
+    return 0; // En Cocina (nuevo, preparando, en_preparacion)
+  }
   if (['nuevo', 'recibido', 'pendiente', 'cotizacion_pendiente', 'cotizacion_enviada', 'confirmado_gracia'].includes(s)) return 0;
   if (['preparando', 'en_preparacion'].includes(s)) return 1;
   if (['listo_para_recoger', 'ready_for_pickup'].includes(s)) return 2;
@@ -176,12 +181,28 @@ function MerchantCancelModal({ isOpen, order, onClose, onConfirmed }) {
 function OrderTimeline({ currentStatus, onStatusChange, disabled = false, deliveryMethod = 'envio', businessType }) {
   const isMesa = deliveryMethod === 'mesa';
   const isPickup = !isMesa && (deliveryMethod === 'recogida' || deliveryMethod === 'pickup');
-  const steps = (isPickup || isMesa) ? ['nuevo', 'preparando', 'listo', 'entregado'] : STATUS_STEPS;
-  const currentIdx = getStepIndex(currentStatus);
-  const stepStatus = (step) => step === 'listo' ? 'LISTO_PARA_RECOGER' : step === 'preparando' ? 'EN_PREPARACION' : step === 'enviado' ? 'EN_CAMINO' : step === 'entregado' ? 'ENTREGADO' : 'nuevo';
+  const steps = isMesa
+    ? ['cocina', 'mesa', 'finalizado']
+    : isPickup
+    ? ['nuevo', 'preparando', 'listo', 'entregado']
+    : STATUS_STEPS;
+  const currentIdx = getStepIndex(currentStatus, deliveryMethod);
+
+  const stepStatus = (step) => {
+    if (isMesa) {
+      if (step === 'cocina') return 'EN_PREPARACION';
+      if (step === 'mesa') return 'LISTO_PARA_RECOGER';
+      if (step === 'finalizado') return 'ENTREGADO';
+    }
+    return step === 'listo' ? 'LISTO_PARA_RECOGER' : step === 'preparando' ? 'EN_PREPARACION' : step === 'enviado' ? 'EN_CAMINO' : step === 'entregado' ? 'ENTREGADO' : 'nuevo';
+  };
+
   const stepLabel = (step) => {
-    if (isMesa && step === 'listo') return 'Listo para servir';
-    if (isMesa && step === 'entregado') return 'Servido en mesa';
+    if (isMesa) {
+      if (step === 'cocina') return 'En Cocina';
+      if (step === 'mesa') return 'En Mesa';
+      if (step === 'finalizado') return 'Finalizado';
+    }
     if (isPickup && step === 'listo') return 'Listo para recoger';
     if (isPickup && step === 'entregado') return 'Recogido';
     if (step === 'preparando') return getStatusCopy('EN_PREPARACION', businessType, deliveryMethod).stepperLabel;
@@ -505,13 +526,18 @@ export default function OrdersView(props) {
     return (
       order.delivery_type === 'dine_in' ||
       order.entrega_metodo === 'mesa' ||
-      (typeof order.direccion === 'string' && /mesa/i.test(order.direccion))
+      (typeof order.direccion === 'string' && /mesa/i.test(order.direccion)) ||
+      (typeof order.comentarios === 'string' && /mesa/i.test(order.comentarios)) ||
+      Boolean(order.mesa || order.table_number)
     );
   };
 
   const getTableNumber = (order) => {
     if (!order) return '';
-    const match = (order.direccion || '').match(/mesa\s*#?\s*([a-zA-Z0-9_-]+)/i);
+    if (order.mesa) return String(order.mesa);
+    if (order.table_number) return String(order.table_number);
+    const textToMatch = `${order.direccion || ''} ${order.comentarios || ''}`;
+    const match = textToMatch.match(/mesa\s*#?\s*([a-zA-Z0-9_-]+)/i);
     return match ? match[1] : '';
   };
 
@@ -551,8 +577,17 @@ export default function OrdersView(props) {
     const method = isMesaOrder(order) ? 'mesa' : isPickupOrder(order) ? 'pickup' : 'envio';
     const copy = getStatusCopy(st, bType, method);
 
-    if (isMesaOrder(order) && ['LISTO_PARA_RECOGER', 'EN_CAMINO', 'ENVIADO'].includes(normalizedStatus)) {
-      return <span className="badge badge-success">Listo para servir</span>;
+    if (isMesaOrder(order)) {
+      if (['ENTREGADO', 'entregado'].includes(normalizedStatus)) {
+        return <span className="badge badge-success">Finalizado</span>;
+      }
+      if (['LISTO_PARA_RECOGER', 'EN_CAMINO', 'ENVIADO'].includes(normalizedStatus)) {
+        return <span className="badge badge-info bg-indigo-50 text-indigo-700 border border-indigo-200">En Mesa</span>;
+      }
+      if (['CANCELADO', 'cancelado'].includes(normalizedStatus)) {
+        return <span className="badge badge-error">Cancelado</span>;
+      }
+      return <span className="badge badge-warning">En Cocina</span>;
     }
 
     if (isPickupOrder(order) && ['LISTO_PARA_RECOGER', 'EN_CAMINO', 'ENVIADO'].includes(normalizedStatus)) {
@@ -693,6 +728,28 @@ export default function OrdersView(props) {
     setUpdatingStatusOrderId(orderId);
     try {
       await updateOrderStatus(orderId, newStatus);
+      
+      const targetOrder = orders.find(o => o.id === orderId);
+      if (targetOrder && isMesaOrder(targetOrder)) {
+        const tbl = getTableNumber(targetOrder);
+        if (tbl) {
+          try {
+            const bc = new BroadcastChannel('negu_orders_channel');
+            bc.postMessage({ type: 'RESOLVE_WAITER_CALL', mesa: String(tbl), businessId: business?.id });
+            setTimeout(() => bc.close(), 500);
+          } catch (_) {}
+          try {
+            const stored = localStorage.getItem('negu_active_table_calls');
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              delete parsed[String(tbl)];
+              localStorage.setItem('negu_active_table_calls', JSON.stringify(parsed));
+            }
+            localStorage.removeItem('negu_table_call_event');
+          } catch (_) {}
+        }
+      }
+
       onUpdate();
       addToast('Estado del pedido actualizado', 'success');
     } catch (err) {

@@ -31,6 +31,7 @@ const CookiesPage = lazy(() => import('./features/legal/CookiesPage'));
 
 // Admin Views (Lazy Loaded)
 const DashboardView = lazy(() => import('./features/admin/views/DashboardView'));
+const ComanderoView = lazy(() => import('./features/admin/views/ComanderoView'));
 const OrdersView = lazy(() => import('./features/admin/views/OrdersView'));
 const ProductsView = lazy(() => import('./features/admin/views/ProductsView'));
 const CategoriesView = lazy(() => import('./features/admin/views/CategoriesView'));
@@ -93,6 +94,8 @@ export default function App() {
             {/* Redirección por defecto a /admin/dashboard */}
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardView />} />
+            <Route path="comandero" element={<ComanderoView />} />
+            <Route path="mesas" element={<Navigate to="/admin/comandero" replace />} />
             <Route path="pedidos" element={<OrdersView />} />
             <Route path="orders" element={<Navigate to="/admin/pedidos" replace />} />
             <Route path="productos" element={<ProductsView />} />
@@ -110,6 +113,7 @@ export default function App() {
           </Route>
 
           {/* Alias amigables de raíz hacia el panel de administración */}
+          <Route path="/comandero" element={<Navigate to="/admin/comandero" replace />} />
           <Route path="/pedidos" element={<Navigate to="/admin/pedidos" replace />} />
           <Route path="/productos" element={<Navigate to="/admin/productos" replace />} />
           <Route path="/categorias" element={<Navigate to="/admin/categorias" replace />} />

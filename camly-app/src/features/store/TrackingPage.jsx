@@ -117,10 +117,15 @@ export default function TrackingPage() {
   }, [id, token, isDemo, retryCount, searchParams]);
 
   const currentOrder = order || DEMO_ORDER;
-  const isMesa = currentOrder.delivery_type === 'dine_in' || currentOrder.entrega_metodo === 'mesa' || (typeof currentOrder.direccion === 'string' && currentOrder.direccion.includes('Mesa'));
+  const isMesa = currentOrder.delivery_type === 'dine_in' || 
+                 currentOrder.entrega_metodo === 'mesa' || 
+                 (typeof currentOrder.direccion === 'string' && /mesa/i.test(currentOrder.direccion)) ||
+                 Boolean(currentOrder.mesa || currentOrder.table_number);
   const deliveryMethod = isMesa ? 'mesa' : (currentOrder.delivery_type === 'pickup' || currentOrder.entrega_metodo === 'recogida' ? 'pickup' : 'envio');
   const rawStatus = (currentOrder.status || currentOrder.estado || '').toString();
-  const statusStr = (deliveryMethod === 'pickup' || deliveryMethod === 'mesa') && ['EN_CAMINO', 'en_camino', 'enviado'].includes(rawStatus) ? (deliveryMethod === 'mesa' ? 'ENTREGADO' : 'LISTO_PARA_RECOGER') : rawStatus;
+  const statusStr = (deliveryMethod === 'pickup' || deliveryMethod === 'mesa') && ['EN_CAMINO', 'en_camino', 'enviado'].includes(rawStatus) 
+    ? 'LISTO_PARA_RECOGER' 
+    : rawStatus;
   const business = currentOrder.negocios || DEMO_ORDER.negocios;
   const items = typeof currentOrder.items === 'string' ? JSON.parse(currentOrder.items) : (currentOrder.items || currentOrder.productos || []);
   const brandColor = business?.theme_color || '#EA580C';
@@ -314,10 +319,16 @@ export default function TrackingPage() {
 
   // Cálculo de progreso del stepper
   let currentStepIdx = 0;
-  if (['EN_PREPARACION', 'preparando'].includes(statusStr)) currentStepIdx = 1;
-  else if (['LISTO_PARA_RECOGER', 'listo_para_recoger'].includes(statusStr)) currentStepIdx = 2;
-  else if (['EN_CAMINO', 'enviado'].includes(statusStr)) currentStepIdx = 2;
-  else if (['ENTREGADO', 'entregado'].includes(statusStr)) currentStepIdx = 3;
+  if (deliveryMethod === 'mesa') {
+    if (['ENTREGADO', 'entregado', 'finalizado', 'cerrado'].includes(statusStr)) currentStepIdx = 2;
+    else if (['EN_CAMINO', 'enviado', 'listo_para_recoger', 'LISTO_PARA_RECOGER', 'servido'].includes(statusStr)) currentStepIdx = 1;
+    else currentStepIdx = 0; // en cocina
+  } else {
+    if (['EN_PREPARACION', 'preparando'].includes(statusStr)) currentStepIdx = 1;
+    else if (['LISTO_PARA_RECOGER', 'listo_para_recoger'].includes(statusStr)) currentStepIdx = 2;
+    else if (['EN_CAMINO', 'enviado'].includes(statusStr)) currentStepIdx = 2;
+    else if (['ENTREGADO', 'entregado'].includes(statusStr)) currentStepIdx = 3;
+  }
 
   const isCancelled = statusStr === 'CANCELADO' || statusStr === 'cancelado';
   const isQuotePending = statusStr === 'COTIZACION_PENDIENTE';
@@ -337,7 +348,7 @@ export default function TrackingPage() {
   const businessType = business?.business_type || 'general';
   const statusCopy = getStatusCopy(statusStr, businessType, deliveryMethod);
   const steps = getStepperSteps(businessType, deliveryMethod);
-  const stepIcons = deliveryMethod === 'mesa' ? [Clock, Utensils, Utensils, CheckCircle2] : deliveryMethod === 'pickup' ? [Clock, Package, Store, CheckCircle2] : STEP_ICONS;
+  const stepIcons = deliveryMethod === 'mesa' ? [Utensils, Check, CheckCircle2] : deliveryMethod === 'pickup' ? [Clock, Package, Store, CheckCircle2] : STEP_ICONS;
 
   return (
     <div className="min-h-screen bg-gray-50 py-5 sm:py-8 px-4 sm:px-6">

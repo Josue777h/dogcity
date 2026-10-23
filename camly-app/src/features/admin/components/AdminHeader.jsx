@@ -4,6 +4,8 @@ import { useToastStore, useBusinessStore, useAuthStore } from '../../../stores';
 
 const TAB_LABELS = {
   dashboard:      'Dashboard General',
+  comandero:      'Comandero de Mesas',
+  mesas:          'Comandero de Mesas',
   orders:         'Gestión de Pedidos',
   pedidos:        'Gestión de Pedidos',
   products:       'Catálogo de Productos',
@@ -20,6 +22,8 @@ const TAB_LABELS = {
 
 const MOBILE_TAB_LABELS = {
   dashboard: 'Inicio',
+  comandero: 'Comandero',
+  mesas: 'Comandero',
   orders: 'Gestión',
   pedidos: 'Gestión',
   products: 'Productos',

@@ -40,6 +40,79 @@ const PICKUP_READY_COPY: StatusCopy = {
   acceptButton: '',
 };
 
+const MESA_STATUS_COPY: Record<string, StatusCopy> = {
+  NUEVO: {
+    badge: 'En Cocina',
+    title: 'Comanda en Cocina',
+    subtitle: 'Tu orden fue recibida y se está preparando en cocina.',
+    stepperLabel: 'En Cocina',
+    stepperDesc: 'Preparando comanda',
+    graceBanner: () => 'Tu orden está en cocina.',
+    cancelLockedNotice: 'Tu comanda ya está en preparación.',
+    acceptButton: 'Confirmar Orden',
+  },
+  CONFIRMADO_GRACIA: {
+    badge: 'En Cocina',
+    title: 'Comanda en Cocina',
+    subtitle: 'Tu orden se está preparando en cocina.',
+    stepperLabel: 'En Cocina',
+    stepperDesc: 'Preparando comanda',
+    graceBanner: (s) => `Comanda en cocina (${s}s)...`,
+    cancelLockedNotice: 'Tu orden ya está en cocina.',
+    acceptButton: 'Confirmar Orden',
+  },
+  EN_PREPARACION: {
+    badge: 'En Cocina',
+    title: 'Preparando en Cocina',
+    subtitle: 'Tu orden se está preparando en la cocina del restaurante.',
+    stepperLabel: 'En Cocina',
+    stepperDesc: 'Preparando tus platos',
+    graceBanner: () => 'Tu orden está en cocina.',
+    cancelLockedNotice: 'Tu comanda ya está en preparación en cocina.',
+    acceptButton: 'Confirmar Orden',
+  },
+  LISTO_PARA_RECOGER: {
+    badge: 'En Mesa',
+    title: 'Servido en tu Mesa',
+    subtitle: 'Tus platos fueron servidos en tu mesa. ¡Buen provecho!',
+    stepperLabel: 'En Mesa',
+    stepperDesc: 'Servido en mesa',
+    graceBanner: () => '',
+    cancelLockedNotice: 'Tu orden ya fue servida en mesa.',
+    acceptButton: '',
+  },
+  EN_CAMINO: {
+    badge: 'En Mesa',
+    title: 'Servido en tu Mesa',
+    subtitle: 'Tus platos fueron servidos en tu mesa. ¡Buen provecho!',
+    stepperLabel: 'En Mesa',
+    stepperDesc: 'Servido en mesa',
+    graceBanner: () => '',
+    cancelLockedNotice: 'Tu orden ya fue servida en mesa.',
+    acceptButton: '',
+  },
+  ENTREGADO: {
+    badge: 'Finalizado',
+    title: 'Servicio Finalizado',
+    subtitle: 'La orden fue completada y la cuenta cerrada. ¡Gracias por tu visita!',
+    stepperLabel: 'Finalizado',
+    stepperDesc: 'Cuenta cerrada',
+    graceBanner: () => '',
+    cancelLockedNotice: 'Este servicio ya fue finalizado.',
+    acceptButton: '',
+  },
+  CANCELADO: {
+    badge: 'Cancelado',
+    title: 'Comanda Cancelada',
+    subtitle: 'Esta comanda fue cancelada.',
+    stepperLabel: 'Cancelado',
+    stepperDesc: 'Comanda cancelada',
+    graceBanner: () => '',
+    cancelLockedNotice: 'La orden está cancelada.',
+    acceptButton: '',
+  },
+};
+
 const DICTIONARY: Record<BusinessType, Partial<Record<InternalOrderStatus, StatusCopy>>> = {
   food: {
     NUEVO: {
@@ -492,9 +565,15 @@ export function normalizeOrderStatus(status?: string | null): InternalOrderStatu
  * Obtiene los textos y etiquetas adaptadas al rubro del negocio
  */
 export function getStatusCopy(status?: string | null, businessType?: string | null, deliveryMethod?: string | null): StatusCopy {
-  const isPickup = deliveryMethod === 'recogida' || deliveryMethod === 'pickup';
+  const isMesa = deliveryMethod === 'mesa' || deliveryMethod === 'dine_in';
+  const isPickup = !isMesa && (deliveryMethod === 'recogida' || deliveryMethod === 'pickup');
   const normType = normalizeBusinessType(businessType);
   const normalizedStatus = normalizeOrderStatus(status);
+
+  if (isMesa) {
+    return MESA_STATUS_COPY[normalizedStatus] || MESA_STATUS_COPY.NUEVO;
+  }
+
   if (isPickup && (normalizedStatus === 'LISTO_PARA_RECOGER' || normalizedStatus === 'EN_CAMINO')) return PICKUP_READY_COPY;
   if (isPickup && normalizedStatus === 'ENTREGADO') {
     return { ...DICTIONARY.general.ENTREGADO, badge: 'Recogido', title: 'Pedido recogido', subtitle: 'El pedido fue recogido en el local.' };
@@ -522,10 +601,9 @@ export function getStepperSteps(businessType?: string | null, deliveryMethod?: s
   const bType = normalizeBusinessType(businessType);
   if (deliveryMethod === 'mesa' || deliveryMethod === 'dine_in') {
     return [
-      { id: 'nuevo', label: 'Recibido', desc: 'Comanda en cola' },
-      { id: 'preparando', label: 'En cocina', desc: 'Preparando tu orden' },
-      { id: 'listo', label: 'Emplatando', desc: 'Listo para llevar a mesa' },
-      { id: 'entregado', label: 'En tu mesa', desc: '¡Buen provecho!' },
+      { id: 'preparando', label: 'En Cocina', desc: 'Preparando comanda' },
+      { id: 'en_mesa', label: 'En Mesa', desc: 'Servido en mesa' },
+      { id: 'finalizado', label: 'Finalizado', desc: 'Cuenta cerrada' },
     ];
   }
   if (deliveryMethod === 'recogida' || deliveryMethod === 'pickup') {
