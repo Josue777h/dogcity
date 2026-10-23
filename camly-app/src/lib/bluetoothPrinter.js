@@ -141,7 +141,9 @@ export function buildEscPosCommands(order, business) {
   const dateObj = order.created_at ? new Date(order.created_at) : new Date();
   const dateStr = dateObj.toLocaleDateString('es-CO');
   const timeStr = dateObj.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-  const isEnvio = order.entrega_metodo === 'envio';
+  const isMesa = order.delivery_type === 'dine_in' || order.entrega_metodo === 'mesa' || (typeof order.direccion === 'string' && /mesa/i.test(order.direccion));
+  const tableNum = (order.direccion || '').match(/mesa\s*#?\s*([a-zA-Z0-9_-]+)/i)?.[1] || '';
+  const isEnvio = !isMesa && order.entrega_metodo === 'envio';
 
   const items = order.items || order.productos || [];
   const subtotal = getOrderSubtotal(order);
@@ -162,9 +164,21 @@ export function buildEscPosCommands(order, business) {
   if (businessPhone) {
     addText(`Tel: ${businessPhone}\n`);
   }
-  addRaw(boldOn);
-  addText(isEnvio ? '>> DOMICILIO <<\n' : '>> RETIRO EN LOCAL <<\n');
-  addRaw(boldOff);
+  if (isMesa) {
+    addRaw(doubleSize);
+    addRaw(boldOn);
+    addText(`>> SERVICIO EN MESA ${tableNum ? '#' + tableNum : ''} <<\n`);
+    addRaw(normalSize);
+    addRaw(boldOff);
+  } else if (isEnvio) {
+    addRaw(boldOn);
+    addText('>> DOMICILIO <<\n');
+    addRaw(boldOff);
+  } else {
+    addRaw(boldOn);
+    addText('>> RETIRO EN LOCAL <<\n');
+    addRaw(boldOff);
+  }
   addText('--------------------------------\n');
 
   // Datos orden
@@ -173,7 +187,11 @@ export function buildEscPosCommands(order, business) {
   addText(`FECHA: ${dateStr} ${timeStr}\n`);
   addText(`CLIENTE: ${order.nombre || 'Cliente'}\n`);
   addText(`TEL: ${order.telefono || 'Sin tel'}\n`);
-  if (isEnvio) {
+  if (isMesa) {
+    addRaw(boldOn);
+    addText(`UBICACION: MESA #${tableNum || '1'}\n`);
+    addRaw(boldOff);
+  } else if (isEnvio) {
     addText(`DIRECCION:\n${order.direccion || 'Sin direccion'}\n`);
   }
   addText('--------------------------------\n');

@@ -334,7 +334,9 @@ export function printThermalReceipt(order, business) {
   const subtotal = getOrderSubtotal(order);
   const domCost = Number(order.domicilio_costo) || 0;
   const total = Number(order.total) || (subtotal + domCost);
-  const isEnvio = order.entrega_metodo === 'envio';
+  const isMesa = order.delivery_type === 'dine_in' || order.entrega_metodo === 'mesa' || (typeof order.direccion === 'string' && /mesa/i.test(order.direccion));
+  const tableNum = (order.direccion || '').match(/mesa\s*#?\s*([a-zA-Z0-9_-]+)/i)?.[1] || '';
+  const isEnvio = !isMesa && order.entrega_metodo === 'envio';
 
   const itemsHtml = items.map(p => {
     const qty = p.cantidad ?? p.quantity ?? 1;
@@ -400,6 +402,17 @@ export function printThermalReceipt(order, business) {
             border-radius: 4px;
             margin-top: 4px;
           }
+          .badge-table {
+            display: inline-block;
+            padding: 4px 10px;
+            font-size: 14px;
+            font-weight: 900;
+            border: 2px solid #000;
+            border-radius: 6px;
+            margin-top: 5px;
+            background: #000;
+            color: #fff;
+          }
           @media print {
             body { padding: 4px; width: 100%; }
             .no-print { display: none !important; }
@@ -410,7 +423,7 @@ export function printThermalReceipt(order, business) {
         <div class="text-center">
           <div style="font-size: 16px; font-weight: 900; text-transform: uppercase;">${businessName}</div>
           ${businessPhone ? `<div style="font-size: 11px;">Tel: ${businessPhone}</div>` : ''}
-          <div class="badge">${isEnvio ? '🛵 DOMICILIO' : '🏪 RETIRO EN LOCAL'}</div>
+          ${isMesa ? `<div class="badge-table">🍽️ SERVICIO EN MESA #${tableNum || '1'}</div>` : `<div class="badge">${isEnvio ? '🛵 DOMICILIO' : '🏪 RETIRO EN LOCAL'}</div>`}
         </div>
 
         <div class="divider"></div>
@@ -427,7 +440,11 @@ export function printThermalReceipt(order, business) {
           <span>Teléfono:</span>
           <span>${order.telefono || 'Sin teléfono'}</span>
         </div>
-        ${isEnvio ? `
+        ${isMesa ? `
+        <div class="row" style="margin-top: 3px; font-size: 13px; font-weight: 900;">
+          <span>UBICACIÓN:</span>
+          <span>🍽️ MESA #${tableNum || '1'}</span>
+        </div>` : isEnvio ? `
         <div style="margin-top: 4px;">
           <span class="bold">Dirección:</span>
           <div>${order.direccion || 'Sin dirección'}</div>

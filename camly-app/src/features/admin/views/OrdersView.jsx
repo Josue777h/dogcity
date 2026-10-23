@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { 
-  ChevronRight, User, MapPin, Package, Bike, Store, Trash2, Map,
+  ChevronRight, User, MapPin, Package, Bike, Store, Utensils, Trash2, Map,
   MessageCircle, AlertCircle, CheckCircle2, Check, X, Printer, Volume2, VolumeX, Bluetooth,
   Ban, FileText, ExternalLink, Clock
 } from 'lucide-react';
@@ -23,7 +23,7 @@ const STATUS_TABS = [
   { id: 'nuevo', label: 'Nuevos' },
   { id: 'cotizacion', label: 'Por Cotizar' },
   { id: 'preparando', label: 'En Preparación' },
-  { id: 'ready_pickup', label: 'Listos para recoger' },
+  { id: 'ready_pickup', label: 'Listos / Para servir' },
   { id: 'enviado', label: 'En Camino' },
   { id: 'entregado', label: 'Entregados' },
   { id: 'cancelado', label: 'Cancelados' },
@@ -174,11 +174,14 @@ function MerchantCancelModal({ isOpen, order, onClose, onConfirmed }) {
 }
 
 function OrderTimeline({ currentStatus, onStatusChange, disabled = false, deliveryMethod = 'envio', businessType }) {
-  const isPickup = deliveryMethod === 'recogida' || deliveryMethod === 'pickup';
-  const steps = isPickup ? ['nuevo', 'preparando', 'listo', 'entregado'] : STATUS_STEPS;
+  const isMesa = deliveryMethod === 'mesa';
+  const isPickup = !isMesa && (deliveryMethod === 'recogida' || deliveryMethod === 'pickup');
+  const steps = (isPickup || isMesa) ? ['nuevo', 'preparando', 'listo', 'entregado'] : STATUS_STEPS;
   const currentIdx = getStepIndex(currentStatus);
   const stepStatus = (step) => step === 'listo' ? 'LISTO_PARA_RECOGER' : step === 'preparando' ? 'EN_PREPARACION' : step === 'enviado' ? 'EN_CAMINO' : step === 'entregado' ? 'ENTREGADO' : 'nuevo';
   const stepLabel = (step) => {
+    if (isMesa && step === 'listo') return 'Listo para servir';
+    if (isMesa && step === 'entregado') return 'Servido en mesa';
     if (isPickup && step === 'listo') return 'Listo para recoger';
     if (isPickup && step === 'entregado') return 'Recogido';
     if (step === 'preparando') return getStatusCopy('EN_PREPARACION', businessType, deliveryMethod).stepperLabel;
@@ -497,9 +500,34 @@ export default function OrdersView(props) {
     }
   };
 
+  const isMesaOrder = (order) => {
+    if (!order) return false;
+    return (
+      order.delivery_type === 'dine_in' ||
+      order.entrega_metodo === 'mesa' ||
+      (typeof order.direccion === 'string' && /mesa/i.test(order.direccion))
+    );
+  };
+
+  const getTableNumber = (order) => {
+    if (!order) return '';
+    const match = (order.direccion || '').match(/mesa\s*#?\s*([a-zA-Z0-9_-]+)/i);
+    return match ? match[1] : '';
+  };
+
+  const isPickupOrder = (order) => {
+    if (!order || isMesaOrder(order)) return false;
+    return order.delivery_type === 'pickup' || order.entrega_metodo === 'recogida';
+  };
+
+  const isDeliveryOrder = (order) => {
+    if (!order) return false;
+    return !isMesaOrder(order) && !isPickupOrder(order);
+  };
+
   useEffect(() => {
     async function loadDrivers() {
-      if (!orders.some(order => order.entrega_metodo === 'envio' && order.delivery_type !== 'pickup')) {
+      if (!orders.some(order => isDeliveryOrder(order))) {
         setDrivers([]);
         return;
       }
@@ -515,14 +543,17 @@ export default function OrdersView(props) {
     loadDrivers();
   }, [orders]);
 
-  const isPickupOrder = (order) => order?.delivery_type === 'pickup' || order?.entrega_metodo === 'recogida';
-
   const getStatusBadge = (status, order) => {
     const st = (status || order?.status || order?.estado || '').toString();
     const isQuoteRequired = order && isQuotePending(order);
     const bType = business?.business_type || 'general';
     const normalizedStatus = st.toUpperCase();
-    const copy = getStatusCopy(st, bType, isPickupOrder(order) ? 'pickup' : 'envio');
+    const method = isMesaOrder(order) ? 'mesa' : isPickupOrder(order) ? 'pickup' : 'envio';
+    const copy = getStatusCopy(st, bType, method);
+
+    if (isMesaOrder(order) && ['LISTO_PARA_RECOGER', 'EN_CAMINO', 'ENVIADO'].includes(normalizedStatus)) {
+      return <span className="badge badge-success">Listo para servir</span>;
+    }
 
     if (isPickupOrder(order) && ['LISTO_PARA_RECOGER', 'EN_CAMINO', 'ENVIADO'].includes(normalizedStatus)) {
       return <span className="badge badge-success">Listo para recoger</span>;
@@ -574,16 +605,20 @@ export default function OrdersView(props) {
     if (tabId === 'nuevo') return orders.filter(isOrderNew).length;
     if (tabId === 'cotizacion') return orders.filter(isQuotePending).length;
     if (tabId === 'preparando') return orders.filter(o => ['preparando', 'en_preparacion'].includes((o.status || o.estado || '').toLowerCase())).length;
-    if (tabId === 'ready_pickup') return orders.filter(o => isPickupOrder(o) && ['listo_para_recoger', 'en_camino', 'enviado'].includes((o.status || o.estado || '').toLowerCase())).length;
-    if (tabId === 'enviado') return orders.filter(o => !isPickupOrder(o) && ['enviado', 'en_camino'].includes((o.status || o.estado || '').toLowerCase())).length;
+    if (tabId === 'ready_pickup') return orders.filter(o => (isPickupOrder(o) || isMesaOrder(o)) && ['listo_para_recoger', 'en_camino', 'enviado'].includes((o.status || o.estado || '').toLowerCase())).length;
+    if (tabId === 'enviado') return orders.filter(o => isDeliveryOrder(o) && ['enviado', 'en_camino'].includes((o.status || o.estado || '').toLowerCase())).length;
     if (tabId === 'entregado') return orders.filter(o => ['entregado'].includes((o.status || o.estado || '').toLowerCase())).length;
     if (tabId === 'cancelado') return orders.filter(o => ['cancelado'].includes((o.status || o.estado || '').toLowerCase())).length;
     return orders.filter(o => (o.estado || o.status) === tabId).length;
   };
 
-  const getDeliveryCount = (method) => method === 'all'
-    ? orders.length
-    : orders.filter(o => method === 'pickup' ? isPickupOrder(o) : !isPickupOrder(o)).length;
+  const getDeliveryCount = (method) => {
+    if (method === 'all') return orders.length;
+    if (method === 'mesa') return orders.filter(isMesaOrder).length;
+    if (method === 'pickup') return orders.filter(isPickupOrder).length;
+    if (method === 'envio') return orders.filter(isDeliveryOrder).length;
+    return 0;
+  };
 
   const filterOrdersByStatus = (filter) => filter === 'all'
     ? orders 
@@ -594,9 +629,9 @@ export default function OrdersView(props) {
     : filter === 'preparando'
     ? orders.filter(o => ['preparando', 'en_preparacion'].includes((o.status || o.estado || '').toLowerCase()))
     : filter === 'ready_pickup'
-    ? orders.filter(o => isPickupOrder(o) && ['listo_para_recoger', 'en_camino', 'enviado'].includes((o.status || o.estado || '').toLowerCase()))
+    ? orders.filter(o => (isPickupOrder(o) || isMesaOrder(o)) && ['listo_para_recoger', 'en_camino', 'enviado'].includes((o.status || o.estado || '').toLowerCase()))
     : filter === 'enviado'
-    ? orders.filter(o => !isPickupOrder(o) && ['enviado', 'en_camino'].includes((o.status || o.estado || '').toLowerCase()))
+    ? orders.filter(o => isDeliveryOrder(o) && ['enviado', 'en_camino'].includes((o.status || o.estado || '').toLowerCase()))
     : filter === 'entregado'
     ? orders.filter(o => ['entregado'].includes((o.status || o.estado || '').toLowerCase()))
     : filter === 'cancelado'
@@ -608,15 +643,23 @@ export default function OrdersView(props) {
   const toggleDeliveryFilter = (method) => {
     const nextFilter = deliveryFilter === method ? 'all' : method;
     setDeliveryFilter(nextFilter);
-    const availableOrders = filterOrdersByStatus(activeFilter).filter(order =>
-      nextFilter === 'all' || (nextFilter === 'pickup' ? isPickupOrder(order) : !isPickupOrder(order))
-    );
+    const matchesDelivery = (order) => {
+      if (nextFilter === 'all') return true;
+      if (nextFilter === 'mesa') return isMesaOrder(order);
+      if (nextFilter === 'pickup') return isPickupOrder(order);
+      return isDeliveryOrder(order);
+    };
+    const availableOrders = filterOrdersByStatus(activeFilter).filter(matchesDelivery);
     if (activeFilter !== 'all' && availableOrders.length === 0) setActiveFilter('all');
   };
 
   const filteredOrders = deliveryFilter === 'all'
     ? statusFilteredOrders
-    : statusFilteredOrders.filter(order => deliveryFilter === 'pickup' ? isPickupOrder(order) : !isPickupOrder(order));
+    : statusFilteredOrders.filter(order => {
+        if (deliveryFilter === 'mesa') return isMesaOrder(order);
+        if (deliveryFilter === 'pickup') return isPickupOrder(order);
+        return isDeliveryOrder(order);
+      });
   const preparingLabel = getStatusCopy('EN_PREPARACION', business?.business_type).stepperLabel.toLowerCase();
 
   const handleNotifyCustomerDispatch = (order) => {
@@ -628,10 +671,19 @@ export default function OrdersView(props) {
     const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://negu.pro';
     const trackingUrl = `${origin}/tracking/${order.id}${order.token ? `?token=${encodeURIComponent(order.token)}` : ''}`;
     const storeName = businessName || 'la tienda';
+    const isMesa = isMesaOrder(order);
+    const tableNum = getTableNumber(order);
     const pickup = isPickupOrder(order);
+    const statusMsg = isMesa
+      ? `Tu pedido está listo y te lo estamos llevando a la Mesa ${tableNum ? '#' + tableNum : ''}.`
+      : pickup 
+      ? 'Tu pedido está listo para recoger en el local.' 
+      : 'El pedido salió hacia tu dirección.';
+
     const message = formatWhatsAppMessage(`ACTUALIZACIÓN DEL PEDIDO #${order.id} | ${storeName}`, [
-      { title: 'Estado', lines: [pickup ? 'Tu pedido está listo para recoger en el local.' : 'El pedido salió hacia tu dirección.'] },
+      { title: 'Estado', lines: [statusMsg] },
       ...(pickup && business?.direccion ? [{ title: 'Punto de recogida', lines: [business.direccion] }] : []),
+      ...(isMesa ? [{ title: 'Ubicación en local', lines: [`Servicio en Mesa ${tableNum ? '#' + tableNum : ''}`] }] : []),
       { title: 'Seguimiento', lines: [trackingUrl] },
     ]);
     window.open(`https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`, '_blank');
@@ -672,7 +724,8 @@ export default function OrdersView(props) {
   };
 
   const handleAssignDriver = async (orderId, driverId) => {
-    if (isPickupOrder(orders.find(item => item.id === orderId))) return;
+    const o = orders.find(item => item.id === orderId);
+    if (!isDeliveryOrder(o)) return;
     setLoadingDriver(orderId);
     try {
       const { error } = await getSupabase()
@@ -689,7 +742,7 @@ export default function OrdersView(props) {
   };
 
   const handleDispatch = (order) => {
-    if (isPickupOrder(order)) return;
+    if (!isDeliveryOrder(order)) return;
     const driver = drivers.find(d => d.id === order.domiciliario_id);
     if (!driver) return;
     const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion || '')}`;
@@ -722,28 +775,40 @@ export default function OrdersView(props) {
             </select>
           </label>
           <div className="min-w-0">
-            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-500">Entrega</span>
-            <div role="group" aria-label="Filtrar pedidos por modalidad de entrega" className="grid h-10 grid-cols-2 gap-1 rounded-lg border border-border bg-gray-100 p-1">
+            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-500">Modalidad</span>
+            <div role="group" aria-label="Filtrar pedidos por modalidad de entrega" className="grid h-10 grid-cols-3 gap-1 rounded-lg border border-border bg-gray-100 p-1">
               <button
                 type="button"
                 aria-pressed={deliveryFilter === 'pickup'}
                 onClick={() => toggleDeliveryFilter('pickup')}
-                className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1.5 text-[11px] font-semibold transition-colors ${deliveryFilter === 'pickup' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'}`}
+                className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-[11px] font-semibold transition-colors ${deliveryFilter === 'pickup' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'}`}
+                title="Retiro en local"
               >
-                <Store size={14} className="shrink-0" />
+                <Store size={13} className="shrink-0" />
                 <span className="truncate">Local</span>
-                <span className="text-[10px] opacity-70">{getDeliveryCount('pickup')}</span>
+                <span className="text-[10px] opacity-70">({getDeliveryCount('pickup')})</span>
+              </button>
+              <button
+                type="button"
+                aria-pressed={deliveryFilter === 'mesa'}
+                onClick={() => toggleDeliveryFilter('mesa')}
+                className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-[11px] font-semibold transition-colors ${deliveryFilter === 'mesa' ? 'bg-white text-purple-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'}`}
+                title="Consumo en mesa"
+              >
+                <Utensils size={13} className="shrink-0" />
+                <span className="truncate">Mesa</span>
+                <span className="text-[10px] opacity-70">({getDeliveryCount('mesa')})</span>
               </button>
               <button
                 type="button"
                 aria-pressed={deliveryFilter === 'envio'}
                 onClick={() => toggleDeliveryFilter('envio')}
-                className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1.5 text-[11px] font-semibold transition-colors ${deliveryFilter === 'envio' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'}`}
+                className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-[11px] font-semibold transition-colors ${deliveryFilter === 'envio' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'}`}
+                title="Domicilios"
               >
-                <Bike size={14} className="shrink-0" />
-                <span className="delivery-label-full truncate">Domicilio</span>
-                <span className="delivery-label-compact">Domi</span>
-                <span className="text-[10px] opacity-70">{getDeliveryCount('envio')}</span>
+                <Bike size={13} className="shrink-0" />
+                <span className="truncate">Domi</span>
+                <span className="text-[10px] opacity-70">({getDeliveryCount('envio')})</span>
               </button>
             </div>
           </div>
@@ -785,10 +850,13 @@ export default function OrdersView(props) {
       <div className="space-y-1.5">
         {filteredOrders.map((order) => {
           const status = order.estado || order.status;
+          const isMesa = isMesaOrder(order);
           const isPickup = isPickupOrder(order);
+          const isDelivery = isDeliveryOrder(order);
+          const tableNum = getTableNumber(order);
           const normalizedStatus = String(status || '').toUpperCase();
           const pickupReady = ['LISTO_PARA_RECOGER', 'EN_CAMINO', 'ENVIADO'].includes(normalizedStatus);
-          const canNotifyCustomer = isPickup ? pickupReady : ['EN_CAMINO', 'ENVIADO'].includes(normalizedStatus);
+          const canNotifyCustomer = (isPickup || isMesa) ? pickupReady : ['EN_CAMINO', 'ENVIADO'].includes(normalizedStatus);
           const deliveryPending = isDeliveryPending(order);
           const isExpanded = expandedOrderId === order.id;
 
@@ -824,10 +892,16 @@ export default function OrdersView(props) {
                     <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
                       <span>{new Date(order.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
                       <span>·</span>
-                      <span className="flex items-center gap-1">
-                        {order.entrega_metodo === 'envio' ? <Bike size={12} /> : <MapPin size={12} />}
-                        {order.entrega_metodo === 'envio' ? 'Domicilio' : 'Local'}
-                      </span>
+                      {isMesa ? (
+                        <span className="inline-flex items-center gap-1 font-black text-purple-700 bg-purple-100/90 px-1.5 py-0.5 rounded text-[11px]">
+                          <Utensils size={11} /> Mesa #{tableNum || '1'}
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          {isPickup ? <Store size={12} /> : <Bike size={12} />}
+                          {isPickup ? 'Local' : 'Domicilio'}
+                        </span>
+                      )}
                       {deliveryPending && (
                         <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Por cotizar</span>
                       )}
@@ -950,7 +1024,7 @@ export default function OrdersView(props) {
                     <OrderTimeline 
                       currentStatus={status} 
                       disabled={updatingStatusOrderId === order.id}
-                      deliveryMethod={isPickup ? 'pickup' : 'envio'}
+                      deliveryMethod={isMesa ? 'mesa' : isPickup ? 'pickup' : 'envio'}
                       businessType={business?.business_type}
                       onStatusChange={(newSt) => handleStatusChange(order.id, newSt)} 
                     />
@@ -972,14 +1046,22 @@ export default function OrdersView(props) {
                     <div className="space-y-2.5 min-w-0">
                       <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-gray-200 shadow-2xs space-y-2.5">
                         <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                          <p className="text-xs font-bold text-gray-900 uppercase tracking-wider">Datos de entrega</p>
-                          <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                            order.entrega_metodo === 'envio' 
-                              ? 'bg-blue-50 text-blue-800 border border-blue-200' 
-                              : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                          }`}>
-                            {order.entrega_metodo === 'envio' ? <><Bike size={12} /> Domicilio</> : <><MapPin size={12} /> Recogida en local</>}
-                          </span>
+                          <p className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                            {isMesa ? 'Ubicación de consumo' : 'Datos de entrega'}
+                          </p>
+                          {isMesa ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                              <Utensils size={12} /> Servicio en Mesa #{tableNum || '1'}
+                            </span>
+                          ) : isPickup ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              <Store size={12} /> Recogida en local
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                              <Bike size={12} /> Domicilio
+                            </span>
+                          )}
                         </div>
 
                         {/* Cliente y Teléfono / WhatsApp */}
@@ -1001,12 +1083,16 @@ export default function OrdersView(props) {
                               <button 
                                 type="button"
                                 onClick={() => handleNotifyCustomerDispatch(order)}
-                                className="inline-flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 sm:px-2.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold transition-colors cursor-pointer shrink-0"
-                                title={isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
-                                aria-label={isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
+                                className={`inline-flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 sm:px-2.5 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0 ${
+                                  isMesa
+                                    ? 'bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200'
+                                    : 'bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200'
+                                }`}
+                                title={isMesa ? 'Avisar al cliente que su orden ya va a su mesa' : isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
+                                aria-label={isMesa ? 'Avisar al cliente que su orden va a su mesa' : isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
                               >
-                                {isPickup ? <Store size={13} /> : <Bike size={13} />}
-                                <span className="hidden sm:inline">{isPickup ? 'Avisar recogida' : 'Avisar envío'}</span>
+                                {isMesa ? <Utensils size={13} /> : isPickup ? <Store size={13} /> : <Bike size={13} />}
+                                <span className="hidden sm:inline">{isMesa ? 'Avisar a la mesa' : isPickup ? 'Avisar recogida' : 'Avisar envío'}</span>
                               </button>
                             )}
                             <a 
@@ -1023,16 +1109,29 @@ export default function OrdersView(props) {
                           </div>
                         </div>
 
-                        {/* Dirección y GPS */}
+                        {/* Dirección y Ubicación */}
                         <div className="pt-2 border-t border-gray-100">
                           <div className="flex items-start gap-1.5 text-xs text-gray-800">
-                            <MapPin size={15} className="text-blue-600 mt-0.5 shrink-0" />
-                            <p className="leading-snug break-words font-semibold text-gray-950">
-                              {isPickup ? (business?.direccion || 'Recogida en tienda física') : (order.direccion || 'Dirección pendiente')}
-                            </p>
+                            {isMesa ? (
+                              <Utensils size={15} className="text-purple-600 mt-0.5 shrink-0" />
+                            ) : (
+                              <MapPin size={15} className="text-blue-600 mt-0.5 shrink-0" />
+                            )}
+                            <div className="leading-snug break-words">
+                              {isMesa ? (
+                                <div>
+                                  <span className="font-bold text-purple-950 text-sm">Mesa #{tableNum || '1'}</span>
+                                  <span className="block text-[11px] text-gray-500 font-normal">Consumo en restaurante / establecimiento</span>
+                                </div>
+                              ) : (
+                                <p className="font-semibold text-gray-950">
+                                  {isPickup ? (business?.direccion || 'Recogida en tienda física') : (order.direccion || 'Dirección pendiente')}
+                                </p>
+                              )}
+                            </div>
                           </div>
 
-                          {order.entrega_metodo === 'envio' && (order.ubicacion_link || order.direccion) && (
+                          {isDelivery && (order.ubicacion_link || order.direccion) && (
                             <a
                               href={order.ubicacion_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion)}`}
                               target="_blank"
@@ -1050,7 +1149,7 @@ export default function OrdersView(props) {
                       </div>
 
                       {/* Repartidor asignado solo para pedidos a domicilio */}
-                      {!isPickup && <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-gray-200 shadow-2xs">
+                      {isDelivery && <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-gray-200 shadow-2xs">
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-xs font-bold text-gray-900 uppercase tracking-wider">Repartidor asignado</p>
                           {order.domiciliario_id && (
