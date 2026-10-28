@@ -62,7 +62,13 @@
 
 @layer base {
   *, *::before, *::after { box-sizing: border-box; }
-  html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    font-size: 16px;
+  }
   body {
     font-family: var(--font-sans);
     background-color: var(--color-bg);
@@ -109,6 +115,24 @@
   }
 
   @media (max-width: 640px) {
+    /* Normalización de tipografía responsiva para celulares (Motorola, Redmi, Samsung, etc.) */
+    html {
+      font-size: clamp(14.5px, 0.4vw + 14px, 16px);
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    body {
+      font-size: 0.9375rem; /* ~15px base cómoda */
+    }
+    /* Prevenir que textos auxiliares se vean microscópicos en pantallas Android estándar */
+    .text-\[9px\], .text-\[10px\], .text-\[11px\] {
+      font-size: 0.775rem !important; /* ~12px mínimo legible */
+      line-height: 1.35 !important;
+    }
+    .text-xs {
+      font-size: 0.8125rem !important; /* ~13px */
+      line-height: 1.4 !important;
+    }
     input[type="text"],
     input[type="tel"],
     input[type="email"],

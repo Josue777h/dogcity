@@ -2,13 +2,14 @@ import { useState, useMemo, useEffect } from 'react';
 import { useOutletContext, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Utensils, Plus, Minus, Trash2, Search, Bell, Check, Printer, 
-  ShoppingBag, X, ChefHat, Clock, RefreshCw, CheckCircle2
+  ShoppingBag, X, ChefHat, Clock, RefreshCw, CheckCircle2, PenLine
 } from 'lucide-react';
 import { formatMoney, playNewOrderSound, printThermalReceipt, playTableCallSound } from '../../../lib/utils';
 import { saveOrder } from '../../../lib/supabase';
 import { useToastStore, useBusinessStore } from '../../../stores';
 
 const QUICK_KITCHEN_TAGS = [
+  'Sin vegetales',
   'Sin cebolla',
   'Sin salsas',
   'Salsa aparte',
@@ -52,6 +53,10 @@ export default function ComanderoView() {
   const [selectedOptions, setSelectedOptions] = useState({});
   const [kitchenNote, setKitchenNote] = useState('');
   const [itemQuantity, setItemQuantity] = useState(1);
+
+  // Modal para agregar o editar nota rápida directamente a un plato del ticket
+  const [editingItemNote, setEditingItemNote] = useState(null);
+  const [itemNoteText, setItemNoteText] = useState('');
 
   // Estado del proceso de envío
   const [isSending, setIsSending] = useState(false);
@@ -200,44 +205,131 @@ export default function ComanderoView() {
     });
   }, [products, selectedCategory, searchQuery]);
 
-  // Abrir personalización de producto o agregarlo de inmediato si no tiene opciones
+  // Abrir personalización de producto (para opciones y/o notas directas de cocina)
+  const openProductCustomize = (product) => {
+    const initOpts = {};
+    if (Array.isArray(product.opciones)) {
+      product.opciones.forEach(g => { initOpts[g.id] = []; });
+    }
+    setSelectedOptions(initOpts);
+    setKitchenNote('');
+    setItemQuantity(1);
+    setCustomizingProduct(product);
+  };
+
+  // Click en producto del catálogo: si tiene opciones abre personalizador; si no, agrega directo (con agrupación)
   const handleProductClick = (product) => {
     const hasOptions = Array.isArray(product.opciones) && product.opciones.length > 0;
     if (hasOptions) {
-      const initOpts = {};
-      product.opciones.forEach(g => { initOpts[g.id] = []; });
-      setSelectedOptions(initOpts);
-      setKitchenNote('');
-      setItemQuantity(1);
-      setCustomizingProduct(product);
+      openProductCustomize(product);
     } else {
-      // Agregar directo
       addToTicket(product, [], '', 1);
       addToast(`+1 ${product.name}`, 'success');
     }
   };
 
-  // Agregar al ticket de la mesa actual
+  // Agregar al ticket de la mesa actual con agrupación inteligente de platos idénticos
   const addToTicket = (product, options = [], note = '', quantity = 1) => {
+    const cleanNote = (note || '').trim();
     const extraPrice = (options || []).reduce((sum, opt) => sum + (Number(opt?.precio) || 0), 0);
     const unitPrice = Number(product.price) + extraPrice;
-    const uid = `${product.id}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
-    const newItem = {
-      uid,
-      id: product.id,
-      name: product.name,
-      basePrice: Number(product.price),
-      price: unitPrice,
-      quantity,
-      options: options || [],
-      note: note.trim()
-    };
+    // Generar firma normalizada de opciones para comparar igualdad exacta
+    const optionsSig = (options || [])
+      .map(o => String(o.id || o.nombre || ''))
+      .sort()
+      .join('|');
 
-    setComandasByTable(prev => ({
-      ...prev,
-      [selectedTable]: [...(prev[selectedTable] || []), newItem]
-    }));
+    setComandasByTable(prev => {
+      const currentList = prev[selectedTable] || [];
+
+      // Buscar si ya existe un ítem idéntico (mismo producto, mismas opciones y misma nota)
+      const existingIdx = currentList.findIndex(item => {
+        if (item.id !== product.id) return false;
+        if ((item.note || '').trim() !== cleanNote) return false;
+        const itemSig = (item.options || [])
+          .map(o => String(o.id || o.nombre || ''))
+          .sort()
+          .join('|');
+        return itemSig === optionsSig;
+      });
+
+      if (existingIdx >= 0) {
+        // Ya existe exactamente igual: agrupamos e incrementamos la cantidad (ej. x2, x3)
+        const updated = [...currentList];
+        const existing = updated[existingIdx];
+        updated[existingIdx] = {
+          ...existing,
+          quantity: existing.quantity + quantity
+        };
+        return { ...prev, [selectedTable]: updated };
+      }
+
+      // No existe o difiere en nota/toppings: creamos una fila independiente
+      const uid = `${product.id}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const newItem = {
+        uid,
+        id: product.id,
+        name: product.name,
+        basePrice: Number(product.price),
+        price: unitPrice,
+        quantity,
+        options: options || [],
+        note: cleanNote
+      };
+
+      return {
+        ...prev,
+        [selectedTable]: [...currentList, newItem]
+      };
+    });
+  };
+
+  // Abrir modal de nota rápida para un plato del ticket
+  const openItemNoteModal = (item) => {
+    setEditingItemNote(item);
+    setItemNoteText(item.note || '');
+  };
+
+  // Guardar o separar nota para un ítem del ticket
+  const handleSaveItemNote = (uid, newNote, splitSingle = false) => {
+    const cleanNote = (newNote || '').trim();
+    setComandasByTable(prev => {
+      const currentList = prev[selectedTable] || [];
+      const itemIdx = currentList.findIndex(i => i.uid === uid);
+      if (itemIdx === -1) return prev;
+
+      const target = currentList[itemIdx];
+
+      // Caso: El plato tiene cantidad > 1 y el mesero elige separar 1 con una nota diferente
+      // (ej: de 2 carnes asadas, 1 va sin vegetales)
+      if (splitSingle && target.quantity > 1) {
+        const remaining = { ...target, quantity: target.quantity - 1 };
+        const newUid = `${target.id}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const splitItem = {
+          ...target,
+          uid: newUid,
+          quantity: 1,
+          note: cleanNote
+        };
+        const updated = [...currentList];
+        updated[itemIdx] = remaining;
+        updated.splice(itemIdx + 1, 0, splitItem);
+        return { ...prev, [selectedTable]: updated };
+      }
+
+      // Caso: Aplicar la nota a todo el ítem
+      const updated = [...currentList];
+      updated[itemIdx] = {
+        ...target,
+        note: cleanNote
+      };
+      return { ...prev, [selectedTable]: updated };
+    });
+
+    setEditingItemNote(null);
+    setItemNoteText('');
+    addToast('Instrucción guardada para el plato', 'success');
   };
 
   // Modificar cantidad de un ítem en el ticket
@@ -690,13 +782,26 @@ export default function ComanderoView() {
                     </div>
                   </div>
 
-                  <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-1">
                     <span className="text-xs sm:text-sm font-bold text-slate-900 tabular-nums">
                       {formatMoney(product.price)}
                     </span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 group-hover:bg-slate-900 group-hover:text-white transition-colors">
-                      {hasOptions ? '+ Opciones' : '+ Agregar'}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openProductCustomize(product);
+                        }}
+                        title="Personalizar o agregar notas de cocina"
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                      >
+                        <PenLine size={13} />
+                      </button>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                        {hasOptions ? '+ Opciones' : '+ Agregar'}
+                      </span>
+                    </div>
                   </div>
                 </button>
               );
@@ -759,28 +864,58 @@ export default function ComanderoView() {
                   <div key={item.uid} className="pt-2.5 first:pt-0 space-y-1.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <span className="font-bold text-xs text-slate-900 line-clamp-1">
-                          {item.name}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-xs sm:text-sm text-slate-900 leading-tight">
+                            {item.quantity > 1 && (
+                              <span className="inline-block bg-slate-900 text-white text-xs font-black px-1.5 py-0.5 rounded mr-1">
+                                x{item.quantity}
+                              </span>
+                            )}
+                            {item.name}
+                          </span>
+                        </div>
+
                         {item.options && item.options.length > 0 && (
-                          <p className="text-[10px] text-slate-600 font-medium">
+                          <p className="text-xs text-slate-600 font-medium mt-0.5">
                             + {item.options.map(o => o.nombre || o.label || o.name).join(', ')}
                           </p>
                         )}
-                        {item.note && (
-                          <p className="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 inline-block mt-0.5">
-                            Nota: &quot;{item.note}&quot;
-                          </p>
-                        )}
+
+                        {/* Botón directo de instrucción / nota para este plato */}
+                        <div className="mt-1">
+                          {item.note ? (
+                            <button
+                              type="button"
+                              onClick={() => openItemNoteModal(item)}
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer text-left"
+                              title="Toca para editar o separar instrucción"
+                            >
+                              <PenLine size={11} className="text-amber-700 shrink-0" />
+                              <span>Nota: &quot;{item.note}&quot;</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => openItemNoteModal(item)}
+                              className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 hover:bg-slate-100 px-2 py-0.5 rounded-md transition-colors cursor-pointer border border-dashed border-slate-200"
+                              title="Agregar instrucción para cocina a este plato"
+                            >
+                              <PenLine size={11} className="text-slate-400" />
+                              <span>+ Instrucción (ej: sin vegetales)</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       <div className="text-right shrink-0">
-                        <span className="text-xs font-bold text-slate-900 tabular-nums">
+                        <span className="text-xs sm:text-sm font-bold text-slate-900 tabular-nums">
                           {formatMoney(item.price * item.quantity)}
                         </span>
-                        <span className="block text-[10px] text-slate-500">
-                          {formatMoney(item.price)} c/u
-                        </span>
+                        {item.quantity > 1 && (
+                          <span className="block text-xs text-slate-500 tabular-nums">
+                            {formatMoney(item.price)} c/u
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -1072,6 +1207,122 @@ export default function ComanderoView() {
                   )}
                 </span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para editar o agregar instrucción/nota directa a un plato del ticket */}
+      {editingItemNote && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-5 shadow-2xl border border-slate-200 space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="min-w-0 pr-2">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">
+                  Instrucción: {editingItemNote.name}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {editingItemNote.quantity > 1
+                    ? `Tienes ${editingItemNote.quantity} unidades de este plato en la comanda`
+                    : 'Especifica detalles de preparación para cocina'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingItemNote(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors shrink-0"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Tags rápidos de cocina */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-700">
+                Selección rápida:
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_KITCHEN_TAGS.map(tag => {
+                  const isIncluded = itemNoteText.toLowerCase().includes(tag.toLowerCase());
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => {
+                        if (isIncluded) {
+                          const regex = new RegExp(`(^|,\\s*)${tag}`, 'i');
+                          setItemNoteText(prev => prev.replace(regex, '').replace(/^,\s*/, '').trim());
+                        } else {
+                          setItemNoteText(prev => prev.trim() ? `${prev.trim()}, ${tag}` : tag);
+                        }
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        isIncluded
+                          ? 'bg-slate-900 text-white shadow-2xs'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      {isIncluded ? `✓ ${tag}` : `+ ${tag}`}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Input de texto para la nota */}
+            <div className="space-y-1">
+              <label className="block text-xs font-bold text-slate-700">
+                Texto de la instrucción:
+              </label>
+              <input
+                type="text"
+                autoFocus
+                value={itemNoteText}
+                onChange={(e) => setItemNoteText(e.target.value)}
+                placeholder="Ej: Sin vegetales, término bien cocido..."
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:outline-hidden focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+              />
+            </div>
+
+            {/* Acciones */}
+            <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={() => setEditingItemNote(null)}
+                className="py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors order-2 sm:order-1"
+              >
+                Cancelar
+              </button>
+
+              <div className="flex-1 flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
+                {editingItemNote.quantity > 1 ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveItemNote(editingItemNote.uid, itemNoteText, true)}
+                      className="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-xs transition-colors cursor-pointer"
+                      title="Separa 1 plato con esta nota y deja el otro plato normal"
+                    >
+                      Separar 1 con esta nota
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveItemNote(editingItemNote.uid, itemNoteText, false)}
+                      className="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-900 hover:bg-black text-white shadow-xs transition-colors cursor-pointer"
+                    >
+                      Aplicar a todos ({editingItemNote.quantity})
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleSaveItemNote(editingItemNote.uid, itemNoteText, false)}
+                    className="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-900 hover:bg-black text-white shadow-xs transition-colors cursor-pointer"
+                  >
+                    Guardar instrucción
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -217,22 +217,22 @@ export default function ProductCard({
     switch (buttonStyle) {
       case 'square':
         return {
-          className: "py-1 px-2 sm:py-1.5 sm:px-2.5 text-[10px] sm:text-[11px] font-black uppercase tracking-wider rounded-none shrink-0 text-white cursor-pointer transition-all active:scale-95 flex items-center justify-center shadow-none",
+          className: "py-1.5 px-3 text-xs sm:text-sm font-black uppercase tracking-wider rounded-none shrink-0 text-white cursor-pointer transition-all active:scale-95 flex items-center justify-center shadow-none min-h-[34px]",
           style: { backgroundColor: brandColor }
         };
       case 'soft':
         return {
-          className: "py-1 px-2.5 sm:py-1.5 sm:px-3 text-[11px] sm:text-xs font-semibold rounded-md shrink-0 text-white cursor-pointer transition-all shadow-2xs active:scale-95 flex items-center justify-center",
+          className: "py-1.5 px-3 sm:px-3.5 text-xs sm:text-sm font-semibold rounded-md shrink-0 text-white cursor-pointer transition-all shadow-2xs active:scale-95 flex items-center justify-center min-h-[34px]",
           style: { backgroundColor: brandColor }
         };
       case 'outline':
         return {
-          className: "py-0.5 px-2.5 sm:py-1 sm:px-3 text-[11px] sm:text-xs font-bold rounded-lg border-2 shrink-0 bg-white cursor-pointer transition-all active:scale-95 flex items-center justify-center shadow-2xs",
+          className: "py-1 px-3 sm:px-3.5 text-xs sm:text-sm font-bold rounded-lg border-2 shrink-0 bg-white cursor-pointer transition-all active:scale-95 flex items-center justify-center shadow-2xs min-h-[34px]",
           style: { borderColor: brandColor, color: brandColor }
         };
       default: // pill
         return {
-          className: "py-1 px-2.5 sm:py-1.5 sm:px-3.5 text-[11px] sm:text-xs font-bold rounded-full shrink-0 text-white cursor-pointer transition-all shadow-sm active:scale-95 flex items-center justify-center",
+          className: "py-1.5 px-3.5 sm:px-4 text-xs sm:text-sm font-bold rounded-full shrink-0 text-white cursor-pointer transition-all shadow-sm active:scale-95 flex items-center justify-center min-h-[34px]",
           style: { backgroundColor: brandColor }
         };
     }
@@ -264,17 +264,17 @@ export default function ProductCard({
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-[#e8dfd1] p-4 text-slate-600">
               <PackageCheck size={21} strokeWidth={1.5} />
-              <span className="text-[10px] font-medium">Foto no disponible</span>
+              <span className="text-xs font-medium">Foto no disponible</span>
             </div>
           )}
 
           {/* Badge si tiene opciones o personalizaciones */}
           {hasOptions && (
             <div 
-              className="absolute left-2 top-2 flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold text-white shadow-xs"
+              className="absolute left-2 top-2 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-white shadow-xs"
               style={{ backgroundColor: brandColor }}
             >
-              <Layers size={10} />
+              <Layers size={11} />
               <span>Personalizable</span>
             </div>
           )}
@@ -291,7 +291,7 @@ export default function ProductCard({
 
           {/* Category pill if any */}
           {product.categoria && (
-            <div className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] truncate rounded-md bg-black/65 px-2 py-1 text-[10px] font-medium text-white">
+            <div className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] truncate rounded-md bg-black/65 px-2 py-1 text-xs font-medium text-white">
               {product.categoria}
             </div>
           )}
@@ -304,7 +304,7 @@ export default function ProductCard({
               {product.name}
             </h3>
             {product.description && (
-              <p className="line-clamp-2 text-xs leading-snug text-slate-600 sm:text-[13px]">
+              <p className="line-clamp-2 text-xs sm:text-sm leading-snug text-slate-600">
                 {product.description}
               </p>
             )}
