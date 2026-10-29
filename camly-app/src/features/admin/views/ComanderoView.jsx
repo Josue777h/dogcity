@@ -183,27 +183,55 @@ export default function ComanderoView() {
     return map;
   }, [orders]);
 
+  // Mapa de categorías por ID para vincular con categoria_id
+  const categoryMapById = useMemo(() => {
+    const map = {};
+    (categories || []).forEach(c => {
+      if (c.id) map[c.id] = c.nombre;
+    });
+    return map;
+  }, [categories]);
+
+  // Obtener nombre de categoría confiable de un producto
+  const getProductCategory = (p) => {
+    if (p.categoria_id && categoryMapById[p.categoria_id]) {
+      return categoryMapById[p.categoria_id];
+    }
+    return p.categoria || p.category || 'Varios';
+  };
+
   // Lista de categorías para el filtro
   const categoryNames = useMemo(() => {
     if (categories?.length > 0) {
-      const sorted = [...categories].sort((a, b) => a.nombre.localeCompare(b.nombre)).map(c => c.nombre);
+      const sorted = [...categories].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '')).map(c => c.nombre);
       return ['Todos', ...sorted];
     }
     const set = new Set();
-    products.forEach(p => { if (p.category) set.add(p.category); });
-    return ['Todos', ...Array.from(set)];
-  }, [categories, products]);
-
-  // Productos filtrados
-  const filteredProducts = useMemo(() => {
-    return products.filter(p => {
-      const matchesCat = selectedCategory === 'Todos' || p.category === selectedCategory;
-      const matchesQuery = !searchQuery.trim() || 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
-      return matchesCat && matchesQuery && p.available !== false;
+    products.forEach(p => {
+      const cat = getProductCategory(p);
+      if (cat) set.add(cat);
     });
-  }, [products, selectedCategory, searchQuery]);
+    return ['Todos', ...Array.from(set).sort()];
+  }, [categories, products, categoryMapById]);
+
+  // Productos filtrados por categoría y búsqueda activa
+  const filteredProducts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return products.filter(p => {
+      const isAvailable = p.disponible !== false && p.available !== false;
+      if (!isAvailable) return false;
+
+      const pCat = getProductCategory(p);
+      const matchesCat = selectedCategory === 'Todos' || pCat.toLowerCase() === selectedCategory.toLowerCase();
+      if (!matchesCat) return false;
+
+      if (!q) return true;
+      const name = (p.name || p.nombre || '').toLowerCase();
+      const desc = (p.description || p.descripcion || '').toLowerCase();
+      const cat = pCat.toLowerCase();
+      return name.includes(q) || desc.includes(q) || cat.includes(q);
+    });
+  }, [products, selectedCategory, searchQuery, categoryMapById]);
 
   // Abrir personalización de producto (para opciones y/o notas directas de cocina)
   const openProductCustomize = (product) => {
@@ -536,19 +564,15 @@ export default function ComanderoView() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            to="/admin/pedidos"
-            className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center gap-1.5"
-          >
-            <ShoppingBag size={14} />
-            <span>Pedidos en vivo</span>
-          </Link>
           <button
+            type="button"
             onClick={() => reloadOrders()}
-            title="Refrescar órdenes"
-            className="p-2 text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+            title="Refrescar comandas y mesas"
+            aria-label="Refrescar comandas y mesas"
+            className="p-2.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
           >
             <RefreshCw size={15} />
+            <span className="hidden sm:inline">Actualizar</span>
           </button>
         </div>
       </div>
@@ -638,7 +662,7 @@ export default function ComanderoView() {
 
       {/* Modal para ingresar número o nombre de mesa personalizada */}
       {showCustomTableModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-4 shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900">Asignar Mesa o Ubicación</h3>
@@ -756,17 +780,17 @@ export default function ComanderoView() {
                     </span>
                   )}
 
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-2 min-w-0">
                     {product.image ? (
                       <img
                         src={product.image}
                         alt={product.name}
-                        className="w-12 h-12 rounded-xl object-cover shrink-0 bg-slate-100"
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover shrink-0 bg-slate-100"
                         loading="lazy"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
-                        <Utensils size={18} />
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
+                        <Utensils size={17} />
                       </div>
                     )}
 
@@ -774,34 +798,20 @@ export default function ComanderoView() {
                       <h4 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-2 leading-tight">
                         {product.name}
                       </h4>
-                      {product.category && (
-                        <span className="text-[10px] text-slate-500 block truncate mt-0.5">
-                          {product.category}
-                        </span>
-                      )}
+                      <span className="text-[11px] text-slate-500 block truncate mt-0.5">
+                        {getProductCategory(product)}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-1">
-                    <span className="text-xs sm:text-sm font-bold text-slate-900 tabular-nums">
+                  <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 min-w-0">
+                    <span className="text-xs sm:text-sm font-bold text-slate-900 tabular-nums truncate">
                       {formatMoney(product.price)}
                     </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openProductCustomize(product);
-                        }}
-                        title="Personalizar o agregar notas de cocina"
-                        className="p-1 rounded-md text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
-                      >
-                        <PenLine size={13} />
-                      </button>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 group-hover:bg-slate-900 group-hover:text-white transition-colors">
-                        {hasOptions ? '+ Opciones' : '+ Agregar'}
-                      </span>
-                    </div>
+                    <span className="inline-flex items-center gap-0.5 text-[11px] sm:text-xs font-bold px-2 py-1 rounded-lg bg-slate-900 text-white shadow-2xs shrink-0">
+                      <Plus size={11} strokeWidth={3} />
+                      <span>{hasOptions ? 'Opc.' : 'Pedir'}</span>
+                    </span>
                   </div>
                 </button>
               );
@@ -823,15 +833,17 @@ export default function ComanderoView() {
         <div className="lg:col-span-5 space-y-3 sticky top-4">
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col">
             {/* Header del Ticket */}
-            <div className="bg-slate-950 text-white p-3.5 flex items-center justify-between border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-lg bg-white/10 text-white flex items-center justify-center font-bold text-xs">
+            <div className="bg-slate-50 p-3.5 sm:p-4 flex items-center justify-between border-b border-slate-200 text-slate-900">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">
                   #{selectedTable}
                 </span>
-                <div>
-                  <h3 className="text-xs sm:text-sm font-bold">Comanda Mesa #{selectedTable}</h3>
-                  <span className="text-[11px] text-slate-400 font-normal">
-                    {activeTicket.length} producto{activeTicket.length !== 1 ? 's' : ''} en orden
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-slate-900 leading-tight truncate">
+                    Comanda Mesa #{selectedTable}
+                  </h3>
+                  <span className="text-xs text-slate-500 font-medium block mt-0.5">
+                    {activeTicket.length} {activeTicket.length === 1 ? 'plato en orden' : 'platos en orden'}
                   </span>
                 </div>
               </div>
@@ -840,7 +852,7 @@ export default function ComanderoView() {
                 <button
                   type="button"
                   onClick={clearCurrentTicket}
-                  className="text-xs text-rose-400 hover:text-rose-300 font-semibold px-2 py-1 rounded-lg hover:bg-white/5 transition-colors"
+                  className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2.5 py-1 rounded-lg hover:bg-rose-50 transition-colors border border-rose-200 shrink-0 cursor-pointer"
                 >
                   Vaciar
                 </button>
@@ -944,10 +956,11 @@ export default function ComanderoView() {
                       <button
                         type="button"
                         onClick={() => removeItemFromTicket(item.uid)}
-                        className="text-slate-400 hover:text-rose-500 p-1 transition-colors"
-                        title="Eliminar de comanda"
+                        className="w-9 h-9 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 active:scale-90 transition-all flex items-center justify-center cursor-pointer shrink-0 border border-transparent hover:border-rose-100"
+                        title="Eliminar plato de la comanda"
+                        aria-label="Eliminar plato de la comanda"
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </div>
@@ -1060,10 +1073,10 @@ export default function ComanderoView() {
 
       {/* Modal de personalización de producto (toppings y notas de cocina) */}
       {customizingProduct && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-scale-up border border-slate-200">
+        <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[80vh] flex flex-col shadow-2xl overflow-hidden animate-scale-up border border-slate-200 my-auto">
             {/* Modal Header */}
-            <div className="p-4 bg-white border-b border-slate-200 flex items-center justify-between shrink-0">
+            <div className="p-3.5 sm:p-4 bg-white border-b border-slate-200 flex items-center justify-between shrink-0 sticky top-0 z-10">
               <div className="min-w-0 pr-2">
                 <h3 className="font-bold text-sm sm:text-base text-slate-900 truncate">
                   {customizingProduct.name}
@@ -1075,31 +1088,31 @@ export default function ComanderoView() {
               <button
                 type="button"
                 onClick={() => setCustomizingProduct(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors shrink-0"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors shrink-0 cursor-pointer"
               >
                 <X size={16} />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+            <div className="p-3.5 sm:p-4 overflow-y-auto space-y-3 flex-1 overscroll-contain">
               {/* Grupos de opciones y toppings */}
               {Array.isArray(customizingProduct.opciones) && customizingProduct.opciones.map(group => {
                 const currentSelections = selectedOptions[group.id] || [];
                 const isSingle = group.tipo === 'unica' || Number(group.max_opciones) === 1;
 
                 return (
-                  <div key={group.id} className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-3.5">
+                  <div key={group.id} className="space-y-1.5 rounded-xl border border-slate-200 bg-slate-50/60 p-2.5 sm:p-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-slate-900">
+                      <h4 className="text-xs font-bold text-slate-900 truncate pr-2">
                         {group.titulo}
                       </h4>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-600">
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-600 shrink-0">
                         {isSingle ? 'Elige 1 (Obligatorio)' : (group.requerido ? 'Obligatorio' : 'Opcional')}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-1.5">
                       {(group.opciones || []).map(opt => {
                         const isChosen = currentSelections.some(o => o.id === opt.id);
                         return (
@@ -1107,20 +1120,20 @@ export default function ComanderoView() {
                             key={opt.id}
                             type="button"
                             onClick={() => toggleOption(group, opt)}
-                            className={`p-2.5 rounded-xl border text-left flex items-center justify-between gap-3 transition-colors cursor-pointer ${
+                            className={`p-2 rounded-lg border text-left flex items-center justify-between gap-1.5 transition-colors cursor-pointer text-xs ${
                               isChosen
-                                ? 'bg-slate-900 text-white border-slate-900 font-semibold'
+                                ? 'bg-slate-900 text-white border-slate-900 font-semibold shadow-2xs'
                                 : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                             }`}
                           >
-                            <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex items-center gap-1.5 min-w-0">
                               {isSingle ? (
-                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${isChosen ? 'border-white' : 'border-slate-300'}`}>
-                                  {isChosen && <div className="w-2 h-2 rounded-full bg-white" />}
+                                <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${isChosen ? 'border-white' : 'border-slate-300'}`}>
+                                  {isChosen && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                                 </div>
                               ) : (
-                                <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 ${isChosen ? 'border-white bg-white text-slate-900' : 'border-slate-300'}`}>
-                                  {isChosen && <Check size={11} strokeWidth={3} />}
+                                <div className={`w-3.5 h-3.5 rounded-md border-2 flex items-center justify-center shrink-0 ${isChosen ? 'border-white bg-white text-slate-900' : 'border-slate-300'}`}>
+                                  {isChosen && <Check size={10} strokeWidth={3} />}
                                 </div>
                               )}
                               <span className="text-xs font-medium truncate">{opt.nombre || opt.label}</span>
@@ -1130,8 +1143,8 @@ export default function ComanderoView() {
                                 +{formatMoney(opt.precio)}
                               </span>
                             ) : (
-                              <span className={`text-[10px] shrink-0 ${isChosen ? 'text-slate-300' : 'text-slate-400'}`}>
-                                Incluido
+                              <span className={`text-[11px] shrink-0 ${isChosen ? 'text-slate-300' : 'text-slate-400'}`}>
+                                Inc.
                               </span>
                             )}
                           </button>
@@ -1143,11 +1156,11 @@ export default function ComanderoView() {
               })}
 
               {/* Tags rápidos de cocina */}
-              <div className="space-y-2 pt-2 border-t border-slate-200">
+              <div className="space-y-1.5 pt-2 border-t border-slate-200">
                 <label className="block text-xs font-bold text-slate-800">
                   Indicaciones rápidas para cocina:
                 </label>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1">
                   {QUICK_KITCHEN_TAGS.map(tag => (
                     <button
                       key={tag}
@@ -1155,7 +1168,7 @@ export default function ComanderoView() {
                       onClick={() => {
                         setKitchenNote(prev => prev ? `${prev}, ${tag}` : tag);
                       }}
-                      className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                      className="px-2 py-0.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
                     >
                       +{tag}
                     </button>
@@ -1166,20 +1179,20 @@ export default function ComanderoView() {
                   placeholder="Nota personalizada (ej: Bien dorada, sin aderezo...)"
                   value={kitchenNote}
                   onChange={(e) => setKitchenNote(e.target.value)}
-                  className="w-full mt-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-slate-500"
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-slate-500"
                 />
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="p-3.5 bg-slate-50 border-t border-slate-200 shrink-0 flex items-center gap-3">
-              <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shrink-0">
+            <div className="p-3 bg-slate-50 border-t border-slate-200 shrink-0 flex items-center gap-2.5">
+              <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shrink-0">
                 <button
                   type="button"
                   onClick={() => setItemQuantity(q => Math.max(1, q - 1))}
-                  className="w-8 h-8 rounded-lg text-slate-700 hover:bg-slate-100 flex items-center justify-center font-bold"
+                  className="w-7 h-7 rounded-lg text-slate-700 hover:bg-slate-100 flex items-center justify-center font-bold cursor-pointer"
                 >
-                  <Minus size={14} />
+                  <Minus size={13} />
                 </button>
                 <span className="w-6 text-center text-xs font-bold tabular-nums">
                   {itemQuantity}
@@ -1187,19 +1200,19 @@ export default function ComanderoView() {
                 <button
                   type="button"
                   onClick={() => setItemQuantity(q => q + 1)}
-                  className="w-8 h-8 rounded-lg text-slate-700 hover:bg-slate-100 flex items-center justify-center font-bold"
+                  className="w-7 h-7 rounded-lg text-slate-700 hover:bg-slate-100 flex items-center justify-center font-bold cursor-pointer"
                 >
-                  <Plus size={14} />
+                  <Plus size={13} />
                 </button>
               </div>
 
               <button
                 type="button"
                 onClick={handleConfirmCustomization}
-                className="flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-slate-900 hover:bg-black active:scale-98 transition-all flex items-center justify-between"
+                className="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-slate-900 hover:bg-black active:scale-98 transition-all flex items-center justify-between cursor-pointer"
               >
                 <span>Agregar a comanda</span>
-                <span className="tabular-nums font-bold text-sm">
+                <span className="tabular-nums font-bold text-xs sm:text-sm">
                   {formatMoney(
                     (Number(customizingProduct.price) + 
                       Object.values(selectedOptions).flat().reduce((s, o) => s + (Number(o?.precio) || 0), 0)
@@ -1214,7 +1227,7 @@ export default function ComanderoView() {
 
       {/* Modal para editar o agregar instrucción/nota directa a un plato del ticket */}
       {editingItemNote && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
           <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-5 shadow-2xl border border-slate-200 space-y-4 animate-scale-up">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div className="min-w-0 pr-2">

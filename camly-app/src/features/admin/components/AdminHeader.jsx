@@ -148,11 +148,12 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
           <button
             type="button"
             onClick={onOpenAssistant}
-            title="Consultar a Movia"
+            title="Asistente Movia (IA)"
+            aria-label="Abrir Asistente Movia"
             className="h-8 px-2.5 rounded-lg bg-gray-900 hover:bg-black text-white font-medium flex items-center gap-1.5 text-xs transition-colors shrink-0"
           >
-            <Sparkles size={12} className="text-amber-400 shrink-0" />
-            <span className="hidden xs:inline">Movia</span>
+            <Sparkles size={13} className="text-amber-400 shrink-0" />
+            <span className="text-xs font-semibold">Movia</span>
           </button>
 
           {/* Avatar del usuario */}
