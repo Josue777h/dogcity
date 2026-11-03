@@ -29,7 +29,7 @@ const BUSINESS_TYPES = [
 const FAQS = [
   {
     q: '¿Mis clientes tienen que descargar alguna aplicación?',
-    a: 'No. Negu funciona directamente en el navegador web de cualquier teléfono móvil (Android o iPhone). Tu cliente abre tu enlace o escanea tu QR, arma su carrito y el pedido llega a tu WhatsApp con un solo clic.'
+    a: 'No. NEGU funciona directamente en el navegador web de cualquier teléfono móvil (Android o iPhone). Tu cliente abre tu enlace o escanea tu QR, arma su carrito y el pedido llega a tu WhatsApp con un solo clic.'
   },
   {
     q: '¿Cómo funciona la ubicación GPS para los domiciliarios?',
@@ -37,7 +37,7 @@ const FAQS = [
   },
   {
     q: '¿Cómo recibo el dinero de mis ventas?',
-    a: 'El 100% de tu dinero entra directamente a tus cuentas (Nequi, Daviplata, Bancolombia, Bre-B o efectivo contraentrega). Negu nunca retiene tu dinero ni te cobra porcentajes por transacción.'
+    a: 'El 100% de tu dinero entra directamente a tus cuentas (Nequi, Daviplata, Bancolombia, Bre-B o efectivo contraentrega). NEGU nunca retiene tu dinero ni te cobra porcentajes por transacción.'
   },
   {
     q: '¿Puedo actualizar precios o pausar productos en tiempo real?',
@@ -106,11 +106,10 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-2">
                 <Link 
                   to="/registro" 
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm sm:text-base px-5 py-3 rounded-lg border border-gray-800 shadow-card hover:shadow-sm transition-all duration-200 active:scale-95"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm sm:text-base px-5 py-3 rounded-lg border border-gray-800 shadow-card hover:shadow-sm transition-all duration-200 active:scale-95"
                 >
-                  <Sparkles size={18} className="text-[#11CEFC]" />
                   <span>Crear mi tienda gratis</span>
-                  <ArrowRight size={16} />
+                  <ArrowRight size={16} className="text-[#11CEFC]" />
                 </Link>
 
                 <a 
@@ -142,19 +141,19 @@ export default function LandingPage() {
 
             {/* Right Column: Realistic Interactive Device Showcase */}
             <div className="lg:col-span-5 flex justify-center">
-              <div className="relative w-full max-w-[310px] sm:max-w-[340px]">
+              <div className="relative w-full max-w-[290px] sm:max-w-[330px]">
                 
-                {/* Background Ambient Glow */}
+                {/* Background Frame */}
                 <div className="absolute -inset-2 rounded-[2.5rem] border border-slate-200/70 -z-10" />
 
                 {/* Smartphone Mockup */}
-                <div className="rounded-[2.8rem] p-3 bg-gray-950 shadow-md border-4 border-gray-800/90 transition-transform duration-300 hover:rotate-0 -rotate-1">
+                <div className="rounded-[2.8rem] p-3 bg-gray-950 shadow-md border-4 border-gray-800/90">
                   
                   {/* Speaker and Camera notch */}
                   <div className="relative rounded-[2.3rem] overflow-hidden bg-white aspect-[9/16] shadow-inner">
                     <img 
                       src={storePreview}
-                      alt="Vista previa catálogo Negu" 
+                      alt="Vista previa catálogo NEGU" 
                       className="w-full h-full object-cover object-top" 
                       loading="eager" 
                     />
@@ -162,32 +161,32 @@ export default function LandingPage() {
                 </div>
 
                 {/* Floating Card 1: WhatsApp Incoming Order */}
-                <div className="absolute -top-4 -left-4 sm:-left-8 bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-3.5 shadow-card border border-gray-200/80 flex items-center gap-3 animate-fade-in-down z-20 max-w-[240px]">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                    <MessageCircle size={20} />
+                <div className="absolute -top-3 left-1 sm:-left-6 bg-white/95 backdrop-blur-md rounded-xl p-2.5 sm:p-3 shadow-card border border-gray-200/90 flex items-center gap-2.5 z-20 max-w-[225px] sm:max-w-[240px]">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                    <MessageCircle size={18} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">¡Nuevo Pedido WhatsApp!</p>
-                    <p className="text-xs font-black text-gray-900 truncate">#1048 · 2x Burger Doble</p>
+                    <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Nuevo pedido WhatsApp</p>
+                    <p className="text-xs font-extrabold text-gray-900 truncate">#1048 · 2x Burger Doble</p>
                     <p className="text-[10px] text-gray-500 font-medium">Total: $42.000 · Pago confirmado</p>
                   </div>
                 </div>
 
                 {/* Floating Card 2: GPS Location Pin */}
-                <div className="absolute bottom-6 -right-4 sm:-right-8 bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-3.5 shadow-card border border-gray-200/80 flex items-center gap-3 animate-fade-in-up z-20 max-w-[220px]">
-                  <div className="w-10 h-10 rounded-xl bg-gray-950 text-[#11CEFC] border border-gray-800 flex items-center justify-center shrink-0 shadow-xs">
-                    <Navigation size={18} />
+                <div className="absolute bottom-7 right-1 sm:-right-6 bg-white/95 backdrop-blur-md rounded-xl p-2.5 sm:p-3 shadow-card border border-gray-200/90 flex items-center gap-2.5 z-20 max-w-[210px] sm:max-w-[220px]">
+                  <div className="w-9 h-9 rounded-lg bg-slate-900 text-[#11CEFC] border border-gray-800 flex items-center justify-center shrink-0">
+                    <Navigation size={16} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[11px] font-bold text-sky-600 uppercase tracking-wider">Ruta Directa GPS</p>
-                    <p className="text-xs font-black text-gray-900 truncate">Google Maps & Waze</p>
+                    <p className="text-[10px] font-bold text-sky-700 uppercase tracking-wider">Ruta directa GPS</p>
+                    <p className="text-xs font-extrabold text-gray-900 truncate">Google Maps & Waze</p>
                     <p className="text-[10px] text-gray-500 font-medium">El repartidor va sin perderse</p>
                   </div>
                 </div>
 
                 {/* Floating Badge 3: 0% Commissions */}
-                <div className="absolute -bottom-3 left-4 bg-gray-950 text-white rounded-full px-4 py-1.5 text-xs font-bold shadow-card flex items-center gap-1.5 border border-gray-800">
-                  <DollarSign size={13} className="text-[#11CEFC]" />
+                <div className="absolute -bottom-3 left-4 bg-slate-900 text-white rounded-full px-3.5 py-1.5 text-[11px] font-bold shadow-card flex items-center gap-1.5 border border-gray-800">
+                  <DollarSign size={12} className="text-[#11CEFC]" />
                   <span>0% comisiones sobre tus ventas</span>
                 </div>
 
@@ -264,7 +263,7 @@ export default function LandingPage() {
               <span>Flujo en 3 pasos sencillos</span>
             </div>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-gray-950 tracking-tight leading-tight">
-              Así de simple es vender con Negu
+              Así de simple es vender con NEGU
             </h2>
             <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
               Tus clientes piden desde su celular en segundos y tú recibes la comanda completa en WhatsApp. Sin apps ni enredos.
@@ -426,7 +425,7 @@ export default function LandingPage() {
               <span>El antes y después</span>
             </div>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-gray-950 tracking-tight leading-tight">
-              ¿Por qué los negocios eligen Negu?
+              ¿Por qué los negocios eligen NEGU?
             </h2>
             <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
               Compara la diferencia entre atender por chat tradicional y contar con un catálogo automatizado.
@@ -461,14 +460,14 @@ export default function LandingPage() {
               </ul>
             </div>
 
-            {/* Después: Con Negu */}
+            {/* Después: Con NEGU */}
             <div className="p-4 sm:p-5 rounded-xl bg-sky-50/50 border border-sky-200 shadow-card space-y-5 relative">
               <div className="absolute -top-3.5 right-6 bg-gray-950 text-[#11CEFC] text-[11px] font-extrabold uppercase px-3 py-1 rounded-full shadow-sm border border-gray-800">
-                Con Negu
+                Con NEGU
               </div>
               <div className="flex items-center gap-2.5 text-sky-900 font-extrabold text-sm uppercase tracking-wider">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#0284C7]" />
-                <span>La experiencia Negu</span>
+                <span>La experiencia NEGU</span>
               </div>
               <ul className="space-y-3.5 text-sm text-gray-900 font-medium">
                 <li className="flex items-start gap-3">
@@ -645,13 +644,13 @@ export default function LandingPage() {
                 4.9 / 5 recomendado por negocios locales
               </h2>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Emprendedores y restaurantes en Colombia mueven sus pedidos con Negu todos los días.
+                Emprendedores y restaurantes en Colombia mueven sus pedidos con NEGU todos los días.
               </p>
               <Link 
                 to="/registro" 
                 className="inline-flex items-center gap-2 text-sm font-bold text-[#0284C7] hover:text-sky-700 transition-colors"
               >
-                <span>Únete a Negu hoy</span>
+                <span>Únete a NEGU hoy</span>
                 <ArrowRight size={14} />
               </Link>
             </div>
@@ -750,38 +749,34 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════ CTA FINAL (HIGH IMPACT) ═══════════ */}
-      <section className="py-20 sm:py-28 bg-gray-950 text-white relative overflow-hidden">
-        {/* Glow ambient background */}
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-sky-600/15 rounded-full blur-[100px] pointer-events-none" />
-
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10 text-center space-y-7">
+      <section className="py-14 sm:py-20 bg-slate-950 text-white relative overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 relative z-10 text-center space-y-6">
           
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 text-xs font-bold">
-            <Sparkles size={14} className="text-[#11CEFC]" />
-            <span>Únete a los negocios que ya venden con Negu</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-sky-300 text-xs font-bold">
+            <CheckCircle2 size={14} className="text-[#11CEFC]" />
+            <span>Únete a los negocios que ya venden con NEGU</span>
           </div>
 
-          <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05] max-w-3xl mx-auto">
+          <h2 className="font-display text-3xl sm:text-5xl font-black tracking-tight leading-[1.08] max-w-3xl mx-auto">
             Empieza a vender hoy.<br />
             <span className="text-[#11CEFC]">Tu catálogo conectado a WhatsApp.</span>
           </h2>
 
-          <p className="text-base sm:text-lg text-gray-400 max-w-xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed">
             En menos de 3 minutos tienes tu catálogo en línea con GPS, recogida en local y pedidos organizados a tu WhatsApp.
           </p>
 
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="pt-1 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link 
               to="/registro" 
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-brand hover:bg-brand-dark text-white font-semibold text-sm px-5 py-3 rounded-lg shadow-sm hover:scale-105 transition-all duration-200"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-brand hover:bg-brand-dark text-white font-semibold text-sm px-6 py-3 rounded-lg shadow-sm transition-all duration-200"
             >
               <span>Crear mi tienda en 3 minutos</span>
               <ArrowRight size={17} />
             </Link>
           </div>
 
-          <p className="text-xs text-gray-500 font-medium pt-2">
+          <p className="text-xs text-slate-400 font-medium pt-1">
             7 días de prueba gratis · Sin tarjeta de crédito · Cancela en cualquier momento
           </p>
 

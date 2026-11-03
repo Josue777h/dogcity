@@ -38,7 +38,21 @@ export default function AdminPage() {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [isWaiterLocked, setIsWaiterLocked] = useState(() => {
+    try {
+      return localStorage.getItem('negu_waiter_lock_active') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const addToast = useToastStore((s) => s.addToast);
+
+  // Bloqueo de ruta en Modo Mesero: impide salir de /admin/comandero sin PIN
+  useEffect(() => {
+    if (isWaiterLocked && currentPathSegment !== 'comandero' && currentPathSegment !== 'mesas') {
+      navigate('/admin/comandero', { replace: true });
+    }
+  }, [isWaiterLocked, currentPathSegment, navigate]);
 
   // Data States
   const [products, setProducts] = useState([]);
@@ -47,16 +61,13 @@ export default function AdminPage() {
   const [editingProduct, setEditingProduct] = useState(null);
 
   useEffect(() => {
-    async function loadInitial() {
-      // In case session gets cleared mid-session
-      if (!session) {
-        setLoading(false);
-        return;
-      }
-      await loadData(session.user.id);
+    const userId = session?.user?.id;
+    if (!userId) {
+      setLoading(false);
+      return;
     }
-    loadInitial();
-  }, [session]);
+    loadData(userId, true);
+  }, [session?.user?.id]);
 
   const notifyNewOrder = () => {
     const soundOn = readMigratedLocalStorage('negu_order_sound', ['camly_order_sound']) !== 'false';
@@ -173,23 +184,32 @@ export default function AdminPage() {
   }, [business?.id, session?.user?.id]);
 
   async function loadData(userId, showSpinner = true) {
-    if (showSpinner) setLoading(true);
+    if (showSpinner && !business?.id) setLoading(true);
+    const safetyTimer = showSpinner
+      ? setTimeout(() => setLoading(false), 7000)
+      : null;
+
     try {
       const { data: biz, error: bizErr } = await getSupabase()
         .from('negocios')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       if (bizErr) throw bizErr;
       
       if (biz) {
-        const [p, o, sub, cats] = await Promise.all([
+        const [pRes, oRes, subRes, catsRes] = await Promise.allSettled([
           fetchProducts(biz.id), 
           fetchOrders(biz.id),
           fetchSubscription(biz.id),
           fetchCategories(biz.id)
         ]);
+        const p = pRes.status === 'fulfilled' ? pRes.value : [];
+        const o = oRes.status === 'fulfilled' ? oRes.value : [];
+        const sub = subRes.status === 'fulfilled' ? subRes.value : null;
+        const cats = catsRes.status === 'fulfilled' ? catsRes.value : [];
+
         setProducts(p); // local
         setGlobalProducts(p); // global (necesario para el conteo de CategoriasView)
         setOrders(o);
@@ -198,9 +218,9 @@ export default function AdminPage() {
       }
     } catch (err) {
       console.error('Error loading admin data:', err);
-      // No toast here to avoid spamming on background reloads
     } finally {
-      if (showSpinner) setLoading(false);
+      if (safetyTimer) clearTimeout(safetyTimer);
+      setLoading(false);
     }
   }
 
@@ -214,7 +234,7 @@ export default function AdminPage() {
   const handleSaveProduct = async (productData) => {
     try {
       if (productData.id) {
-        await updateProduct(productData.id, productData);
+        await updateProduct(productData.id, productData, business?.id);
         addToast('Producto actualizado', 'success');
       } else {
         await createProduct(productData);
@@ -233,7 +253,7 @@ export default function AdminPage() {
 
   const handleDeleteProduct = async (id) => {
     try {
-      await deleteProduct(id);
+      await deleteProduct(id, business?.id);
       addToast('Producto eliminado', 'info');
       if (business) {
         const p = await fetchProducts(business.id);
@@ -248,7 +268,7 @@ export default function AdminPage() {
 
   const handleToggleProductAvailability = async (product) => {
     try {
-      await updateProduct(product.id, { ...product, disponible: !product.disponible });
+      await updateProduct(product.id, { ...product, disponible: !product.disponible }, business?.id);
       const refreshed = await fetchProducts(business.id);
       setProducts(refreshed);
       setGlobalProducts(refreshed);
@@ -277,20 +297,24 @@ export default function AdminPage() {
         canonical="https://negu.pro/admin"
         noindex={true}
       />
-      <Sidebar 
-        business={business} 
-        onSignOut={handleSignOut}
-        isOpen={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
-      />
+      {!isWaiterLocked && (
+        <Sidebar 
+          business={business} 
+          onSignOut={handleSignOut}
+          isOpen={isMenuOpen}
+          onClose={() => setIsMenuOpen(false)}
+        />
+      )}
 
       <div className="flex-1 flex flex-col min-w-0 relative lg:min-h-0 lg:h-full lg:max-h-dvh lg:overflow-hidden">
-        <AdminHeader 
-          title={currentPathSegment} 
-          business={business} 
-          onOpenMenu={() => setIsMenuOpen(true)}
-          onOpenAssistant={() => setIsAssistantOpen(true)}
-        />
+        {!isWaiterLocked && (
+          <AdminHeader 
+            title={currentPathSegment} 
+            business={business} 
+            onOpenMenu={() => setIsMenuOpen(true)}
+            onOpenAssistant={() => setIsAssistantOpen(true)}
+          />
+        )}
 
         <main className="flex-1 px-3 pb-4 pt-1.5 sm:px-5 sm:pt-2.5 lg:min-h-0 lg:px-6 lg:overflow-y-auto lg:overscroll-y-contain relative">
           {isExpired && (
@@ -309,6 +333,8 @@ export default function AdminPage() {
                 setEditingProduct,
                 handleDeleteProduct,
                 handleToggleProductAvailability,
+                isWaiterLocked,
+                setIsWaiterLocked,
                 reloadOrders: () => loadData(session.user.id, false)
               }} />
             </Suspense>

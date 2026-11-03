@@ -54,9 +54,8 @@ export default function ParaRestaurantesPage() {
                 to="/registro"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm sm:text-base px-5 py-3 rounded-lg border border-gray-800 shadow-card hover:shadow-sm transition-all duration-200 active:scale-95"
               >
-                <Sparkles size={18} className="text-[#11CEFC]" />
                 <span>Digitalizar mi restaurante gratis</span>
-                <ArrowRight size={16} />
+                <ArrowRight size={16} className="text-[#11CEFC]" />
               </Link>
             </div>
 

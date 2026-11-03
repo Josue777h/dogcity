@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { 
   Store, 
   ShoppingBag, 
-  Sparkles, 
   ArrowRight, 
   CheckCircle2, 
   Smartphone, 
@@ -11,7 +10,13 @@ import {
   CreditCard, 
   Clock, 
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Shirt,
+  Cake,
+  Coffee,
+  Gift,
+  Wine,
+  PawPrint
 } from 'lucide-react';
 import SEO from '../../components/common/SEO';
 import MarketingNavbar from './components/MarketingNavbar';
@@ -53,9 +58,8 @@ export default function ParaNegociosPage() {
                 to="/registro"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm sm:text-base px-5 py-3 rounded-lg border border-gray-800 shadow-card hover:shadow-sm transition-all duration-200 active:scale-95"
               >
-                <Sparkles size={18} className="text-[#11CEFC]" />
                 <span>Crear catálogo para mi negocio gratis</span>
-                <ArrowRight size={16} />
+                <ArrowRight size={16} className="text-[#11CEFC]" />
               </Link>
             </div>
 
@@ -82,8 +86,8 @@ export default function ParaNegociosPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               
               <div className="p-6 rounded-xl bg-gray-50 border border-gray-200/80 space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-cyan-100 text-[#0284C7] flex items-center justify-center font-bold">
-                  👗
+                <div className="w-10 h-10 rounded-xl bg-cyan-100 text-[#0284C7] flex items-center justify-center">
+                  <Shirt size={20} />
                 </div>
                 <h3 className="font-bold text-base text-gray-950">Tiendas de ropa y calzado</h3>
                 <p className="text-xs text-gray-600 leading-relaxed">
@@ -92,8 +96,8 @@ export default function ParaNegociosPage() {
               </div>
 
               <div className="p-6 rounded-xl bg-gray-50 border border-gray-200/80 space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
-                  🎂
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                  <Cake size={20} />
                 </div>
                 <h3 className="font-bold text-base text-gray-950">Reposterías y pastelerías</h3>
                 <p className="text-xs text-gray-600 leading-relaxed">
@@ -102,8 +106,8 @@ export default function ParaNegociosPage() {
               </div>
 
               <div className="p-6 rounded-xl bg-gray-50 border border-gray-200/80 space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-                  ☕
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <Coffee size={20} />
                 </div>
                 <h3 className="font-bold text-base text-gray-950">Cafés, panaderías y minimarkets</h3>
                 <p className="text-xs text-gray-600 leading-relaxed">
@@ -112,8 +116,8 @@ export default function ParaNegociosPage() {
               </div>
 
               <div className="p-6 rounded-xl bg-gray-50 border border-gray-200/80 space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
-                  🎁
+                <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                  <Gift size={20} />
                 </div>
                 <h3 className="font-bold text-base text-gray-950">Regalos y anchetas sorpresa</h3>
                 <p className="text-xs text-gray-600 leading-relaxed">
@@ -122,8 +126,8 @@ export default function ParaNegociosPage() {
               </div>
 
               <div className="p-6 rounded-xl bg-gray-50 border border-gray-200/80 space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
-                  🍷
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center">
+                  <Wine size={20} />
                 </div>
                 <h3 className="font-bold text-base text-gray-950">Licoreras y estancos</h3>
                 <p className="text-xs text-gray-600 leading-relaxed">
@@ -132,8 +136,8 @@ export default function ParaNegociosPage() {
               </div>
 
               <div className="p-6 rounded-xl bg-gray-50 border border-gray-200/80 space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
-                  🐾
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                  <PawPrint size={20} />
                 </div>
                 <h3 className="font-bold text-base text-gray-950">Veterinarias y pet shops</h3>
                 <p className="text-xs text-gray-600 leading-relaxed">

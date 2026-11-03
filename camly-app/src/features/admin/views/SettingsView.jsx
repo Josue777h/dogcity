@@ -645,15 +645,19 @@ export default function SettingsView(props) {
 
   return (
     <div className="space-y-3 animate-fade-in-up">
-      {/* Tabs Header */}
-      <div role="tablist" aria-label="Secciones de configuración" className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
+      {/* Tabs Header — Todos los módulos visibles y accesibles en 1 toque en móvil y PC */}
+      <div
+        role="tablist"
+        aria-label="Secciones de configuración"
+        className="flex flex-wrap items-center gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200/90 shadow-2xs"
+      >
         {[
           { id: 'perfil', label: 'General', icon: User },
-          { id: 'marca', label: 'Diseño del Catálogo', icon: Palette },
-          { id: 'qr', label: 'Código QR Interactivo', icon: QrCode },
-          { id: 'pagos', label: 'Formas de Pago', icon: CreditCard },
-          { id: 'horario', label: 'Horarios y Estado', icon: Clock },
-          { id: 'logistica', label: 'Domicilios y GPS', icon: Truck },
+          { id: 'marca', label: 'Diseño', icon: Palette },
+          { id: 'qr', label: 'Código QR', icon: QrCode },
+          { id: 'pagos', label: 'Pagos', icon: CreditCard },
+          { id: 'horario', label: 'Horarios', icon: Clock },
+          { id: 'logistica', label: 'Domicilios', icon: Truck },
           { id: 'redes', label: 'Redes Sociales', icon: Instagram },
         ].map(tab => (
           <button
@@ -664,13 +668,14 @@ export default function SettingsView(props) {
             aria-selected={activeTab === tab.id}
             aria-controls="settings-active-panel"
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap shrink-0 shadow-2xs
-              ${activeTab === tab.id 
-                ? 'bg-gray-900 text-white shadow-xs' 
-                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === tab.id
+                ? 'bg-slate-900 text-white shadow-2xs'
+                : 'bg-slate-50/80 border border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
           >
-            <tab.icon size={15} />
-            {tab.label}
+            <tab.icon size={14} className="shrink-0" />
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
@@ -1841,7 +1846,7 @@ export default function SettingsView(props) {
                   </div>
 
                   <p className="text-[11px] text-gray-500 leading-relaxed">
-                    💡 Tus clientes podrán copiar tu número de cuenta con un solo clic y hacer la transferencia antes de finalizar su pedido por WhatsApp.
+                    Tus clientes podrán copiar tu número de cuenta con un solo toque y realizar la transferencia antes de finalizar su pedido por WhatsApp.
                   </p>
                 </div>
               )}

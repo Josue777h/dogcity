@@ -143,14 +143,14 @@ export default function RegisterPage() {
                 Nombre de tu negocio
               </label>
               <div className="relative">
-                <Store size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Store size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <Input
                   id="reg-business"
                   type="text"
                   placeholder="Ej: Burger House"
                   value={form.businessName}
                   onChange={set('businessName')}
-                  className="py-3 pl-5 pr-10"
+                  className="py-3 pl-10 pr-10"
                   required
                 />
                 {form.businessName.trim().length >= 2 && (
@@ -213,14 +213,14 @@ export default function RegisterPage() {
                 Correo electrónico
               </label>
               <div className="relative">
-                <Mail size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <Input
                   id="reg-email"
                   type="email"
                   placeholder="tu@correo.com"
                   value={form.email}
                   onChange={set('email')}
-                  className="py-3 pl-5 pr-10"
+                  className="py-3 pl-10 pr-10"
                   required
                   autoComplete="email"
                 />
@@ -235,7 +235,7 @@ export default function RegisterPage() {
                 Contraseña
               </label>
               <div className="relative">
-                <Lock size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <Input
                   id="reg-password"
                   type={showPassword ? 'text' : 'password'}
@@ -243,7 +243,7 @@ export default function RegisterPage() {
                   value={form.password}
                   onChange={set('password')}
                   minLength={8}
-                  className="py-3 pl-5 pr-10"
+                  className="py-3 pl-10 pr-10"
                   required
                   autoComplete="new-password"
                 />

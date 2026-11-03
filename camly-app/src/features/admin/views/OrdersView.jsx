@@ -832,40 +832,81 @@ export default function OrdersView(props) {
             </select>
           </label>
           <div className="min-w-0">
-            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-500">Modalidad</span>
-            <div role="group" aria-label="Filtrar pedidos por modalidad de entrega" className="grid h-10 grid-cols-3 gap-1 rounded-lg border border-border bg-gray-100 p-1">
+            <div className="mb-1 flex items-center justify-between gap-1">
+              <span className="block text-[10px] font-bold uppercase tracking-wide text-gray-500">Modalidad</span>
+              <span className="sm:hidden text-[10px] font-bold text-slate-700 truncate">
+                {deliveryFilter === 'pickup' ? '· En local' : deliveryFilter === 'mesa' ? '· En mesa' : deliveryFilter === 'envio' ? '· Domicilio' : '· Todas'}
+              </span>
+            </div>
+            <div role="group" aria-label="Filtrar pedidos por modalidad de entrega" className="grid h-10 grid-cols-3 gap-1 rounded-lg border border-border bg-slate-100 p-1">
               <button
                 type="button"
                 aria-pressed={deliveryFilter === 'pickup'}
+                aria-label="Filtrar por retiro en local"
                 onClick={() => toggleDeliveryFilter('pickup')}
-                className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-[11px] font-semibold transition-colors ${deliveryFilter === 'pickup' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'}`}
-                title="Retiro en local"
+                className={`relative flex min-w-0 items-center justify-center gap-1.5 rounded-md px-1.5 text-xs font-semibold transition-all ${
+                  deliveryFilter === 'pickup'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-white/60 text-slate-600 hover:bg-white hover:text-emerald-700'
+                }`}
+                title={`Retiro en local (${getDeliveryCount('pickup')})`}
               >
-                <Store size={13} className="shrink-0" />
-                <span className="truncate">Local</span>
-                <span className="text-[10px] opacity-70">({getDeliveryCount('pickup')})</span>
+                <Store size={16} className="shrink-0" />
+                <span className="hidden sm:inline truncate">Local</span>
+                <span className={`hidden sm:inline text-[10px] ${deliveryFilter === 'pickup' ? 'text-emerald-100' : 'opacity-70'}`}>
+                  ({getDeliveryCount('pickup')})
+                </span>
+                {getDeliveryCount('pickup') > 0 && (
+                  <span className={`sm:hidden text-[10px] font-bold leading-none ${deliveryFilter === 'pickup' ? 'text-white' : 'text-emerald-700'}`}>
+                    {getDeliveryCount('pickup')}
+                  </span>
+                )}
               </button>
               <button
                 type="button"
                 aria-pressed={deliveryFilter === 'mesa'}
+                aria-label="Filtrar por servicio en mesa"
                 onClick={() => toggleDeliveryFilter('mesa')}
-                className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-[11px] font-semibold transition-colors ${deliveryFilter === 'mesa' ? 'bg-white text-purple-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'}`}
-                title="Consumo en mesa"
+                className={`relative flex min-w-0 items-center justify-center gap-1.5 rounded-md px-1.5 text-xs font-semibold transition-all ${
+                  deliveryFilter === 'mesa'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'bg-white/60 text-slate-600 hover:bg-white hover:text-purple-700'
+                }`}
+                title={`Servicio en mesa (${getDeliveryCount('mesa')})`}
               >
-                <Utensils size={13} className="shrink-0" />
-                <span className="truncate">Mesa</span>
-                <span className="text-[10px] opacity-70">({getDeliveryCount('mesa')})</span>
+                <Utensils size={16} className="shrink-0" />
+                <span className="hidden sm:inline truncate">Mesa</span>
+                <span className={`hidden sm:inline text-[10px] ${deliveryFilter === 'mesa' ? 'text-purple-100' : 'opacity-70'}`}>
+                  ({getDeliveryCount('mesa')})
+                </span>
+                {getDeliveryCount('mesa') > 0 && (
+                  <span className={`sm:hidden text-[10px] font-bold leading-none ${deliveryFilter === 'mesa' ? 'text-white' : 'text-purple-700'}`}>
+                    {getDeliveryCount('mesa')}
+                  </span>
+                )}
               </button>
               <button
                 type="button"
                 aria-pressed={deliveryFilter === 'envio'}
+                aria-label="Filtrar por domicilios"
                 onClick={() => toggleDeliveryFilter('envio')}
-                className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-[11px] font-semibold transition-colors ${deliveryFilter === 'envio' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'}`}
-                title="Domicilios"
+                className={`relative flex min-w-0 items-center justify-center gap-1.5 rounded-md px-1.5 text-xs font-semibold transition-all ${
+                  deliveryFilter === 'envio'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-white/60 text-slate-600 hover:bg-white hover:text-blue-700'
+                }`}
+                title={`Domicilios (${getDeliveryCount('envio')})`}
               >
-                <Bike size={13} className="shrink-0" />
-                <span className="truncate">Domi</span>
-                <span className="text-[10px] opacity-70">({getDeliveryCount('envio')})</span>
+                <Bike size={16} className="shrink-0" />
+                <span className="hidden sm:inline truncate">Domicilio</span>
+                <span className={`hidden sm:inline text-[10px] ${deliveryFilter === 'envio' ? 'text-blue-100' : 'opacity-70'}`}>
+                  ({getDeliveryCount('envio')})
+                </span>
+                {getDeliveryCount('envio') > 0 && (
+                  <span className={`sm:hidden text-[10px] font-bold leading-none ${deliveryFilter === 'envio' ? 'text-white' : 'text-blue-700'}`}>
+                    {getDeliveryCount('envio')}
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -974,7 +1015,7 @@ export default function OrdersView(props) {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-wrap justify-end">
                     {getStatusBadge(status, order)}
                     {status !== 'CANCELADO' && status !== 'cancelado' && status !== 'ENTREGADO' && status !== 'entregado' && (
                       <button 
@@ -983,8 +1024,9 @@ export default function OrdersView(props) {
                           e.stopPropagation();
                           setOrderToCancel(order);
                         }}
-                        className="btn-ghost p-1.5 tap-target text-gray-400 hover:text-rose-600 hover:bg-rose-50"
+                        className="w-8 h-8 rounded-lg border border-transparent hover:border-amber-200 bg-gray-50 hover:bg-amber-50 text-gray-500 hover:text-amber-700 flex items-center justify-center transition-colors shrink-0"
                         title="Cancelar pedido con motivo"
+                        aria-label="Cancelar pedido"
                       >
                         <Ban size={15} />
                       </button>
@@ -995,8 +1037,9 @@ export default function OrdersView(props) {
                         e.stopPropagation();
                         printThermalReceipt(order, business);
                       }}
-                      className="btn-ghost p-1.5 tap-target text-gray-400 hover:text-gray-900"
+                      className="w-8 h-8 rounded-lg border border-transparent hover:border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 flex items-center justify-center transition-colors shrink-0"
                       title="Imprimir comanda térmica (58/80mm)"
+                      aria-label="Imprimir comanda térmica"
                     >
                       <Printer size={15} />
                     </button>
@@ -1007,19 +1050,22 @@ export default function OrdersView(props) {
                         e.stopPropagation();
                         handlePrintBluetooth(order);
                       }}
-                      className="btn-ghost p-1.5 tap-target text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                      className="w-8 h-8 rounded-lg border border-blue-100 hover:border-blue-300 bg-blue-50/70 hover:bg-blue-100 text-blue-600 hover:text-blue-800 flex items-center justify-center transition-colors shrink-0"
                       title="Imprimir vía Bluetooth directo (POS-58/80)"
+                      aria-label="Imprimir vía Bluetooth"
                     >
                       {printingBluetoothId === order.id ? <LoadingSpinner size={15} className="text-blue-600" /> : <Bluetooth size={15} />}
                     </button>
                     <button 
+                      type="button"
                       onClick={(e) => handleDeleteClick(e, order)}
-                      className="btn-ghost p-1.5 tap-target text-gray-400 hover:text-red-600"
+                      className="w-8.5 h-8.5 rounded-lg border border-transparent hover:border-rose-200 bg-rose-50/50 hover:bg-rose-100 text-rose-500 hover:text-rose-700 flex items-center justify-center transition-colors shrink-0"
                       title="Eliminar pedido"
+                      aria-label="Eliminar pedido"
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={17} />
                     </button>
-                    <ChevronRight size={16} className={`text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+                    <ChevronRight size={16} className={`text-gray-400 transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
                   </div>
                 </div>
               </div>

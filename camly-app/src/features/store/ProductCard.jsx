@@ -373,21 +373,21 @@ export default function ProductCard({
 
       {/* Modal de Detalle y Personalización (Sabores & Toppings) */}
       {showModal && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center overflow-hidden p-4">
+        <div className="fixed inset-0 z-[160] flex items-center justify-center overflow-hidden p-3 sm:p-4">
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-xs animate-fade-in"
             onClick={() => setShowModal(false)}
           />
 
-          <div className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[#e1ddd5] bg-white shadow-2xl animate-scale-in max-h-[calc(100dvh-env(safe-area-inset-top,0px)-2rem)] sm:max-h-[min(88dvh,48rem)]">
+          <div className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[#e1ddd5] bg-white shadow-2xl animate-scale-in max-h-[82dvh] sm:max-h-[min(80dvh,44rem)]">
             
             {/* Botón cerrar flotante */}
             <button
               onClick={() => setShowModal(false)}
-              className="absolute right-3.5 top-3.5 z-30 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-black/60 hover:bg-black/80 text-white transition-colors backdrop-blur-xs shadow-md"
+              className="absolute right-3 top-3 z-30 flex h-8.5 w-8.5 cursor-pointer items-center justify-center rounded-full bg-black/65 hover:bg-black/85 text-white transition-colors backdrop-blur-xs shadow-md"
               aria-label="Cerrar"
             >
-              <X size={18} />
+              <X size={17} />
             </button>
 
             {/* CONTENEDOR DESPLAZABLE ÚNICO (TODO HACE SCROLL SUAVE Y NATURAL) */}
@@ -395,7 +395,7 @@ export default function ProductCard({
 
               {/* Hero Image del producto si existe */}
               {!imgError && product.image ? (
-                <div className="relative aspect-[16/9] max-h-48 sm:max-h-56 w-full bg-[#f2eee7] overflow-hidden">
+                <div className="relative aspect-[16/9] max-h-36 sm:max-h-44 w-full bg-[#f2eee7] overflow-hidden">
                   <img
                     src={product.image}
                     alt={product.name}
@@ -525,8 +525,8 @@ export default function ProductCard({
 
                         {/* Opciones dentro del grupo (se despliega si está abierto) */}
                         {isOpen && (
-                          <div className="p-3 sm:p-3.5 pt-0 space-y-1.5 border-t border-slate-100/80 animate-fade-in">
-                            <div className="pt-2 space-y-1.5">
+                          <div className="p-2.5 sm:p-3 pt-0 border-t border-slate-100/80 animate-fade-in">
+                            <div className="pt-2 grid grid-cols-2 gap-1.5">
                               {group.opciones?.map(opt => {
                                 const isChecked = currentSelected.some(o => o.id === opt.id);
                                 const isMaxReached = !isRadio && maxLimit && currentSelected.length >= maxLimit && !isChecked;
@@ -549,38 +549,38 @@ export default function ProductCard({
                                       borderColor: isChecked ? brandColor : undefined,
                                       backgroundColor: isChecked ? `${brandColor}08` : undefined
                                     }}
-                                    className={`flex min-h-11 items-center justify-between gap-2 rounded-lg border px-3 py-2 transition-colors select-none ${
+                                    className={`flex min-h-9.5 items-center justify-between gap-1.5 rounded-lg border px-2.5 py-1.5 transition-colors select-none ${
                                       isMaxReached 
                                         ? 'cursor-not-allowed border-[#e7e3db] bg-[#f2f0eb] opacity-60'
                                         : 'cursor-pointer bg-white hover:border-slate-400'
                                     } ${
                                       isChecked 
-                                        ? 'font-medium text-slate-950'
+                                        ? 'font-semibold text-slate-950'
                                         : 'border-[#e7e3db] text-slate-700'
                                     }`}
                                   >
-                                    <div className="flex items-center gap-2 min-w-0">
+                                    <div className="flex items-center gap-1.5 min-w-0">
                                       <div 
                                         style={isChecked ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
-                                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-${isRadio ? 'full' : 'sm'} border transition-colors ${
+                                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-${isRadio ? 'full' : 'sm'} border transition-colors ${
                                           isChecked ? 'text-white' : 'border-[#c9c4bb] bg-white'
                                         }`}
                                       >
                                         {isChecked && (
                                           isRadio 
                                             ? <div className="w-1.5 h-1.5 rounded-full bg-white" /> 
-                                            : <Check size={11} strokeWidth={3} />
+                                            : <Check size={10} strokeWidth={3} />
                                         )}
                                       </div>
-                                      <span className="truncate text-sm text-slate-900">
+                                      <span className="truncate text-xs sm:text-sm text-slate-900">
                                         {opt.nombre}
                                       </span>
                                     </div>
 
-                                    <span className={`text-xs tabular-nums shrink-0 ml-2 ${
-                                      Number(opt.precio) > 0 ? 'font-semibold text-slate-900' : 'font-normal text-slate-500'
+                                    <span className={`text-[11px] tabular-nums shrink-0 ${
+                                      Number(opt.precio) > 0 ? 'font-bold text-slate-900' : 'font-normal text-slate-400'
                                     }`}>
-                                      {Number(opt.precio) > 0 ? `+${formatMoney(opt.precio)}` : 'Incluido'}
+                                      {Number(opt.precio) > 0 ? `+${formatMoney(opt.precio)}` : 'Inc.'}
                                     </span>
                                   </label>
                                 );

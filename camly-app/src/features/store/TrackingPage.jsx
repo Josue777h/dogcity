@@ -3,7 +3,7 @@ import { useSearchParams, useParams, Link } from 'react-router-dom';
 import {
   Package, CheckCircle2, Clock, Truck,
   AlertCircle, ArrowLeft, Store, MessageCircle,
-  MapPin, ShoppingCart, Sparkles,
+  MapPin, ShoppingCart, CreditCard, Lock,
   X, RotateCcw, Copy, Check, Upload, FileText,
   ExternalLink, Ban, ChevronRight, Utensils
 } from 'lucide-react';
@@ -539,7 +539,7 @@ export default function TrackingPage() {
             </div>
 
             {/* Stepper dinámico por rubro */}
-            <div className="grid grid-cols-4 gap-2 pt-1">
+            <div className={`grid ${steps.length === 3 ? 'grid-cols-3' : 'grid-cols-4'} gap-2 pt-1`}>
               {steps.map((step, i) => {
                 const isPassed = i <= currentStepIdx;
                 const isCurrent = i === currentStepIdx;
@@ -553,7 +553,7 @@ export default function TrackingPage() {
                           : 'bg-gray-100 text-gray-400'
                       }`}
                     >
-                      <StepIcon size={18} className={isCurrent ? 'animate-bounce' : ''} />
+                      <StepIcon size={18} className={isCurrent ? 'animate-pulse' : ''} />
                     </div>
                     <span className={`text-[11px] font-bold mt-2 ${isPassed ? 'text-gray-900' : 'text-gray-400'}`}>
                       {step.label}
@@ -595,8 +595,9 @@ export default function TrackingPage() {
             {/* ── 3. BLINDAJE CONTRA CANCELACIONES TARDÍAS (EN_PREPARACION O POSTERIOR) ── */}
             {isCookingOrLater && (
               <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-700 space-y-2">
-                <p className="leading-snug">
-                  🔒 {statusCopy.cancelLockedNotice}
+                <p className="leading-snug flex items-start gap-1.5">
+                  <Lock size={14} className="text-gray-500 shrink-0 mt-0.5" />
+                  <span>{statusCopy.cancelLockedNotice}</span>
                 </p>
                 <a
                   href={`https://wa.me/${business?.whatsapp_contacto || business?.telefono || '573143243707'}?text=${encodeURIComponent(`Hola, tengo una consulta sobre mi orden #${currentOrder.id}`)}`}
@@ -617,8 +618,8 @@ export default function TrackingPage() {
           <div className="card p-5 bg-white shadow-sm border-gray-200/80 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs">
-                  💳
+                <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                  <CreditCard size={15} />
                 </div>
                 <div>
                   <h3 className="text-xs sm:text-sm font-black text-gray-900 uppercase tracking-wide">

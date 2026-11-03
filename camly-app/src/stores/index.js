@@ -304,8 +304,8 @@ export const useToastStore = create((set) => ({
   toasts: [],
   addToast: (message, type = 'info') => {
     const id = ++toastId;
-    set((s) => ({ toasts: [...s.toasts, { id, message, type }] }));
-    setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 3500);
+    set((s) => ({ toasts: [...s.toasts.slice(-1), { id, message, type }] }));
+    setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 2200);
   },
   removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 }));

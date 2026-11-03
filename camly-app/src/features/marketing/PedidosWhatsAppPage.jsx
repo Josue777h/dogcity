@@ -53,9 +53,8 @@ export default function PedidosWhatsAppPage() {
                 to="/registro"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm sm:text-base px-5 py-3 rounded-lg border border-gray-800 shadow-card hover:shadow-sm transition-all duration-200 active:scale-95"
               >
-                <Sparkles size={18} className="text-[#11CEFC]" />
                 <span>Empezar a recibir pedidos organizados</span>
-                <ArrowRight size={16} />
+                <ArrowRight size={16} className="text-[#11CEFC]" />
               </Link>
             </div>
 
@@ -199,12 +198,12 @@ export default function PedidosWhatsAppPage() {
                 <div className="w-full max-w-sm bg-[#EFEAE2] rounded-xl p-4 shadow-xl border border-gray-300 space-y-3">
                   <div className="bg-white rounded-2xl p-4 shadow-xs text-xs space-y-2.5 font-mono text-gray-800">
                     <p className="font-bold text-emerald-700 font-sans text-sm">
-                      🍔 ¡NUEVO PEDIDO #1082 - NEGU!
+                      NUEVO PEDIDO #1082 · NEGU
                     </p>
                     <div className="border-t border-gray-100 pt-2 space-y-1">
                       <p><strong>Cliente:</strong> Carlos Mendoza</p>
                       <p><strong>Teléfono:</strong> +57 312 456 7890</p>
-                      <p><strong>Entrega:</strong> 🛵 A Domicilio</p>
+                      <p><strong>Entrega:</strong> A Domicilio</p>
                     </div>
                     <div className="border-t border-gray-100 pt-2 space-y-1">
                       <p><strong>PRODUCTOS:</strong></p>

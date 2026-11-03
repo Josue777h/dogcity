@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useOutletContext, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { 
   Utensils, Plus, Minus, Trash2, Search, Bell, Check, Printer, 
-  ShoppingBag, X, ChefHat, Clock, RefreshCw, CheckCircle2, PenLine
+  X, ChefHat, Clock, RefreshCw, PenLine, Lock, Unlock
 } from 'lucide-react';
 import { formatMoney, playNewOrderSound, printThermalReceipt, playTableCallSound } from '../../../lib/utils';
 import { saveOrder } from '../../../lib/supabase';
@@ -24,7 +24,6 @@ const PRESET_TABLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 export default function ComanderoView() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const outletCtx = useOutletContext() || {};
   const { business, products: globalProducts, categories } = useBusinessStore();
   const addToast = useToastStore((s) => s.addToast);
@@ -32,6 +31,70 @@ export default function ComanderoView() {
   const products = outletCtx.products || globalProducts || [];
   const orders = outletCtx.orders || [];
   const reloadOrders = outletCtx.reloadOrders || (() => {});
+  const isWaiterLocked = outletCtx.isWaiterLocked || false;
+  const setIsWaiterLocked = outletCtx.setIsWaiterLocked || (() => {});
+
+  // Estado del bloqueo por PIN (Modo Mesero)
+  const [pinModalMode, setPinModalMode] = useState(null); // 'setup' | 'unlock' | null
+  const [pinInput, setPinInput] = useState('');
+
+  const pinStorageKey = `negu_admin_pin_${business?.id || 'default'}`;
+
+  const handleToggleWaiterLock = () => {
+    if (isWaiterLocked) {
+      setPinInput('');
+      setPinModalMode('unlock');
+      return;
+    }
+    try {
+      const savedPin = localStorage.getItem(pinStorageKey);
+      if (!savedPin) {
+        setPinInput('');
+        setPinModalMode('setup');
+      } else {
+        localStorage.setItem('negu_waiter_lock_active', 'true');
+        setIsWaiterLocked(true);
+        addToast('Modo Mesero activado. El menú administrativo está protegido con tu PIN.', 'success');
+      }
+    } catch {
+      setPinInput('');
+      setPinModalMode('setup');
+    }
+  };
+
+  const handleConfirmPinModal = (e) => {
+    if (e) e.preventDefault();
+    const cleanPin = pinInput.replace(/\D/g, '').slice(0, 4);
+    if (cleanPin.length < 4) {
+      addToast('El PIN debe tener 4 dígitos numéricos', 'warning');
+      return;
+    }
+
+    if (pinModalMode === 'setup') {
+      try {
+        localStorage.setItem(pinStorageKey, cleanPin);
+        localStorage.setItem('negu_waiter_lock_active', 'true');
+      } catch {}
+      setIsWaiterLocked(true);
+      setPinModalMode(null);
+      setPinInput('');
+      addToast('PIN creado y Modo Mesero activado', 'success');
+    } else if (pinModalMode === 'unlock') {
+      const savedPin = localStorage.getItem(pinStorageKey) || '0000';
+      if (cleanPin === savedPin) {
+        try {
+          localStorage.setItem('negu_waiter_lock_active', 'false');
+        } catch {}
+        setIsWaiterLocked(false);
+        setPinModalMode(null);
+        setPinInput('');
+        addToast('Panel de administración desbloqueado', 'success');
+      } else {
+        addToast('PIN incorrecto', 'error');
+        setPinInput('');
+      }
+    }
+  };
 
   // Mesa seleccionada (por query param o por defecto Mesa 1)
   const initialTable = searchParams.get('mesa') || '1';
@@ -252,15 +315,16 @@ export default function ComanderoView() {
       openProductCustomize(product);
     } else {
       addToTicket(product, [], '', 1);
-      addToast(`+1 ${product.name}`, 'success');
+      addToast(`+1 ${product.name || product.nombre}`, 'success');
     }
   };
 
   // Agregar al ticket de la mesa actual con agrupación inteligente de platos idénticos
   const addToTicket = (product, options = [], note = '', quantity = 1) => {
     const cleanNote = (note || '').trim();
+    const basePrice = Number(product.price ?? product.precio ?? 0);
     const extraPrice = (options || []).reduce((sum, opt) => sum + (Number(opt?.precio) || 0), 0);
-    const unitPrice = Number(product.price) + extraPrice;
+    const unitPrice = basePrice + extraPrice;
 
     // Generar firma normalizada de opciones para comparar igualdad exacta
     const optionsSig = (options || [])
@@ -298,8 +362,8 @@ export default function ComanderoView() {
       const newItem = {
         uid,
         id: product.id,
-        name: product.name,
-        basePrice: Number(product.price),
+        name: product.name || product.nombre || 'Producto',
+        basePrice,
         price: unitPrice,
         quantity,
         options: options || [],
@@ -563,7 +627,33 @@ export default function ComanderoView() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={handleToggleWaiterLock}
+            title={isWaiterLocked ? 'Ingresar PIN de administrador para desbloquear todo el panel' : 'Bloquear pantalla en Modo Mesero (oculta menú e ingresos)'}
+            aria-label={isWaiterLocked ? 'Desbloquear panel con PIN' : 'Activar Modo Mesero con PIN'}
+            className={`px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer border ${
+              isWaiterLocked
+                ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300'
+                : 'bg-slate-900 hover:bg-black text-white border-slate-900'
+            }`}
+          >
+            {isWaiterLocked ? <Unlock size={14} /> : <Lock size={14} />}
+            <span>{isWaiterLocked ? 'Salir Modo Mesero (PIN)' : 'Bloquear Modo Mesero'}</span>
+          </button>
+
+          {!isWaiterLocked && localStorage.getItem(pinStorageKey) && (
+            <button
+              type="button"
+              onClick={() => { setPinInput(''); setPinModalMode('setup'); }}
+              title="Cambiar el PIN de 4 dígitos"
+              className="px-2.5 py-2 text-slate-500 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
+            >
+              Cambiar PIN
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => reloadOrders()}
@@ -576,6 +666,69 @@ export default function ComanderoView() {
           </button>
         </div>
       </div>
+
+      {/* Modal de Configuración / Desbloqueo por PIN de 4 dígitos */}
+      {pinModalMode && (
+        <div className="fixed inset-0 z-[180] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <form
+            onSubmit={handleConfirmPinModal}
+            className="bg-white rounded-2xl p-5 max-w-xs w-full space-y-4 shadow-2xl border border-slate-200 animate-scale-up"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center">
+                  <Lock size={15} />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {pinModalMode === 'setup' ? 'Configurar PIN Admin' : 'Desbloquear Panel'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPinModalMode(null)}
+                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              {pinModalMode === 'setup'
+                ? 'Define un PIN de 4 dígitos. Cuando actives el Modo Mesero, solo quien tenga este PIN podrá ver Pedidos, Ingresos o Configuración.'
+                : 'Ingresa el PIN de 4 dígitos del administrador para volver al panel completo.'}
+            </p>
+
+            <input
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={4}
+              autoFocus
+              placeholder="••••"
+              value={pinInput}
+              onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              className="w-full px-4 py-3 border border-slate-300 rounded-xl text-center text-xl font-black tracking-[0.5em] text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-slate-900"
+            />
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPinModalMode(null)}
+                className="flex-1 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={pinInput.length < 4}
+                className="flex-1 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-black disabled:opacity-40 rounded-xl cursor-pointer transition-colors"
+              >
+                {pinModalMode === 'setup' ? 'Guardar y Bloquear' : 'Desbloquear'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Salón y Selector de Mesas Profesional (0% IA, limpio y táctil) */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5">
@@ -1102,13 +1255,17 @@ export default function ComanderoView() {
                 const isSingle = group.tipo === 'unica' || Number(group.max_opciones) === 1;
 
                 return (
-                  <div key={group.id} className="space-y-1.5 rounded-xl border border-slate-200 bg-slate-50/60 p-2.5 sm:p-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-slate-900 truncate pr-2">
+                  <div key={group.id} className="space-y-1.5 rounded-xl border border-slate-200 bg-slate-50/60 p-2 sm:p-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-xs font-bold text-slate-900 truncate">
                         {group.titulo}
                       </h4>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-600 shrink-0">
-                        {isSingle ? 'Elige 1 (Obligatorio)' : (group.requerido ? 'Obligatorio' : 'Opcional')}
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded shrink-0 border ${
+                        group.requerido
+                          ? 'bg-amber-50 border-amber-200 text-amber-800'
+                          : 'bg-white border-slate-200 text-slate-500'
+                      }`}>
+                        {isSingle ? (group.requerido ? 'Elige 1 · Obligatorio' : 'Elige 1 · Opcional') : (group.requerido ? 'Obligatorio' : 'Opcional')}
                       </span>
                     </div>
 
@@ -1120,7 +1277,7 @@ export default function ComanderoView() {
                             key={opt.id}
                             type="button"
                             onClick={() => toggleOption(group, opt)}
-                            className={`p-2 rounded-lg border text-left flex items-center justify-between gap-1.5 transition-colors cursor-pointer text-xs ${
+                            className={`px-2 py-1.5 rounded-lg border text-left flex items-center justify-between gap-1.5 transition-colors cursor-pointer text-xs ${
                               isChosen
                                 ? 'bg-slate-900 text-white border-slate-900 font-semibold shadow-2xs'
                                 : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
@@ -1161,18 +1318,31 @@ export default function ComanderoView() {
                   Indicaciones rápidas para cocina:
                 </label>
                 <div className="flex flex-wrap gap-1">
-                  {QUICK_KITCHEN_TAGS.map(tag => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => {
-                        setKitchenNote(prev => prev ? `${prev}, ${tag}` : tag);
-                      }}
-                      className="px-2 py-0.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
-                    >
-                      +{tag}
-                    </button>
-                  ))}
+                  {QUICK_KITCHEN_TAGS.map(tag => {
+                    const isTagActive = kitchenNote.toLowerCase().includes(tag.toLowerCase());
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => {
+                          setKitchenNote(prev => {
+                            const parts = prev.split(',').map(s => s.trim()).filter(Boolean);
+                            if (parts.some(p => p.toLowerCase() === tag.toLowerCase())) {
+                              return parts.filter(p => p.toLowerCase() !== tag.toLowerCase()).join(', ');
+                            }
+                            return [...parts, tag].join(', ');
+                          });
+                        }}
+                        className={`px-2 py-0.5 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
+                          isTagActive
+                            ? 'bg-slate-900 text-white border-slate-900'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        {isTagActive ? `✓ ${tag}` : `+${tag}`}
+                      </button>
+                    );
+                  })}
                 </div>
                 <input
                   type="text"

@@ -10,17 +10,34 @@ export default function AuthGuard({ children }) {
   const { session, setSession } = useAuthStore();
 
   useEffect(() => {
+    let active = true;
+    const timeoutId = setTimeout(() => {
+      if (active) setLoading(false);
+    }, 6000);
+
     async function check() {
-      if (session) {
-        setLoading(false);
-        return;
+      try {
+        if (session) {
+          if (active) setLoading(false);
+          return;
+        }
+        const { data } = await getSupabase().auth.getSession();
+        if (active) {
+          setSession(data?.session || null);
+        }
+      } catch (err) {
+        console.error('Error comprobando sesión:', err);
+      } finally {
+        clearTimeout(timeoutId);
+        if (active) setLoading(false);
       }
-      
-      const { data } = await getSupabase().auth.getSession();
-      setSession(data.session);
-      setLoading(false);
     }
     check();
+
+    return () => {
+      active = false;
+      clearTimeout(timeoutId);
+    };
   }, [session, setSession]);
 
   if (loading) {

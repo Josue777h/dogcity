@@ -423,8 +423,8 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
                   onChange={e => setFormData({...formData, disponible: e.target.value === 'true'})}
                   className="input-field text-xs font-medium cursor-pointer"
                 >
-                  <option value="true">🟢 Disponible para pedir</option>
-                  <option value="false">🔴 Agotado temporalmente</option>
+                  <option value="true">Disponible para pedir</option>
+                  <option value="false">Agotado temporalmente</option>
                 </select>
               </div>
             </div>

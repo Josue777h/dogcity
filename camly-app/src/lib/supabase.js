@@ -5,7 +5,14 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, PRODUCT_SCHEMA_VARIANTS, DEFAULT_IMAGE
 let client = null;
 export function getSupabase() {
   if (!client) {
-    client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        lock: async (_name, _acquireTimeout, fn) => await fn(),
+      },
+    });
   }
   return client;
 }
@@ -108,19 +115,23 @@ export async function createCategory(payload) {
   return data;
 }
 
-export async function updateCategory(id, updates) {
-  const { error } = await getSupabase()
+export async function updateCategory(id, updates, negocioId = null) {
+  let query = getSupabase()
     .from('categorias')
     .update(updates)
     .eq('id', id);
+  if (negocioId) query = query.eq('negocio_id', negocioId);
+  const { error } = await query;
   if (error) throw error;
 }
 
-export async function deleteCategory(id) {
-  const { error } = await getSupabase()
+export async function deleteCategory(id, negocioId = null) {
+  let query = getSupabase()
     .from('categorias')
     .delete()
     .eq('id', id);
+  if (negocioId) query = query.eq('negocio_id', negocioId);
+  const { error } = await query;
   if (error) throw error;
 }
 
@@ -262,20 +273,25 @@ export async function createProduct(product) {
   return normalizeProduct(data);
 }
 
-export async function updateProduct(id, product) {
+export async function updateProduct(id, product, negocioId = null) {
   const schema = await getSchema();
-  const { error } = await getSupabase()
+  const targetBizId = negocioId || product?.negocio_id || null;
+  let query = getSupabase()
     .from('productos')
     .update(buildRecord(product, schema))
     .eq('id', Number(id));
+  if (targetBizId) query = query.eq('negocio_id', targetBizId);
+  const { error } = await query;
   if (error) throw error;
 }
 
-export async function deleteProduct(id) {
-  const { error } = await getSupabase()
+export async function deleteProduct(id, negocioId = null) {
+  let query = getSupabase()
     .from('productos')
     .delete()
     .eq('id', Number(id));
+  if (negocioId) query = query.eq('negocio_id', negocioId);
+  const { error } = await query;
   if (error) throw error;
 }
 
@@ -292,8 +308,59 @@ export async function fetchOrders(negocioId = null) {
   return data || [];
 }
 
-export async function saveOrder(payload) {
+export async function saveOrder(rawPayload) {
   const sb = getSupabase();
+  const payload = { ...rawPayload };
+
+  // Validación e integridad de precios contra manipulación en el navegador
+  try {
+    if (payload.negocio_id && Array.isArray(payload.items) && payload.items.length > 0) {
+      const dbProducts = await fetchProducts(payload.negocio_id);
+      const prodMap = new Map(dbProducts.map(p => [Number(p.id), p]));
+
+      let verifiedSubtotal = 0;
+      payload.items = payload.items.map(item => {
+        const qty = Math.max(1, Math.min(999, Math.floor(Number(item.cantidad ?? item.quantity ?? 1))));
+        const dbProd = prodMap.get(Number(item.id || item.productId));
+        if (dbProd) {
+          const basePrice = Math.max(0, Number(dbProd.price || 0));
+          // Verificar costo de opciones/toppings contra las opciones reales del producto
+          const validOptsMap = new Map();
+          (dbProd.opciones || []).forEach(g => {
+            (g.opciones || []).forEach(o => {
+              validOptsMap.set(String(o.id || o.nombre), Math.max(0, Number(o.precio || 0)));
+            });
+          });
+          const itemOpts = Array.isArray(item.opciones) ? item.opciones : (Array.isArray(item.options) ? item.options : []);
+          const optsExtra = itemOpts.reduce((acc, o) => {
+            const key = String(o.id || o.nombre || '');
+            const realOptPrice = validOptsMap.has(key) ? validOptsMap.get(key) : Math.max(0, Number(o.precio || 0));
+            return acc + realOptPrice;
+          }, 0);
+          const realUnitPrice = basePrice + optsExtra;
+          verifiedSubtotal += realUnitPrice * qty;
+          return {
+            ...item,
+            cantidad: qty,
+            precio: realUnitPrice,
+            precio_base: basePrice,
+          };
+        }
+        const fallbackPrice = Math.max(0, Number(item.precio ?? item.price ?? 0));
+        verifiedSubtotal += fallbackPrice * qty;
+        return { ...item, cantidad: qty, precio: fallbackPrice };
+      });
+
+      const safeDeliveryCost = Math.max(0, Number(payload.domicilio_costo ?? payload.delivery_fee ?? 0));
+      payload.subtotal = verifiedSubtotal;
+      payload.total = verifiedSubtotal + safeDeliveryCost;
+      if ('total_amount' in payload) {
+        payload.total_amount = payload.total;
+      }
+    }
+  } catch (verifyErr) {
+    console.warn('Advertencia verificando precios de orden:', verifyErr);
+  }
 
   // 1. Intentar primero con la función RPC segura (SECURITY DEFINER)
   // Es la opción preferida porque elude restricciones de SELECT en RLS para clientes anónimos
@@ -341,11 +408,13 @@ export async function saveOrder(payload) {
   return data?.[0]?.id;
 }
 
-export async function updateOrderStatus(id, status) {
-  const { error } = await getSupabase()
+export async function updateOrderStatus(id, status, negocioId = null) {
+  let query = getSupabase()
     .from('pedidos')
     .update({ estado: status, status })
     .eq('id', id);
+  if (negocioId) query = query.eq('negocio_id', negocioId);
+  const { error } = await query;
   if (error) throw error;
 }
 
