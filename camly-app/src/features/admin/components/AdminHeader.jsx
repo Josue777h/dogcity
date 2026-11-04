@@ -59,9 +59,9 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
 
   return (
     <header className="sticky top-0 z-[80] bg-white border-b border-gray-200/90 shadow-2xs">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-13 sm:h-14 flex items-center justify-between gap-3">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-13 sm:h-14 flex items-center justify-between gap-2">
         
-        {/* Izquierda: Menú Hamburguesa + Título claro de sección */}
+        {/* Izquierda: Menú Hamburguesa + Título claro de sección (nunca cortado) */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <button
             onClick={onOpenMenu}
@@ -71,8 +71,8 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
             <Menu size={19} />
           </button>
           
-          <div className="min-w-0">
-            <h1 aria-label={tabLabel} title={tabLabel} className="line-clamp-1 text-sm sm:text-base font-bold text-gray-900 tracking-tight leading-tight">
+          <div className="min-w-0 flex-1">
+            <h1 aria-label={tabLabel} title={tabLabel} className="truncate text-sm sm:text-base font-bold text-gray-900 tracking-tight leading-tight">
               <span className="sm:hidden">{mobileTabLabel}</span>
               <span className="hidden sm:inline">{tabLabel}</span>
             </h1>
@@ -84,10 +84,10 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
           </div>
         </div>
 
-        {/* Derecha: Acciones limpias, proporcionales y organizadas */}
+        {/* Derecha: Acciones limpias y sin saturar la barra móvil */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           
-          {/* Badge de prueba / Pro */}
+          {/* Badge de prueba / Pro: solo en pantallas medianas+ para no recortar el título en móvil */}
           {isExpired ? (
             <span className="inline-flex items-center gap-1 rounded-md bg-red-50 text-red-700 border border-red-200/80 text-[11px] font-semibold px-2 py-0.5 shrink-0">
               <AlertTriangle size={12} className="shrink-0" />
@@ -95,14 +95,14 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
             </span>
           ) : subscription?.estado === 'trial' ? (
             <span 
-              className="inline-flex items-center gap-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200/80 text-[11px] font-semibold px-2 py-0.5 shrink-0"
+              className="hidden md:inline-flex items-center gap-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200/80 text-[11px] font-semibold px-2 py-0.5 shrink-0"
               title={`${trialDaysLeft} días de prueba restantes`}
             >
               <Zap size={11} className="shrink-0 text-amber-600" />
-              <span>{trialDaysLeft}d <span className="hidden sm:inline">prueba</span></span>
+              <span>{trialDaysLeft}d prueba</span>
             </span>
           ) : isPro ? (
-            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[11px] font-semibold px-2 py-0.5 shrink-0">
+            <span className="hidden md:inline-flex items-center gap-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[11px] font-semibold px-2 py-0.5 shrink-0">
               <Sparkles size={11} className="shrink-0 text-emerald-600" />
               <span>Pro</span>
             </span>
@@ -138,17 +138,18 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
             target="_blank"
             rel="noreferrer"
             title="Ver catálogo público"
+            aria-label="Ver catálogo público"
             className="sm:hidden h-8 px-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 flex items-center gap-1 text-xs font-semibold transition-colors shrink-0"
           >
             <span>Tienda</span>
             <ExternalLink size={12} />
           </a>
 
-          {/* Movia (Asistente IA) */}
+          {/* Movia (Asistente) */}
           <button
             type="button"
             onClick={onOpenAssistant}
-            title="Asistente Movia (IA)"
+            title="Asistente Movia"
             aria-label="Abrir Asistente Movia"
             className="h-8 px-2.5 rounded-lg bg-gray-900 hover:bg-black text-white font-medium flex items-center gap-1.5 text-xs transition-colors shrink-0"
           >
@@ -156,9 +157,9 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
             <span className="text-xs font-semibold">Movia</span>
           </button>
 
-          {/* Avatar del usuario */}
+          {/* Avatar del usuario (Desktop/Tablet) */}
           <div
-            className="w-8 h-8 rounded-lg bg-brand text-white text-xs font-bold flex items-center justify-center shrink-0 select-none shadow-2xs"
+            className="hidden sm:flex w-8 h-8 rounded-lg bg-brand text-white text-xs font-bold items-center justify-center shrink-0 select-none shadow-2xs"
             title={userEmail}
           >
             {userInitial}

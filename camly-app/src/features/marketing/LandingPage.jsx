@@ -4,7 +4,7 @@ import {
   MessageCircle, Smartphone, CheckCircle2,
   Check, ArrowRight, Menu, X,
   MapPin, Zap, Star, ChevronDown,
-  ShoppingBag, Sparkles, DollarSign,
+  ShoppingBag, DollarSign,
   Store, ShieldCheck, Clock,
   CreditCard, PackageCheck, Pizza, Coffee,
   Shirt, Cake, Fish, PawPrint, Beef, Navigation,
@@ -757,7 +757,7 @@ export default function LandingPage() {
             <span>Únete a los negocios que ya venden con NEGU</span>
           </div>
 
-          <h2 className="font-display text-3xl sm:text-5xl font-black tracking-tight leading-[1.08] max-w-3xl mx-auto">
+          <h2 className="font-display text-3xl sm:text-5xl font-black text-white tracking-tight leading-[1.08] max-w-3xl mx-auto">
             Empieza a vender hoy.<br />
             <span className="text-[#11CEFC]">Tu catálogo conectado a WhatsApp.</span>
           </h2>
@@ -769,14 +769,14 @@ export default function LandingPage() {
           <div className="pt-1 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link 
               to="/registro" 
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-brand hover:bg-brand-dark text-white font-semibold text-sm px-6 py-3 rounded-lg shadow-sm transition-all duration-200"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-sm transition-all duration-200"
             >
               <span>Crear mi tienda en 3 minutos</span>
               <ArrowRight size={17} />
             </Link>
           </div>
 
-          <p className="text-xs text-slate-400 font-medium pt-1">
+          <p className="text-xs text-slate-300 font-medium pt-1">
             7 días de prueba gratis · Sin tarjeta de crédito · Cancela en cualquier momento
           </p>
 

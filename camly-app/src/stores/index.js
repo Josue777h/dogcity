@@ -1,3 +1,5 @@
+
+
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { migratePersistedStorage } from '../lib/localStorage';
@@ -233,10 +235,10 @@ export const useCartStore = create(
         carts: { ...s.carts, [bid]: { items: [], quantities: {}, notes: {}, itemOptions: {}, comment: '' } }
       })),
     }),
-    { 
+    {
       name: 'negu-multi-cart',
       storage: createJSONStorage(() => migratePersistedStorage('camly-multi-cart')),
-      partialize: (state) => ({ 
+      partialize: (state) => ({
         carts: state.carts,
         customerName: state.customerName,
         customerPhone: state.customerPhone,
@@ -261,25 +263,25 @@ export const useBusinessStore = create((set) => ({
     let isPro = false;
     let isExpired = false;
     let trialDaysLeft = 0;
-    
+
     if (subscription) {
-       const isProPlan = subscription.plan === 'pro';
-       const isActive = subscription.estado === 'activo' || subscription.estado === 'trial';
-       const endDate = subscription.fecha_fin ? new Date(subscription.fecha_fin) : null;
-       const now = new Date();
-       
-       isExpired = subscription.estado === 'vencido' || (endDate ? now > endDate : false);
-       isPro = isProPlan && isActive && !isExpired;
-       
-       if (subscription.estado === 'trial' && !isExpired && endDate) {
-         const diffTime = Math.abs(endDate - now);
-         trialDaysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-       }
+      const isProPlan = subscription.plan === 'pro';
+      const isActive = subscription.estado === 'activo' || subscription.estado === 'trial';
+      const endDate = subscription.fecha_fin ? new Date(subscription.fecha_fin) : null;
+      const now = new Date();
+
+      isExpired = subscription.estado === 'vencido' || (endDate ? now > endDate : false);
+      isPro = isProPlan && isActive && !isExpired;
+
+      if (subscription.estado === 'trial' && !isExpired && endDate) {
+        const diffTime = Math.abs(endDate - now);
+        trialDaysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
     } else {
-       // Si el negocio no tiene suscripción se bloquea como expired por seguridad
-       // o puedes dejarlo false dependiendo del flujo legacy
-       isExpired = false; 
-       // Se deja en `false` por ahora para no bloquear tiendas legacy (hasta migración completa).
+      // Si el negocio no tiene suscripción se bloquea como expired por seguridad
+      // o puedes dejarlo false dependiendo del flujo legacy
+      isExpired = false;
+      // Se deja en `false` por ahora para no bloquear tiendas legacy (hasta migración completa).
     }
     set({ business, subscription, isPro, isExpired, trialDaysLeft, isLoading: false });
   },

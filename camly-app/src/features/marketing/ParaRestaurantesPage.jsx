@@ -4,7 +4,6 @@ import {
   UtensilsCrossed, 
   Pizza, 
   Flame, 
-  Sparkles, 
   ArrowRight, 
   CheckCircle2, 
   Printer, 
@@ -198,18 +197,18 @@ export default function ParaRestaurantesPage() {
         </section>
 
         {/* ── CTA FINAL ── */}
-        <section className="py-16 sm:py-20 bg-gray-950 text-white text-center">
+        <section className="py-16 sm:py-20 bg-slate-950 text-white text-center">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
-            <h2 className="font-display text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+            <h2 className="font-display text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
               Lleva tu restaurante al siguiente nivel con NEGU
             </h2>
-            <p className="text-sm sm:text-base text-gray-400 max-w-xl mx-auto">
+            <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed">
               Comienza hoy mismo tu prueba gratuita de 7 días.
             </p>
             <div>
               <Link
                 to="/registro"
-                className="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold text-sm px-5 py-3 rounded-lg shadow-sm hover:scale-105 transition-all"
+                className="inline-flex items-center gap-2 bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-sm transition-all"
               >
                 <span>Probar para mi restaurante gratis</span>
                 <ArrowRight size={16} />

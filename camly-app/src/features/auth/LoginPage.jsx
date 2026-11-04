@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, ShieldCheck } from 'lucide-react';
@@ -11,16 +12,16 @@ import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 export default function LoginPage() {
-  const navigate   = useNavigate();
-  const location   = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
   const setSession = useAuthStore(s => s.setSession);
-  const addToast   = useToastStore(s => s.addToast);
+  const addToast = useToastStore(s => s.addToast);
 
-  const [email,        setEmail]        = useState(location.state?.email || '');
-  const [password,     setPassword]     = useState('');
+  const [email, setEmail] = useState(location.state?.email || '');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe,   setRememberMe]   = useState(true);
-  const [loading,      setLoading]      = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   useEffect(() => {
@@ -75,136 +76,136 @@ export default function LoginPage() {
         <p className="text-xs text-slate-500">NEGU · Herramientas para negocios locales</p>
       </aside>
       <div className="flex min-h-screen items-start justify-center px-4 pb-8 pt-5 sm:px-8 lg:items-center lg:px-12 lg:py-10">
-      <div className="w-full max-w-[520px] mx-auto">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors duration-150 mb-5 lg:mb-8"
-        >
-          <ArrowLeft size={15} strokeWidth={2} />
-          <span>Volver al inicio</span>
-        </Link>
-
-        <div className="mb-6">
-          <Link to="/" className="inline-block mb-5">
-            <SaaSLogo className="h-10" />
+        <div className="w-full max-w-[520px] mx-auto">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors duration-150 mb-5 lg:mb-8"
+          >
+            <ArrowLeft size={15} strokeWidth={2} />
+            <span>Volver al inicio</span>
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
-            Inicia sesión
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Accede a tu panel de NEGU
-          </p>
-        </div>
 
-        <Card className="w-full border border-slate-200 p-6 sm:p-8 shadow-md">
-          {needsConfirmation && (
-            <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm leading-5 text-amber-900">
-              Confirma el correo de esta cuenta para entrar al panel. <Link to="/verificar-correo" state={{ email }} className="font-semibold underline underline-offset-2">Reenviar enlace</Link>
-            </div>
-          )}
-          {location.state?.email && (
-            <div className="mb-5 flex items-start gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2.5 text-xs text-emerald-800">
-              <ShieldCheck size={15} className="text-emerald-600 shrink-0 mt-0.5" />
-              <span>{location.state?.passwordUpdated ? 'Contraseña actualizada. Ingresa con tu nueva contraseña.' : 'Cuenta creada. Ingresa tu contraseña para continuar.'}</span>
-            </div>
-          )}
+          <div className="mb-6">
+            <Link to="/" className="inline-block mb-5">
+              <SaaSLogo className="h-10" />
+            </Link>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
+              Inicia sesión
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Accede a tu panel de NEGU
+            </p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="login-email" className="block text-sm font-medium text-slate-700 mb-1.5">
-                Correo electrónico
-              </label>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <Input
-                  id="login-email"
-                  type="email"
-                  placeholder="tu@correo.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="py-3 pl-10"
-                  required
-                  autoComplete="email"
-                />
+          <Card className="w-full border border-slate-200 p-6 sm:p-8 shadow-md">
+            {needsConfirmation && (
+              <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm leading-5 text-amber-900">
+                Confirma el correo de esta cuenta para entrar al panel. <Link to="/verificar-correo" state={{ email }} className="font-semibold underline underline-offset-2">Reenviar enlace</Link>
               </div>
-            </div>
+            )}
+            {location.state?.email && (
+              <div className="mb-5 flex items-start gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2.5 text-xs text-emerald-800">
+                <ShieldCheck size={15} className="text-emerald-600 shrink-0 mt-0.5" />
+                <span>{location.state?.passwordUpdated ? 'Contraseña actualizada. Ingresa con tu nueva contraseña.' : 'Cuenta creada. Ingresa tu contraseña para continuar.'}</span>
+              </div>
+            )}
 
-            <div>
-              <div className="mb-1.5">
-                <label htmlFor="login-password" className="block text-sm font-medium text-slate-700">
-                  Contraseña
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="login-email" className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Correo electrónico
+                </label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder="tu@correo.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="py-3 pl-5"
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-1.5">
+                  <label htmlFor="login-password" className="block text-sm font-medium text-slate-700">
+                    Contraseña
+                  </label>
+                </div>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <Input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Tu contraseña"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="py-3 pl-5 pr-10"
+                    required
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors duration-150 cursor-pointer"
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <div className="mt-1.5 flex justify-end">
+                  <Link
+                    to="/recuperar-contrasena"
+                    state={{ email }}
+                    className="text-xs font-medium text-[#0284C7] hover:text-sky-700 transition-colors duration-150"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </Link>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  id="remember"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-[#0284C7] focus:ring-slate-900 cursor-pointer"
+                />
+                <label htmlFor="remember" className="text-sm text-slate-600 cursor-pointer select-none">
+                  Recordarme en este equipo
                 </label>
               </div>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <Input
-                  id="login-password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Tu contraseña"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="py-3 pl-10 pr-10"
-                  required
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors duration-150 cursor-pointer"
-                  tabIndex={-1}
-                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-              <div className="mt-1.5 flex justify-end">
-                <Link
-                  to="/recuperar-contrasena"
-                  state={{ email }}
-                  className="text-xs font-medium text-[#0284C7] hover:text-sky-700 transition-colors duration-150"
-                >
-                  ¿Olvidaste tu contraseña?
-                </Link>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                id="remember"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={e => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-[#0284C7] focus:ring-slate-900 cursor-pointer"
-              />
-              <label htmlFor="remember" className="text-sm text-slate-600 cursor-pointer select-none">
-                Recordarme en este equipo
-              </label>
-            </div>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? (
+                  <>
+                    <LoadingSpinner size={16} />
+                    <span>Comprobando acceso...</span>
+                  </>
+                ) : (
+                  <span>Iniciar sesión</span>
+                )}
+              </Button>
+            </form>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? (
-                <>
-                  <LoadingSpinner size={16} />
-                  <span>Comprobando acceso...</span>
-                </>
-              ) : (
-                <span>Iniciar sesión</span>
-              )}
-            </Button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-slate-500">
-            ¿Nuevo en NEGU?{' '}
-            <Link to="/registro" className="font-medium text-[#0284C7] hover:text-sky-700 transition-colors duration-150">
-              Crea tu cuenta
-            </Link>
-          </p>
-        </Card>
-      </div>
+            <p className="mt-6 text-center text-sm text-slate-500">
+              ¿Nuevo en NEGU?{' '}
+              <Link to="/registro" className="font-medium text-[#0284C7] hover:text-sky-700 transition-colors duration-150">
+                Crea tu cuenta
+              </Link>
+            </p>
+          </Card>
+        </div>
       </div>
     </div>
   );

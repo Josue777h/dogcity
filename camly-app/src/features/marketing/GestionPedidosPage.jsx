@@ -4,7 +4,6 @@ import {
   ClipboardList, 
   Printer, 
   TrendingUp, 
-  Sparkles, 
   ArrowRight, 
   CheckCircle2, 
   Clock, 
@@ -210,18 +209,18 @@ export default function GestionPedidosPage() {
         </section>
 
         {/* ── CTA FINAL ── */}
-        <section className="py-16 sm:py-20 bg-gray-950 text-white text-center">
+        <section className="py-16 sm:py-20 bg-slate-950 text-white text-center">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
-            <h2 className="font-display text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+            <h2 className="font-display text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
               Toma el control de tus ventas y pedidos hoy
             </h2>
-            <p className="text-sm sm:text-base text-gray-400 max-w-xl mx-auto">
+            <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed">
               Empieza tus 7 días de prueba gratis y organiza tu negocio como siempre quisiste.
             </p>
             <div>
               <Link
                 to="/registro"
-                className="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold text-sm px-5 py-3 rounded-lg shadow-sm hover:scale-105 transition-all"
+                className="inline-flex items-center gap-2 bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-sm transition-all"
               >
                 <span>Crear mi cuenta gratis</span>
                 <ArrowRight size={16} />

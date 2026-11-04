@@ -102,14 +102,20 @@ export default function ComanderoView() {
   const [customTableInput, setCustomTableInput] = useState('');
   const [showCustomTableModal, setShowCustomTableModal] = useState(false);
 
-  // Filtros de productos
+  // Filtros de productos y navegación ágil móvil
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [searchQuery, setSearchQuery] = useState('');
+  const [mobileSection, setMobileSection] = useState('menu'); // 'menu' | 'ticket' | 'active'
+  const [showAllTablesMobile, setShowAllTablesMobile] = useState(false);
 
   // Ticket / Comanda activa para la mesa seleccionada
   // Estructura: { [tableId]: Array<{ id, uid, name, price, quantity, options, note }> }
   const [comandasByTable, setComandasByTable] = useState({});
   const activeTicket = comandasByTable[selectedTable] || [];
+  const activeTicketQty = useMemo(
+    () => activeTicket.reduce((acc, item) => acc + (Number(item.quantity) || 1), 0),
+    [activeTicket]
+  );
 
   // Modal de personalización de producto antes de agregar a la comanda
   const [customizingProduct, setCustomizingProduct] = useState(null);
@@ -608,39 +614,43 @@ export default function ComanderoView() {
   };
 
   return (
-    <div className="space-y-4 pb-20 lg:pb-6 font-sans">
-      {/* Header superior */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Utensils className="text-slate-700 shrink-0" size={20} />
-              <span>Comandero de Mesas</span>
+    <div className="space-y-3 sm:space-y-4 pb-24 lg:pb-6 font-sans">
+      {/* Header superior compacto en una sola fila sin espacios en blanco desperdiciados */}
+      <div className="flex items-center justify-between gap-2 bg-white px-3.5 py-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-sm sm:text-lg font-bold text-slate-900 flex items-center gap-2 truncate">
+              <Utensils className="text-slate-700 shrink-0" size={18} />
+              <span className="truncate">Comandero</span>
             </h1>
-            <span className="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-900 text-white shrink-0">
+              Mesa #{selectedTable}
+            </span>
+            <span className="hidden md:inline-flex px-2.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 items-center gap-1.5 shrink-0">
               <ChefHat size={13} className="text-slate-600" />
               Toma de pedidos en salón
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="hidden sm:block text-xs text-slate-500 mt-0.5 truncate">
             Toma órdenes directamente desde el celular o tablet y envíalas a cocina al instante.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={handleToggleWaiterLock}
             title={isWaiterLocked ? 'Ingresar PIN de administrador para desbloquear todo el panel' : 'Bloquear pantalla en Modo Mesero (oculta menú e ingresos)'}
             aria-label={isWaiterLocked ? 'Desbloquear panel con PIN' : 'Activar Modo Mesero con PIN'}
-            className={`px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer border ${
+            className={`h-9 px-2.5 sm:px-3 rounded-xl transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer border shrink-0 ${
               isWaiterLocked
                 ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300'
                 : 'bg-slate-900 hover:bg-black text-white border-slate-900'
             }`}
           >
-            {isWaiterLocked ? <Unlock size={14} /> : <Lock size={14} />}
-            <span>{isWaiterLocked ? 'Salir Modo Mesero (PIN)' : 'Bloquear Modo Mesero'}</span>
+            {isWaiterLocked ? <Unlock size={14} className="shrink-0" /> : <Lock size={14} className="shrink-0" />}
+            <span className="sm:hidden">{isWaiterLocked ? 'Salir PIN' : 'Modo Mesero'}</span>
+            <span className="hidden sm:inline">{isWaiterLocked ? 'Salir Modo Mesero (PIN)' : 'Bloquear Modo Mesero'}</span>
           </button>
 
           {!isWaiterLocked && localStorage.getItem(pinStorageKey) && (
@@ -648,9 +658,10 @@ export default function ComanderoView() {
               type="button"
               onClick={() => { setPinInput(''); setPinModalMode('setup'); }}
               title="Cambiar el PIN de 4 dígitos"
-              className="px-2.5 py-2 text-slate-500 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
+              className="h-9 px-2 sm:px-2.5 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold cursor-pointer transition-colors shrink-0"
             >
-              Cambiar PIN
+              <span className="sm:hidden">PIN</span>
+              <span className="hidden sm:inline">Cambiar PIN</span>
             </button>
           )}
 
@@ -659,7 +670,7 @@ export default function ComanderoView() {
             onClick={() => reloadOrders()}
             title="Refrescar comandas y mesas"
             aria-label="Refrescar comandas y mesas"
-            className="p-2.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+            className="h-9 w-9 sm:w-auto sm:px-3 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer shrink-0"
           >
             <RefreshCw size={15} />
             <span className="hidden sm:inline">Actualizar</span>
@@ -730,38 +741,54 @@ export default function ComanderoView() {
         </div>
       )}
 
-      {/* Salón y Selector de Mesas Profesional (0% IA, limpio y táctil) */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-              Salón de Mesas:
+      {/* Salón y Selector de Mesas Profesional (Ágil en móvil y completo en PC) */}
+      <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
+        <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs font-bold text-slate-800 uppercase tracking-wide shrink-0">
+              Salón:
             </span>
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-slate-900 text-white shadow-2xs">
-              Mesa actual: #{selectedTable}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3 text-[11px] text-slate-500 flex-wrap">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-slate-300" /> Libre
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" /> Ocupada / Cocina
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-blue-500" /> Con borrador
+            <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-slate-900 text-white shadow-2xs shrink-0">
+              Mesa #{selectedTable}
             </span>
             {Object.keys(tableCalls).length > 0 && (
-              <span className="flex items-center gap-1.5 font-bold text-rose-600 animate-pulse bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                <Bell size={11} /> {Object.keys(tableCalls).length} llamado(s) pendiente(s)
+              <span className="flex items-center gap-1 font-bold text-[11px] text-rose-600 animate-pulse bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 truncate">
+                <Bell size={11} className="shrink-0" /> {Object.keys(tableCalls).length} llamado(s)
               </span>
             )}
           </div>
+
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="hidden md:flex items-center gap-3 text-[11px] text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-slate-300" /> Libre
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" /> En Cocina
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-blue-500" /> Borrador
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowAllTablesMobile((v) => !v)}
+              className="lg:hidden text-[11px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+            >
+              {showAllTablesMobile ? 'Compactar mesas' : 'Ver cuadrícula'}
+            </button>
+          </div>
         </div>
 
-        {/* Grid de Mesas del salón */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-2">
+        {/* Selector de Mesas: Tira horizontal rápida en móvil por defecto, o cuadrícula completa */}
+        <div
+          className={
+            showAllTablesMobile
+              ? 'grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-1.5 sm:gap-2'
+              : 'flex lg:grid lg:grid-cols-12 items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-0.5'
+          }
+        >
           {PRESET_TABLES.map(num => {
             const strNum = String(num);
             const isSelected = selectedTable === strNum;
@@ -775,15 +802,15 @@ export default function ComanderoView() {
                 key={num}
                 type="button"
                 onClick={() => handleSelectTable(num)}
-                className={`relative p-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex flex-col items-center justify-center min-h-[58px] ${
+                className={`relative px-3 py-2 lg:p-2 rounded-xl font-bold text-xs transition-all cursor-pointer flex flex-col items-center justify-center shrink-0 min-w-[68px] lg:min-w-0 min-h-[48px] lg:min-h-[54px] ${
                   isSelected
-                    ? 'bg-slate-900 text-white shadow-sm ring-2 ring-slate-900 ring-offset-2'
+                    ? 'bg-slate-900 text-white shadow-xs'
                     : hasCall
-                      ? 'bg-rose-50 text-rose-900 border-2 border-rose-500 shadow-2xs animate-pulse ring-2 ring-rose-300'
+                      ? 'bg-rose-50 text-rose-900 border-2 border-rose-500 shadow-2xs animate-pulse'
                       : isOccupied
-                        ? 'bg-emerald-50 border border-emerald-300/90 text-emerald-950 hover:bg-emerald-100/80 shadow-2xs'
+                        ? 'bg-emerald-50 border border-emerald-300/90 text-emerald-950 hover:bg-emerald-100/80'
                         : hasPendingTicket
-                          ? 'bg-blue-50 border border-blue-300/90 text-blue-950 hover:bg-blue-100/80 shadow-2xs'
+                          ? 'bg-blue-50 border border-blue-300/90 text-blue-950 hover:bg-blue-100/80'
                           : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/90 hover:border-slate-300'
                 }`}
               >
@@ -792,11 +819,11 @@ export default function ComanderoView() {
                     <Bell size={8} />
                   </span>
                 )}
-                <span className="text-xs sm:text-sm font-black leading-tight">Mesa {num}</span>
+                <span className="text-xs font-black leading-tight whitespace-nowrap">Mesa {num}</span>
                 <span className={`text-[10px] font-medium leading-tight mt-0.5 truncate max-w-full ${
                   isSelected ? 'text-slate-300' : hasCall ? 'text-rose-700 font-bold' : isOccupied ? 'text-emerald-700 font-semibold' : hasPendingTicket ? 'text-blue-700' : 'text-slate-400'
                 }`}>
-                  {hasCall ? 'Llamando' : isOccupied ? `${activeOrders.length} orden` : hasPendingTicket ? 'Borrador' : 'Libre'}
+                  {hasCall ? 'Llamando' : isOccupied ? `${activeOrders.length} activa` : hasPendingTicket ? 'Borrador' : 'Libre'}
                 </span>
               </button>
             );
@@ -805,12 +832,58 @@ export default function ComanderoView() {
           <button
             type="button"
             onClick={() => setShowCustomTableModal(true)}
-            className="p-2.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-600 border border-dashed border-slate-300 flex flex-col items-center justify-center min-h-[58px] transition-all cursor-pointer hover:border-slate-400"
+            className="px-3 py-2 lg:p-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-600 border border-dashed border-slate-300 flex flex-col items-center justify-center shrink-0 min-w-[68px] lg:min-w-0 min-h-[48px] lg:min-h-[54px] transition-all cursor-pointer hover:border-slate-400"
           >
-            <Plus size={15} className="text-slate-500 mb-0.5" />
-            <span className="text-[11px] leading-tight">Otra mesa</span>
+            <Plus size={14} className="text-slate-500 mb-0.5" />
+            <span className="text-[10px] leading-tight whitespace-nowrap">Otra</span>
           </button>
         </div>
+      </div>
+
+      {/* Navegación Segmentada Móvil (Cero scroll largo: salta entre Carta, Comanda y En Cocina en 1 toque) */}
+      <div className="lg:hidden grid grid-cols-3 gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200/90 shadow-2xs sticky top-14 z-30">
+        <button
+          type="button"
+          onClick={() => setMobileSection('menu')}
+          className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            mobileSection === 'menu'
+              ? 'bg-slate-900 text-white shadow-2xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <Utensils size={13} className="shrink-0" />
+          <span className="truncate">Carta ({filteredProducts.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMobileSection('ticket')}
+          className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            mobileSection === 'ticket'
+              ? 'bg-slate-900 text-white shadow-2xs'
+              : activeTicketQty > 0
+                ? 'bg-blue-50 text-blue-900 border border-blue-200'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <ChefHat size={13} className="shrink-0" />
+          <span className="truncate">Comanda ({activeTicketQty})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMobileSection('active')}
+          className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            mobileSection === 'active'
+              ? 'bg-slate-900 text-white shadow-2xs'
+              : (activeOrdersByTable[selectedTable] || []).length > 0
+                ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <Clock size={13} className="shrink-0" />
+          <span className="truncate">En Cocina ({(activeOrdersByTable[selectedTable] || []).length})</span>
+        </button>
       </div>
 
       {/* Modal para ingresar número o nombre de mesa personalizada */}
@@ -866,7 +939,7 @@ export default function ComanderoView() {
       {/* Grid Principal: Menú a la izquierda + Comanda a la derecha */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* Columna Izquierda: Catálogo y Productos táctiles (7 cols) */}
-        <div className="lg:col-span-7 space-y-3">
+        <div className={`${mobileSection === 'menu' ? 'block' : 'hidden'} lg:block lg:col-span-7 space-y-3`}>
           {/* Barra de Filtros y Búsqueda */}
           <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2.5">
             <div className="relative">
@@ -982,9 +1055,10 @@ export default function ComanderoView() {
           )}
         </div>
 
-        {/* Columna Derecha: Ticket / Comanda de la Mesa (5 cols) */}
-        <div className="lg:col-span-5 space-y-3 sticky top-4">
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col">
+        {/* Columna Derecha: Ticket / Comanda de la Mesa y Órdenes En Cocina (5 cols) */}
+        <div className={`${mobileSection !== 'menu' ? 'block' : 'hidden'} lg:block lg:col-span-5 space-y-3 lg:sticky lg:top-4`}>
+          {/* Tarjeta de Comanda Activa (Visible siempre en PC y en tab 'ticket' en móvil) */}
+          <div className={`${mobileSection === 'ticket' ? 'flex' : 'hidden'} lg:flex bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden flex-col`}>
             {/* Header del Ticket */}
             <div className="bg-slate-50 p-3.5 sm:p-4 flex items-center justify-between border-b border-slate-200 text-slate-900">
               <div className="flex items-center gap-2.5 min-w-0">
@@ -996,33 +1070,49 @@ export default function ComanderoView() {
                     Comanda Mesa #{selectedTable}
                   </h3>
                   <span className="text-xs text-slate-500 font-medium block mt-0.5">
-                    {activeTicket.length} {activeTicket.length === 1 ? 'plato en orden' : 'platos en orden'}
+                    {activeTicketQty} {activeTicketQty === 1 ? 'plato en orden' : 'platos en orden'}
                   </span>
                 </div>
               </div>
 
-              {activeTicket.length > 0 && (
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
-                  onClick={clearCurrentTicket}
-                  className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2.5 py-1 rounded-lg hover:bg-rose-50 transition-colors border border-rose-200 shrink-0 cursor-pointer"
+                  onClick={() => setMobileSection('menu')}
+                  className="lg:hidden text-xs text-slate-700 hover:text-slate-900 font-bold px-2.5 py-1 rounded-lg bg-white border border-slate-200 transition-colors cursor-pointer"
                 >
-                  Vaciar
+                  + Platos
                 </button>
-              )}
+                {activeTicket.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearCurrentTicket}
+                    className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2.5 py-1 rounded-lg hover:bg-rose-50 transition-colors border border-rose-200 shrink-0 cursor-pointer"
+                  >
+                    Vaciar
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Lista de ítems en el ticket */}
-            <div className="p-3.5 space-y-2.5 max-h-[380px] overflow-y-auto divide-y divide-slate-100">
+            <div className="p-3.5 space-y-2.5 max-h-[420px] overflow-y-auto divide-y divide-slate-100">
               {activeTicket.length === 0 ? (
-                <div className="py-12 text-center text-slate-400 space-y-2">
-                  <ChefHat size={32} className="mx-auto text-slate-300" />
+                <div className="py-10 text-center text-slate-400 space-y-2.5">
+                  <ChefHat size={30} className="mx-auto text-slate-300" />
                   <p className="text-xs font-semibold text-slate-600">
                     Comanda vacía para la Mesa #{selectedTable}
                   </p>
                   <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
                     Toca cualquier plato o bebida del menú para agregarlo a la orden.
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => setMobileSection('menu')}
+                    className="lg:hidden inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold shadow-2xs"
+                  >
+                    <Plus size={13} /> Ir a la Carta
+                  </button>
                 </div>
               ) : (
                 activeTicket.map(item => (
@@ -1184,20 +1274,38 @@ export default function ComanderoView() {
           )}
 
           {/* Órdenes activas de la mesa seleccionada */}
-          {(activeOrdersByTable[selectedTable] || []).length > 0 && (
-            <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Clock size={13} className="text-slate-500" />
-                  Comandas activas en Mesa #{selectedTable}
-                </span>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                  {activeOrdersByTable[selectedTable].length} orden(es)
-                </span>
-              </div>
+          <div
+            className={`${
+              mobileSection === 'active'
+                ? 'block'
+                : (activeOrdersByTable[selectedTable] || []).length > 0
+                  ? 'hidden lg:block'
+                  : 'hidden'
+            } bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2.5`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Clock size={13} className="text-slate-500" />
+                Comandas activas en Mesa #{selectedTable}
+              </span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                {(activeOrdersByTable[selectedTable] || []).length} orden(es)
+              </span>
+            </div>
 
+            {(activeOrdersByTable[selectedTable] || []).length === 0 ? (
+              <div className="py-8 text-center space-y-2">
+                <Clock size={26} className="mx-auto text-slate-300" />
+                <p className="text-xs font-semibold text-slate-600">
+                  La Mesa #{selectedTable} no tiene comandas activas en cocina
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  Cuando envíes una comanda a cocina aparecerá aquí con su estado e impresión térmica.
+                </p>
+              </div>
+            ) : (
               <div className="space-y-2">
-                {activeOrdersByTable[selectedTable].map(order => (
+                {(activeOrdersByTable[selectedTable] || []).map(order => (
                   <div key={order.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between gap-2">
                     <div>
                       <span className="font-bold text-slate-900 block">
@@ -1211,7 +1319,7 @@ export default function ComanderoView() {
                     <button
                       type="button"
                       onClick={() => handlePrintKitchenTicket(order)}
-                      className="p-1.5 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
+                      className="p-1.5 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
                       title="Imprimir comanda"
                     >
                       <Printer size={13} />
@@ -1219,10 +1327,43 @@ export default function ComanderoView() {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Barra Flotante Inferior en Móvil cuando el mesero está en la Carta y tiene platos en la comanda */}
+      {mobileSection === 'menu' && activeTicket.length > 0 && (
+        <div className="lg:hidden fixed bottom-3 inset-x-3 z-40 bg-slate-900 text-white p-2.5 rounded-2xl shadow-xl border border-slate-800 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setMobileSection('ticket')}
+            className="flex-1 min-w-0 flex items-center gap-2.5 text-left px-2 py-1 rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
+          >
+            <span className="w-7 h-7 rounded-lg bg-white text-slate-900 font-black text-xs flex items-center justify-center shrink-0">
+              {activeTicketQty}
+            </span>
+            <div className="min-w-0">
+              <span className="text-xs font-bold block truncate">
+                Ver Comanda Mesa #{selectedTable}
+              </span>
+              <span className="text-[11px] text-slate-300 font-semibold tabular-nums block">
+                Total: {formatMoney(ticketSubtotal)}
+              </span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            disabled={isSending}
+            onClick={handleSendToKitchen}
+            className="px-3.5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shrink-0 shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+          >
+            {isSending ? <RefreshCw size={14} className="animate-spin" /> : <ChefHat size={14} />}
+            <span>Mandar a Cocina</span>
+          </button>
+        </div>
+      )}
 
       {/* Modal de personalización de producto (toppings y notas de cocina) */}
       {customizingProduct && (

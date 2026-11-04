@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useOutletContext } from 'react-router-dom';
 import { 
   ChevronRight, User, MapPin, Package, Bike, Store, Utensils, Trash2, Map,
@@ -84,10 +85,10 @@ function MerchantCancelModal({ isOpen, order, onClose, onConfirmed }) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={onClose} />
-      <div className="relative bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-gray-200 animate-fade-in-up">
+  const modalContent = (
+    <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-xs" onClick={onClose} />
+      <div className="relative bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-gray-200 animate-fade-in">
         <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between bg-rose-50/60">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold shrink-0">
@@ -176,6 +177,10 @@ function MerchantCancelModal({ isOpen, order, onClose, onConfirmed }) {
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : modalContent;
 }
 
 function OrderTimeline({ currentStatus, onStatusChange, disabled = false, deliveryMethod = 'envio', businessType }) {
@@ -304,7 +309,8 @@ function OrderItems({ order }) {
 
               {p.nota && (
                 <div className="text-[11px] font-bold text-amber-950 bg-amber-50 border border-amber-300 rounded px-2 py-0.5 mt-1 flex items-center gap-1">
-      <span>⚠️ Nota del pedido:</span>
+                  <AlertCircle size={12} className="text-amber-700 shrink-0" />
+                  <span>Nota del pedido:</span>
                   <span className="font-semibold">&ldquo;{p.nota}&rdquo;</span>
                 </div>
               )}
@@ -813,135 +819,133 @@ export default function OrdersView(props) {
 
   return (
     <div className="space-y-3 animate-fade-in-up">
-      {/* Filter tabs & Sound toggle */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-2.5">
-        <div className="grid grid-cols-2 gap-2 flex-1 min-w-0">
-          <label className="min-w-0">
-            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-500">Estado del pedido</span>
-            <select
-              aria-label="Filtrar pedidos por estado"
-              value={activeFilter}
-              onChange={event => setActiveFilter(event.target.value)}
-              className="h-10 w-full min-w-0 rounded-lg border border-border bg-white px-2.5 text-xs font-semibold text-gray-800 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-900/5"
+      {/* Filter tabs & Sound toggle aligned in a single row without wasted space */}
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-2">
+        <label className="min-w-0">
+          <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-500">Estado</span>
+          <select
+            aria-label="Filtrar pedidos por estado"
+            value={activeFilter}
+            onChange={event => setActiveFilter(event.target.value)}
+            className="h-10 w-full min-w-0 rounded-lg border border-border bg-white px-2.5 text-xs font-semibold text-gray-800 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-900/5"
+          >
+            {STATUS_TABS.map(tab => (
+              <option key={tab.id} value={tab.id}>
+                {tab.id === 'preparando' ? getStatusCopy('EN_PREPARACION', business?.business_type).badge : tab.label} ({getTabCount(tab.id)})
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="min-w-0">
+          <div className="mb-1 flex items-center justify-between gap-1">
+            <span className="block text-[10px] font-bold uppercase tracking-wide text-gray-500">Modalidad</span>
+            <span className="sm:hidden text-[10px] font-bold text-slate-700 truncate">
+              {deliveryFilter === 'pickup' ? '· Local' : deliveryFilter === 'mesa' ? '· Mesa' : deliveryFilter === 'envio' ? '· Envío' : '· Todas'}
+            </span>
+          </div>
+          <div role="group" aria-label="Filtrar pedidos por modalidad de entrega" className="grid h-10 grid-cols-3 gap-1 rounded-lg border border-border bg-slate-100 p-1">
+            <button
+              type="button"
+              aria-pressed={deliveryFilter === 'pickup'}
+              aria-label="Filtrar por retiro en local"
+              onClick={() => toggleDeliveryFilter('pickup')}
+              className={`relative flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition-all ${
+                deliveryFilter === 'pickup'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-white/60 text-slate-600 hover:bg-white hover:text-emerald-700'
+              }`}
+              title={`Retiro en local (${getDeliveryCount('pickup')})`}
             >
-              {STATUS_TABS.map(tab => (
-                <option key={tab.id} value={tab.id}>
-                  {tab.id === 'preparando' ? getStatusCopy('EN_PREPARACION', business?.business_type).badge : tab.label} ({getTabCount(tab.id)})
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="min-w-0">
-            <div className="mb-1 flex items-center justify-between gap-1">
-              <span className="block text-[10px] font-bold uppercase tracking-wide text-gray-500">Modalidad</span>
-              <span className="sm:hidden text-[10px] font-bold text-slate-700 truncate">
-                {deliveryFilter === 'pickup' ? '· En local' : deliveryFilter === 'mesa' ? '· En mesa' : deliveryFilter === 'envio' ? '· Domicilio' : '· Todas'}
+              <Store size={15} className="shrink-0" />
+              <span className="hidden sm:inline truncate">Local</span>
+              <span className={`hidden sm:inline text-[10px] ${deliveryFilter === 'pickup' ? 'text-emerald-100' : 'opacity-70'}`}>
+                ({getDeliveryCount('pickup')})
               </span>
-            </div>
-            <div role="group" aria-label="Filtrar pedidos por modalidad de entrega" className="grid h-10 grid-cols-3 gap-1 rounded-lg border border-border bg-slate-100 p-1">
-              <button
-                type="button"
-                aria-pressed={deliveryFilter === 'pickup'}
-                aria-label="Filtrar por retiro en local"
-                onClick={() => toggleDeliveryFilter('pickup')}
-                className={`relative flex min-w-0 items-center justify-center gap-1.5 rounded-md px-1.5 text-xs font-semibold transition-all ${
-                  deliveryFilter === 'pickup'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'bg-white/60 text-slate-600 hover:bg-white hover:text-emerald-700'
-                }`}
-                title={`Retiro en local (${getDeliveryCount('pickup')})`}
-              >
-                <Store size={16} className="shrink-0" />
-                <span className="hidden sm:inline truncate">Local</span>
-                <span className={`hidden sm:inline text-[10px] ${deliveryFilter === 'pickup' ? 'text-emerald-100' : 'opacity-70'}`}>
-                  ({getDeliveryCount('pickup')})
+              {getDeliveryCount('pickup') > 0 && (
+                <span className={`sm:hidden text-[10px] font-bold leading-none ${deliveryFilter === 'pickup' ? 'text-white' : 'text-emerald-700'}`}>
+                  {getDeliveryCount('pickup')}
                 </span>
-                {getDeliveryCount('pickup') > 0 && (
-                  <span className={`sm:hidden text-[10px] font-bold leading-none ${deliveryFilter === 'pickup' ? 'text-white' : 'text-emerald-700'}`}>
-                    {getDeliveryCount('pickup')}
-                  </span>
-                )}
-              </button>
-              <button
-                type="button"
-                aria-pressed={deliveryFilter === 'mesa'}
-                aria-label="Filtrar por servicio en mesa"
-                onClick={() => toggleDeliveryFilter('mesa')}
-                className={`relative flex min-w-0 items-center justify-center gap-1.5 rounded-md px-1.5 text-xs font-semibold transition-all ${
-                  deliveryFilter === 'mesa'
-                    ? 'bg-purple-600 text-white shadow-xs'
-                    : 'bg-white/60 text-slate-600 hover:bg-white hover:text-purple-700'
-                }`}
-                title={`Servicio en mesa (${getDeliveryCount('mesa')})`}
-              >
-                <Utensils size={16} className="shrink-0" />
-                <span className="hidden sm:inline truncate">Mesa</span>
-                <span className={`hidden sm:inline text-[10px] ${deliveryFilter === 'mesa' ? 'text-purple-100' : 'opacity-70'}`}>
-                  ({getDeliveryCount('mesa')})
+              )}
+            </button>
+            <button
+              type="button"
+              aria-pressed={deliveryFilter === 'mesa'}
+              aria-label="Filtrar por servicio en mesa"
+              onClick={() => toggleDeliveryFilter('mesa')}
+              className={`relative flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition-all ${
+                deliveryFilter === 'mesa'
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'bg-white/60 text-slate-600 hover:bg-white hover:text-purple-700'
+              }`}
+              title={`Servicio en mesa (${getDeliveryCount('mesa')})`}
+            >
+              <Utensils size={15} className="shrink-0" />
+              <span className="hidden sm:inline truncate">Mesa</span>
+              <span className={`hidden sm:inline text-[10px] ${deliveryFilter === 'mesa' ? 'text-purple-100' : 'opacity-70'}`}>
+                ({getDeliveryCount('mesa')})
+              </span>
+              {getDeliveryCount('mesa') > 0 && (
+                <span className={`sm:hidden text-[10px] font-bold leading-none ${deliveryFilter === 'mesa' ? 'text-white' : 'text-purple-700'}`}>
+                  {getDeliveryCount('mesa')}
                 </span>
-                {getDeliveryCount('mesa') > 0 && (
-                  <span className={`sm:hidden text-[10px] font-bold leading-none ${deliveryFilter === 'mesa' ? 'text-white' : 'text-purple-700'}`}>
-                    {getDeliveryCount('mesa')}
-                  </span>
-                )}
-              </button>
-              <button
-                type="button"
-                aria-pressed={deliveryFilter === 'envio'}
-                aria-label="Filtrar por domicilios"
-                onClick={() => toggleDeliveryFilter('envio')}
-                className={`relative flex min-w-0 items-center justify-center gap-1.5 rounded-md px-1.5 text-xs font-semibold transition-all ${
-                  deliveryFilter === 'envio'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'bg-white/60 text-slate-600 hover:bg-white hover:text-blue-700'
-                }`}
-                title={`Domicilios (${getDeliveryCount('envio')})`}
-              >
-                <Bike size={16} className="shrink-0" />
-                <span className="hidden sm:inline truncate">Domicilio</span>
-                <span className={`hidden sm:inline text-[10px] ${deliveryFilter === 'envio' ? 'text-blue-100' : 'opacity-70'}`}>
-                  ({getDeliveryCount('envio')})
+              )}
+            </button>
+            <button
+              type="button"
+              aria-pressed={deliveryFilter === 'envio'}
+              aria-label="Filtrar por domicilios"
+              onClick={() => toggleDeliveryFilter('envio')}
+              className={`relative flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition-all ${
+                deliveryFilter === 'envio'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white/60 text-slate-600 hover:bg-white hover:text-blue-700'
+              }`}
+              title={`Domicilios (${getDeliveryCount('envio')})`}
+            >
+              <Bike size={15} className="shrink-0" />
+              <span className="hidden sm:inline truncate">Domicilio</span>
+              <span className={`hidden sm:inline text-[10px] ${deliveryFilter === 'envio' ? 'text-blue-100' : 'opacity-70'}`}>
+                ({getDeliveryCount('envio')})
+              </span>
+              {getDeliveryCount('envio') > 0 && (
+                <span className={`sm:hidden text-[10px] font-bold leading-none ${deliveryFilter === 'envio' ? 'text-white' : 'text-blue-700'}`}>
+                  {getDeliveryCount('envio')}
                 </span>
-                {getDeliveryCount('envio') > 0 && (
-                  <span className={`sm:hidden text-[10px] font-bold leading-none ${deliveryFilter === 'envio' ? 'text-white' : 'text-blue-700'}`}>
-                    {getDeliveryCount('envio')}
-                  </span>
-                )}
-              </button>
-            </div>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Timbre de nuevos pedidos */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => {
-              const next = !soundEnabled;
-              setSoundEnabled(next);
-              localStorage.setItem('negu_order_sound', next ? 'true' : 'false');
-              if (next) playNewOrderSound();
-            }}
-            title={soundEnabled ? 'Silenciar timbre de pedidos' : 'Activar timbre de pedidos'}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-              soundEnabled 
-                ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100' 
-                : 'bg-white text-gray-400 border-gray-200 hover:text-gray-600'
-            }`}
-          >
-            {soundEnabled ? (
-              <>
-                <Volume2 size={14} className="text-orange-600 animate-pulse" />
-                <span>Timbre activo</span>
-              </>
-            ) : (
-              <>
-                <VolumeX size={14} />
-                <span>Timbre mudo</span>
-              </>
-            )}
-          </button>
-        </div>
+        {/* Timbre de nuevos pedidos integrado en la misma fila */}
+        <button
+          type="button"
+          onClick={() => {
+            const next = !soundEnabled;
+            setSoundEnabled(next);
+            localStorage.setItem('negu_order_sound', next ? 'true' : 'false');
+            if (next) playNewOrderSound();
+          }}
+          title={soundEnabled ? 'Silenciar timbre de pedidos' : 'Activar timbre de pedidos'}
+          aria-label={soundEnabled ? 'Timbre activo' : 'Timbre mudo'}
+          className={`h-10 px-2.5 sm:px-3 rounded-lg text-xs font-semibold border transition-colors flex items-center justify-center gap-1.5 shrink-0 ${
+            soundEnabled 
+              ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100' 
+              : 'bg-white text-gray-400 border-gray-200 hover:text-gray-600'
+          }`}
+        >
+          {soundEnabled ? (
+            <>
+              <Volume2 size={15} className="text-orange-600 animate-pulse shrink-0" />
+              <span className="hidden sm:inline">Timbre activo</span>
+            </>
+          ) : (
+            <>
+              <VolumeX size={15} className="shrink-0" />
+              <span className="hidden sm:inline">Timbre mudo</span>
+            </>
+          )}
+        </button>
       </div>
 
       {/* Lista de pedidos */}
@@ -1384,13 +1388,13 @@ export default function OrdersView(props) {
 function DriverSelectModal({ isOpen, onClose, drivers, currentDriverId, onSelect, loading }) {
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+  const modalContent = (
+    <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
       <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-white w-full max-w-sm rounded-xl overflow-hidden shadow-xl animate-fade-in-up border border-border">
+      <div className="relative bg-white w-full max-w-sm rounded-xl overflow-hidden shadow-xl animate-fade-in border border-border">
         
         <div className="p-5 border-b border-border flex items-center justify-between">
            <div>
@@ -1466,4 +1470,8 @@ function DriverSelectModal({ isOpen, onClose, drivers, currentDriverId, onSelect
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : modalContent;
 }

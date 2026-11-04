@@ -1,15 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  MessageCircle, 
-  MapPin, 
-  Navigation, 
-  Sparkles, 
-  ArrowRight, 
-  CheckCircle2, 
-  Store, 
-  Clock, 
-  Smartphone, 
+import {
+  MessageCircle,
+  MapPin,
+  Navigation,
+  Sparkles,
+  ArrowRight,
+  CheckCircle2,
+  Store,
+  Clock,
+  Smartphone,
   ChevronRight,
   ShieldCheck
 } from 'lucide-react';
@@ -29,7 +29,7 @@ export default function PedidosWhatsAppPage() {
         {/* ── HERO SECTION ── */}
         <section className="pt-12 sm:pt-20 pb-16 sm:pb-24 border-b border-gray-200/70 bg-slate-50">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-6">
-            
+
             <div className="inline-flex items-center gap-2 bg-white/90 border border-emerald-200/80 rounded-full pl-2 pr-3.5 py-1 text-xs font-semibold text-gray-700 shadow-xs mx-auto">
               <span className="bg-emerald-600 text-white text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full">
                 WHATSAPP & GPS
@@ -68,7 +68,7 @@ export default function PedidosWhatsAppPage() {
         {/* ── EL PROBLEMA DE LOS PEDIDOS TRADICIONALES ── */}
         <section className="py-12 sm:py-16 bg-white border-b border-gray-200/70">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
-            
+
             <div className="text-center max-w-2xl mx-auto space-y-3">
               <span className="text-xs font-extrabold uppercase tracking-widest text-[#0284C7]">
                 Ahorro de tiempo
@@ -79,7 +79,7 @@ export default function PedidosWhatsAppPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-              
+
               {/* Sin NEGU */}
               <div className="p-7 rounded-xl bg-rose-50/50 border border-rose-200/80 space-y-4">
                 <p className="text-xs font-extrabold uppercase tracking-wider text-rose-700">
@@ -146,9 +146,9 @@ export default function PedidosWhatsAppPage() {
         {/* ── CÓMO SE ESTRUCTURA EL PEDIDO EN WHATSAPP ── */}
         <section className="py-12 sm:py-16 bg-gray-50/60 border-b border-gray-200/70">
           <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-              
+
               <div className="lg:col-span-6 space-y-5">
                 <span className="text-xs font-extrabold uppercase tracking-widest text-[#0284C7]">
                   La anatomía de la comanda
@@ -242,8 +242,8 @@ export default function PedidosWhatsAppPage() {
               Soluciones complementarias
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Link 
-                to="/menu-digital" 
+              <Link
+                to="/menu-digital"
                 className="p-4 rounded-2xl bg-gray-50 border border-gray-200/80 hover:border-cyan-300 hover:shadow-xs transition-all flex items-center justify-between group"
               >
                 <div>
@@ -255,8 +255,8 @@ export default function PedidosWhatsAppPage() {
                 <ChevronRight size={18} className="text-gray-400 group-hover:text-cyan-600 transition-colors" />
               </Link>
 
-              <Link 
-                to="/gestion-de-pedidos" 
+              <Link
+                to="/gestion-de-pedidos"
                 className="p-4 rounded-2xl bg-gray-50 border border-gray-200/80 hover:border-cyan-300 hover:shadow-xs transition-all flex items-center justify-between group"
               >
                 <div>

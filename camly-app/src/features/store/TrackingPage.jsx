@@ -117,14 +117,14 @@ export default function TrackingPage() {
   }, [id, token, isDemo, retryCount, searchParams]);
 
   const currentOrder = order || DEMO_ORDER;
-  const isMesa = currentOrder.delivery_type === 'dine_in' || 
-                 currentOrder.entrega_metodo === 'mesa' || 
-                 (typeof currentOrder.direccion === 'string' && /mesa/i.test(currentOrder.direccion)) ||
-                 Boolean(currentOrder.mesa || currentOrder.table_number);
+  const isMesa = currentOrder.delivery_type === 'dine_in' ||
+    currentOrder.entrega_metodo === 'mesa' ||
+    (typeof currentOrder.direccion === 'string' && /mesa/i.test(currentOrder.direccion)) ||
+    Boolean(currentOrder.mesa || currentOrder.table_number);
   const deliveryMethod = isMesa ? 'mesa' : (currentOrder.delivery_type === 'pickup' || currentOrder.entrega_metodo === 'recogida' ? 'pickup' : 'envio');
   const rawStatus = (currentOrder.status || currentOrder.estado || '').toString();
-  const statusStr = (deliveryMethod === 'pickup' || deliveryMethod === 'mesa') && ['EN_CAMINO', 'en_camino', 'enviado'].includes(rawStatus) 
-    ? 'LISTO_PARA_RECOGER' 
+  const statusStr = (deliveryMethod === 'pickup' || deliveryMethod === 'mesa') && ['EN_CAMINO', 'en_camino', 'enviado'].includes(rawStatus)
+    ? 'LISTO_PARA_RECOGER'
     : rawStatus;
   const business = currentOrder.negocios || DEMO_ORDER.negocios;
   const items = typeof currentOrder.items === 'string' ? JSON.parse(currentOrder.items) : (currentOrder.items || currentOrder.productos || []);
@@ -252,8 +252,8 @@ export default function TrackingPage() {
     try {
       if (!isDemo && currentOrder.id && currentOrder.token) {
         await OrderService.customerCancelOrder(
-          currentOrder.id, 
-          currentOrder.token, 
+          currentOrder.id,
+          currentOrder.token,
           'Cancelado por el cliente'
         );
       }
@@ -336,10 +336,10 @@ export default function TrackingPage() {
   const isGraceWindow = statusStr === 'CONFIRMADO_GRACIA';
   const isCookingOrLater = ['EN_PREPARACION', 'preparando', 'LISTO_PARA_RECOGER', 'listo_para_recoger', 'EN_CAMINO', 'enviado', 'ENTREGADO', 'entregado'].includes(statusStr);
 
-  const isTransfer = (currentOrder.payment_method || '').includes('transfer') || 
-                     (currentOrder.payment_method || '').includes('nequi') || 
-                     (currentOrder.payment_method || '').includes('daviplata') ||
-                     currentOrder.metodo_pago === 'transferencia';
+  const isTransfer = (currentOrder.payment_method || '').includes('transfer') ||
+    (currentOrder.payment_method || '').includes('nequi') ||
+    (currentOrder.payment_method || '').includes('daviplata') ||
+    currentOrder.metodo_pago === 'transferencia';
 
   const nequiNumber = business?.nequi_numero || business?.telefono?.replace(/\D/g, '');
   const daviplataNumber = business?.daviplata_numero || business?.telefono?.replace(/\D/g, '');
@@ -352,14 +352,14 @@ export default function TrackingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-5 sm:py-8 px-4 sm:px-6">
-      <SEO 
+      <SEO
         title="Rastreo de pedido | NEGU"
         description="Consulta el estado en vivo de tu comanda y entrega a domicilio."
         canonical="https://negu.pro/tracking"
         noindex={true}
       />
       <div className="max-w-2xl mx-auto space-y-4 animate-fade-in-up">
-        
+
         {/* Barra superior de navegación */}
         <div className="flex items-center justify-between gap-3 bg-white border border-gray-200/90 rounded-2xl p-3 sm:p-4 shadow-2xs">
           <Link
@@ -369,7 +369,7 @@ export default function TrackingPage() {
             <ArrowLeft size={16} />
             <span>Volver a la tienda</span>
           </Link>
-          
+
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             {business?.logo_url ? (
               <img
@@ -483,7 +483,7 @@ export default function TrackingPage() {
 
             {/* Barra de progreso sutil */}
             <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-              <div 
+              <div
                 className="bg-blue-600 h-full transition-all duration-1000 ease-linear rounded-full"
                 style={{ width: `${(Math.min(30, graceSeconds) / 30) * 100}%` }}
               />
@@ -547,11 +547,10 @@ export default function TrackingPage() {
                 return (
                   <div key={step.id} className="flex flex-col items-center text-center">
                     <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                        isPassed
-                          ? 'bg-orange-600 text-white shadow-xs'
-                          : 'bg-gray-100 text-gray-400'
-                      }`}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isPassed
+                        ? 'bg-orange-600 text-white shadow-xs'
+                        : 'bg-gray-100 text-gray-400'
+                        }`}
                     >
                       <StepIcon size={18} className={isCurrent ? 'animate-pulse' : ''} />
                     </div>
@@ -628,11 +627,10 @@ export default function TrackingPage() {
                   <p className="text-[11px] text-gray-500">Transfiere y sube tu comprobante para verificar</p>
                 </div>
               </div>
-              <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
-                currentOrder.payment_status === 'verified'
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                  : 'bg-amber-100 text-amber-800 border border-amber-200'
-              }`}>
+              <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${currentOrder.payment_status === 'verified'
+                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                : 'bg-amber-100 text-amber-800 border border-amber-200'
+                }`}>
                 {currentOrder.payment_status === 'verified' ? 'Verificado' : 'Pendiente Verificación'}
               </span>
             </div>

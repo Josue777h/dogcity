@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
   TrendingUp, ShoppingBag, DollarSign,
   ArrowUpRight, ArrowDownRight, Package, PackagePlus, Trophy,
-  Settings, ExternalLink, Share2, Sparkles, CheckCircle2, ChevronRight
+  Settings, ExternalLink, Share2, CheckCircle2, ChevronRight
 } from 'lucide-react';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip,
