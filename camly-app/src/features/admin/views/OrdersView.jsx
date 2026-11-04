@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useOutletContext } from 'react-router-dom';
-import { 
+import {
   ChevronRight, User, MapPin, Package, Bike, Store, Utensils, Trash2, Map,
   MessageCircle, AlertCircle, CheckCircle2, Check, X, Printer, Volume2, VolumeX, Bluetooth,
-  Ban, FileText, ExternalLink, Clock
+  Ban, FileText, ExternalLink, Clock, ChefHat
 } from 'lucide-react';
-import { 
+import {
   formatMoney, getOrderSubtotal, isDeliveryPending, formatWhatsAppMessage,
   printThermalReceipt, playNewOrderSound
 } from '../../../lib/utils';
@@ -101,7 +101,7 @@ function MerchantCancelModal({ isOpen, order, onClose, onConfirmed }) {
               <p className="text-[11px] text-gray-500">Selecciona el motivo de cancelación obligatorio</p>
             </div>
           </div>
-          <button 
+          <button
             type="button"
             onClick={onClose}
             className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
@@ -117,13 +117,12 @@ function MerchantCancelModal({ isOpen, order, onClose, onConfirmed }) {
             </label>
             <div className="space-y-1.5">
               {CANCEL_REASONS.map((reason) => (
-                <label 
+                <label
                   key={reason}
-                  className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
-                    selectedReason === reason
+                  className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${selectedReason === reason
                       ? 'border-rose-500 bg-rose-50/60 text-rose-950 ring-1 ring-rose-400'
                       : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <input
                     type="radio"
@@ -183,15 +182,25 @@ function MerchantCancelModal({ isOpen, order, onClose, onConfirmed }) {
     : modalContent;
 }
 
-function OrderTimeline({ currentStatus, onStatusChange, disabled = false, deliveryMethod = 'envio', businessType }) {
+function OrderTimeline({
+  currentStatus,
+  onStatusChange,
+  disabled = false,
+  deliveryMethod = 'envio',
+  businessType,
+  hasTableConflict = false,
+  tableNumber = ''
+}) {
+  const [pendingStep, setPendingStep] = useState(null);
   const isMesa = deliveryMethod === 'mesa';
   const isPickup = !isMesa && (deliveryMethod === 'recogida' || deliveryMethod === 'pickup');
   const steps = isMesa
     ? ['cocina', 'mesa', 'finalizado']
     : isPickup
-    ? ['nuevo', 'preparando', 'listo', 'entregado']
-    : STATUS_STEPS;
+      ? ['nuevo', 'preparando', 'listo', 'entregado']
+      : STATUS_STEPS;
   const currentIdx = getStepIndex(currentStatus, deliveryMethod);
+  const isCompletedOrder = ['entregado', 'cancelado'].includes(String(currentStatus || '').toLowerCase());
 
   const stepStatus = (step) => {
     if (isMesa) {
@@ -214,36 +223,98 @@ function OrderTimeline({ currentStatus, onStatusChange, disabled = false, delive
     if (step === 'enviado') return getStatusCopy('EN_CAMINO', businessType).stepperLabel;
     return STATUS_LABELS[step] || 'Recibido';
   };
+
+  const handleSelectStep = (step, i) => {
+    if (disabled || i === currentIdx) return;
+    // Si esta orden estaba finalizada y la mesa YA tiene otra orden activa en curso, impedir reabrirla
+    if (i < currentIdx && hasTableConflict) return;
+    setPendingStep({
+      step,
+      index: i,
+      label: stepLabel(step),
+      statusValue: stepStatus(step),
+      isRevert: i < currentIdx
+    });
+  };
+
+  const handleConfirmStep = () => {
+    if (!pendingStep) return;
+    const targetStatus = pendingStep.statusValue;
+    setPendingStep(null);
+    if (onStatusChange) onStatusChange(targetStatus);
+  };
+
   return (
-    <div className="py-2.5 px-4 bg-white rounded-xl border border-gray-200 mb-3 shadow-2xs">
-      <div className="flex items-center justify-between relative">
+    <div className="py-2.5 px-3 sm:px-4 bg-white rounded-xl border border-gray-200 mb-3 shadow-2xs space-y-2">
+      <div className="flex items-center justify-between text-[11px] text-gray-500 border-b border-gray-100 pb-1.5 gap-2">
+        <span className="font-semibold text-gray-700 shrink-0">
+          Estado del pedido
+        </span>
+        {isCompletedOrder && hasTableConflict ? (
+          <span className="truncate text-right text-amber-700 font-semibold">
+            Mesa #{tableNumber || '1'} ocupada · No reabrible
+          </span>
+        ) : currentIdx < steps.length - 1 ? (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => handleSelectStep(steps[currentIdx + 1], currentIdx + 1)}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold text-[11px] transition-colors cursor-pointer shrink-0"
+          >
+            <span>Pasar a {stepLabel(steps[currentIdx + 1])}</span>
+            <span>→</span>
+          </button>
+        ) : (
+          <span className="truncate text-right text-gray-400">
+            Toca un paso para corregir
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between relative pt-0.5">
         {steps.map((step, i) => {
           const isPassed = i <= currentIdx;
           const isCurrent = i === currentIdx;
+          const isPendingTarget = pendingStep?.step === step;
+          // Solo se bloquea regresar si la mesa YA tiene otra orden activa distinta
+          const isStepBlocked = disabled || isCurrent || (i < currentIdx && hasTableConflict);
+
           return (
             <div key={step} className="flex-1 flex flex-col items-center relative group">
               {/* Barra conectora horizontal detrás de los círculos */}
               {i < steps.length - 1 && (
-                <div 
-                  className={`absolute top-3.5 left-1/2 w-full h-[2px] -z-0 transition-colors duration-200 ${
-                    i < currentIdx ? 'bg-blue-600' : 'bg-gray-200'
-                  }`} 
+                <div
+                  className={`absolute top-3.5 left-1/2 w-full h-[2px] -z-0 transition-colors duration-200 ${i < currentIdx ? 'bg-blue-600' : 'bg-gray-200'
+                    }`}
                 />
               )}
 
-              {/* Botón interactivo con el estado */}
+              {/* Botón interactivo con confirmación para evitar cambios por error */}
               <button
                 type="button"
-                disabled={disabled}
-                onClick={() => onStatusChange && onStatusChange(stepStatus(step))}
-                title={`Cambiar estado a "${stepLabel(step)}"`}
-                className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer select-none ${
-                  disabled ? 'opacity-50 cursor-wait' : isCurrent
-                    ? 'bg-blue-600 text-white ring-4 ring-blue-100 shadow-xs scale-110 font-bold' 
-                    : isPassed 
-                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                    : 'bg-white text-gray-500 border-2 border-gray-300 hover:border-blue-500 hover:text-blue-600'
-                }`}
+                disabled={isStepBlocked}
+                onClick={() => handleSelectStep(step, i)}
+                title={
+                  isCurrent
+                    ? `Estado actual: "${stepLabel(step)}"`
+                    : i < currentIdx && hasTableConflict
+                      ? `No puedes reabrir esta orden porque la Mesa #${tableNumber || '1'} ya tiene una orden nueva activa`
+                      : i < currentIdx
+                        ? `Corregir estado y regresar a "${stepLabel(step)}"`
+                        : `Cambiar estado a "${stepLabel(step)}"`
+                }
+                className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all select-none ${disabled
+                    ? 'opacity-50 cursor-wait'
+                    : isCurrent
+                      ? 'bg-blue-600 text-white ring-4 ring-blue-100 shadow-xs scale-110 font-bold cursor-default'
+                      : isPendingTarget
+                        ? 'bg-amber-500 text-white ring-4 ring-amber-100 scale-105 font-bold cursor-pointer'
+                        : isPassed
+                          ? hasTableConflict
+                            ? 'bg-gray-300 text-white cursor-not-allowed opacity-70'
+                            : 'bg-blue-600 text-white hover:bg-amber-600 cursor-pointer'
+                          : 'bg-white text-gray-600 border-2 border-gray-300 hover:border-blue-600 hover:text-blue-600 cursor-pointer'
+                  }`}
               >
                 {isPassed && !isCurrent ? (
                   <Check size={13} strokeWidth={3} />
@@ -255,15 +326,18 @@ function OrderTimeline({ currentStatus, onStatusChange, disabled = false, delive
               {/* Etiqueta clicable */}
               <button
                 type="button"
-                disabled={disabled}
-                onClick={() => onStatusChange && onStatusChange(stepStatus(step))}
-                className={`text-[11px] sm:text-xs mt-1 font-bold transition-colors cursor-pointer text-center leading-tight hover:underline ${
-                  isCurrent 
-                    ? 'text-blue-700' 
-                    : isPassed 
-                    ? 'text-gray-900' 
-                    : 'text-gray-500 hover:text-gray-800'
-                }`}
+                disabled={isStepBlocked}
+                onClick={() => handleSelectStep(step, i)}
+                className={`text-[11px] sm:text-xs mt-1 font-bold transition-colors text-center leading-tight ${isCurrent
+                    ? 'text-blue-700 cursor-default'
+                    : isPendingTarget
+                      ? 'text-amber-700 underline'
+                      : isPassed
+                        ? hasTableConflict
+                          ? 'text-gray-400 cursor-not-allowed'
+                          : 'text-gray-800 hover:text-amber-700 hover:underline cursor-pointer'
+                        : 'text-gray-500 hover:text-blue-700 hover:underline cursor-pointer'
+                  }`}
               >
                 {stepLabel(step)}
               </button>
@@ -271,6 +345,42 @@ function OrderTimeline({ currentStatus, onStatusChange, disabled = false, delive
           );
         })}
       </div>
+
+      {/* Barra de confirmación compacta de 1 línea para móvil y PC (evita cambios por toque accidental) */}
+      {pendingStep && (
+        <div
+          className={`px-2.5 py-1.5 rounded-lg border flex items-center justify-between gap-2 text-xs animate-fade-in ${pendingStep.isRevert
+              ? 'bg-amber-50 border-amber-200 text-amber-950'
+              : 'bg-blue-50/90 border-blue-200 text-blue-950'
+            }`}
+        >
+          <span className="font-semibold truncate text-[11px] sm:text-xs">
+            {pendingStep.isRevert
+              ? `¿Volver a "${pendingStep.label}"?`
+              : `¿Pasar a "${pendingStep.label}"?`}
+          </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setPendingStep(null)}
+              className="px-2 py-1 rounded-md bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 font-bold text-[11px] cursor-pointer"
+            >
+              No
+            </button>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={handleConfirmStep}
+              className={`px-2.5 py-1 rounded-md text-white font-bold text-[11px] cursor-pointer shadow-2xs ${pendingStep.isRevert
+                  ? 'bg-amber-600 hover:bg-amber-700'
+                  : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+            >
+              {pendingStep.isRevert ? 'Sí, corregir' : 'Confirmar'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -287,10 +397,10 @@ function OrderItems({ order }) {
           const qty = p.cantidad ?? p.quantity ?? 1;
           const name = p.nombre ?? p.name ?? 'Producto';
           const price = p.precio ?? p.price ?? 0;
-          const optionsText = p.opciones_texto || 
+          const optionsText = p.opciones_texto ||
             (Array.isArray(p.opciones) ? p.opciones.map(o => o.nombre).join(', ') : '') ||
             (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
-          
+
           return (
             <div key={idx} className="pt-1.5 first:pt-0">
               <div className="flex justify-between items-start text-xs sm:text-sm gap-2">
@@ -372,17 +482,17 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
     setLoading(true);
     try {
       await OrderService.setDeliveryQuote(order.id, feeNum, subtotal);
-      
+
       const customerPhone = (order.telefono || '').replace(/\D/g, '');
       const storeName = businessName || 'la tienda';
       const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://negu.pro';
       const trackingUrl = `${origin}/tracking/${order.id}${order.token ? `?token=${encodeURIComponent(order.token)}` : ''}`;
-      
+
       const whatsappText = formatWhatsAppMessage(`ACTUALIZACIÓN DEL PEDIDO #${order.id} | ${storeName}`, [
         { title: 'Envío', lines: [`Costo de domicilio: ${formatMoney(feeNum)}`, `Subtotal: ${formatMoney(subtotal)}`, `Total: ${formatMoney(newTotal)}`] },
         { title: 'Confirmación', lines: ['Revisa el detalle y confirma el pedido desde este enlace:', trackingUrl] },
       ]);
-      
+
       const waUrl = `https://wa.me/${customerPhone}?text=${encodeURIComponent(whatsappText)}`;
       if (whatsappTab) whatsappTab.location.href = waUrl;
 
@@ -470,7 +580,7 @@ export default function OrdersView(props) {
   const outletCtx = useOutletContext() || {};
   const ordersSource = props.orders ?? outletCtx.orders;
   const orders = useMemo(() => ordersSource || [], [ordersSource]);
-  const onUpdate = props.onUpdate ?? outletCtx.reloadOrders ?? (() => {});
+  const onUpdate = props.onUpdate ?? outletCtx.reloadOrders ?? (() => { });
 
   const business = useBusinessStore(s => s.business);
   const businessName = business?.nombre_visible || 'Tu negocio';
@@ -484,6 +594,7 @@ export default function OrdersView(props) {
   const [selectedOrderForDriver, setSelectedOrderForDriver] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(() => readMigratedLocalStorage('negu_order_sound', ['camly_order_sound']) !== 'false');
   const [printingBluetoothId, setPrintingBluetoothId] = useState(null);
+  const [btMenuOrderId, setBtMenuOrderId] = useState(null);
   const [updatingStatusOrderId, setUpdatingStatusOrderId] = useState(null);
   const [receiptUrls, setReceiptUrls] = useState({});
   const addToast = useToastStore(s => s.addToast);
@@ -506,17 +617,18 @@ export default function OrdersView(props) {
     return isManualQuoteType && (st === 'COTIZACION_PENDIENTE' || isDeliveryPending(o) || !o.delivery_fee);
   };
 
-  const handlePrintBluetooth = async (order) => {
+  const handlePrintBluetooth = async (order, mode = 'bill') => {
     if (!isWebBluetoothSupported()) {
-      addToast('Tu navegador actual no soporta Web Bluetooth directo. Abriendo comanda estándar para imprimir por Bluetooth del sistema...', 'info');
-      printThermalReceipt(order, business);
+      addToast('Abriendo ventana de impresión del sistema (puedes elegir tu impresora Bluetooth vinculada)...', 'info');
+      printThermalReceipt(order, business, { mode });
       return;
     }
     setPrintingBluetoothId(order.id);
-    addToast('Buscando impresora Bluetooth...', 'info');
+    setBtMenuOrderId(null);
+    addToast(`Conectando impresora Bluetooth (${mode === 'kitchen' ? 'Comanda Cocina' : 'Cuenta'})...`, 'info');
     try {
-      const printerName = await printOrderViaBluetooth(order, business);
-      addToast(`Comanda enviada con éxito a "${printerName}"`, 'success');
+      const printerName = await printOrderViaBluetooth(order, business, { mode });
+      addToast(`${mode === 'kitchen' ? 'Comanda de cocina' : 'Cuenta'} enviada con éxito a "${printerName}"`, 'success');
     } catch (err) {
       console.warn('Bluetooth print error:', err);
       if (err.name !== 'NotFoundError') {
@@ -662,22 +774,22 @@ export default function OrdersView(props) {
   };
 
   const filterOrdersByStatus = (filter) => filter === 'all'
-    ? orders 
+    ? orders
     : filter === 'nuevo'
-    ? orders.filter(isOrderNew)
-    : filter === 'cotizacion'
-    ? orders.filter(isQuotePending)
-    : filter === 'preparando'
-    ? orders.filter(o => ['preparando', 'en_preparacion'].includes((o.status || o.estado || '').toLowerCase()))
-    : filter === 'ready_pickup'
-    ? orders.filter(o => (isPickupOrder(o) || isMesaOrder(o)) && ['listo_para_recoger', 'en_camino', 'enviado'].includes((o.status || o.estado || '').toLowerCase()))
-    : filter === 'enviado'
-    ? orders.filter(o => isDeliveryOrder(o) && ['enviado', 'en_camino'].includes((o.status || o.estado || '').toLowerCase()))
-    : filter === 'entregado'
-    ? orders.filter(o => ['entregado'].includes((o.status || o.estado || '').toLowerCase()))
-    : filter === 'cancelado'
-    ? orders.filter(o => ['cancelado'].includes((o.status || o.estado || '').toLowerCase()))
-    : orders.filter(o => (o.estado || o.status) === filter);
+      ? orders.filter(isOrderNew)
+      : filter === 'cotizacion'
+        ? orders.filter(isQuotePending)
+        : filter === 'preparando'
+          ? orders.filter(o => ['preparando', 'en_preparacion'].includes((o.status || o.estado || '').toLowerCase()))
+          : filter === 'ready_pickup'
+            ? orders.filter(o => (isPickupOrder(o) || isMesaOrder(o)) && ['listo_para_recoger', 'en_camino', 'enviado'].includes((o.status || o.estado || '').toLowerCase()))
+            : filter === 'enviado'
+              ? orders.filter(o => isDeliveryOrder(o) && ['enviado', 'en_camino'].includes((o.status || o.estado || '').toLowerCase()))
+              : filter === 'entregado'
+                ? orders.filter(o => ['entregado'].includes((o.status || o.estado || '').toLowerCase()))
+                : filter === 'cancelado'
+                  ? orders.filter(o => ['cancelado'].includes((o.status || o.estado || '').toLowerCase()))
+                  : orders.filter(o => (o.estado || o.status) === filter);
 
   const statusFilteredOrders = filterOrdersByStatus(activeFilter);
 
@@ -697,10 +809,10 @@ export default function OrdersView(props) {
   const filteredOrders = deliveryFilter === 'all'
     ? statusFilteredOrders
     : statusFilteredOrders.filter(order => {
-        if (deliveryFilter === 'mesa') return isMesaOrder(order);
-        if (deliveryFilter === 'pickup') return isPickupOrder(order);
-        return isDeliveryOrder(order);
-      });
+      if (deliveryFilter === 'mesa') return isMesaOrder(order);
+      if (deliveryFilter === 'pickup') return isPickupOrder(order);
+      return isDeliveryOrder(order);
+    });
   const preparingLabel = getStatusCopy('EN_PREPARACION', business?.business_type).stepperLabel.toLowerCase();
 
   const handleNotifyCustomerDispatch = (order) => {
@@ -717,9 +829,9 @@ export default function OrdersView(props) {
     const pickup = isPickupOrder(order);
     const statusMsg = isMesa
       ? `Tu pedido está listo y te lo estamos llevando a la Mesa ${tableNum ? '#' + tableNum : ''}.`
-      : pickup 
-      ? 'Tu pedido está listo para recoger en el local.' 
-      : 'El pedido salió hacia tu dirección.';
+      : pickup
+        ? 'Tu pedido está listo para recoger en el local.'
+        : 'El pedido salió hacia tu dirección.';
 
     const message = formatWhatsAppMessage(`ACTUALIZACIÓN DEL PEDIDO #${order.id} | ${storeName}`, [
       { title: 'Estado', lines: [statusMsg] },
@@ -731,19 +843,74 @@ export default function OrdersView(props) {
   };
 
   const handleStatusChange = async (orderId, newStatus) => {
+    const targetOrder = orders.find(o => o.id === orderId);
+    if (!targetOrder) return;
+
+    const currentRawStatus = String(targetOrder.estado || targetOrder.status || '').toLowerCase();
+    if (currentRawStatus === 'cancelado') {
+      addToast('Esta orden fue cancelada y no admite cambios de estado', 'warning');
+      return;
+    }
+
+    const deliveryMethod = isMesaOrder(targetOrder) ? 'mesa' : isPickupOrder(targetOrder) ? 'pickup' : 'envio';
+    const currentStepIdx = getStepIndex(currentRawStatus, deliveryMethod);
+    const nextStepIdx = getStepIndex(newStatus, deliveryMethod);
+    const isRevert = nextStepIdx < currentStepIdx;
+
+    // Si es un pedido de mesa y se intenta regresar/reabrir (por corrección de error), verificar que la mesa NO tenga ya otra orden activa en curso
+    if (isRevert && isMesaOrder(targetOrder)) {
+      const tbl = getTableNumber(targetOrder);
+      if (tbl) {
+        const conflictOrder = orders.find(o =>
+          o.id !== orderId &&
+          isMesaOrder(o) &&
+          String(getTableNumber(o)) === String(tbl) &&
+          !['entregado', 'cancelado'].includes(String(o.estado || o.status || '').toLowerCase())
+        );
+        if (conflictOrder) {
+          addToast(
+            `No puedes reabrir esta orden porque la Mesa #${tbl} ya tiene otra orden activa en curso (#${String(conflictOrder.id).slice(-4).toUpperCase()})`,
+            'error'
+          );
+          return;
+        }
+      }
+    }
+
     setUpdatingStatusOrderId(orderId);
     try {
       await updateOrderStatus(orderId, newStatus);
-      
-      const targetOrder = orders.find(o => o.id === orderId);
-      if (targetOrder && isMesaOrder(targetOrder)) {
+
+      if (isMesaOrder(targetOrder)) {
         const tbl = getTableNumber(targetOrder);
         if (tbl) {
+          // Si se está avanzando/finalizando y había duplicados activos heredados en la misma mesa, sincronizarlos
+          if (!isRevert) {
+            const siblingTableOrders = orders.filter(o =>
+              o.id !== orderId &&
+              isMesaOrder(o) &&
+              String(getTableNumber(o)) === String(tbl) &&
+              !['entregado', 'cancelado'].includes(String(o.estado || o.status || '').toLowerCase())
+            );
+            if (siblingTableOrders.length > 0) {
+              await Promise.all(
+                siblingTableOrders.map(sib => updateOrderStatus(sib.id, newStatus))
+              );
+            }
+          }
+
           try {
             const bc = new BroadcastChannel('negu_orders_channel');
+            bc.postMessage({
+              type: 'TABLE_ORDER_STATUS_CHANGED',
+              mesa: String(tbl),
+              orderId,
+              newStatus,
+              businessId: business?.id
+            });
             bc.postMessage({ type: 'RESOLVE_WAITER_CALL', mesa: String(tbl), businessId: business?.id });
             setTimeout(() => bc.close(), 500);
-          } catch (_) {}
+          } catch (_) { }
           try {
             const stored = localStorage.getItem('negu_active_table_calls');
             if (stored) {
@@ -752,12 +919,12 @@ export default function OrdersView(props) {
               localStorage.setItem('negu_active_table_calls', JSON.stringify(parsed));
             }
             localStorage.removeItem('negu_table_call_event');
-          } catch (_) {}
+          } catch (_) { }
         }
       }
 
       onUpdate();
-      addToast('Estado del pedido actualizado', 'success');
+      addToast(isRevert ? 'Estado corregido correctamente' : 'Estado del pedido actualizado', 'success');
     } catch (err) {
       console.error(err);
       addToast(err?.message || 'No se pudo actualizar el estado del pedido', 'error');
@@ -850,11 +1017,10 @@ export default function OrdersView(props) {
               aria-pressed={deliveryFilter === 'pickup'}
               aria-label="Filtrar por retiro en local"
               onClick={() => toggleDeliveryFilter('pickup')}
-              className={`relative flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition-all ${
-                deliveryFilter === 'pickup'
+              className={`relative flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition-all ${deliveryFilter === 'pickup'
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'bg-white/60 text-slate-600 hover:bg-white hover:text-emerald-700'
-              }`}
+                }`}
               title={`Retiro en local (${getDeliveryCount('pickup')})`}
             >
               <Store size={15} className="shrink-0" />
@@ -873,11 +1039,10 @@ export default function OrdersView(props) {
               aria-pressed={deliveryFilter === 'mesa'}
               aria-label="Filtrar por servicio en mesa"
               onClick={() => toggleDeliveryFilter('mesa')}
-              className={`relative flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition-all ${
-                deliveryFilter === 'mesa'
+              className={`relative flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition-all ${deliveryFilter === 'mesa'
                   ? 'bg-purple-600 text-white shadow-xs'
                   : 'bg-white/60 text-slate-600 hover:bg-white hover:text-purple-700'
-              }`}
+                }`}
               title={`Servicio en mesa (${getDeliveryCount('mesa')})`}
             >
               <Utensils size={15} className="shrink-0" />
@@ -896,11 +1061,10 @@ export default function OrdersView(props) {
               aria-pressed={deliveryFilter === 'envio'}
               aria-label="Filtrar por domicilios"
               onClick={() => toggleDeliveryFilter('envio')}
-              className={`relative flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition-all ${
-                deliveryFilter === 'envio'
+              className={`relative flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition-all ${deliveryFilter === 'envio'
                   ? 'bg-blue-600 text-white shadow-xs'
                   : 'bg-white/60 text-slate-600 hover:bg-white hover:text-blue-700'
-              }`}
+                }`}
               title={`Domicilios (${getDeliveryCount('envio')})`}
             >
               <Bike size={15} className="shrink-0" />
@@ -928,11 +1092,10 @@ export default function OrdersView(props) {
           }}
           title={soundEnabled ? 'Silenciar timbre de pedidos' : 'Activar timbre de pedidos'}
           aria-label={soundEnabled ? 'Timbre activo' : 'Timbre mudo'}
-          className={`h-10 px-2.5 sm:px-3 rounded-lg text-xs font-semibold border transition-colors flex items-center justify-center gap-1.5 shrink-0 ${
-            soundEnabled 
-              ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100' 
+          className={`h-10 px-2.5 sm:px-3 rounded-lg text-xs font-semibold border transition-colors flex items-center justify-center gap-1.5 shrink-0 ${soundEnabled
+              ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'
               : 'bg-white text-gray-400 border-gray-200 hover:text-gray-600'
-          }`}
+            }`}
         >
           {soundEnabled ? (
             <>
@@ -958,26 +1121,29 @@ export default function OrdersView(props) {
           const tableNum = getTableNumber(order);
           const normalizedStatus = String(status || '').toUpperCase();
           const pickupReady = ['LISTO_PARA_RECOGER', 'EN_CAMINO', 'ENVIADO'].includes(normalizedStatus);
-          const canNotifyCustomer = (isPickup || isMesa) ? pickupReady : ['EN_CAMINO', 'ENVIADO'].includes(normalizedStatus);
+          const cleanCustomerPhone = (order.telefono || '').replace(/\D/g, '');
+          const hasValidPhone = cleanCustomerPhone.length >= 7;
+          // Nunca mostrar "Avisar a la mesa" por WhatsApp: en salón el mesero entrega en persona
+          const canNotifyCustomer = hasValidPhone && !isMesa && (isPickup ? pickupReady : ['EN_CAMINO', 'ENVIADO'].includes(normalizedStatus));
           const deliveryPending = isDeliveryPending(order);
           const isExpanded = expandedOrderId === order.id;
 
           const borderAccent = deliveryPending
             ? 'border-l-4 border-l-amber-500'
             : status === 'nuevo'
-            ? 'border-l-4 border-l-orange-500'
-            : status === 'preparando'
-            ? 'border-l-4 border-l-amber-500'
-            : status === 'enviado'
-            ? 'border-l-4 border-l-blue-500'
-            : 'border-l-4 border-l-emerald-500';
+              ? 'border-l-4 border-l-orange-500'
+              : status === 'preparando'
+                ? 'border-l-4 border-l-amber-500'
+                : status === 'enviado'
+                  ? 'border-l-4 border-l-blue-500'
+                  : 'border-l-4 border-l-emerald-500';
 
           return (
-            <div 
-              key={order.id} 
+            <div
+              key={order.id}
               className={`card transition-colors duration-150 overflow-hidden ${borderAccent} border-gray-200/80 shadow-xs`}
             >
-              <div 
+              <div
                 role="button"
                 tabIndex={0}
                 aria-expanded={isExpanded}
@@ -1022,7 +1188,7 @@ export default function OrdersView(props) {
                   <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-wrap justify-end">
                     {getStatusBadge(status, order)}
                     {status !== 'CANCELADO' && status !== 'cancelado' && status !== 'ENTREGADO' && status !== 'entregado' && (
-                      <button 
+                      <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1035,32 +1201,31 @@ export default function OrdersView(props) {
                         <Ban size={15} />
                       </button>
                     )}
-                    <button 
+                    <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        printThermalReceipt(order, business);
+                        printThermalReceipt(order, business, { mode: 'kitchen' });
                       }}
                       className="w-8 h-8 rounded-lg border border-transparent hover:border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 flex items-center justify-center transition-colors shrink-0"
-                      title="Imprimir comanda térmica (58/80mm)"
-                      aria-label="Imprimir comanda térmica"
+                      title="Imprimir comanda de cocina (sin precios)"
+                      aria-label="Imprimir comanda de cocina"
+                    >
+                      <ChefHat size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        printThermalReceipt(order, business, { mode: 'bill' });
+                      }}
+                      className="w-8 h-8 rounded-lg border border-transparent hover:border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 flex items-center justify-center transition-colors shrink-0"
+                      title="Imprimir cuenta / recibo de cobro (con precios)"
+                      aria-label="Imprimir cuenta de cobro"
                     >
                       <Printer size={15} />
                     </button>
-                    <button 
-                      type="button"
-                      disabled={printingBluetoothId === order.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePrintBluetooth(order);
-                      }}
-                      className="w-8 h-8 rounded-lg border border-blue-100 hover:border-blue-300 bg-blue-50/70 hover:bg-blue-100 text-blue-600 hover:text-blue-800 flex items-center justify-center transition-colors shrink-0"
-                      title="Imprimir vía Bluetooth directo (POS-58/80)"
-                      aria-label="Imprimir vía Bluetooth"
-                    >
-                      {printingBluetoothId === order.id ? <LoadingSpinner size={15} className="text-blue-600" /> : <Bluetooth size={15} />}
-                    </button>
-                    <button 
+                    <button
                       type="button"
                       onClick={(e) => handleDeleteClick(e, order)}
                       className="w-8.5 h-8.5 rounded-lg border border-transparent hover:border-rose-200 bg-rose-50/50 hover:bg-rose-100 text-rose-500 hover:text-rose-700 flex items-center justify-center transition-colors shrink-0"
@@ -1128,22 +1293,34 @@ export default function OrdersView(props) {
 
                   {/* Stepper sólo si NO está cancelado */}
                   {status !== 'CANCELADO' && status !== 'cancelado' && (
-                    <OrderTimeline 
-                      currentStatus={status} 
+                    <OrderTimeline
+                      currentStatus={status}
                       disabled={updatingStatusOrderId === order.id}
                       deliveryMethod={isMesa ? 'mesa' : isPickup ? 'pickup' : 'envio'}
                       businessType={business?.business_type}
-                      onStatusChange={(newSt) => handleStatusChange(order.id, newSt)} 
+                      tableNumber={tableNum}
+                      hasTableConflict={
+                        isMesa &&
+                        Boolean(tableNum) &&
+                        orders.some(
+                          o =>
+                            o.id !== order.id &&
+                            isMesaOrder(o) &&
+                            String(getTableNumber(o)) === String(tableNum) &&
+                            !['entregado', 'cancelado'].includes(String(o.estado || o.status || '').toLowerCase())
+                        )
+                      }
+                      onStatusChange={(newSt) => handleStatusChange(order.id, newSt)}
                     />
                   )}
 
                   {/* Panel de fijar cotización para el comercio */}
                   {(deliveryPending || order.status === 'COTIZACION_PENDIENTE' || isQuotePending(order)) && status !== 'CANCELADO' && status !== 'cancelado' && (
                     <div className="mb-3">
-                      <DeliveryConfirmPanel 
-                        order={order} 
-                        businessName={businessName} 
-                        onConfirmed={onUpdate} 
+                      <DeliveryConfirmPanel
+                        order={order}
+                        businessName={businessName}
+                        onConfirmed={onUpdate}
                       />
                     </div>
                   )}
@@ -1174,46 +1351,51 @@ export default function OrdersView(props) {
                         {/* Cliente y Teléfono / WhatsApp */}
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex min-w-0 flex-1 items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-xs shrink-0">
-                              <User size={15} />
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${isMesa ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                              }`}>
+                              {isMesa ? <Utensils size={14} /> : <User size={15} />}
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="line-clamp-2 text-xs sm:text-sm font-bold text-gray-950 leading-tight break-words">{order.nombre}</p>
-                              <a href={`tel:${order.telefono}`} className="text-[11px] sm:text-xs font-bold text-blue-700 hover:underline leading-tight block mt-0.5 whitespace-nowrap">
-                                {order.telefono}
-                              </a>
+                              {hasValidPhone ? (
+                                <a href={`tel:${cleanCustomerPhone}`} className="text-[11px] sm:text-xs font-bold text-blue-700 hover:underline leading-tight block mt-0.5 whitespace-nowrap">
+                                  {order.telefono}
+                                </a>
+                              ) : (
+                                <span className="text-[11px] text-gray-500 font-medium block mt-0.5">
+                                  {isMesa ? 'Atención directa en salón (Mesero)' : 'Sin teléfono registrado'}
+                                </span>
+                              )}
                             </div>
                           </div>
 
-                          <div className="flex shrink-0 items-center gap-1.5">
-                            {canNotifyCustomer && (
-                              <button 
-                                type="button"
-                                onClick={() => handleNotifyCustomerDispatch(order)}
-                                className={`inline-flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 sm:px-2.5 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0 ${
-                                  isMesa
-                                    ? 'bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200'
-                                    : 'bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200'
-                                }`}
-                                title={isMesa ? 'Avisar al cliente que su orden ya va a su mesa' : isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
-                                aria-label={isMesa ? 'Avisar al cliente que su orden va a su mesa' : isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
+                          {hasValidPhone && (
+                            <div className="flex shrink-0 items-center gap-1.5">
+                              {canNotifyCustomer && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleNotifyCustomerDispatch(order)}
+                                  className="inline-flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 sm:px-2.5 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200"
+                                  title={isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
+                                  aria-label={isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
+                                >
+                                  {isPickup ? <Store size={13} /> : <Bike size={13} />}
+                                  <span className="hidden sm:inline">{isPickup ? 'Avisar recogida' : 'Avisar envío'}</span>
+                                </button>
+                              )}
+                              <a
+                                href={`https://wa.me/${cleanCustomerPhone}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors shrink-0"
+                                title="Abrir chat en WhatsApp"
+                                aria-label={`Abrir WhatsApp para ${order.nombre || 'el cliente'}`}
                               >
-                                {isMesa ? <Utensils size={13} /> : isPickup ? <Store size={13} /> : <Bike size={13} />}
-                                <span className="hidden sm:inline">{isMesa ? 'Avisar a la mesa' : isPickup ? 'Avisar recogida' : 'Avisar envío'}</span>
-                              </button>
-                            )}
-                            <a 
-                              href={`https://wa.me/${order.telefono?.replace(/\D/g, '')}`} 
-                              target="_blank" 
-                              rel="noreferrer" 
-                              className="inline-flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors shrink-0"
-                              title="Abrir chat en WhatsApp"
-                              aria-label={`Abrir WhatsApp para ${order.nombre || 'el cliente'}`}
-                            >
-                              <WhatsAppIcon size={17} />
-                              <span className="hidden sm:inline">WhatsApp</span>
-                            </a>
-                          </div>
+                                <WhatsAppIcon size={17} />
+                                <span className="hidden sm:inline">WhatsApp</span>
+                              </a>
+                            </div>
+                          )}
                         </div>
 
                         {/* Dirección y Ubicación */}
@@ -1265,7 +1447,7 @@ export default function OrdersView(props) {
                         </div>
 
                         <div className="flex gap-2 items-center">
-                          <button 
+                          <button
                             type="button"
                             disabled={loadingDriver === order.id}
                             onClick={() => setSelectedOrderForDriver(order)}
@@ -1278,8 +1460,8 @@ export default function OrdersView(props) {
                           </button>
 
                           {order.domiciliario_id && (
-                            <button 
-                              onClick={() => handleDispatch(order)} 
+                            <button
+                              onClick={() => handleDispatch(order)}
                               className="h-8.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors shrink-0"
                             >
                               Despachar
@@ -1301,40 +1483,77 @@ export default function OrdersView(props) {
                         <OrderItems order={order} />
                       </div>
 
-                      {/* Botones de comanda, impresión y cancelación */}
-                      <div className="mt-3 pt-2.5 border-t border-gray-200">
-                        <div className="grid grid-cols-2 gap-2">
+                      {/* Botones de comanda de cocina, cuenta de cobro, Bluetooth portátil y cancelación */}
+                      <div className="mt-3 pt-2.5 border-t border-gray-200 space-y-2">
+                        <div className="grid grid-cols-[1fr_1fr_auto] gap-1.5">
                           <button
                             type="button"
-                            onClick={() => printThermalReceipt(order, business)}
-                            className="h-8 rounded-lg border border-gray-300 hover:border-gray-900 bg-white text-gray-800 hover:text-black text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                            title="Imprimir comprobante térmico del pedido"
+                            onClick={() => printThermalReceipt(order, business, { mode: 'kitchen' })}
+                            className="h-8.5 px-2.5 rounded-lg border border-gray-300 hover:border-gray-900 bg-white text-gray-800 hover:text-black text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            title="Imprimir comanda de cocina (solo platos y notas, sin precios)"
+                          >
+                            <ChefHat size={14} className="shrink-0" />
+                            <span className="truncate">Comanda Cocina</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => printThermalReceipt(order, business, { mode: 'bill' })}
+                            className="h-8.5 px-2.5 rounded-lg border border-gray-300 hover:border-gray-900 bg-white text-gray-800 hover:text-black text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            title="Imprimir cuenta / recibo para el cliente (con precios y total)"
                           >
                             <Printer size={14} className="shrink-0" />
-                            <span className="truncate">Imprimir pedido</span>
+                            <span className="truncate">Cuenta / Cobro</span>
                           </button>
 
                           <button
                             type="button"
                             disabled={printingBluetoothId === order.id}
-                            onClick={() => handlePrintBluetooth(order)}
-                            className="h-8 rounded-lg border border-blue-200 hover:border-blue-400 bg-blue-50/70 hover:bg-blue-100 text-blue-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                            title="Imprimir directamente a impresora térmica Bluetooth (POS-58/80)"
+                            onClick={() => setBtMenuOrderId(btMenuOrderId === order.id ? null : order.id)}
+                            className={`h-8.5 w-8.5 rounded-lg border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${btMenuOrderId === order.id
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'border-blue-200 hover:border-blue-400 bg-blue-50/70 hover:bg-blue-100 text-blue-800'
+                              }`}
+                            title="Impresión portátil Bluetooth para celular o tablet (POS-58/80)"
+                            aria-label="Opciones de impresión Bluetooth"
                           >
                             {printingBluetoothId === order.id ? <LoadingSpinner size={14} /> : <Bluetooth size={14} className="shrink-0" />}
-                            <span className="truncate">POS Bluetooth</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setOrderToCancel(order)}
-                            className="h-8 rounded-lg border border-rose-200 hover:border-rose-400 bg-rose-50/80 hover:bg-rose-100 text-rose-700 text-xs font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer col-span-2 mt-1"
-                            title="Cancelar este pedido y seleccionar motivo"
-                          >
-                            <Ban size={14} className="shrink-0" />
-                            <span>Cancelar Pedido</span>
                           </button>
                         </div>
+
+                        {btMenuOrderId === order.id && (
+                          <div className="p-2 rounded-lg bg-blue-50/90 border border-blue-200 flex items-center justify-between gap-2 text-xs">
+                            <span className="text-[11px] font-bold text-blue-950 pl-1">
+                              Impresora Bluetooth (Celular/POS):
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handlePrintBluetooth(order, 'kitchen')}
+                                className="px-2.5 py-1 rounded-md bg-white hover:bg-blue-100 text-blue-900 border border-blue-200 text-[11px] font-bold cursor-pointer"
+                              >
+                                BT Cocina
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handlePrintBluetooth(order, 'bill')}
+                                className="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold cursor-pointer"
+                              >
+                                BT Cuenta
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => setOrderToCancel(order)}
+                          className="w-full h-8 rounded-lg border border-rose-200 hover:border-rose-400 bg-rose-50/80 hover:bg-rose-100 text-rose-700 text-xs font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          title="Cancelar este pedido y seleccionar motivo"
+                        >
+                          <Ban size={14} className="shrink-0" />
+                          <span>Cancelar Pedido</span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1353,7 +1572,7 @@ export default function OrdersView(props) {
         )}
       </div>
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={!!orderToDelete}
         title="Eliminar Pedido"
         message={`¿Estás seguro de que deseas eliminar permanentemente el pedido de "${orderToDelete?.nombre}"? Esta acción no se puede deshacer.`}
@@ -1390,27 +1609,27 @@ function DriverSelectModal({ isOpen, onClose, drivers, currentDriverId, onSelect
 
   const modalContent = (
     <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
-      <div 
+      <div
         className="fixed inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
       <div className="relative bg-white w-full max-w-sm rounded-xl overflow-hidden shadow-xl animate-fade-in border border-border">
-        
+
         <div className="p-5 border-b border-border flex items-center justify-between">
-           <div>
-              <h2 className="text-base font-semibold text-gray-900">
-                Asignar Repartidor
-              </h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Selecciona un domiciliario para el pedido
-              </p>
-           </div>
-           <button 
-             onClick={onClose}
-             className="btn-ghost p-1.5 text-gray-400 hover:text-gray-800"
-           >
-             <X size={16} />
-           </button>
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">
+              Asignar Repartidor
+            </h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Selecciona un domiciliario para el pedido
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="btn-ghost p-1.5 text-gray-400 hover:text-gray-800"
+          >
+            <X size={16} />
+          </button>
         </div>
 
         {/* Drivers list */}
@@ -1418,8 +1637,8 @@ function DriverSelectModal({ isOpen, onClose, drivers, currentDriverId, onSelect
           <button
             onClick={() => onSelect(null)}
             className={`w-full flex items-center justify-between p-3 rounded-lg border text-left text-xs font-medium transition-colors
-              ${!currentDriverId 
-                ? 'border-orange-500 bg-orange-50 text-orange-900' 
+              ${!currentDriverId
+                ? 'border-orange-500 bg-orange-50 text-orange-900'
                 : 'border-border bg-white text-gray-700 hover:bg-gray-50'}`}
           >
             <div className="flex items-center gap-2.5">
@@ -1435,8 +1654,8 @@ function DriverSelectModal({ isOpen, onClose, drivers, currentDriverId, onSelect
                 key={d.id}
                 onClick={() => onSelect(d.id)}
                 className={`w-full flex items-center justify-between p-3 rounded-lg border text-left text-xs font-medium transition-colors
-                  ${isAssigned 
-                    ? 'border-orange-500 bg-orange-50 text-orange-900' 
+                  ${isAssigned
+                    ? 'border-orange-500 bg-orange-50 text-orange-900'
                     : 'border-border bg-white text-gray-800 hover:bg-gray-50'}`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">

@@ -356,9 +356,16 @@ export function checkBusinessSchedule(business) {
   return { isOpen: false, message: `Cerrado - Horario hoy: ${today.abre || '09:00'} a ${today.cierra || '22:00'}` };
 }
 
-/** Imprimir comanda de cocina o ticket termico (58mm / 80mm ESC/POS) */
-export function printThermalReceipt(order, business) {
+/**
+ * Imprimir ticket térmico (58mm / 80mm):
+ * - mode = 'kitchen': Comanda exclusiva para cocina (solo platos, cantidades, opciones y notas; sin precios ni totales)
+ * - mode = 'bill': Cuenta / Recibo de cobro para el cliente (platos + precios + subtotal + total)
+ */
+export function printThermalReceipt(order, business, options = {}) {
   if (!order) return;
+
+  const mode = options.mode === 'kitchen' ? 'kitchen' : 'bill';
+  const isAddition = Boolean(options.isAddition);
 
   const dateObj = order.created_at ? new Date(order.created_at) : new Date();
   const dateStr = dateObj.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -367,53 +374,85 @@ export function printThermalReceipt(order, business) {
   const businessName = business?.nombre_visible || business?.nombre || 'Mi Negocio';
   const businessPhone = business?.telefono || '';
 
-  const items = order.items || order.productos || [];
-  const subtotal = getOrderSubtotal(order);
-  const domCost = Number(order.domicilio_costo) || 0;
-  const total = Number(order.total) || (subtotal + domCost);
-  const isMesa = order.delivery_type === 'dine_in' || order.entrega_metodo === 'mesa' || (typeof order.direccion === 'string' && /mesa/i.test(order.direccion));
-  const tableNum = (order.direccion || '').match(/mesa\s*#?\s*([a-zA-Z0-9_-]+)/i)?.[1] || '';
-  const isEnvio = !isMesa && order.entrega_metodo === 'envio';
+  const rawItems = (options.itemsOverride && options.itemsOverride.length > 0)
+    ? options.itemsOverride
+    : (order.items || order.productos || []);
+  const items = Array.isArray(rawItems) ? rawItems : [];
 
-  const itemsHtml = items.map(p => {
+  const subtotal = getOrderSubtotal(order);
+  const domCost = Number(order.domicilio_costo || order.delivery_fee || 0);
+  const total = Number(order.total_amount || order.total) || (subtotal + domCost);
+  const isMesa = order.delivery_type === 'dine_in' || order.entrega_metodo === 'mesa' || Boolean(order.mesa || order.table_number) || (typeof order.direccion === 'string' && /mesa/i.test(order.direccion));
+  const tableNum = order.mesa || order.table_number || (order.direccion || '').match(/mesa\s*#?\s*([a-zA-Z0-9_-]+)/i)?.[1] || '1';
+  const isEnvio = !isMesa && (order.entrega_metodo === 'envio' || order.delivery_type === 'delivery');
+
+  const itemsKitchenHtml = items.map(p => {
+    const qty = p.cantidad ?? p.quantity ?? 1;
+    const name = p.nombre ?? p.name ?? 'Producto';
+    const optText = p.opciones_texto || 
+      (Array.isArray(p.opciones) ? p.opciones.map(o => o.nombre || o.label || o.name).join(', ') : '') ||
+      (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
+    const nota = (p.nota || '').trim();
+
+    return `
+      <div style="margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed #999;">
+        <div style="font-weight: 900; font-size: 15px; line-height: 1.25;">
+          ${qty}x ${name}
+        </div>
+        ${optText ? `<div style="font-size: 12px; margin-left: 8px; color: #000; font-weight: 700; margin-top: 3px;">+ ${optText}</div>` : ''}
+        ${nota ? `<div style="font-size: 12px; margin-left: 8px; font-weight: 900; background: #e5e7eb; padding: 3px 6px; border-left: 3px solid #000; margin-top: 4px;">NOTA: ${nota.toUpperCase()}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  const itemsBillHtml = items.map(p => {
     const qty = p.cantidad ?? p.quantity ?? 1;
     const name = p.nombre ?? p.name ?? 'Producto';
     const price = p.precio ?? p.price ?? 0;
     const itemTotal = price * qty;
     const optText = p.opciones_texto || 
-      (Array.isArray(p.opciones) ? p.opciones.map(o => o.nombre).join(', ') : '') ||
+      (Array.isArray(p.opciones) ? p.opciones.map(o => o.nombre || o.label || o.name).join(', ') : '') ||
       (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
     const nota = (p.nota || '').trim();
 
     return `
       <div style="margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed #bbb;">
-        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px; font-weight: 700; font-size: 12px;">
           <span>${qty}x ${name}</span>
-          <span>$${itemTotal.toLocaleString('es-CO')}</span>
+          <span style="white-space: nowrap;">$${itemTotal.toLocaleString('es-CO')}</span>
         </div>
-        ${optText ? `<div style="font-size: 11px; margin-left: 6px; color: #000; font-weight: bold; margin-top: 2px;">▸ ${optText}</div>` : ''}
-        ${nota ? `<div style="font-size: 11px; margin-left: 6px; font-weight: 900; background: #e5e7eb; padding: 2px 4px; border-left: 3px solid #000; margin-top: 3px;">⚠️ NOTA COCINA: ${nota.toUpperCase()}</div>` : ''}
+        ${optText ? `<div style="font-size: 11px; margin-left: 6px; color: #222; margin-top: 2px;">+ ${optText}</div>` : ''}
+        ${nota ? `<div style="font-size: 10px; margin-left: 6px; color: #333; margin-top: 2px;">Nota: ${nota}</div>` : ''}
       </div>
     `;
   }).join('');
 
-  const printWindow = window.open('', '_blank', 'width=380,height=600');
+  const printWindow = window.open('', '_blank', 'width=400,height=640');
   if (!printWindow) {
-    alert('Por favor habilita las ventanas emergentes en tu navegador para imprimir comandas.');
+    alert('Por favor habilita las ventanas emergentes en tu navegador para imprimir.');
     return;
   }
+
+  const locationLabel = isMesa
+    ? `MESA #${tableNum}`
+    : isEnvio
+      ? 'SERVICIO A DOMICILIO'
+      : 'PARA RECOGER EN LOCAL';
+
+  const paymentLabel = isMesa && (order.pago_metodo === 'mesa' || order.payment_method === 'pending_table')
+    ? 'CUENTA DE MESA'
+    : order.pago_metodo === 'transferencia'
+      ? 'TRANSFERENCIA'
+      : 'EFECTIVO';
 
   const receiptHtml = `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
-        <title>Ticket #${shortId} - ${businessName}</title>
+        <title>${mode === 'kitchen' ? 'Comanda Cocina' : 'Cuenta'} #${shortId} - ${businessName}</title>
         <style>
-          @page {
-            margin: 0;
-            size: auto;
-          }
+          @page { margin: 0; size: auto; }
           body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Courier New", monospace;
             width: 76mm;
@@ -423,32 +462,49 @@ export function printThermalReceipt(order, business) {
             color: #000;
             background: #fff;
             font-size: 12px;
-            line-height: 1.3;
+            line-height: 1.35;
           }
           .text-center { text-align: center; }
           .bold { font-weight: bold; }
           .divider { border-top: 1px dashed #000; margin: 8px 0; }
-          .double-divider { border-top: 2px solid #000; margin: 10px 0; }
-          .row { display: flex; justify-content: space-between; margin-bottom: 2px; }
-          .badge {
-            display: inline-block;
-            padding: 2px 6px;
-            font-size: 11px;
-            font-weight: bold;
-            border: 1px solid #000;
-            border-radius: 4px;
-            margin-top: 4px;
-          }
-          .badge-table {
+          .double-divider { border-top: 2px solid #000; margin: 8px 0; }
+          .row { display: flex; justify-content: space-between; margin-bottom: 2px; gap: 6px; }
+          .badge-mode {
             display: inline-block;
             padding: 4px 10px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 900;
             border: 2px solid #000;
-            border-radius: 6px;
-            margin-top: 5px;
+            border-radius: 4px;
+            margin-top: 4px;
             background: #000;
             color: #fff;
+            letter-spacing: 0.03em;
+          }
+          .toolbar {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            padding: 6px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+          }
+          .toolbar button {
+            flex: 1;
+            padding: 6px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #0f172a;
+            cursor: pointer;
+          }
+          .toolbar button.active {
+            background: #0f172a;
+            color: #fff;
+            border-color: #0f172a;
           }
           @media print {
             body { padding: 4px; width: 100%; }
@@ -457,85 +513,134 @@ export function printThermalReceipt(order, business) {
         </style>
       </head>
       <body>
-        <div class="text-center">
-          <div style="font-size: 16px; font-weight: 900; text-transform: uppercase;">${businessName}</div>
-          ${businessPhone ? `<div style="font-size: 11px;">Tel: ${businessPhone}</div>` : ''}
-          ${isMesa ? `<div class="badge-table">🍽️ SERVICIO EN MESA #${tableNum || '1'}</div>` : `<div class="badge">${isEnvio ? '🛵 DOMICILIO' : '🏪 RETIRO EN LOCAL'}</div>`}
+        <div class="no-print toolbar">
+          <button id="btn-kitchen" class="${mode === 'kitchen' ? 'active' : ''}" onclick="setMode('kitchen')">Comanda Cocina</button>
+          <button id="btn-bill" class="${mode === 'bill' ? 'active' : ''}" onclick="setMode('bill')">Cuenta / Cobro</button>
         </div>
 
-        <div class="divider"></div>
+        <!-- VISTA 1: COMANDA DE COCINA (SOLO PLATOS Y NOTAS, SIN PRECIOS) -->
+        <div id="view-kitchen" style="display: ${mode === 'kitchen' ? 'block' : 'none'};">
+          <div class="text-center">
+            <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
+              ${isAddition ? 'ADICIÓN DE COCINA' : 'COMANDA DE COCINA'}
+            </div>
+            <div class="badge-mode">${locationLabel}</div>
+          </div>
 
-        <div class="row">
-          <span class="bold">ORDEN #${shortId}</span>
-          <span>${dateStr} ${timeStr}</span>
-        </div>
-        <div class="row">
-          <span>Cliente:</span>
-          <span class="bold">${order.nombre || 'Cliente'}</span>
-        </div>
-        <div class="row">
-          <span>Teléfono:</span>
-          <span>${order.telefono || 'Sin teléfono'}</span>
-        </div>
-        ${isMesa ? `
-        <div class="row" style="margin-top: 3px; font-size: 13px; font-weight: 900;">
-          <span>UBICACIÓN:</span>
-          <span>🍽️ MESA #${tableNum || '1'}</span>
-        </div>` : isEnvio ? `
-        <div style="margin-top: 4px;">
-          <span class="bold">Dirección:</span>
-          <div>${order.direccion || 'Sin dirección'}</div>
-        </div>` : ''}
+          <div class="double-divider"></div>
 
-        <div class="divider"></div>
-        <div class="bold" style="font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">PRODUCTOS / COMANDA:</div>
+          <div class="row" style="font-size: 13px; font-weight: 900;">
+            <span>ORDEN #${shortId}</span>
+            <span>HORA: ${timeStr}</span>
+          </div>
+          ${!isMesa && order.nombre ? `
+          <div class="row" style="font-size: 11px;">
+            <span>Cliente:</span>
+            <span class="bold">${order.nombre}</span>
+          </div>` : ''}
 
-        ${itemsHtml}
+          <div class="divider"></div>
+          <div class="bold" style="font-size: 11px; text-transform: uppercase; margin-bottom: 6px;">PLATOS SOLICITADOS:</div>
 
-        ${order.comentarios ? `
-        <div style="background: #f0f0f0; padding: 4px; border-radius: 4px; margin: 6px 0; font-size: 11px;">
-          <span class="bold">Observación:</span> ${order.comentarios}
-        </div>` : ''}
+          ${itemsKitchenHtml}
 
-        <div class="divider"></div>
+          ${order.comentarios ? `
+          <div style="background: #e5e7eb; padding: 6px; border-left: 3px solid #000; margin: 8px 0; font-size: 12px; font-weight: 800;">
+            OBSERVACIÓN: ${order.comentarios}
+          </div>` : ''}
 
-        <div class="row">
-          <span>Subtotal:</span>
-          <span>$${subtotal.toLocaleString('es-CO')}</span>
-        </div>
-        ${isEnvio ? `
-        <div class="row">
-          <span>Domicilio:</span>
-          <span>${domCost > 0 ? '$' + domCost.toLocaleString('es-CO') : 'Pendiente / $0'}</span>
-        </div>` : ''}
-        
-        <div class="double-divider"></div>
-        <div class="row" style="font-size: 15px; font-weight: 900;">
-          <span>TOTAL:</span>
-          <span>$${total.toLocaleString('es-CO')}</span>
+          <div class="double-divider"></div>
+          <div class="text-center" style="font-size: 10px; font-weight: 700;">
+            FIN DE COMANDA · ${dateStr} ${timeStr}
+          </div>
         </div>
 
-        <div class="row" style="margin-top: 6px; font-size: 11px;">
-          <span>Pago:</span>
-          <span class="bold">${order.pago_metodo === 'transferencia' ? 'TRANSFERENCIA' : 'EFECTIVO'}</span>
+        <!-- VISTA 2: CUENTA / RECIBO DE COBRO (PLATOS + PRECIOS + TOTAL) -->
+        <div id="view-bill" style="display: ${mode === 'bill' ? 'block' : 'none'};">
+          <div class="text-center">
+            <div style="font-size: 15px; font-weight: 900; text-transform: uppercase;">${businessName}</div>
+            ${businessPhone ? `<div style="font-size: 11px;">Tel: ${businessPhone}</div>` : ''}
+            <div style="font-size: 11px; font-weight: 800; margin-top: 4px; padding: 2px 8px; border: 1px solid #000; display: inline-block; border-radius: 4px;">
+              ${locationLabel}
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="row">
+            <span class="bold">CUENTA #${shortId}</span>
+            <span>${dateStr} ${timeStr}</span>
+          </div>
+          ${!isMesa ? `
+          <div class="row">
+            <span>Cliente:</span>
+            <span class="bold">${order.nombre || 'Cliente'}</span>
+          </div>
+          ${order.telefono ? `
+          <div class="row">
+            <span>Teléfono:</span>
+            <span>${order.telefono}</span>
+          </div>` : ''}
+          ${isEnvio ? `
+          <div style="margin-top: 3px;">
+            <span class="bold">Dirección:</span>
+            <div>${order.direccion || 'Sin dirección'}</div>
+          </div>` : ''}` : ''}
+
+          <div class="divider"></div>
+          <div class="row bold" style="font-size: 11px; text-transform: uppercase; margin-bottom: 4px;">
+            <span>DETALLE DEL PEDIDO</span>
+            <span>VALOR</span>
+          </div>
+
+          ${itemsBillHtml}
+
+          <div class="divider"></div>
+
+          <div class="row">
+            <span>Subtotal:</span>
+            <span class="bold">$${subtotal.toLocaleString('es-CO')}</span>
+          </div>
+          ${isEnvio ? `
+          <div class="row">
+            <span>Domicilio:</span>
+            <span>${domCost > 0 ? '$' + domCost.toLocaleString('es-CO') : 'Por confirmar'}</span>
+          </div>` : ''}
+
+          <div class="double-divider"></div>
+          <div class="row" style="font-size: 15px; font-weight: 900;">
+            <span>TOTAL A PAGAR:</span>
+            <span>$${total.toLocaleString('es-CO')}</span>
+          </div>
+
+          <div class="row" style="margin-top: 6px; font-size: 11px;">
+            <span>Método de pago:</span>
+            <span class="bold">${paymentLabel}</span>
+          </div>
+
+          <div class="divider"></div>
+          <div class="text-center" style="font-size: 10px; margin-top: 6px;">
+            Gracias por su compra en ${businessName}
+          </div>
         </div>
 
-        <div class="divider"></div>
-        <div class="text-center" style="font-size: 10px; margin-top: 8px;">
-          ¡Gracias por tu pedido!
-        </div>
-
-        <div class="no-print" style="margin-top: 15px; text-align: center;">
-          <button onclick="window.print()" style="padding: 8px 16px; background: #ea580c; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
-            🖨️ Imprimir Ticket
+        <div class="no-print" style="margin-top: 14px; text-align: center;">
+          <button onclick="window.print()" style="width: 100%; padding: 9px 16px; background: #0f172a; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer;">
+            Imprimir ahora
           </button>
         </div>
 
         <script>
+          function setMode(m) {
+            document.getElementById('view-kitchen').style.display = m === 'kitchen' ? 'block' : 'none';
+            document.getElementById('view-bill').style.display = m === 'bill' ? 'block' : 'none';
+            document.getElementById('btn-kitchen').className = m === 'kitchen' ? 'active' : '';
+            document.getElementById('btn-bill').className = m === 'bill' ? 'active' : '';
+          }
           window.onload = function() {
             setTimeout(function() {
               window.print();
-            }, 300);
+            }, 250);
           };
         </script>
       </body>

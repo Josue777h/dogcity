@@ -418,6 +418,32 @@ export async function updateOrderStatus(id, status, negocioId = null) {
   if (error) throw error;
 }
 
+export async function updateOrderRecord(id, updates, negocioId = null) {
+  const sb = getSupabase();
+  const payload = { ...updates };
+  const optionalCols = ['total_amount', 'subtotal_amount', 'productos'];
+
+  while (true) {
+    let query = sb.from('pedidos').update(payload).eq('id', id);
+    if (negocioId) query = query.eq('negocio_id', negocioId);
+    const { error } = await query;
+    if (!error) return true;
+
+    const missingCol = optionalCols.find(col =>
+      (col in payload) && (
+        error.message?.includes(`'${col}'`) ||
+        error.message?.includes(`"${col}"`) ||
+        new RegExp(`\\bcolumn\\s+${col}\\b`, 'i').test(error.message || '')
+      )
+    );
+    if (missingCol && ['PGRST204', '42703'].includes(error.code)) {
+      delete payload[missingCol];
+      continue;
+    }
+    throw error;
+  }
+}
+
 export async function confirmOrderDelivery(id, domicilioCosto, newTotal) {
   const { error } = await getSupabase()
     .from('pedidos')

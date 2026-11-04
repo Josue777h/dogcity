@@ -291,10 +291,10 @@
     width: 100%; text-align: left; font-family: var(--font-sans);
   }
   .sidebar-item:hover { background-color: var(--color-sidebar-item-hover); color: rgba(255,255,255,0.95); }
-  .sidebar-item.active { background-color: var(--color-sidebar-item-active); color: #fff; font-weight: 600; }
+  .sidebar-item.active { background-color: var(--color-brand); color: #fff; font-weight: 700; }
   .sidebar-item.active::before {
     content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-    width: 3px; height: 1.1rem; background-color: var(--color-brand); border-radius: 0 2px 2px 0;
+    width: 3px; height: 1.1rem; background-color: #ffffff; border-radius: 0 2px 2px 0;
   }
 
 }

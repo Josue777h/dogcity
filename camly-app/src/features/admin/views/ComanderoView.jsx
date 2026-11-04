@@ -2,10 +2,11 @@ import { useState, useMemo, useEffect } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { 
   Utensils, Plus, Minus, Trash2, Search, Bell, Check, Printer, 
-  X, ChefHat, Clock, RefreshCw, PenLine, Lock, Unlock
+  X, ChefHat, Clock, RefreshCw, PenLine, Lock, Unlock, Bluetooth, FileText, CheckCircle2
 } from 'lucide-react';
 import { formatMoney, playNewOrderSound, printThermalReceipt, playTableCallSound } from '../../../lib/utils';
-import { saveOrder } from '../../../lib/supabase';
+import { saveOrder, updateOrderRecord, updateOrderStatus } from '../../../lib/supabase';
+import { printOrderViaBluetooth, isWebBluetoothSupported } from '../../../lib/bluetoothPrinter';
 import { useToastStore, useBusinessStore } from '../../../stores';
 
 const QUICK_KITCHEN_TAGS = [
@@ -127,10 +128,13 @@ export default function ComanderoView() {
   const [editingItemNote, setEditingItemNote] = useState(null);
   const [itemNoteText, setItemNoteText] = useState('');
 
-  // Estado del proceso de envío
+  // Estado del proceso de envío y edición de órdenes existentes sin alterar el número de orden
   const [isSending, setIsSending] = useState(false);
   const [lastSentOrder, setLastSentOrder] = useState(null);
   const [generalNote, setGeneralNote] = useState('');
+  const [editingOrderByTable, setEditingOrderByTable] = useState({}); // { [tableNum]: orderId }
+  const [printingBtOrderId, setPrintingBtOrderId] = useState(null);
+  const [btMenuOrderId, setBtMenuOrderId] = useState(null);
 
   // Llamados de mesero en tiempo real activos (almacenados como mapa { [mesa]: timestamp })
   const [tableCalls, setTableCalls] = useState(() => {
@@ -169,7 +173,7 @@ export default function ComanderoView() {
     } catch (_) {}
   };
 
-  // Escuchar llamados en tiempo real por BroadcastChannel y storage
+  // Escuchar llamados y cambios de estado desde Pedidos en Vivo en tiempo real por BroadcastChannel y storage
   useEffect(() => {
     let bc;
     try {
@@ -194,6 +198,26 @@ export default function ComanderoView() {
               delete next[mesa];
               return next;
             });
+          }
+        } else if (msg?.data?.type === 'TABLE_ORDER_STATUS_CHANGED') {
+          const mesa = String(msg.data.mesa || '');
+          const st = String(msg.data.newStatus || '').toUpperCase();
+          if (mesa) {
+            // Si la orden pasó a En Mesa o Finalizado, limpiar cualquier borrador/edición pendiente de esa mesa
+            if (['LISTO_PARA_RECOGER', 'ENTREGADO'].includes(st)) {
+              setComandasByTable(prev => ({ ...prev, [mesa]: [] }));
+              setEditingOrderByTable(prev => {
+                const next = { ...prev };
+                delete next[mesa];
+                return next;
+              });
+            }
+            if (st === 'LISTO_PARA_RECOGER') {
+              addToast(`Mesa #${mesa}: Pedido listo y marcado como En Mesa`, 'info');
+            } else if (st === 'ENTREGADO') {
+              addToast(`Mesa #${mesa}: Cuenta finalizada y mesa liberada`, 'success');
+            }
+            reloadOrders();
           }
         }
       };
@@ -226,7 +250,7 @@ export default function ComanderoView() {
       if (bc) bc.close();
       window.removeEventListener('storage', handleStorage);
     };
-  }, [addToast, business?.id]);
+  }, [addToast, business?.id, reloadOrders]);
 
   // Limpiar llamado de una mesa al seleccionarla o atenderla
   const handleSelectTable = (tbl) => {
@@ -234,9 +258,9 @@ export default function ComanderoView() {
     clearTableCall(tbl);
   };
 
-  // Pedidos activos en cocina/salón para indicar qué mesas están ocupadas
+  // Pedidos activos en cocina/salón para indicar qué mesas están ocupadas (máximo 1 orden vigente por mesa)
   const activeOrdersByTable = useMemo(() => {
-    const map = {};
+    const rawMap = {};
     (orders || []).forEach(o => {
       const isMesa = o.delivery_type === 'dine_in' || o.entrega_metodo === 'mesa' || /mesa/i.test(o.direccion || '');
       const isPending = !['entregado', 'cancelado'].includes(String(o.estado || o.status || '').toLowerCase());
@@ -244,12 +268,18 @@ export default function ComanderoView() {
         const tableNum = String(o.mesa || o.table_number || '').trim() || 
           (o.direccion ? (o.direccion.match(/mesa\s*#?\s*(\w+)/i)?.[1] || '') : '');
         if (tableNum) {
-          if (!map[tableNum]) map[tableNum] = [];
-          map[tableNum].push(o);
+          if (!rawMap[tableNum]) rawMap[tableNum] = [];
+          rawMap[tableNum].push(o);
         }
       }
     });
-    return map;
+    // Garantizar que solo se considere la orden activa más reciente por mesa para evitar colisiones visuales
+    const cleanMap = {};
+    Object.entries(rawMap).forEach(([tbl, list]) => {
+      const sorted = [...list].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      cleanMap[tbl] = [sorted[0]];
+    });
+    return cleanMap;
   }, [orders]);
 
   // Mapa de categorías por ID para vincular con categoria_id
@@ -302,6 +332,39 @@ export default function ComanderoView() {
     });
   }, [products, selectedCategory, searchQuery, categoryMapById]);
 
+  // Traducir estado de orden de mesa a lenguaje humano claro (nunca mostrar "listo_para_recoger")
+  const getMesaStatusInfo = (order) => {
+    const raw = String(order?.estado || order?.status || '').toLowerCase();
+    if (['listo_para_recoger', 'en_camino', 'enviado'].includes(raw)) {
+      return {
+        label: 'Servido en Mesa',
+        badgeClass: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+        dotClass: 'bg-indigo-500',
+        isServed: true
+      };
+    }
+    if (raw === 'entregado') {
+      return {
+        label: 'Finalizado',
+        badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+        dotClass: 'bg-emerald-500',
+        isServed: true
+      };
+    }
+    return {
+      label: 'En Cocina',
+      badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
+      dotClass: 'bg-amber-500',
+      isServed: false
+    };
+  };
+
+  // Orden activa principal de la mesa seleccionada y modo de edición actual
+  const currentTableActiveOrders = activeOrdersByTable[selectedTable] || [];
+  const primaryActiveOrder = currentTableActiveOrders[0] || null;
+  const editingOrderId = editingOrderByTable[selectedTable] || null;
+  const isTableOrderServed = Boolean(primaryActiveOrder && getMesaStatusInfo(primaryActiveOrder).isServed);
+
   // Abrir personalización de producto (para opciones y/o notas directas de cocina)
   const openProductCustomize = (product) => {
     const initOpts = {};
@@ -314,8 +377,17 @@ export default function ComanderoView() {
     setCustomizingProduct(product);
   };
 
-  // Click en producto del catálogo: si tiene opciones abre personalizador; si no, agrega directo (con agrupación)
+  // Click en producto del catálogo: bloquea si la orden de la mesa ya está lista/servida
   const handleProductClick = (product) => {
+    if (isTableOrderServed) {
+      addToast(
+        `La Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()} de la Mesa #${selectedTable} ya está lista en mesa y no admite más adiciones.`,
+        'warning'
+      );
+      setMobileSection('active');
+      return;
+    }
+
     const hasOptions = Array.isArray(product.opciones) && product.opciones.length > 0;
     if (hasOptions) {
       openProductCustomize(product);
@@ -454,12 +526,58 @@ export default function ComanderoView() {
     }));
   };
 
-  // Vaciar ticket de la mesa actual
+  // Vaciar ticket de la mesa actual y salir de modo edición si estaba activo
   const clearCurrentTicket = () => {
     setComandasByTable(prev => ({
       ...prev,
       [selectedTable]: []
     }));
+    setEditingOrderByTable(prev => {
+      const next = { ...prev };
+      delete next[selectedTable];
+      return next;
+    });
+  };
+
+  // Cargar una orden activa en el editor para modificar platos/cantidades sin alterar su número de orden (solo si sigue En Cocina)
+  const handleLoadOrderToEdit = (order) => {
+    if (!order) return;
+    if (getMesaStatusInfo(order).isServed) {
+      addToast('Esta orden ya fue preparada y servida en mesa; no se puede modificar ni anexar más platos.', 'warning');
+      return;
+    }
+    const rawItems = order.items || order.productos || [];
+    const mappedItems = rawItems.map((it, idx) => {
+      const qty = Number(it.cantidad ?? it.quantity ?? 1);
+      const unitPrice = Number(it.precio ?? it.price ?? 0);
+      const opts = Array.isArray(it.opciones)
+        ? it.opciones
+        : it.opciones_texto
+          ? it.opciones_texto.split(',').map((s, i) => ({ id: `opt_${i}`, nombre: s.trim(), precio: 0 })).filter(o => o.nombre)
+          : [];
+      return {
+        uid: `${it.id || idx}_${Date.now()}_${idx}`,
+        id: it.id || `custom_${idx}`,
+        name: it.nombre || it.name || 'Producto',
+        basePrice: unitPrice,
+        price: unitPrice,
+        quantity: qty,
+        options: opts,
+        note: it.nota || it.note || ''
+      };
+    });
+
+    setComandasByTable(prev => ({
+      ...prev,
+      [selectedTable]: mappedItems
+    }));
+    setEditingOrderByTable(prev => ({
+      ...prev,
+      [selectedTable]: order.id
+    }));
+    setGeneralNote(order.comentarios && order.comentarios !== 'Comanda de salón' ? order.comentarios : '');
+    setMobileSection('ticket');
+    addToast(`Editando Orden #${String(order.id).slice(-4).toUpperCase()} de Mesa #${selectedTable}`, 'info');
   };
 
   // Confirmar producto desde el modal de personalización
@@ -521,8 +639,16 @@ export default function ComanderoView() {
     return activeTicket.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   }, [activeTicket]);
 
-  // Mandar comanda a cocina
+  // Mandar comanda a cocina (Solo permitido si la mesa está libre o su orden aún está En Cocina)
   const handleSendToKitchen = async () => {
+    if (isTableOrderServed) {
+      addToast(
+        `La Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()} de la Mesa #${selectedTable} ya está lista y servida en mesa. No se pueden anexar más platos.`,
+        'warning'
+      );
+      clearCurrentTicket();
+      return;
+    }
     if (activeTicket.length === 0) {
       addToast('Agrega al menos un plato o bebida a la comanda', 'warning');
       return;
@@ -534,7 +660,6 @@ export default function ComanderoView() {
 
     setIsSending(true);
     try {
-      const token = Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
       const itemsPayload = activeTicket.map(i => ({
         id: i.id,
         nombre: i.name,
@@ -545,36 +670,150 @@ export default function ComanderoView() {
         opciones: i.options || []
       }));
 
-      const payload = {
-        nombre: `Mesa #${selectedTable}`,
-        telefono: 'Servicio en mesa',
-        direccion: `Servicio en Mesa ${selectedTable}`,
-        mesa: String(selectedTable),
-        table_number: String(selectedTable),
-        ubicacion_link: null,
-        comentarios: generalNote.trim() || `Comanda de salón`,
-        total: ticketSubtotal,
-        total_amount: ticketSubtotal,
-        subtotal_amount: ticketSubtotal,
-        domicilio_costo: 0,
-        delivery_fee: 0,
-        distancia_km: null,
-        status: 'preparando',
-        estado: 'preparando',
-        delivery_type: 'dine_in',
-        entrega_metodo: 'mesa',
-        pago_metodo: 'mesa',
-        payment_method: 'pending_table',
-        payment_status: 'pending',
-        items: itemsPayload,
-        token,
-        negocio_id: business.id,
-      };
+      let finalOrderId = null;
+      let finalOrderObj = null;
 
-      const orderId = await saveOrder(payload);
-      if (!orderId) throw new Error('Error al registrar la comanda');
+      // CASO 1: Estamos editando/modificando directamente una orden existente (mismo número de orden)
+      if (editingOrderId) {
+        const targetOrder = currentTableActiveOrders.find(o => o.id === editingOrderId) || primaryActiveOrder;
+        const updatedComments = generalNote.trim() || targetOrder?.comentarios || 'Comanda de salón';
 
-      const fullCreatedOrder = { ...payload, id: orderId, created_at: new Date().toISOString() };
+        await updateOrderRecord(
+          editingOrderId,
+          {
+            items: itemsPayload,
+            total: ticketSubtotal,
+            total_amount: ticketSubtotal,
+            subtotal_amount: ticketSubtotal,
+            comentarios: updatedComments,
+            status: 'preparando',
+            estado: 'preparando'
+          },
+          business.id
+        );
+
+        finalOrderId = editingOrderId;
+        finalOrderObj = {
+          ...(targetOrder || {}),
+          id: editingOrderId,
+          mesa: String(selectedTable),
+          table_number: String(selectedTable),
+          items: itemsPayload,
+          total: ticketSubtotal,
+          total_amount: ticketSubtotal,
+          subtotal_amount: ticketSubtotal,
+          comentarios: updatedComments,
+          status: 'preparando',
+          estado: 'preparando'
+        };
+
+        addToast(`Orden #${String(editingOrderId).slice(-4).toUpperCase()} de Mesa #${selectedTable} modificada sin cambiar su número`, 'success');
+      }
+      // CASO 2: La mesa YA está ocupada con una orden activa -> Anexamos los nuevos platos a la MISMA orden activa
+      else if (primaryActiveOrder) {
+        const existingItems = Array.isArray(primaryActiveOrder.items || primaryActiveOrder.productos)
+          ? [...(primaryActiveOrder.items || primaryActiveOrder.productos)]
+          : [];
+
+        const mergedItems = [...existingItems];
+        itemsPayload.forEach(newItem => {
+          const matchIdx = mergedItems.findIndex(ex =>
+            String(ex.id) === String(newItem.id) &&
+            String(ex.opciones_texto || '').trim() === String(newItem.opciones_texto || '').trim() &&
+            String(ex.nota || '').trim() === String(newItem.nota || '').trim()
+          );
+          if (matchIdx >= 0) {
+            const prevQty = Number(mergedItems[matchIdx].cantidad ?? mergedItems[matchIdx].quantity ?? 1);
+            mergedItems[matchIdx] = {
+              ...mergedItems[matchIdx],
+              cantidad: prevQty + Number(newItem.cantidad || 1)
+            };
+          } else {
+            mergedItems.push(newItem);
+          }
+        });
+
+        const combinedTotal = mergedItems.reduce(
+          (sum, it) => sum + (Number(it.precio ?? it.price ?? 0) * Number(it.cantidad ?? it.quantity ?? 1)),
+          0
+        );
+
+        const prevComments = primaryActiveOrder.comentarios && primaryActiveOrder.comentarios !== 'Comanda de salón'
+          ? primaryActiveOrder.comentarios
+          : '';
+        const newComments = generalNote.trim()
+          ? (prevComments ? `${prevComments} | Adición: ${generalNote.trim()}` : generalNote.trim())
+          : (prevComments || 'Comanda de salón');
+
+        await updateOrderRecord(
+          primaryActiveOrder.id,
+          {
+            items: mergedItems,
+            total: combinedTotal,
+            total_amount: combinedTotal,
+            subtotal_amount: combinedTotal,
+            comentarios: newComments,
+            status: 'preparando',
+            estado: 'preparando'
+          },
+          business.id
+        );
+
+        finalOrderId = primaryActiveOrder.id;
+        finalOrderObj = {
+          ...primaryActiveOrder,
+          id: primaryActiveOrder.id,
+          mesa: String(selectedTable),
+          table_number: String(selectedTable),
+          items: mergedItems,
+          total: combinedTotal,
+          total_amount: combinedTotal,
+          subtotal_amount: combinedTotal,
+          comentarios: newComments,
+          status: 'preparando',
+          estado: 'preparando',
+          isAddition: true,
+          addedItemsOnly: itemsPayload
+        };
+
+        addToast(`Platos anexados a la Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()} de Mesa #${selectedTable}`, 'success');
+      }
+      // CASO 3: La mesa está libre -> Creamos la orden única de la mesa
+      else {
+        const token = Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+        const payload = {
+          nombre: `Mesa #${selectedTable}`,
+          telefono: 'Servicio en mesa',
+          direccion: `Servicio en Mesa ${selectedTable}`,
+          mesa: String(selectedTable),
+          table_number: String(selectedTable),
+          ubicacion_link: null,
+          comentarios: generalNote.trim() || `Comanda de salón`,
+          total: ticketSubtotal,
+          total_amount: ticketSubtotal,
+          subtotal_amount: ticketSubtotal,
+          domicilio_costo: 0,
+          delivery_fee: 0,
+          distancia_km: null,
+          status: 'preparando',
+          estado: 'preparando',
+          delivery_type: 'dine_in',
+          entrega_metodo: 'mesa',
+          pago_metodo: 'mesa',
+          payment_method: 'pending_table',
+          payment_status: 'pending',
+          items: itemsPayload,
+          token,
+          negocio_id: business.id,
+        };
+
+        const orderId = await saveOrder(payload);
+        if (!orderId) throw new Error('Error al registrar la comanda');
+
+        finalOrderId = orderId;
+        finalOrderObj = { ...payload, id: orderId, created_at: new Date().toISOString() };
+        addToast(`Comanda de Mesa #${selectedTable} enviada a Cocina`, 'success');
+      }
 
       // Notificar sonoramente
       playNewOrderSound();
@@ -582,22 +821,20 @@ export default function ComanderoView() {
       // Emitir evento por BroadcastChannel para que la vista de Pedidos se actualice inmediatamente
       try {
         const bc = new BroadcastChannel('negu_orders_channel');
-        bc.postMessage({ type: 'NEW_ORDER', negocioId: business.id, orderId, mesa: selectedTable });
+        bc.postMessage({ type: 'NEW_ORDER', negocioId: business.id, orderId: finalOrderId, mesa: selectedTable });
         setTimeout(() => bc.close(), 1000);
       } catch (_) {}
 
       try {
-        localStorage.setItem('negu_latest_order_event', JSON.stringify({ bid: business.id, orderId, ts: Date.now() }));
+        localStorage.setItem('negu_latest_order_event', JSON.stringify({ bid: business.id, orderId: finalOrderId, ts: Date.now() }));
       } catch (_) {}
 
       // Limpiar ticket y llamado activo
       clearCurrentTicket();
       clearTableCall(selectedTable);
       setGeneralNote('');
-      setLastSentOrder(fullCreatedOrder);
+      setLastSentOrder(finalOrderObj);
       reloadOrders();
-
-      addToast(`Comanda de Mesa #${selectedTable} enviada a Cocina`, 'success');
     } catch (err) {
       console.error('Error enviando comanda a cocina:', err);
       addToast(`Error al enviar a cocina: ${err.message}`, 'error');
@@ -606,11 +843,39 @@ export default function ComanderoView() {
     }
   };
 
-  // Imprimir comanda de cocina térmica
-  const handlePrintKitchenTicket = (orderToPrint) => {
+  // Imprimir ticket térmico separado según su propósito: 'kitchen' (solo platos/notas) o 'bill' (cuenta con precios)
+  const handlePrintTicket = (orderToPrint, mode = 'kitchen', onlyAdded = false) => {
     const target = orderToPrint || lastSentOrder;
     if (!target) return;
-    printThermalReceipt(target, business);
+    printThermalReceipt(target, business, {
+      mode,
+      isAddition: Boolean(onlyAdded && target.addedItemsOnly),
+      itemsOverride: onlyAdded && target.addedItemsOnly ? target.addedItemsOnly : null
+    });
+  };
+
+  // Imprimir por Bluetooth directo (ideal desde celular o tablet Android/PC)
+  const handlePrintBluetoothTicket = async (orderToPrint, mode = 'kitchen') => {
+    const target = orderToPrint || lastSentOrder;
+    if (!target) return;
+    if (!isWebBluetoothSupported()) {
+      addToast('Abriendo ventana de impresión del sistema (puedes elegir tu impresora Bluetooth vinculada)...', 'info');
+      handlePrintTicket(target, mode);
+      return;
+    }
+    setPrintingBtOrderId(target.id);
+    setBtMenuOrderId(null);
+    addToast(`Conectando impresora Bluetooth (${mode === 'kitchen' ? 'Comanda Cocina' : 'Cuenta'})...`, 'info');
+    try {
+      const printerName = await printOrderViaBluetooth(target, business, { mode });
+      addToast(`${mode === 'kitchen' ? 'Comanda de cocina' : 'Cuenta'} enviada a "${printerName}"`, 'success');
+    } catch (err) {
+      if (err.name !== 'NotFoundError') {
+        addToast(err.message || 'No se pudo imprimir por Bluetooth', 'error');
+      }
+    } finally {
+      setPrintingBtOrderId(null);
+    }
   };
 
   return (
@@ -748,9 +1013,14 @@ export default function ComanderoView() {
             <span className="text-xs font-bold text-slate-800 uppercase tracking-wide shrink-0">
               Salón:
             </span>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-slate-900 text-white shadow-2xs shrink-0">
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-brand text-white shadow-2xs shrink-0">
               Mesa #{selectedTable}
             </span>
+            {primaryActiveOrder && (
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${getMesaStatusInfo(primaryActiveOrder).badgeClass}`}>
+                {getMesaStatusInfo(primaryActiveOrder).label} · #{String(primaryActiveOrder.id).slice(-4).toUpperCase()}
+              </span>
+            )}
             {Object.keys(tableCalls).length > 0 && (
               <span className="flex items-center gap-1 font-bold text-[11px] text-rose-600 animate-pulse bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 truncate">
                 <Bell size={11} className="shrink-0" /> {Object.keys(tableCalls).length} llamado(s)
@@ -764,10 +1034,10 @@ export default function ComanderoView() {
                 <span className="w-2 h-2 rounded-full bg-slate-300" /> Libre
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" /> En Cocina
+                <span className="w-2 h-2 rounded-full bg-amber-500" /> En Cocina
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-blue-500" /> Borrador
+                <span className="w-2 h-2 rounded-full bg-indigo-500" /> En Mesa
               </span>
             </div>
 
@@ -795,6 +1065,8 @@ export default function ComanderoView() {
             const hasCall = Boolean(tableCalls[strNum]);
             const activeOrders = activeOrdersByTable[strNum] || [];
             const isOccupied = activeOrders.length > 0;
+            const firstOrder = activeOrders[0] || null;
+            const tableStatusInfo = firstOrder ? getMesaStatusInfo(firstOrder) : null;
             const hasPendingTicket = (comandasByTable[strNum] || []).length > 0;
 
             return (
@@ -804,11 +1076,13 @@ export default function ComanderoView() {
                 onClick={() => handleSelectTable(num)}
                 className={`relative px-3 py-2 lg:p-2 rounded-xl font-bold text-xs transition-all cursor-pointer flex flex-col items-center justify-center shrink-0 min-w-[68px] lg:min-w-0 min-h-[48px] lg:min-h-[54px] ${
                   isSelected
-                    ? 'bg-slate-900 text-white shadow-xs'
+                    ? 'bg-brand text-white shadow-sm ring-2 ring-slate-900/15'
                     : hasCall
                       ? 'bg-rose-50 text-rose-900 border-2 border-rose-500 shadow-2xs animate-pulse'
                       : isOccupied
-                        ? 'bg-emerald-50 border border-emerald-300/90 text-emerald-950 hover:bg-emerald-100/80'
+                        ? tableStatusInfo?.isServed
+                          ? 'bg-indigo-50 border border-indigo-300 text-indigo-950 hover:bg-indigo-100/80'
+                          : 'bg-amber-50 border border-amber-300 text-amber-950 hover:bg-amber-100/80'
                         : hasPendingTicket
                           ? 'bg-blue-50 border border-blue-300/90 text-blue-950 hover:bg-blue-100/80'
                           : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/90 hover:border-slate-300'
@@ -821,9 +1095,25 @@ export default function ComanderoView() {
                 )}
                 <span className="text-xs font-black leading-tight whitespace-nowrap">Mesa {num}</span>
                 <span className={`text-[10px] font-medium leading-tight mt-0.5 truncate max-w-full ${
-                  isSelected ? 'text-slate-300' : hasCall ? 'text-rose-700 font-bold' : isOccupied ? 'text-emerald-700 font-semibold' : hasPendingTicket ? 'text-blue-700' : 'text-slate-400'
+                  isSelected
+                    ? 'text-white/90 font-semibold'
+                    : hasCall
+                      ? 'text-rose-700 font-bold'
+                      : isOccupied
+                        ? tableStatusInfo?.isServed
+                          ? 'text-indigo-700 font-semibold'
+                          : 'text-amber-800 font-semibold'
+                        : hasPendingTicket
+                          ? 'text-blue-700'
+                          : 'text-slate-400'
                 }`}>
-                  {hasCall ? 'Llamando' : isOccupied ? `${activeOrders.length} activa` : hasPendingTicket ? 'Borrador' : 'Libre'}
+                  {hasCall
+                    ? 'Llamando'
+                    : isOccupied
+                      ? (tableStatusInfo?.isServed ? 'En Mesa' : 'En Cocina')
+                      : hasPendingTicket
+                        ? 'Borrador'
+                        : 'Libre'}
                 </span>
               </button>
             );
@@ -847,7 +1137,7 @@ export default function ComanderoView() {
           onClick={() => setMobileSection('menu')}
           className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             mobileSection === 'menu'
-              ? 'bg-slate-900 text-white shadow-2xs'
+              ? 'bg-brand text-white shadow-2xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
           }`}
         >
@@ -860,7 +1150,7 @@ export default function ComanderoView() {
           onClick={() => setMobileSection('ticket')}
           className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             mobileSection === 'ticket'
-              ? 'bg-slate-900 text-white shadow-2xs'
+              ? 'bg-brand text-white shadow-2xs'
               : activeTicketQty > 0
                 ? 'bg-blue-50 text-blue-900 border border-blue-200'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -875,14 +1165,14 @@ export default function ComanderoView() {
           onClick={() => setMobileSection('active')}
           className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             mobileSection === 'active'
-              ? 'bg-slate-900 text-white shadow-2xs'
-              : (activeOrdersByTable[selectedTable] || []).length > 0
-                ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+              ? 'bg-brand text-white shadow-2xs'
+              : currentTableActiveOrders.length > 0
+                ? 'bg-amber-50 text-amber-900 border border-amber-200'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
           }`}
         >
           <Clock size={13} className="shrink-0" />
-          <span className="truncate">En Cocina ({(activeOrdersByTable[selectedTable] || []).length})</span>
+          <span className="truncate">Orden Activa ({currentTableActiveOrders.length})</span>
         </button>
       </div>
 
@@ -962,7 +1252,7 @@ export default function ComanderoView() {
               )}
             </div>
 
-            {/* Chips de categorías */}
+            {/* Chips de categorías con color de marca activo */}
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
               {categoryNames.map(cat => (
                 <button
@@ -971,7 +1261,7 @@ export default function ComanderoView() {
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-all cursor-pointer ${
                     selectedCategory === cat
-                      ? 'bg-slate-900 text-white shadow-2xs'
+                      ? 'bg-brand text-white shadow-2xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
                   }`}
                 >
@@ -996,12 +1286,12 @@ export default function ComanderoView() {
                   onClick={() => handleProductClick(product)}
                   className={`relative flex flex-col justify-between text-left p-2.5 sm:p-3 rounded-2xl border transition-all active:scale-[0.98] cursor-pointer bg-white group min-h-[115px] ${
                     inTicketQty > 0
-                      ? 'border-slate-800 ring-2 ring-slate-900/10 shadow-xs'
+                      ? 'border-brand ring-2 ring-brand/15 shadow-xs'
                       : 'border-slate-200/90 hover:border-slate-400 hover:shadow-xs'
                   }`}
                 >
                   {inTicketQty > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-slate-900 text-white text-[11px] font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-xs">
+                    <span className="absolute -top-1.5 -right-1.5 bg-brand text-white text-[11px] font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-xs">
                       {inTicketQty}
                     </span>
                   )}
@@ -1062,54 +1352,117 @@ export default function ComanderoView() {
             {/* Header del Ticket */}
             <div className="bg-slate-50 p-3.5 sm:p-4 flex items-center justify-between border-b border-slate-200 text-slate-900">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">
+                <span className="w-8 h-8 rounded-xl bg-brand text-white flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">
                   #{selectedTable}
                 </span>
                 <div className="min-w-0">
                   <h3 className="text-sm font-bold text-slate-900 leading-tight truncate">
-                    Comanda Mesa #{selectedTable}
+                    {isTableOrderServed
+                      ? `Mesa #${selectedTable} · Orden Lista`
+                      : editingOrderId
+                        ? `Editando Orden #${String(editingOrderId).slice(-4).toUpperCase()}`
+                        : primaryActiveOrder
+                          ? `Adicionar a Mesa #${selectedTable}`
+                          : `Comanda Mesa #${selectedTable}`}
                   </h3>
                   <span className="text-xs text-slate-500 font-medium block mt-0.5">
-                    {activeTicketQty} {activeTicketQty === 1 ? 'plato en orden' : 'platos en orden'}
+                    {isTableOrderServed
+                      ? `Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()} servida en mesa (cerrada a adiciones)`
+                      : editingOrderId
+                        ? 'Modifica cantidades o platos sin cambiar el # de orden'
+                        : primaryActiveOrder
+                          ? `Se sumará a la Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()} en cocina`
+                          : `${activeTicketQty} ${activeTicketQty === 1 ? 'plato en borrador' : 'platos en borrador'}`}
                   </span>
                 </div>
               </div>
 
               <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setMobileSection('menu')}
-                  className="lg:hidden text-xs text-slate-700 hover:text-slate-900 font-bold px-2.5 py-1 rounded-lg bg-white border border-slate-200 transition-colors cursor-pointer"
-                >
-                  + Platos
-                </button>
-                {activeTicket.length > 0 && (
+                {!isTableOrderServed && (
+                  <button
+                    type="button"
+                    onClick={() => setMobileSection('menu')}
+                    className="lg:hidden text-xs text-slate-700 hover:text-slate-900 font-bold px-2.5 py-1 rounded-lg bg-white border border-slate-200 transition-colors cursor-pointer"
+                  >
+                    + Platos
+                  </button>
+                )}
+                {(activeTicket.length > 0 || editingOrderId) && (
                   <button
                     type="button"
                     onClick={clearCurrentTicket}
                     className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2.5 py-1 rounded-lg hover:bg-rose-50 transition-colors border border-rose-200 shrink-0 cursor-pointer"
                   >
-                    Vaciar
+                    {editingOrderId ? 'Cancelar edición' : 'Vaciar'}
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Lista de ítems en el ticket */}
-            <div className="p-3.5 space-y-2.5 max-h-[420px] overflow-y-auto divide-y divide-slate-100">
-              {activeTicket.length === 0 ? (
-                <div className="py-10 text-center text-slate-400 space-y-2.5">
-                  <ChefHat size={30} className="mx-auto text-slate-300" />
+            {/* Aviso contextual cuando la mesa tiene una orden activa EN COCINA */}
+            {primaryActiveOrder && !isTableOrderServed && !editingOrderId && (
+              <div className="px-3.5 py-2.5 bg-amber-50/90 border-b border-amber-200/80 flex items-center justify-between gap-2 text-xs">
+                <div className="min-w-0">
+                  <span className="font-bold text-amber-950 block truncate">
+                    Mesa con orden en cocina · #{String(primaryActiveOrder.id).slice(-4).toUpperCase()}
+                  </span>
+                  <span className="text-[11px] text-amber-800 block">
+                    Aún está en preparación: puedes anexar platos o editarla sin cambiar su número.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleLoadOrderToEdit(primaryActiveOrder)}
+                  className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-100 text-amber-950 border border-amber-300 font-bold text-[11px] shrink-0 transition-colors cursor-pointer"
+                >
+                  Editar orden
+                </button>
+              </div>
+            )}
+
+            {/* Lista de ítems en el ticket o bloqueo cuando la orden ya fue preparada y servida en mesa */}
+            <div className="p-3 sm:p-3.5 space-y-2.5 max-h-[420px] overflow-y-auto divide-y divide-slate-100">
+              {isTableOrderServed ? (
+                <div className="p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <Lock size={15} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-indigo-950 truncate">
+                        Orden #{String(primaryActiveOrder.id).slice(-4).toUpperCase()} servida en Mesa #{selectedTable}
+                      </p>
+                      <p className="text-[11px] text-indigo-800/90 leading-snug">
+                        Orden lista (cerrada a adiciones). Finalízala en <strong>Pedidos en Vivo</strong> para liberar la mesa.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handlePrintTicket(primaryActiveOrder, 'bill', false)}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold shadow-2xs cursor-pointer transition-colors shrink-0"
+                  >
+                    <Printer size={13} />
+                    <span>Cuenta ({formatMoney(primaryActiveOrder.total_amount || primaryActiveOrder.total)})</span>
+                  </button>
+                </div>
+              ) : activeTicket.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 space-y-2.5">
+                  <ChefHat size={28} className="mx-auto text-slate-300" />
                   <p className="text-xs font-semibold text-slate-600">
-                    Comanda vacía para la Mesa #{selectedTable}
+                    {primaryActiveOrder
+                      ? `Selecciona platos de la carta para anexar a la Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()}`
+                      : `Comanda vacía para la Mesa #${selectedTable}`}
                   </p>
                   <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
-                    Toca cualquier plato o bebida del menú para agregarlo a la orden.
+                    {primaryActiveOrder
+                      ? 'También puedes tocar "Editar orden" arriba si deseas corregir cantidades o quitar un plato mientras sigue en cocina.'
+                      : 'Toca cualquier plato o bebida del menú para agregarlo a la orden.'}
                   </p>
                   <button
                     type="button"
                     onClick={() => setMobileSection('menu')}
-                    className="lg:hidden inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold shadow-2xs"
+                    className="lg:hidden inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand text-white text-xs font-bold shadow-2xs"
                   >
                     <Plus size={13} /> Ir a la Carta
                   </button>
@@ -1212,7 +1565,7 @@ export default function ComanderoView() {
             </div>
 
             {/* Pie del ticket: Totales, nota general y botón enviar */}
-            {activeTicket.length > 0 && (
+            {!isTableOrderServed && activeTicket.length > 0 && (
               <div className="p-3.5 bg-slate-50 border-t border-slate-200/80 space-y-3">
                 {/* Nota general para cocina */}
                 <div>
@@ -1227,49 +1580,84 @@ export default function ComanderoView() {
 
                 {/* Total */}
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs font-medium text-slate-600">Total Comanda</span>
+                  <span className="text-xs font-medium text-slate-600">
+                    {editingOrderId
+                      ? 'Nuevo Total de la Orden'
+                      : primaryActiveOrder
+                        ? 'Subtotal a anexar'
+                        : 'Total Comanda'}
+                  </span>
                   <span className="text-base sm:text-lg font-bold text-slate-900 tabular-nums">
                     {formatMoney(ticketSubtotal)}
                   </span>
                 </div>
 
-                {/* Botón Principal: Mandar a Cocina */}
+                {/* Botón Principal: Mandar a Cocina / Anexar / Guardar Cambios */}
                 <button
                   type="button"
                   disabled={isSending}
                   onClick={handleSendToKitchen}
-                  className="w-full min-h-12 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-slate-900 hover:bg-black active:scale-98 shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full min-h-12 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-brand hover:opacity-95 active:scale-98 shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {isSending ? (
                     <RefreshCw className="animate-spin" size={16} />
                   ) : (
                     <ChefHat size={16} />
                   )}
-                  <span>{isSending ? 'Enviando a cocina...' : 'Mandar a Cocina'}</span>
+                  <span>
+                    {isSending
+                      ? 'Actualizando en cocina...'
+                      : editingOrderId
+                        ? `Guardar Cambios en Orden #${String(editingOrderId).slice(-4).toUpperCase()}`
+                        : primaryActiveOrder
+                          ? `Anexar Platos a Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()}`
+                          : 'Mandar a Cocina'}
+                  </span>
                 </button>
               </div>
             )}
           </div>
 
-          {/* Última orden enviada con botón de imprimir comanda térmica */}
+          {/* Última orden enviada con botones separados: Comanda Cocina vs Cuenta */}
           {lastSentOrder && (
-            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between gap-2 shadow-2xs">
-              <div className="min-w-0">
-                <span className="text-[10px] font-bold uppercase text-emerald-800 tracking-wider block">
-                  Última comanda enviada:
-                </span>
-                <p className="text-xs font-semibold text-emerald-950 truncate">
-                  Mesa #{lastSentOrder.mesa || selectedTable} · {formatMoney(lastSentOrder.total)}
-                </p>
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2.5 shadow-2xs">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold uppercase text-emerald-800 tracking-wider block">
+                    {lastSentOrder.isAddition ? 'Última adición enviada a cocina:' : 'Última comanda enviada:'}
+                  </span>
+                  <p className="text-xs font-bold text-emerald-950 truncate">
+                    Mesa #{lastSentOrder.mesa || selectedTable} · Orden #{String(lastSentOrder.id).slice(-4).toUpperCase()} · {formatMoney(lastSentOrder.total)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLastSentOrder(null)}
+                  className="p-1 text-emerald-700 hover:bg-emerald-100 rounded-lg"
+                  title="Cerrar aviso"
+                >
+                  <X size={14} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => handlePrintKitchenTicket(lastSentOrder)}
-                className="px-3 py-1.5 rounded-lg bg-emerald-700 text-white font-semibold text-xs hover:bg-emerald-800 transition-colors flex items-center gap-1.5 shrink-0 shadow-2xs"
-              >
-                <Printer size={13} />
-                <span>Imprimir Ticket</span>
-              </button>
+
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handlePrintTicket(lastSentOrder, 'kitchen', Boolean(lastSentOrder.isAddition))}
+                  className="px-2.5 py-2 rounded-xl bg-emerald-800 text-white font-bold text-xs hover:bg-emerald-900 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                >
+                  <ChefHat size={13} />
+                  <span className="truncate">{lastSentOrder.isAddition ? 'Comanda Adición' : 'Comanda Cocina'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePrintTicket(lastSentOrder, 'bill', false)}
+                  className="px-2.5 py-2 rounded-xl bg-white text-emerald-950 border border-emerald-300 font-bold text-xs hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <FileText size={13} />
+                  <span className="truncate">Cuenta / Cobro</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -1278,54 +1666,174 @@ export default function ComanderoView() {
             className={`${
               mobileSection === 'active'
                 ? 'block'
-                : (activeOrdersByTable[selectedTable] || []).length > 0
+                : currentTableActiveOrders.length > 0
                   ? 'hidden lg:block'
                   : 'hidden'
-            } bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2.5`}
+            } bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3`}
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <Clock size={13} className="text-slate-500" />
-                Comandas activas en Mesa #{selectedTable}
+                Orden activa en Mesa #{selectedTable}
               </span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                {(activeOrdersByTable[selectedTable] || []).length} orden(es)
-              </span>
+              {currentTableActiveOrders.length > 0 && (
+                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${getMesaStatusInfo(primaryActiveOrder).badgeClass}`}>
+                  {getMesaStatusInfo(primaryActiveOrder).label}
+                </span>
+              )}
             </div>
 
-            {(activeOrdersByTable[selectedTable] || []).length === 0 ? (
+            {currentTableActiveOrders.length === 0 ? (
               <div className="py-8 text-center space-y-2">
                 <Clock size={26} className="mx-auto text-slate-300" />
                 <p className="text-xs font-semibold text-slate-600">
-                  La Mesa #{selectedTable} no tiene comandas activas en cocina
+                  La Mesa #{selectedTable} está libre
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  Cuando envíes una comanda a cocina aparecerá aquí con su estado e impresión térmica.
+                  Cuando envíes una comanda a cocina aparecerá aquí con su estado, edición e impresión separada.
                 </p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {(activeOrdersByTable[selectedTable] || []).map(order => (
-                  <div key={order.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between gap-2">
-                    <div>
-                      <span className="font-bold text-slate-900 block">
-                        Orden #{String(order.id).slice(-4).toUpperCase()} · {formatMoney(order.total_amount || order.total)}
-                      </span>
-                      <span className="text-[10px] text-slate-500 capitalize">
-                        Estado: {order.estado || order.status}
-                      </span>
-                    </div>
+              <div className="space-y-2.5">
+                {currentTableActiveOrders.map(order => {
+                  const stInfo = getMesaStatusInfo(order);
+                  const orderItems = order.items || order.productos || [];
+                  const isBtOpen = btMenuOrderId === order.id;
 
-                    <button
-                      type="button"
-                      onClick={() => handlePrintKitchenTicket(order)}
-                      className="p-1.5 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
-                      title="Imprimir comanda"
-                    >
-                      <Printer size={13} />
-                    </button>
-                  </div>
-                ))}
+                  return (
+                    <div key={order.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/90 text-xs space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-slate-900 text-xs sm:text-sm">
+                              Orden #{String(order.id).slice(-4).toUpperCase()}
+                            </span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${stInfo.badgeClass}`}>
+                              {stInfo.label}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-500 block mt-0.5">
+                            {orderItems.reduce((acc, i) => acc + Number(i.cantidad ?? i.quantity ?? 1), 0)} platos · Total: <strong className="text-slate-900">{formatMoney(order.total_amount || order.total)}</strong>
+                          </span>
+                        </div>
+
+                        {!stInfo.isServed ? (
+                          <button
+                            type="button"
+                            onClick={() => handleLoadOrderToEdit(order)}
+                            className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                            title="Modificar o agregar platos mientras sigue en cocina sin cambiar el número de orden"
+                          >
+                            <PenLine size={12} />
+                            <span>Editar</span>
+                          </button>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200 text-[10px] font-bold shrink-0">
+                            <Lock size={11} />
+                            <span>Orden lista</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Resumen compacto de los platos actuales en la mesa */}
+                      {orderItems.length > 0 && (
+                        <div className="bg-white rounded-lg p-2 border border-slate-200/70 space-y-1 max-h-36 overflow-y-auto">
+                          {orderItems.map((it, idx) => {
+                            const qty = it.cantidad ?? it.quantity ?? 1;
+                            const name = it.nombre ?? it.name ?? 'Plato';
+                            const note = it.nota || it.note || '';
+                            const optText = it.opciones_texto || '';
+                            return (
+                              <div key={idx} className="flex items-start justify-between gap-2 text-[11px] leading-snug">
+                                <div className="min-w-0">
+                                  <span className="font-bold text-slate-900">{qty}x</span>{' '}
+                                  <span className="font-medium text-slate-800">{name}</span>
+                                  {optText && <span className="text-slate-500 block text-[10px]">+ {optText}</span>}
+                                  {note && <span className="text-amber-800 font-semibold block text-[10px]">Nota: {note}</span>}
+                                </div>
+                                <span className="font-semibold text-slate-700 tabular-nums shrink-0">
+                                  {formatMoney(Number(it.precio ?? it.price ?? 0) * Number(qty))}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Botones de impresión separados: Comanda Cocina (sin precios) vs Cuenta / Cobro (con precios) + Bluetooth */}
+                      <div className="grid grid-cols-[1fr_1fr_auto] gap-1.5 pt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => handlePrintTicket(order, 'kitchen', false)}
+                          className="h-8 px-2 rounded-lg bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          title="Imprimir comanda para cocina (solo platos y notas, sin precios)"
+                        >
+                          <ChefHat size={13} className="shrink-0" />
+                          <span className="truncate">Comanda Cocina</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handlePrintTicket(order, 'bill', false)}
+                          className="h-8 px-2 rounded-lg bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          title="Imprimir cuenta para el cliente (con precios y total)"
+                        >
+                          <Printer size={13} className="shrink-0" />
+                          <span className="truncate">Cuenta / Cobro</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={printingBtOrderId === order.id}
+                          onClick={() => setBtMenuOrderId(isBtOpen ? null : order.id)}
+                          className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+                            isBtOpen
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
+                          }`}
+                          title="Impresión directa a impresora portátil Bluetooth (Celular/Tablet)"
+                        >
+                          <Bluetooth size={14} />
+                        </button>
+                      </div>
+
+                      {/* Selector compacto Bluetooth para celular/tablet */}
+                      {isBtOpen && (
+                        <div className="p-2 rounded-lg bg-blue-50/90 border border-blue-200 flex items-center justify-between gap-1.5">
+                          <span className="text-[10px] font-bold text-blue-900 pl-1">
+                            Bluetooth POS:
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handlePrintBluetoothTicket(order, 'kitchen')}
+                              className="px-2 py-1 rounded bg-white hover:bg-blue-100 text-blue-900 border border-blue-200 text-[11px] font-bold cursor-pointer"
+                            >
+                              BT Cocina
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handlePrintBluetoothTicket(order, 'bill')}
+                              className="px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold cursor-pointer"
+                            >
+                              BT Cuenta
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Nota de control de estados centralizado en Pedidos en Vivo / Caja */}
+                <div className="px-3 py-2 rounded-xl bg-slate-100/80 border border-slate-200/80 text-[11px] text-slate-600 flex items-center gap-2">
+                  <Lock size={13} className="text-slate-500 shrink-0" />
+                  <span>
+                    {isTableOrderServed
+                      ? 'Orden entregada en mesa. El cierre y liberación de la mesa se realiza desde Pedidos en Vivo (Caja).'
+                      : 'El paso a En Mesa y el cierre de la orden los gestiona Cocina / Caja desde Pedidos en Vivo.'}
+                  </span>
+                </div>
               </div>
             )}
           </div>
@@ -1340,12 +1848,16 @@ export default function ComanderoView() {
             onClick={() => setMobileSection('ticket')}
             className="flex-1 min-w-0 flex items-center gap-2.5 text-left px-2 py-1 rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
           >
-            <span className="w-7 h-7 rounded-lg bg-white text-slate-900 font-black text-xs flex items-center justify-center shrink-0">
+            <span className="w-7 h-7 rounded-lg bg-brand text-white font-black text-xs flex items-center justify-center shrink-0">
               {activeTicketQty}
             </span>
             <div className="min-w-0">
               <span className="text-xs font-bold block truncate">
-                Ver Comanda Mesa #{selectedTable}
+                {editingOrderId
+                  ? `Editando Orden #${String(editingOrderId).slice(-4).toUpperCase()}`
+                  : primaryActiveOrder
+                    ? `Anexar a Mesa #${selectedTable}`
+                    : `Ver Comanda Mesa #${selectedTable}`}
               </span>
               <span className="text-[11px] text-slate-300 font-semibold tabular-nums block">
                 Total: {formatMoney(ticketSubtotal)}
@@ -1357,10 +1869,16 @@ export default function ComanderoView() {
             type="button"
             disabled={isSending}
             onClick={handleSendToKitchen}
-            className="px-3.5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shrink-0 shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+            className="px-3.5 py-2.5 rounded-xl bg-brand hover:opacity-95 text-white font-black text-xs flex items-center gap-1.5 shrink-0 shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
           >
             {isSending ? <RefreshCw size={14} className="animate-spin" /> : <ChefHat size={14} />}
-            <span>Mandar a Cocina</span>
+            <span>
+              {editingOrderId
+                ? 'Guardar'
+                : primaryActiveOrder
+                  ? 'Anexar'
+                  : 'Mandar a Cocina'}
+            </span>
           </button>
         </div>
       )}

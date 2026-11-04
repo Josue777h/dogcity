@@ -28,15 +28,15 @@ export default function Sidebar({ business, onSignOut, isOpen, onClose }) {
         to={tab.path}
         onClick={() => { if (window.innerWidth < 1024) onClose(); }}
         title={tab.label}
-        className={({ isActive }) => `sidebar-item flex items-center justify-between w-full py-3.5 px-3.5 rounded-xl transition-all text-sm font-semibold ${
+        className={({ isActive }) => `sidebar-item flex items-center justify-between w-full py-3 px-3.5 rounded-xl transition-all text-sm font-semibold ${
           isActive 
-            ? 'active bg-white/10 text-white font-bold' 
+            ? 'active bg-brand text-white font-bold shadow-xs' 
             : 'text-gray-400 hover:text-white hover:bg-white/5'
         }`}
       >
         {({ isActive }) => (
           <div className="flex items-center gap-3">
-            <tab.icon size={19} strokeWidth={isActive ? 2.2 : 1.8} className={isActive ? 'text-brand' : 'text-gray-400'} />
+            <tab.icon size={19} strokeWidth={isActive ? 2.2 : 1.8} className={isActive ? 'text-white' : 'text-gray-400'} />
             <span>{tab.label}</span>
           </div>
         )}

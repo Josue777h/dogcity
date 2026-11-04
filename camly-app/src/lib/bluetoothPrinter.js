@@ -101,8 +101,15 @@ export async function connectBluetoothPrinter() {
 
 /**
  * Construir comandos ESC/POS binarios para la orden
+ * @param {object} order - Datos de la orden
+ * @param {object} business - Datos del negocio
+ * @param {object} options - { mode: 'kitchen' | 'bill', isAddition: boolean, itemsOverride: Array }
  */
-export function buildEscPosCommands(order, business) {
+export function buildEscPosCommands(order, business, options = {}) {
+  const mode = options.mode === 'kitchen' ? 'kitchen' : 'bill';
+  const isKitchen = mode === 'kitchen';
+  const isAddition = Boolean(options.isAddition);
+
   const encoder = new TextEncoder();
   const chunks = [];
 
@@ -113,7 +120,6 @@ export function buildEscPosCommands(order, business) {
   const initPrinter = [ESC, 0x40]; // Reset / Init
   const alignCenter = [ESC, 0x61, 0x01];
   const alignLeft = [ESC, 0x61, 0x00];
-  const alignRight = [ESC, 0x61, 0x02];
   const boldOn = [ESC, 0x45, 0x01];
   const boldOff = [ESC, 0x45, 0x00];
   const doubleSize = [GS, 0x21, 0x11];
@@ -141,42 +147,54 @@ export function buildEscPosCommands(order, business) {
   const dateObj = order.created_at ? new Date(order.created_at) : new Date();
   const dateStr = dateObj.toLocaleDateString('es-CO');
   const timeStr = dateObj.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-  const isMesa = order.delivery_type === 'dine_in' || order.entrega_metodo === 'mesa' || (typeof order.direccion === 'string' && /mesa/i.test(order.direccion));
-  const tableNum = (order.direccion || '').match(/mesa\s*#?\s*([a-zA-Z0-9_-]+)/i)?.[1] || '';
-  const isEnvio = !isMesa && order.entrega_metodo === 'envio';
+  const isMesa = order.delivery_type === 'dine_in' || order.entrega_metodo === 'mesa' || (typeof order.direccion === 'string' && /mesa/i.test(order.direccion)) || Boolean(order.mesa || order.table_number);
+  const tableNum = String(order.mesa || order.table_number || '').trim() || ((order.direccion || '').match(/mesa\s*#?\s*([a-zA-Z0-9_-]+)/i)?.[1] || '');
+  const isEnvio = !isMesa && (order.entrega_metodo === 'envio' || order.delivery_type === 'delivery');
 
-  const items = order.items || order.productos || [];
+  const items = Array.isArray(options.itemsOverride) && options.itemsOverride.length > 0
+    ? options.itemsOverride
+    : (order.items || order.productos || []);
   const subtotal = getOrderSubtotal(order);
-  const domCost = Number(order.domicilio_costo) || 0;
-  const total = Number(order.total) || (subtotal + domCost);
+  const domCost = Number(order.domicilio_costo ?? order.delivery_fee) || 0;
+  const total = Number(order.total_amount ?? order.total) || (subtotal + domCost);
 
   // Inicializar
   addRaw(initPrinter);
 
-  // Encabezado
+  // Encabezado según el tipo de ticket
   addRaw(alignCenter);
-  addRaw(doubleSize);
-  addRaw(boldOn);
-  addText(businessName.toUpperCase() + '\n');
-  addRaw(normalSize);
-  addRaw(boldOff);
-
-  if (businessPhone) {
-    addText(`Tel: ${businessPhone}\n`);
+  if (isKitchen) {
+    addRaw(doubleSize);
+    addRaw(boldOn);
+    addText((isAddition ? 'ADICION DE COCINA' : 'COMANDA DE COCINA') + '\n');
+    addRaw(normalSize);
+    addRaw(boldOff);
+    addText(businessName.toUpperCase() + '\n');
+  } else {
+    addRaw(doubleSize);
+    addRaw(boldOn);
+    addText(businessName.toUpperCase() + '\n');
+    addRaw(normalSize);
+    addRaw(boldOff);
+    if (businessPhone) {
+      addText(`Tel: ${businessPhone}\n`);
+    }
+    addText('CUENTA / RECIBO DE PAGO\n');
   }
+
   if (isMesa) {
     addRaw(doubleSize);
     addRaw(boldOn);
-    addText(`>> SERVICIO EN MESA ${tableNum ? '#' + tableNum : ''} <<\n`);
+    addText(`MESA #${tableNum || '1'}\n`);
     addRaw(normalSize);
     addRaw(boldOff);
   } else if (isEnvio) {
     addRaw(boldOn);
-    addText('>> DOMICILIO <<\n');
+    addText('DOMICILIO\n');
     addRaw(boldOff);
   } else {
     addRaw(boldOn);
-    addText('>> RETIRO EN LOCAL <<\n');
+    addText('RETIRO EN LOCAL\n');
     addRaw(boldOff);
   }
   addText('--------------------------------\n');
@@ -184,21 +202,21 @@ export function buildEscPosCommands(order, business) {
   // Datos orden
   addRaw(alignLeft);
   addText(`ORDEN: #${shortId}\n`);
-  addText(`FECHA: ${dateStr} ${timeStr}\n`);
-  addText(`CLIENTE: ${order.nombre || 'Cliente'}\n`);
-  addText(`TEL: ${order.telefono || 'Sin tel'}\n`);
-  if (isMesa) {
-    addRaw(boldOn);
-    addText(`UBICACION: MESA #${tableNum || '1'}\n`);
-    addRaw(boldOff);
-  } else if (isEnvio) {
-    addText(`DIRECCION:\n${order.direccion || 'Sin direccion'}\n`);
+  addText(`HORA: ${dateStr} ${timeStr}\n`);
+  if (!isKitchen) {
+    addText(`CLIENTE: ${order.nombre || 'Cliente'}\n`);
+    if (!isMesa && order.telefono) {
+      addText(`TEL: ${order.telefono}\n`);
+    }
+    if (isEnvio && order.direccion) {
+      addText(`DIR: ${order.direccion}\n`);
+    }
   }
   addText('--------------------------------\n');
 
   // Items
   addRaw(boldOn);
-  addText('PRODUCTOS / COMANDA:\n');
+  addText(isKitchen ? 'PREPARACION:\n' : 'DETALLE DE CONSUMO:\n');
   addRaw(boldOff);
 
   items.forEach(p => {
@@ -206,44 +224,63 @@ export function buildEscPosCommands(order, business) {
     const name = p.nombre ?? p.name ?? 'Producto';
     const price = p.precio ?? p.price ?? 0;
     const itemTotal = price * qty;
-    const optText = p.opciones_texto || (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
-    const nota = p.nota || '';
+    const optText = p.opciones_texto || (Array.isArray(p.opciones) ? p.opciones.map(t => typeof t === 'string' ? t : (t.nombre || t.label)).join(', ') : '') || (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
+    const nota = p.nota || p.note || '';
 
     addRaw(boldOn);
-    addText(`${qty}x ${name} - $${itemTotal.toLocaleString('es-CO')}\n`);
+    if (isKitchen) {
+      addText(`${qty} x ${name.toUpperCase()}\n`);
+    } else {
+      addText(`${qty}x ${name} - $${itemTotal.toLocaleString('es-CO')}\n`);
+    }
     addRaw(boldOff);
 
     if (optText) {
-      addText(`  > ${optText}\n`);
+      addText(`  + ${optText}\n`);
     }
     if (nota) {
-      addText(`  (Nota: ${nota})\n`);
+      addRaw(boldOn);
+      addText(`  NOTA: ${nota}\n`);
+      addRaw(boldOff);
     }
     addText('\n');
   });
 
-  if (order.comentarios) {
+  if (order.comentarios && order.comentarios !== 'Comanda de salón') {
+    addRaw(boldOn);
     addText(`OBS: ${order.comentarios}\n`);
+    addRaw(boldOff);
   }
 
   addText('--------------------------------\n');
 
-  // Totales
-  addText(`Subtotal: $${subtotal.toLocaleString('es-CO')}\n`);
-  if (isEnvio) {
-    addText(`Domicilio: $${domCost.toLocaleString('es-CO')}\n`);
+  // Totales únicamente en Cuenta / Cobro
+  if (!isKitchen) {
+    addText(`Subtotal: $${subtotal.toLocaleString('es-CO')}\n`);
+    if (isEnvio) {
+      addText(`Domicilio: $${domCost.toLocaleString('es-CO')}\n`);
+    }
+    addRaw(boldOn);
+    addRaw(doubleSize);
+    addText(`TOTAL: $${total.toLocaleString('es-CO')}\n`);
+    addRaw(normalSize);
+    addRaw(boldOff);
+
+    const paymentLabel = isMesa
+      ? 'PAGO EN CAJA / MESA'
+      : order.pago_metodo === 'transferencia'
+        ? 'TRANSFERENCIA'
+        : 'EFECTIVO';
+    addText(`Pago: ${paymentLabel}\n`);
+    addText('--------------------------------\n');
+
+    addRaw(alignCenter);
+    addText('Gracias por su visita!\n');
+  } else {
+    addRaw(alignCenter);
+    addText('--- FIN DE COMANDA ---\n');
   }
-  addRaw(boldOn);
-  addRaw(doubleSize);
-  addText(`TOTAL: $${total.toLocaleString('es-CO')}\n`);
-  addRaw(normalSize);
-  addRaw(boldOff);
 
-  addText(`Pago: ${order.pago_metodo === 'transferencia' ? 'TRANSFERENCIA' : 'EFECTIVO'}\n`);
-  addText('--------------------------------\n');
-
-  addRaw(alignCenter);
-  addText('Gracias por su compra!\n');
   addRaw(lineFeed);
   addRaw(lineFeed);
   addRaw(lineFeed);
@@ -262,11 +299,11 @@ export function buildEscPosCommands(order, business) {
 }
 
 /**
- * Enviar comanda directamente a la impresora Bluetooth conectada
+ * Enviar comanda o cuenta directamente a la impresora Bluetooth conectada
  */
-export async function printOrderViaBluetooth(order, business) {
+export async function printOrderViaBluetooth(order, business, options = {}) {
   const { device, characteristic } = await connectBluetoothPrinter();
-  const buffer = buildEscPosCommands(order, business);
+  const buffer = buildEscPosCommands(order, business, options);
 
   // Escribir en fragmentos pequeños (MTU BLE suele ser ~20 a 100 bytes)
   const CHUNK_SIZE = 64;
