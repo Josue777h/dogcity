@@ -268,14 +268,14 @@ export default function ProductCard({
             </div>
           )}
 
-          {/* Badge si tiene opciones o personalizaciones */}
+          {/* Micro-tag minimalista si tiene opciones (sin tapar la foto con texto) */}
           {hasOptions && (
             <div 
-              className="absolute left-2 top-2 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-white shadow-xs"
-              style={{ backgroundColor: brandColor }}
+              className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm text-white shadow-2xs"
+              title="Producto personalizable"
+              aria-label="Producto personalizable"
             >
-              <Layers size={11} />
-              <span>Personalizable</span>
+              <Layers size={12} />
             </div>
           )}
 
@@ -288,30 +288,23 @@ export default function ProductCard({
               {totalProductQty}
             </div>
           )}
-
-          {/* Category pill if any */}
-          {product.categoria && (
-            <div className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] truncate rounded-md bg-black/65 px-2 py-1 text-xs font-medium text-white">
-              {product.categoria}
-            </div>
-          )}
         </div>
 
         {/* Content */}
-        <div className="flex flex-1 flex-col p-2.5 font-sans sm:p-3">
-          <div className="mb-2 min-w-0 flex-1 cursor-pointer" onClick={openCustomizationModal}>
-            <h3 className="mb-1 line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-tight text-slate-900 sm:text-base hover:text-blue-600 transition-colors">
+        <div className="flex flex-1 flex-col p-2.5 sm:p-3 font-sans min-w-0 overflow-hidden">
+          <div className="mb-2 min-w-0 flex-1 cursor-pointer overflow-hidden" onClick={openCustomizationModal}>
+            <h3 className="mb-1 line-clamp-2 break-words text-sm font-bold leading-snug text-slate-900 sm:text-base hover:text-blue-600 transition-colors">
               {product.name}
             </h3>
             {product.description && (
-              <p className="line-clamp-2 text-xs sm:text-sm leading-snug text-slate-600">
+              <p className="line-clamp-2 break-words text-ellipsis overflow-hidden text-xs leading-relaxed text-slate-500">
                 {product.description}
               </p>
             )}
           </div>
 
           <div className="mt-auto flex flex-col gap-2 border-t border-[#f0ede7] pt-2.5">
-            <span className="truncate text-sm font-bold tabular-nums text-slate-900 sm:text-base">
+            <span className="truncate text-sm font-extrabold tabular-nums text-slate-900 sm:text-base">
               {formatMoney(product.price)}
             </span>
 
@@ -319,7 +312,7 @@ export default function ProductCard({
               <button
                 type="button"
                 onClick={openCustomizationModal}
-                className="flex min-h-9 sm:min-h-10 w-full items-center justify-between rounded-lg border border-slate-200 bg-white hover:bg-slate-50 px-3 text-xs font-semibold text-slate-700 transition-colors shadow-2xs"
+                className="flex h-10 min-h-[40px] w-full items-center justify-between rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:scale-95 px-3 text-xs font-semibold text-slate-700 transition-all shadow-2xs"
               >
                 <span>Ver plato</span>
                 <ChevronDown size={14} className="text-slate-400 -rotate-90" />
@@ -328,7 +321,7 @@ export default function ProductCard({
               <button
                 type="button"
                 onClick={handleCardAdd}
-                className="flex min-h-11 w-full items-center justify-center rounded-lg border border-[#e4e1da] bg-[#f2f0eb] px-3 text-xs font-semibold text-slate-500 cursor-not-allowed"
+                className="flex h-10 min-h-[40px] w-full items-center justify-center rounded-xl border border-[#e4e1da] bg-[#f2f0eb] px-3 text-xs font-semibold text-slate-500 cursor-not-allowed"
                 title={storeClosedMessage || 'Tienda en pausa o cerrada temporalmente'}
               >
                 Pausado
@@ -336,23 +329,23 @@ export default function ProductCard({
             ) : !isSelected ? (
               <button
                 onClick={handleCardAdd}
-                className={`${btnProps.className} min-h-11 w-full gap-1 rounded-lg px-3 text-sm font-semibold shadow-none`}
+                className={`${btnProps.className} h-10 min-h-[40px] w-full gap-1.5 rounded-xl px-3 text-xs sm:text-sm font-bold shadow-xs active:scale-95 transition-all`}
                 style={btnProps.style}
                 aria-label={`Agregar ${product.name}`}
               >
-                <Plus size={13} className="shrink-0" />
+                <Plus size={14} strokeWidth={2.5} className="shrink-0" />
                 <span>{hasOptions ? 'Elegir' : 'Agregar'}</span>
               </button>
             ) : (
-              <div className="flex min-h-11 w-full items-center justify-between overflow-hidden rounded-lg border border-[#e1ddd5] bg-[#f7f6f2]">
+              <div className="flex h-10 min-h-[40px] w-full items-center justify-between overflow-hidden rounded-xl border border-[#e1ddd5] bg-[#f7f6f2]">
                 <button
                   onClick={() => decrement(bid, product.id)}
-                  className="flex h-11 w-12 items-center justify-center text-slate-700 transition-colors hover:bg-black/5 active:bg-black/10"
+                  className="flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-black/5 active:scale-95"
                   aria-label="Restar una unidad"
                 >
-                  <Minus size={16} />
+                  <Minus size={15} />
                 </button>
-                <span className="min-w-8 text-center text-sm font-semibold tabular-nums text-slate-900">
+                <span className="min-w-8 text-center text-sm font-bold tabular-nums text-slate-900">
                   {totalProductQty}
                 </span>
                 <button
@@ -360,10 +353,10 @@ export default function ProductCard({
                     if (hasOptions) openCustomizationModal();
                     else increment(bid, product.id);
                   }}
-                  className="flex h-11 w-12 items-center justify-center text-slate-700 transition-colors hover:bg-black/5 active:bg-black/10"
+                  className="flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-black/5 active:scale-95"
                   aria-label="Sumar una unidad o personalizar otra"
                 >
-                  <Plus size={16} />
+                  <Plus size={15} />
                 </button>
               </div>
             )}
@@ -402,11 +395,6 @@ export default function ProductCard({
                     className="h-full w-full object-cover"
                     onError={() => setImgError(true)}
                   />
-                  {product.categoria && (
-                    <span className="absolute bottom-2.5 left-3 rounded-md bg-black/75 backdrop-blur-xs px-2.5 py-1 text-xs font-semibold text-white">
-                      {product.categoria}
-                    </span>
-                  )}
                 </div>
               ) : null}
 
@@ -414,12 +402,7 @@ export default function ProductCard({
               <div className="p-4 sm:p-5 border-b border-[#f0ede7] space-y-2">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    {(!product.image || imgError) && product.categoria && (
-                      <span className="mb-1 inline-block rounded-md bg-[#f2f0eb] px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                        {product.categoria}
-                      </span>
-                    )}
-                    <h2 className="text-lg sm:text-xl font-bold leading-tight text-slate-900">
+                    <h2 className="text-lg sm:text-xl font-bold leading-tight text-slate-900 break-words">
                       {product.name}
                     </h2>
                   </div>
@@ -430,7 +413,7 @@ export default function ProductCard({
 
                 {/* Descripción e ingredientes legible y sin recuadros pesados */}
                 {product.description && (
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line pt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line break-words pt-0.5">
                     {product.description}
                   </p>
                 )}

@@ -503,54 +503,48 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                     </p>
                   ) : (
                     <>
-                      <div className="max-h-52 overflow-y-auto overscroll-contain divide-y sm:max-h-64" style={{ borderColor: 'var(--color-border)' }}>
+                      <div className="max-h-60 overflow-y-auto overscroll-contain divide-y divide-slate-200/80">
                         {selectedItems.map((item, idx) => (
-                          <div key={item.cartItemId || `${item.id}_${idx}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-3 py-2.5 sm:px-4">
-                            <div className="min-w-0 self-start">
-                              <p className="line-clamp-2 text-[13px] font-semibold leading-snug" style={{ color: 'var(--color-text-1)' }}>
+                          <div key={item.cartItemId || `${item.id}_${idx}`} className="flex items-start justify-between gap-3 px-3.5 py-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="line-clamp-2 break-words text-sm font-bold leading-snug text-slate-900">
                                 {item.name}
                               </p>
                               {item.opciones_texto && (
-                                <p className="mt-0.5 line-clamp-1 text-[11px] font-medium text-blue-700">
+                                <p className="mt-1 line-clamp-2 break-words text-xs font-medium text-slate-600 bg-slate-50 px-2 py-0.5 rounded-md inline-block">
                                   {item.opciones_texto}
                                 </p>
                               )}
                               {(item.note || cart.notes?.[item.id]) && (
-                                <p className="mt-0.5 line-clamp-1 text-[11px] italic text-gray-500">
+                                <p className="mt-1 line-clamp-2 break-words text-xs italic text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md inline-block">
                                   Nota: {item.note || cart.notes?.[item.id]}
                                 </p>
                               )}
                             </div>
                             <div className="flex shrink-0 flex-col items-end gap-1.5">
-                              <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--color-text-1)' }}>
+                              <span className="text-sm font-extrabold tabular-nums text-slate-900 whitespace-nowrap shrink-0">
                                 {formatMoney(item.quantity * item.price)}
                               </span>
                               {/* Stepper */}
-                              <div
-                                className="flex items-center rounded-lg border overflow-hidden bg-gray-50/50"
-                                style={{ borderColor: 'var(--color-border)' }}
-                              >
+                              <div className="flex items-center rounded-xl border border-slate-200 overflow-hidden bg-slate-50">
                                 <button
+                                  type="button"
                                   onClick={() => decrement(bid, item.cartItemId || item.id)}
-                                  className="h-7 w-7 flex items-center justify-center transition-colors hover:bg-gray-100 cursor-pointer"
-                                  style={{ color: 'var(--color-text-2)' }}
+                                  className="h-8 w-8 flex items-center justify-center text-slate-700 transition-colors hover:bg-slate-200/70 active:scale-95 cursor-pointer"
                                   aria-label="Restar una unidad"
                                 >
-                                  <Minus size={12} />
+                                  <Minus size={13} />
                                 </button>
-                                <span
-                                  className="w-6 text-center text-xs font-bold tabular-nums"
-                                  style={{ color: 'var(--color-text-1)' }}
-                                >
+                                <span className="w-7 text-center text-xs font-bold tabular-nums text-slate-900">
                                   {item.quantity}
                                 </span>
                                 <button
+                                  type="button"
                                   onClick={() => increment(bid, item.cartItemId || item.id)}
-                                  className="h-7 w-7 flex items-center justify-center transition-colors hover:bg-gray-100 cursor-pointer"
-                                  style={{ color: 'var(--color-brand)' }}
+                                  className="h-8 w-8 flex items-center justify-center text-emerald-700 transition-colors hover:bg-slate-200/70 active:scale-95 cursor-pointer"
                                   aria-label="Sumar una unidad"
                                 >
-                                  <Plus size={12} />
+                                  <Plus size={13} />
                                 </button>
                               </div>
                             </div>
@@ -558,12 +552,9 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                         ))}
                       </div>
                       {/* Subtotal row */}
-                      <div
-                        className="flex items-center justify-between px-3 py-2.5 sm:px-4"
-                        style={{ backgroundColor: 'var(--color-bg)', borderTop: `1px solid var(--color-border)` }}
-                      >
-                        <span className="text-sm" style={{ color: 'var(--color-text-2)' }}>Subtotal</span>
-                        <span className="text-sm font-semibold tabular-nums" style={{ color: 'var(--color-text-1)' }}>
+                      <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-50 border-t border-slate-200/80">
+                        <span className="text-sm font-medium text-slate-600">Subtotal</span>
+                        <span className="text-sm font-bold tabular-nums text-slate-900 shrink-0">
                           {formatMoney(subtotal)}
                         </span>
                       </div>
@@ -597,38 +588,41 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                       </div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-2.5">
                       {[
                         { id: 'envio', label: 'A domicilio', icon: Truck },
                         { id: 'recogida', label: 'Recoger en local', icon: ShoppingBag },
-                      ].map(m => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => {
-                            setDeliveryMethod(m.id);
-                            if (m.id === 'recogida') {
-                              setLocation('', '');
-                              setDeliveryFee(0);
-                              setDistanceKm(null);
-                              setMapCoords(null);
-                            }
-                          }}
-                          style={deliveryMethod === m.id ? {
-                            borderColor: business?.theme_color || '#0284C7',
-                            backgroundColor: `${business?.theme_color || '#0284C7'}10`,
-                            color: business?.theme_color || '#0284C7'
-                          } : {}}
-                          className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
-                            deliveryMethod === m.id
-                              ? 'shadow-2xs'
-                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          <m.icon size={18} strokeWidth={1.5} />
-                          <span>{m.label}</span>
-                        </button>
-                      ))}
+                      ].map(m => {
+                        const isSelectedMethod = deliveryMethod === m.id;
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => {
+                              setDeliveryMethod(m.id);
+                              if (m.id === 'recogida') {
+                                setLocation('', '');
+                                setDeliveryFee(0);
+                                setDistanceKm(null);
+                                setMapCoords(null);
+                              }
+                            }}
+                            className={`relative flex flex-col items-center justify-center gap-1.5 p-3.5 rounded-xl border-2 text-sm transition-all active:scale-95 cursor-pointer ${
+                              isSelectedMethod
+                                ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-semibold shadow-sm'
+                                : 'border-slate-200 bg-white text-slate-600 font-medium hover:border-slate-300 hover:bg-slate-50'
+                            }`}
+                          >
+                            {isSelectedMethod && (
+                              <span className="absolute right-2 top-2 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+                                <Check size={10} strokeWidth={3} />
+                              </span>
+                            )}
+                            <m.icon size={20} strokeWidth={isSelectedMethod ? 2.2 : 1.75} />
+                            <span>{m.label}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
 
@@ -814,31 +808,34 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
               {/* ── PAYMENT ── */}
               <div>
                 <p className="caps-label mb-2">Forma de pago</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-3">
                   {[
                     { id: 'efectivo', label: 'Efectivo', icon: Wallet, show: enabledPayments.includes('efectivo') },
                     { id: 'transferencia', label: 'Transferencia', icon: CreditCard, show: enabledPayments.includes('transferencia') },
                     { id: 'datafono', label: 'Datáfono', icon: Smartphone, show: enabledPayments.includes('datafono') },
-                  ].filter(m => m.show).map(m => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setPaymentMethod(m.id)}
-                      style={paymentMethod === m.id ? {
-                        borderColor: business?.theme_color || '#0284C7',
-                        backgroundColor: `${business?.theme_color || '#0284C7'}10`,
-                        color: business?.theme_color || '#0284C7'
-                      } : {}}
-                      className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-sm font-semibold transition-all ${
-                        paymentMethod === m.id
-                          ? 'shadow-2xs'
-                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <m.icon size={18} strokeWidth={1.5} />
-                      <span>{m.label}</span>
-                    </button>
-                  ))}
+                  ].filter(m => m.show).map(m => {
+                    const isSelectedPay = paymentMethod === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setPaymentMethod(m.id)}
+                        className={`relative flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 text-sm transition-all active:scale-95 cursor-pointer ${
+                          isSelectedPay
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-semibold shadow-sm'
+                            : 'border-slate-200 bg-white text-slate-600 font-medium hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        {isSelectedPay && (
+                          <span className="absolute right-2 top-2 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+                            <Check size={10} strokeWidth={3} />
+                          </span>
+                        )}
+                        <m.icon size={19} strokeWidth={isSelectedPay ? 2.2 : 1.75} />
+                        <span>{m.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Transfer details */}
@@ -934,7 +931,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || selectedItems.length === 0 || scheduleStatus?.isOpen === false}
-              className={`btn-whatsapp w-full py-2.5 sm:py-3 text-xs sm:text-sm font-bold ${
+              className={`w-full min-h-12 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 scheduleStatus?.isOpen === false ? '!bg-gray-400 !border-gray-400 !cursor-not-allowed opacity-75' : ''
               }`}
             >
@@ -944,17 +941,11 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                 <span>Tienda cerrada · Pedidos pausados</span>
               ) : (
                 <>
-                  <WhatsAppIcon size={18} />
+                  <WhatsAppIcon size={19} />
                   <span>
-                    {!deliveryMethod
-                      ? 'Selecciona cómo recibir tu pedido'
-                      : deliveryMethod === 'envio' && !locationLink
-                        ? 'Activar GPS para enviar pedido'
-                        : !paymentMethod
-                          ? 'Selecciona la forma de pago'
-                          : tableNumber
-                            ? `Confirmar orden para Mesa #${tableNumber}`
-                            : 'Enviar pedido por WhatsApp'
+                    {tableNumber
+                      ? `Confirmar orden para Mesa #${tableNumber}`
+                      : 'Confirmar por WhatsApp'
                     }
                   </span>
                 </>

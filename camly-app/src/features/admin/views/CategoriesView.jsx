@@ -286,10 +286,10 @@ export default function CategoriesView(props) {
               return (
                 <div
                   key={cat.id}
-                  className={`bg-white rounded-2xl border p-4 transition-all flex flex-col justify-between gap-3 ${
+                  className={`rounded-2xl border bg-white p-4 transition-all flex flex-col justify-between gap-3.5 ${
                     isEditing
                       ? 'border-slate-900 ring-2 ring-slate-900/10 shadow-xs'
-                      : 'border-slate-200/90 hover:border-slate-300 shadow-2xs'
+                      : 'border-slate-100 hover:border-slate-200 shadow-xs'
                   }`}
                 >
                   {isEditing ? (
@@ -312,7 +312,7 @@ export default function CategoriesView(props) {
                         <button
                           type="button"
                           onClick={() => handleUpdate(cat.id)}
-                          className="w-9 h-9 rounded-xl bg-slate-900 hover:bg-black text-white flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+                          className="w-10 h-10 rounded-xl bg-slate-900 hover:bg-black text-white flex items-center justify-center shrink-0 transition-colors cursor-pointer"
                           title="Guardar cambios"
                           aria-label="Guardar cambios"
                         >
@@ -321,7 +321,7 @@ export default function CategoriesView(props) {
                         <button
                           type="button"
                           onClick={() => setEditingId(null)}
-                          className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+                          className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
                           title="Cancelar edición"
                           aria-label="Cancelar edición"
                         >
@@ -331,67 +331,45 @@ export default function CategoriesView(props) {
                     </div>
                   ) : (
                     <>
-                      <div className="flex items-start justify-between gap-2.5">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200/80 text-slate-700 flex items-center justify-center shrink-0">
-                            <Tag size={17} />
-                          </div>
-                          <div className="min-w-0">
-                            <h4 className="text-sm sm:text-base font-bold text-slate-900 truncate leading-tight">
-                              {cat.nombre}
-                            </h4>
-                            <span className={`inline-flex items-center gap-1 mt-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border ${
-                              count > 0
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200/80'
-                                : 'bg-slate-50 text-slate-500 border-slate-200/80'
-                            }`}>
-                              <Package size={11} />
-                              {count} {count === 1 ? 'producto' : 'productos'}
-                            </span>
-                          </div>
-                        </div>
+                      {/* Izquierda: Nombre de la categoría en negrita + badge contador neutro */}
+                      <div className="flex items-center justify-between gap-2.5 min-w-0">
+                        <h4 className="text-sm sm:text-base font-bold text-slate-900 truncate leading-snug">
+                          {cat.nombre}
+                        </h4>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shrink-0">
+                          {count} {count === 1 ? 'plato' : 'platos'}
+                        </span>
+                      </div>
 
-                        {/* Botones de acción claros y cómodos para móvil */}
-                        <div className="flex items-center gap-1 shrink-0">
+                      {/* Acciones agrupadas en contenedor horizontal con hit-target mínimo de 40x40px */}
+                      <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <Link
+                          to="/admin/productos"
+                          className="min-h-10 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-950 text-xs font-bold inline-flex items-center gap-1 transition-colors shrink-0"
+                        >
+                          <span>Ver platos →</span>
+                        </Link>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             type="button"
                             onClick={() => { setEditingId(cat.id); setEditingName(cat.nombre); }}
-                            className="w-8.5 h-8.5 rounded-xl border border-transparent hover:border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
-                            title="Renombrar categoría"
-                            aria-label="Renombrar categoría"
+                            className="w-10 h-10 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-colors active:scale-95 cursor-pointer"
+                            title="Editar categoría"
+                            aria-label="Editar categoría"
                           >
-                            <Edit size={15} />
+                            <Edit size={16} />
                           </button>
                           <button
                             type="button"
                             onClick={() => setItemToDelete(cat)}
-                            className="w-8.5 h-8.5 rounded-xl border border-transparent hover:border-rose-200 bg-rose-50/50 hover:bg-rose-100 text-rose-500 hover:text-rose-700 flex items-center justify-center transition-colors cursor-pointer"
+                            className="w-10 h-10 rounded-xl border border-red-100 bg-red-50/60 hover:bg-red-100 text-red-500 hover:text-red-700 flex items-center justify-center transition-colors active:scale-95 cursor-pointer"
                             title="Eliminar categoría"
                             aria-label="Eliminar categoría"
                           >
                             <Trash2 size={16} />
                           </button>
                         </div>
-                      </div>
-
-                      {/* Vista previa de platos en esta categoría */}
-                      <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
-                        {count > 0 ? (
-                          <p className="text-[11px] text-slate-500 truncate">
-                            {catProducts.slice(0, 3).map(p => p.name || p.nombre).join(', ')}
-                            {count > 3 ? ` +${count - 3} más` : ''}
-                          </p>
-                        ) : (
-                          <span className="text-[11px] text-slate-400">
-                            Sin productos asignados aún
-                          </span>
-                        )}
-                        <Link
-                          to="/admin/productos"
-                          className="text-[11px] font-bold text-slate-700 hover:text-slate-950 shrink-0 hover:underline"
-                        >
-                          Ver platos →
-                        </Link>
                       </div>
                     </>
                   )}

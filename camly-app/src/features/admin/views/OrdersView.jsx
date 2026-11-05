@@ -391,8 +391,8 @@ function OrderItems({ order }) {
   const pending = isDeliveryPending(order);
 
   return (
-    <div className="space-y-2.5">
-      <div className="max-h-40 overflow-y-auto overscroll-contain pr-1 space-y-1.5 divide-y divide-gray-100 sm:max-h-64">
+    <div className="space-y-3">
+      <div className="max-h-56 overflow-y-auto overscroll-contain pr-1">
         {items.map((p, idx) => {
           const qty = p.cantidad ?? p.quantity ?? 1;
           const name = p.nombre ?? p.name ?? 'Producto';
@@ -402,26 +402,27 @@ function OrderItems({ order }) {
             (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
 
           return (
-            <div key={idx} className="pt-1.5 first:pt-0">
+            <div key={idx} className="border-b border-slate-100 pb-2.5 mb-2.5 last:border-b-0 last:pb-0 last:mb-0">
               <div className="flex justify-between items-start text-xs sm:text-sm gap-2">
-                <div className="flex items-start gap-1.5 font-bold text-gray-950 leading-snug">
-                  <span className="px-1.5 py-0.5 bg-blue-100 text-blue-900 rounded font-black text-xs shrink-0">{qty}×</span>
-                  <span>{name}</span>
+                <div className="flex items-start gap-2 font-bold text-slate-900 leading-snug min-w-0">
+                  <span className="px-1.5 py-0.5 bg-slate-900 text-white rounded-md font-extrabold text-[11px] shrink-0">
+                    x{qty}
+                  </span>
+                  <span className="break-words">{name}</span>
                 </div>
-                <span className="text-gray-950 tabular-nums font-black shrink-0">{formatMoney(price * qty)}</span>
+                <span className="text-slate-900 tabular-nums font-bold shrink-0">{formatMoney(price * qty)}</span>
               </div>
 
               {optionsText && (
-                <div className="mt-1 text-xs font-semibold text-blue-950 bg-blue-50 border border-blue-200 rounded-md px-2 py-0.5 inline-block">
-                  ▸ {optionsText}
+                <div className="ml-6 mt-1 text-xs text-slate-600 bg-slate-50 border border-slate-200/70 px-2 py-0.5 rounded-md inline-block break-words">
+                  + {optionsText}
                 </div>
               )}
 
               {p.nota && (
-                <div className="text-[11px] font-bold text-amber-950 bg-amber-50 border border-amber-300 rounded px-2 py-0.5 mt-1 flex items-center gap-1">
-                  <AlertCircle size={12} className="text-amber-700 shrink-0" />
-                  <span>Nota del pedido:</span>
-                  <span className="font-semibold">&ldquo;{p.nota}&rdquo;</span>
+                <div className="ml-6 mt-1 text-[11px] font-semibold text-amber-900 bg-amber-50 border border-amber-200/80 rounded-md px-2 py-0.5 inline-flex items-center gap-1 break-words">
+                  <AlertCircle size={11} className="text-amber-700 shrink-0" />
+                  <span>Nota: &ldquo;{p.nota}&rdquo;</span>
                 </div>
               )}
             </div>
@@ -429,24 +430,24 @@ function OrderItems({ order }) {
         })}
       </div>
 
-      <div className="pt-2.5 border-t border-gray-200 space-y-1 bg-gray-50 -mx-2.5 -mb-2.5 p-2.5 rounded-b-xl border-x border-b border-gray-200/80">
-        <div className="flex justify-between items-center text-xs text-gray-700">
+      <div className="pt-2.5 border-t border-slate-200 space-y-1 bg-slate-50 -mx-3 -mb-3 p-3 rounded-b-xl border-x border-b border-slate-200/80">
+        <div className="flex justify-between items-center text-xs text-slate-600">
           <span>Subtotal productos</span>
-          <span className="tabular-nums font-bold text-gray-900">{formatMoney(subtotal)}</span>
+          <span className="tabular-nums font-bold text-slate-900">{formatMoney(subtotal)}</span>
         </div>
         {order.entrega_metodo === 'envio' && (
           <div className="flex justify-between items-center text-xs">
-            <span className={pending ? 'text-amber-800 font-bold' : 'text-gray-700'}>
+            <span className={pending ? 'text-amber-800 font-bold' : 'text-slate-600'}>
               {pending ? 'Domicilio (por cotizar)' : 'Costo de envío'}
             </span>
-            <span className={pending ? 'text-amber-800 font-bold' : 'text-gray-950 tabular-nums font-bold'}>
+            <span className={pending ? 'text-amber-800 font-bold' : 'text-slate-900 tabular-nums font-bold'}>
               {pending ? 'Pendiente' : formatMoney(order.delivery_fee || order.domicilio_costo || 0)}
             </span>
           </div>
         )}
-        <div className="flex justify-between items-center pt-1.5 border-t border-gray-200">
-          <span className="text-xs font-black text-gray-950 uppercase tracking-wider">Total a cobrar</span>
-          <span className="text-base sm:text-lg font-black text-gray-950 tabular-nums">{formatMoney(order.total_amount || order.total)}</span>
+        <div className="flex justify-between items-center pt-1.5 border-t border-slate-200">
+          <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Total a cobrar</span>
+          <span className="text-base sm:text-lg font-extrabold text-slate-900 tabular-nums">{formatMoney(order.total_amount || order.total)}</span>
         </div>
       </div>
     </div>
@@ -1483,13 +1484,13 @@ export default function OrdersView(props) {
                         <OrderItems order={order} />
                       </div>
 
-                      {/* Botones de comanda de cocina, cuenta de cobro, Bluetooth portátil y cancelación */}
-                      <div className="mt-3 pt-2.5 border-t border-gray-200 space-y-2">
-                        <div className="grid grid-cols-[1fr_1fr_auto] gap-1.5">
+                      {/* Botones de comanda de cocina, cuenta de cobro, Bluetooth portátil y cancelación (sin desborde en móvil) */}
+                      <div className="mt-3 pt-2.5 border-t border-gray-200 space-y-2 overflow-hidden">
+                        <div className="flex items-center gap-1.5 w-full min-w-0">
                           <button
                             type="button"
                             onClick={() => printThermalReceipt(order, business, { mode: 'kitchen' })}
-                            className="h-8.5 px-2.5 rounded-lg border border-gray-300 hover:border-gray-900 bg-white text-gray-800 hover:text-black text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            className="flex-1 min-w-0 h-9 px-2 rounded-lg border border-slate-200 hover:border-slate-900 bg-white text-slate-800 hover:text-black text-xs font-bold flex items-center justify-center gap-1.5 transition-colors active:scale-95 cursor-pointer"
                             title="Imprimir comanda de cocina (solo platos y notas, sin precios)"
                           >
                             <ChefHat size={14} className="shrink-0" />
@@ -1499,7 +1500,7 @@ export default function OrdersView(props) {
                           <button
                             type="button"
                             onClick={() => printThermalReceipt(order, business, { mode: 'bill' })}
-                            className="h-8.5 px-2.5 rounded-lg border border-gray-300 hover:border-gray-900 bg-white text-gray-800 hover:text-black text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            className="flex-1 min-w-0 h-9 px-2 rounded-lg border border-slate-200 hover:border-slate-900 bg-white text-slate-800 hover:text-black text-xs font-bold flex items-center justify-center gap-1.5 transition-colors active:scale-95 cursor-pointer"
                             title="Imprimir cuenta / recibo para el cliente (con precios y total)"
                           >
                             <Printer size={14} className="shrink-0" />
@@ -1510,7 +1511,7 @@ export default function OrdersView(props) {
                             type="button"
                             disabled={printingBluetoothId === order.id}
                             onClick={() => setBtMenuOrderId(btMenuOrderId === order.id ? null : order.id)}
-                            className={`h-8.5 w-8.5 rounded-lg border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${btMenuOrderId === order.id
+                            className={`h-9 w-9 rounded-lg border flex items-center justify-center transition-colors active:scale-95 cursor-pointer shrink-0 ${btMenuOrderId === order.id
                                 ? 'bg-blue-600 text-white border-blue-600'
                                 : 'border-blue-200 hover:border-blue-400 bg-blue-50/70 hover:bg-blue-100 text-blue-800'
                               }`}
@@ -1523,10 +1524,10 @@ export default function OrdersView(props) {
 
                         {btMenuOrderId === order.id && (
                           <div className="p-2 rounded-lg bg-blue-50/90 border border-blue-200 flex items-center justify-between gap-2 text-xs">
-                            <span className="text-[11px] font-bold text-blue-950 pl-1">
-                              Impresora Bluetooth (Celular/POS):
+                            <span className="text-[11px] font-bold text-blue-950 pl-1 truncate">
+                              Bluetooth POS:
                             </span>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 shrink-0">
                               <button
                                 type="button"
                                 onClick={() => handlePrintBluetooth(order, 'kitchen')}
@@ -1548,7 +1549,7 @@ export default function OrdersView(props) {
                         <button
                           type="button"
                           onClick={() => setOrderToCancel(order)}
-                          className="w-full h-8 rounded-lg border border-rose-200 hover:border-rose-400 bg-rose-50/80 hover:bg-rose-100 text-rose-700 text-xs font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          className="w-full h-9 rounded-lg border border-rose-200 hover:border-rose-400 bg-rose-50/80 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors active:scale-95 cursor-pointer"
                           title="Cancelar este pedido y seleccionar motivo"
                         >
                           <Ban size={14} className="shrink-0" />
@@ -1574,8 +1575,12 @@ export default function OrdersView(props) {
 
       <ConfirmModal
         isOpen={!!orderToDelete}
-        title="Eliminar Pedido"
-        message={`¿Estás seguro de que deseas eliminar permanentemente el pedido de "${orderToDelete?.nombre}"? Esta acción no se puede deshacer.`}
+        title={
+          orderToDelete && isMesaOrder(orderToDelete)
+            ? `¿Eliminar pedido de Mesa #${getTableNumber(orderToDelete) || '1'}?`
+            : `¿Eliminar pedido de ${orderToDelete?.nombre || 'cliente'}?`
+        }
+        message="Esta acción no se puede deshacer."
         onConfirm={confirmDelete}
         onCancel={() => setOrderToDelete(null)}
       />

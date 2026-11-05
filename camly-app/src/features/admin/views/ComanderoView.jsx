@@ -834,6 +834,9 @@ export default function ComanderoView() {
       clearTableCall(selectedTable);
       setGeneralNote('');
       setLastSentOrder(finalOrderObj);
+      setTimeout(() => {
+        setLastSentOrder(prev => (prev?.id === finalOrderId ? null : prev));
+      }, 3000);
       reloadOrders();
     } catch (err) {
       console.error('Error enviando comanda a cocina:', err);
@@ -1130,12 +1133,12 @@ export default function ComanderoView() {
         </div>
       </div>
 
-      {/* Navegación Segmentada Móvil (Cero scroll largo: salta entre Carta, Comanda y En Cocina en 1 toque) */}
-      <div className="lg:hidden grid grid-cols-3 gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200/90 shadow-2xs sticky top-14 z-30">
+      {/* Navegación Segmentada Móvil (Cero scroll largo: salta entre Carta, Comanda y Orden Activa en 1 toque sin truncar texto) */}
+      <div className="lg:hidden grid grid-cols-3 gap-1 bg-white p-1 rounded-2xl border border-slate-200/90 shadow-2xs sticky top-14 z-30 overflow-hidden">
         <button
           type="button"
           onClick={() => setMobileSection('menu')}
-          className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`min-h-10 py-2 px-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer min-w-0 ${
             mobileSection === 'menu'
               ? 'bg-brand text-white shadow-2xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -1148,7 +1151,7 @@ export default function ComanderoView() {
         <button
           type="button"
           onClick={() => setMobileSection('ticket')}
-          className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`min-h-10 py-2 px-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer min-w-0 ${
             mobileSection === 'ticket'
               ? 'bg-brand text-white shadow-2xs'
               : activeTicketQty > 0
@@ -1163,7 +1166,7 @@ export default function ComanderoView() {
         <button
           type="button"
           onClick={() => setMobileSection('active')}
-          className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`min-h-10 py-2 px-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer min-w-0 ${
             mobileSection === 'active'
               ? 'bg-brand text-white shadow-2xs'
               : currentTableActiveOrders.length > 0
@@ -1172,7 +1175,7 @@ export default function ComanderoView() {
           }`}
         >
           <Clock size={13} className="shrink-0" />
-          <span className="truncate">Orden Activa ({currentTableActiveOrders.length})</span>
+          <span className="truncate">Activa ({currentTableActiveOrders.length})</span>
         </button>
       </div>
 
@@ -1296,37 +1299,49 @@ export default function ComanderoView() {
                     </span>
                   )}
 
-                  <div className="flex items-start gap-2 min-w-0">
-                    {product.image ? (
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover shrink-0 bg-slate-100"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
-                        <Utensils size={17} />
-                      </div>
-                    )}
+                  <div className="flex items-start gap-2.5 min-w-0 overflow-hidden">
+                    <div className="relative shrink-0">
+                      {product.image ? (
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl object-cover bg-slate-100"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center">
+                          <Utensils size={17} />
+                        </div>
+                      )}
+                      {hasOptions && (
+                        <span
+                          className="absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full bg-slate-900/80 backdrop-blur-xs text-white flex items-center justify-center shadow-2xs"
+                          title="Personalizable"
+                        >
+                          <Plus size={10} strokeWidth={3} />
+                        </span>
+                      )}
+                    </div>
 
-                    <div className="min-w-0 flex-1">
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-2 leading-tight">
+                    <div className="min-w-0 flex-1 overflow-hidden">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-2 break-words leading-snug">
                         {product.name}
                       </h4>
-                      <span className="text-[11px] text-slate-500 block truncate mt-0.5">
-                        {getProductCategory(product)}
-                      </span>
+                      {product.description && (
+                        <p className="text-[11px] text-slate-500 line-clamp-2 break-words text-ellipsis overflow-hidden leading-snug mt-0.5">
+                          {product.description}
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 min-w-0">
-                    <span className="text-xs sm:text-sm font-bold text-slate-900 tabular-nums truncate">
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 min-w-0">
+                    <span className="text-xs sm:text-sm font-extrabold text-slate-900 tabular-nums shrink-0">
                       {formatMoney(product.price)}
                     </span>
-                    <span className="inline-flex items-center gap-0.5 text-[11px] sm:text-xs font-bold px-2 py-1 rounded-lg bg-slate-900 text-white shadow-2xs shrink-0">
-                      <Plus size={11} strokeWidth={3} />
-                      <span>{hasOptions ? 'Opc.' : 'Pedir'}</span>
+                    <span className="inline-flex h-8 items-center justify-center gap-1 text-xs font-bold px-2.5 rounded-lg bg-slate-900 text-white shadow-2xs shrink-0 active:scale-95 transition-transform">
+                      <Plus size={12} strokeWidth={2.5} />
+                      <span>{hasOptions ? 'Elegir' : 'Agregar'}</span>
                     </span>
                   </div>
                 </button>
@@ -1350,7 +1365,7 @@ export default function ComanderoView() {
           {/* Tarjeta de Comanda Activa (Visible siempre en PC y en tab 'ticket' en móvil) */}
           <div className={`${mobileSection === 'ticket' ? 'flex' : 'hidden'} lg:flex bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden flex-col`}>
             {/* Header del Ticket */}
-            <div className="bg-slate-50 p-3.5 sm:p-4 flex items-center justify-between border-b border-slate-200 text-slate-900">
+            <div className="bg-slate-50 px-3.5 py-3 sm:p-4 flex items-center justify-between border-b border-slate-200 text-slate-900 gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="w-8 h-8 rounded-xl bg-brand text-white flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">
                   #{selectedTable}
@@ -1365,14 +1380,14 @@ export default function ComanderoView() {
                           ? `Adicionar a Mesa #${selectedTable}`
                           : `Comanda Mesa #${selectedTable}`}
                   </h3>
-                  <span className="text-xs text-slate-500 font-medium block mt-0.5">
+                  <span className="text-xs text-slate-500 font-medium block truncate mt-0.5">
                     {isTableOrderServed
-                      ? `Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()} servida en mesa (cerrada a adiciones)`
+                      ? `Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()} servida en mesa`
                       : editingOrderId
-                        ? 'Modifica cantidades o platos sin cambiar el # de orden'
+                        ? 'Mismo número de orden'
                         : primaryActiveOrder
-                          ? `Se sumará a la Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()} en cocina`
-                          : `${activeTicketQty} ${activeTicketQty === 1 ? 'plato en borrador' : 'platos en borrador'}`}
+                          ? `Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()}`
+                          : `${activeTicketQty} ${activeTicketQty === 1 ? 'plato en orden' : 'platos en orden'}`}
                   </span>
                 </div>
               </div>
@@ -1382,7 +1397,7 @@ export default function ComanderoView() {
                   <button
                     type="button"
                     onClick={() => setMobileSection('menu')}
-                    className="lg:hidden text-xs text-slate-700 hover:text-slate-900 font-bold px-2.5 py-1 rounded-lg bg-white border border-slate-200 transition-colors cursor-pointer"
+                    className="lg:hidden text-xs text-slate-700 hover:text-slate-900 font-bold px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 transition-colors active:scale-95 cursor-pointer"
                   >
                     + Platos
                   </button>
@@ -1391,37 +1406,35 @@ export default function ComanderoView() {
                   <button
                     type="button"
                     onClick={clearCurrentTicket}
-                    className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2.5 py-1 rounded-lg hover:bg-rose-50 transition-colors border border-rose-200 shrink-0 cursor-pointer"
+                    className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2.5 py-1.5 rounded-lg hover:bg-rose-50 transition-colors border border-rose-200 shrink-0 active:scale-95 cursor-pointer"
                   >
-                    {editingOrderId ? 'Cancelar edición' : 'Vaciar'}
+                    {editingOrderId ? 'Cancelar' : 'Vaciar'}
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Aviso contextual cuando la mesa tiene una orden activa EN COCINA */}
+            {/* Badge conciso cuando la mesa tiene una orden activa EN COCINA */}
             {primaryActiveOrder && !isTableOrderServed && !editingOrderId && (
-              <div className="px-3.5 py-2.5 bg-amber-50/90 border-b border-amber-200/80 flex items-center justify-between gap-2 text-xs">
-                <div className="min-w-0">
-                  <span className="font-bold text-amber-950 block truncate">
-                    Mesa con orden en cocina · #{String(primaryActiveOrder.id).slice(-4).toUpperCase()}
+              <div className="px-3.5 py-2 bg-amber-50/90 border-b border-amber-200/80 flex items-center justify-between gap-2 text-xs">
+                <span className="inline-flex items-center gap-1.5 font-bold text-amber-950 truncate">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                  <span>
+                    En cocina • {(primaryActiveOrder.items || primaryActiveOrder.productos || []).reduce((acc, i) => acc + Number(i.cantidad ?? i.quantity ?? 1), 0)} platos
                   </span>
-                  <span className="text-[11px] text-amber-800 block">
-                    Aún está en preparación: puedes anexar platos o editarla sin cambiar su número.
-                  </span>
-                </div>
+                </span>
                 <button
                   type="button"
                   onClick={() => handleLoadOrderToEdit(primaryActiveOrder)}
-                  className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-100 text-amber-950 border border-amber-300 font-bold text-[11px] shrink-0 transition-colors cursor-pointer"
+                  className="px-3 py-1 rounded-lg bg-white hover:bg-amber-100 text-amber-950 border border-amber-300 font-bold text-xs shrink-0 transition-colors active:scale-95 cursor-pointer"
                 >
-                  Editar orden
+                  Editar
                 </button>
               </div>
             )}
 
             {/* Lista de ítems en el ticket o bloqueo cuando la orden ya fue preparada y servida en mesa */}
-            <div className="p-3 sm:p-3.5 space-y-2.5 max-h-[420px] overflow-y-auto divide-y divide-slate-100">
+            <div className="p-3.5 max-h-[420px] overflow-y-auto">
               {isTableOrderServed ? (
                 <div className="p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
                   <div className="flex items-start gap-2.5 min-w-0">
@@ -1433,7 +1446,7 @@ export default function ComanderoView() {
                         Orden #{String(primaryActiveOrder.id).slice(-4).toUpperCase()} servida en Mesa #{selectedTable}
                       </p>
                       <p className="text-[11px] text-indigo-800/90 leading-snug">
-                        Orden lista (cerrada a adiciones). Finalízala en <strong>Pedidos en Vivo</strong> para liberar la mesa.
+                        Cerrada a adiciones. Finalízala en <strong>Pedidos en Vivo</strong>.
                       </p>
                     </div>
                   </div>
@@ -1447,116 +1460,114 @@ export default function ComanderoView() {
                   </button>
                 </div>
               ) : activeTicket.length === 0 ? (
-                <div className="py-8 text-center text-slate-400 space-y-2.5">
-                  <ChefHat size={28} className="mx-auto text-slate-300" />
+                <div className="py-6 text-center text-slate-400 space-y-2.5">
+                  <ChefHat size={26} className="mx-auto text-slate-300" />
                   <p className="text-xs font-semibold text-slate-600">
                     {primaryActiveOrder
                       ? `Selecciona platos de la carta para anexar a la Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()}`
                       : `Comanda vacía para la Mesa #${selectedTable}`}
                   </p>
-                  <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
-                    {primaryActiveOrder
-                      ? 'También puedes tocar "Editar orden" arriba si deseas corregir cantidades o quitar un plato mientras sigue en cocina.'
-                      : 'Toca cualquier plato o bebida del menú para agregarlo a la orden.'}
-                  </p>
                   <button
                     type="button"
                     onClick={() => setMobileSection('menu')}
-                    className="lg:hidden inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand text-white text-xs font-bold shadow-2xs"
+                    className="lg:hidden inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand text-white text-xs font-bold shadow-2xs active:scale-95 transition-transform"
                   >
                     <Plus size={13} /> Ir a la Carta
                   </button>
                 </div>
               ) : (
                 activeTicket.map(item => (
-                  <div key={item.uid} className="pt-2.5 first:pt-0 space-y-1.5">
-                    <div className="flex items-start justify-between gap-2">
+                  <div
+                    key={item.uid}
+                    className="border-b border-slate-200/80 pb-3 mb-3 last:border-b-0 last:pb-0 last:mb-0 space-y-2"
+                  >
+                    <div className="flex items-start justify-between gap-2.5">
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-xs sm:text-sm text-slate-900 leading-tight">
-                            {item.quantity > 1 && (
-                              <span className="inline-block bg-slate-900 text-white text-xs font-black px-1.5 py-0.5 rounded mr-1">
-                                x{item.quantity}
-                              </span>
-                            )}
+                        <div className="flex items-start gap-2">
+                          <span className="inline-block bg-slate-900 text-white text-[11px] font-extrabold px-1.5 py-0.5 rounded-md shrink-0">
+                            x{item.quantity}
+                          </span>
+                          <span className="font-bold text-sm text-slate-900 leading-snug break-words">
                             {item.name}
                           </span>
                         </div>
 
                         {item.options && item.options.length > 0 && (
-                          <p className="text-xs text-slate-600 font-medium mt-0.5">
+                          <div className="ml-6 mt-1 text-xs text-slate-600 bg-slate-50 border border-slate-200/70 px-2 py-0.5 rounded-md inline-block break-words">
                             + {item.options.map(o => o.nombre || o.label || o.name).join(', ')}
-                          </p>
+                          </div>
                         )}
 
-                        {/* Botón directo de instrucción / nota para este plato */}
-                        <div className="mt-1">
+                        {/* Micro-píldora de nota del cocinero subordinada al plato */}
+                        <div className="ml-6 mt-1.5">
                           {item.note ? (
                             <button
                               type="button"
                               onClick={() => openItemNoteModal(item)}
-                              className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer text-left"
-                              title="Toca para editar o separar instrucción"
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-200/90 hover:bg-amber-100 transition-colors cursor-pointer text-left break-words"
+                              title="Toca para editar instrucción"
                             >
                               <PenLine size={11} className="text-amber-700 shrink-0" />
-                              <span>Nota: &quot;{item.note}&quot;</span>
+                              <span>{item.note}</span>
                             </button>
                           ) : (
                             <button
                               type="button"
                               onClick={() => openItemNoteModal(item)}
-                              className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 hover:bg-slate-100 px-2 py-0.5 rounded-md transition-colors cursor-pointer border border-dashed border-slate-200"
+                              className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-slate-800 bg-slate-100/80 hover:bg-slate-200/70 px-2 py-1 rounded-md transition-colors cursor-pointer"
                               title="Agregar instrucción para cocina a este plato"
                             >
-                              <PenLine size={11} className="text-slate-400" />
-                              <span>+ Instrucción (ej: sin vegetales)</span>
+                              <PenLine size={11} className="text-slate-400 shrink-0" />
+                              <span>+ Nota cocina</span>
                             </button>
                           )}
                         </div>
                       </div>
 
                       <div className="text-right shrink-0">
-                        <span className="text-xs sm:text-sm font-bold text-slate-900 tabular-nums">
+                        <span className="text-sm font-extrabold text-slate-900 tabular-nums whitespace-nowrap">
                           {formatMoney(item.price * item.quantity)}
                         </span>
                         {item.quantity > 1 && (
-                          <span className="block text-xs text-slate-500 tabular-nums">
+                          <span className="block text-[11px] text-slate-500 tabular-nums whitespace-nowrap">
                             {formatMoney(item.price)} c/u
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Controles de cantidad */}
-                    <div className="flex items-center justify-between pt-1">
-                      <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
+                    {/* Controles de cantidad y borrar con hit-target mínimo de 40x40px */}
+                    <div className="flex items-center justify-between pt-0.5">
+                      <div className="flex items-center bg-slate-100 rounded-xl border border-slate-200/80 overflow-hidden">
                         <button
                           type="button"
                           onClick={() => updateItemQuantity(item.uid, -1)}
-                          className="w-6 h-6 flex items-center justify-center rounded-md text-slate-700 hover:bg-white active:scale-95 transition-all"
+                          className="w-10 h-10 flex items-center justify-center text-slate-700 hover:bg-white active:scale-95 transition-all cursor-pointer"
+                          aria-label="Restar unidad"
                         >
-                          <Minus size={12} />
+                          <Minus size={14} />
                         </button>
-                        <span className="w-6 text-center text-xs font-bold tabular-nums text-slate-900">
+                        <span className="w-8 text-center text-xs sm:text-sm font-bold tabular-nums text-slate-900">
                           {item.quantity}
                         </span>
                         <button
                           type="button"
                           onClick={() => updateItemQuantity(item.uid, 1)}
-                          className="w-6 h-6 flex items-center justify-center rounded-md text-slate-700 hover:bg-white active:scale-95 transition-all"
+                          className="w-10 h-10 flex items-center justify-center text-slate-700 hover:bg-white active:scale-95 transition-all cursor-pointer"
+                          aria-label="Sumar unidad"
                         >
-                          <Plus size={12} />
+                          <Plus size={14} />
                         </button>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => removeItemFromTicket(item.uid)}
-                        className="w-9 h-9 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 active:scale-90 transition-all flex items-center justify-center cursor-pointer shrink-0 border border-transparent hover:border-rose-100"
+                        className="w-10 h-10 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 active:scale-95 transition-all flex items-center justify-center cursor-pointer shrink-0 border border-slate-200/60 hover:border-rose-200 bg-white"
                         title="Eliminar plato de la comanda"
                         aria-label="Eliminar plato de la comanda"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={17} />
                       </button>
                     </div>
                   </div>
@@ -1610,7 +1621,7 @@ export default function ComanderoView() {
                       : editingOrderId
                         ? `Guardar Cambios en Orden #${String(editingOrderId).slice(-4).toUpperCase()}`
                         : primaryActiveOrder
-                          ? `Anexar Platos a Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()}`
+                           ? `Anexar Platos a Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()}`
                           : 'Mandar a Cocina'}
                   </span>
                 </button>
@@ -1618,44 +1629,28 @@ export default function ComanderoView() {
             )}
           </div>
 
-          {/* Última orden enviada con botones separados: Comanda Cocina vs Cuenta */}
+          {/* Toast temporal compacto (3 s) al enviar comanda o adición */}
           {lastSentOrder && (
-            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2.5 shadow-2xs">
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <span className="text-[10px] font-bold uppercase text-emerald-800 tracking-wider block">
-                    {lastSentOrder.isAddition ? 'Última adición enviada a cocina:' : 'Última comanda enviada:'}
-                  </span>
-                  <p className="text-xs font-bold text-emerald-950 truncate">
-                    Mesa #{lastSentOrder.mesa || selectedTable} · Orden #{String(lastSentOrder.id).slice(-4).toUpperCase()} · {formatMoney(lastSentOrder.total)}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setLastSentOrder(null)}
-                  className="p-1 text-emerald-700 hover:bg-emerald-100 rounded-lg"
-                  title="Cerrar aviso"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-1.5">
+            <div className="px-3 py-2 bg-emerald-600 text-white rounded-xl flex items-center justify-between gap-2 text-xs shadow-sm animate-fade-in">
+              <span className="font-bold truncate">
+                ✓ Orden #{String(lastSentOrder.id).slice(-4).toUpperCase()} enviada a cocina
+              </span>
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => handlePrintTicket(lastSentOrder, 'kitchen', Boolean(lastSentOrder.isAddition))}
-                  className="px-2.5 py-2 rounded-xl bg-emerald-800 text-white font-bold text-xs hover:bg-emerald-900 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                  className="px-2 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer"
                 >
-                  <ChefHat size={13} />
-                  <span className="truncate">{lastSentOrder.isAddition ? 'Comanda Adición' : 'Comanda Cocina'}</span>
+                  <Printer size={12} />
+                  <span>Imprimir</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => handlePrintTicket(lastSentOrder, 'bill', false)}
-                  className="px-2.5 py-2 rounded-xl bg-white text-emerald-950 border border-emerald-300 font-bold text-xs hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  onClick={() => setLastSentOrder(null)}
+                  className="p-1 text-white/80 hover:text-white rounded-md"
+                  aria-label="Cerrar"
                 >
-                  <FileText size={13} />
-                  <span className="truncate">Cuenta / Cobro</span>
+                  <X size={13} />
                 </button>
               </div>
             </div>
@@ -1669,28 +1664,25 @@ export default function ComanderoView() {
                 : currentTableActiveOrders.length > 0
                   ? 'hidden lg:block'
                   : 'hidden'
-            } bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3`}
+            } bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3 overflow-hidden`}
           >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <Clock size={13} className="text-slate-500" />
-                Orden activa en Mesa #{selectedTable}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5 truncate">
+                <Clock size={14} className="text-slate-500 shrink-0" />
+                <span>Orden activa · Mesa #{selectedTable}</span>
               </span>
               {currentTableActiveOrders.length > 0 && (
-                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${getMesaStatusInfo(primaryActiveOrder).badgeClass}`}>
+                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border shrink-0 ${getMesaStatusInfo(primaryActiveOrder).badgeClass}`}>
                   {getMesaStatusInfo(primaryActiveOrder).label}
                 </span>
               )}
             </div>
 
             {currentTableActiveOrders.length === 0 ? (
-              <div className="py-8 text-center space-y-2">
-                <Clock size={26} className="mx-auto text-slate-300" />
+              <div className="py-6 text-center space-y-1.5">
+                <Clock size={24} className="mx-auto text-slate-300" />
                 <p className="text-xs font-semibold text-slate-600">
                   La Mesa #{selectedTable} está libre
-                </p>
-                <p className="text-[11px] text-slate-500">
-                  Cuando envíes una comanda a cocina aparecerá aquí con su estado, edición e impresión separada.
                 </p>
               </div>
             ) : (
@@ -1699,21 +1691,17 @@ export default function ComanderoView() {
                   const stInfo = getMesaStatusInfo(order);
                   const orderItems = order.items || order.productos || [];
                   const isBtOpen = btMenuOrderId === order.id;
+                  const totalDishes = orderItems.reduce((acc, i) => acc + Number(i.cantidad ?? i.quantity ?? 1), 0);
 
                   return (
-                    <div key={order.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/90 text-xs space-y-2.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-black text-slate-900 text-xs sm:text-sm">
-                              Orden #{String(order.id).slice(-4).toUpperCase()}
-                            </span>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${stInfo.badgeClass}`}>
-                              {stInfo.label}
-                            </span>
-                          </div>
-                          <span className="text-[11px] text-slate-500 block mt-0.5">
-                            {orderItems.reduce((acc, i) => acc + Number(i.cantidad ?? i.quantity ?? 1), 0)} platos · Total: <strong className="text-slate-900">{formatMoney(order.total_amount || order.total)}</strong>
+                    <div key={order.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/90 text-xs space-y-2.5 overflow-hidden">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className="font-extrabold text-slate-900 text-sm block truncate">
+                            Orden #{String(order.id).slice(-4).toUpperCase()}
+                          </span>
+                          <span className="text-xs text-slate-500 block mt-0.5">
+                            {totalDishes} {totalDishes === 1 ? 'plato' : 'platos'} • <strong className="text-slate-900 font-bold">{formatMoney(order.total_amount || order.total)}</strong>
                           </span>
                         </div>
 
@@ -1721,51 +1709,66 @@ export default function ComanderoView() {
                           <button
                             type="button"
                             onClick={() => handleLoadOrderToEdit(order)}
-                            className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer shrink-0"
-                            title="Modificar o agregar platos mientras sigue en cocina sin cambiar el número de orden"
+                            className="h-9 px-3 rounded-lg bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition-colors active:scale-95 cursor-pointer shrink-0 shadow-2xs"
+                            title="Modificar platos mientras sigue en cocina"
                           >
                             <PenLine size={12} />
                             <span>Editar</span>
                           </button>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200 text-[10px] font-bold shrink-0">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200 text-[11px] font-bold shrink-0">
                             <Lock size={11} />
                             <span>Orden lista</span>
                           </span>
                         )}
                       </div>
 
-                      {/* Resumen compacto de los platos actuales en la mesa */}
+                      {/* Lista clara y separada de platos actuales en la mesa */}
                       {orderItems.length > 0 && (
-                        <div className="bg-white rounded-lg p-2 border border-slate-200/70 space-y-1 max-h-36 overflow-y-auto">
+                        <div className="bg-white rounded-xl p-2.5 border border-slate-200/80 max-h-48 overflow-y-auto">
                           {orderItems.map((it, idx) => {
                             const qty = it.cantidad ?? it.quantity ?? 1;
                             const name = it.nombre ?? it.name ?? 'Plato';
                             const note = it.nota || it.note || '';
                             const optText = it.opciones_texto || '';
                             return (
-                              <div key={idx} className="flex items-start justify-between gap-2 text-[11px] leading-snug">
-                                <div className="min-w-0">
-                                  <span className="font-bold text-slate-900">{qty}x</span>{' '}
-                                  <span className="font-medium text-slate-800">{name}</span>
-                                  {optText && <span className="text-slate-500 block text-[10px]">+ {optText}</span>}
-                                  {note && <span className="text-amber-800 font-semibold block text-[10px]">Nota: {note}</span>}
+                              <div
+                                key={idx}
+                                className="border-b border-slate-100 pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0"
+                              >
+                                <div className="flex items-start justify-between gap-2 text-xs leading-snug">
+                                  <div className="flex items-start gap-1.5 min-w-0">
+                                    <span className="px-1.5 py-0.5 bg-slate-900 text-white rounded font-extrabold text-[10px] shrink-0">
+                                      x{qty}
+                                    </span>
+                                    <span className="font-semibold text-slate-900 break-words">{name}</span>
+                                  </div>
+                                  <span className="font-bold text-slate-800 tabular-nums shrink-0">
+                                    {formatMoney(Number(it.precio ?? it.price ?? 0) * Number(qty))}
+                                  </span>
                                 </div>
-                                <span className="font-semibold text-slate-700 tabular-nums shrink-0">
-                                  {formatMoney(Number(it.precio ?? it.price ?? 0) * Number(qty))}
-                                </span>
+                                {optText && (
+                                  <div className="ml-6 mt-1 text-[11px] text-slate-500 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded inline-block break-words">
+                                    + {optText}
+                                  </div>
+                                )}
+                                {note && (
+                                  <div className="ml-6 mt-1 text-[11px] font-semibold text-amber-900 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded inline-block break-words">
+                                    Nota: {note}
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
                         </div>
                       )}
 
-                      {/* Botones de impresión separados: Comanda Cocina (sin precios) vs Cuenta / Cobro (con precios) + Bluetooth */}
-                      <div className="grid grid-cols-[1fr_1fr_auto] gap-1.5 pt-0.5">
+                      {/* Botones de impresión separados sin desborde en pantallas angostas */}
+                      <div className="flex items-center gap-1.5 pt-0.5 w-full min-w-0 overflow-hidden">
                         <button
                           type="button"
                           onClick={() => handlePrintTicket(order, 'kitchen', false)}
-                          className="h-8 px-2 rounded-lg bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          className="flex-1 min-w-0 h-9 px-2 rounded-lg bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-[11px] flex items-center justify-center gap-1 transition-colors active:scale-95 cursor-pointer"
                           title="Imprimir comanda para cocina (solo platos y notas, sin precios)"
                         >
                           <ChefHat size={13} className="shrink-0" />
@@ -1775,7 +1778,7 @@ export default function ComanderoView() {
                         <button
                           type="button"
                           onClick={() => handlePrintTicket(order, 'bill', false)}
-                          className="h-8 px-2 rounded-lg bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          className="flex-1 min-w-0 h-9 px-2 rounded-lg bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-[11px] flex items-center justify-center gap-1 transition-colors active:scale-95 cursor-pointer"
                           title="Imprimir cuenta para el cliente (con precios y total)"
                         >
                           <Printer size={13} className="shrink-0" />
@@ -1786,24 +1789,24 @@ export default function ComanderoView() {
                           type="button"
                           disabled={printingBtOrderId === order.id}
                           onClick={() => setBtMenuOrderId(isBtOpen ? null : order.id)}
-                          className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+                          className={`h-9 w-9 rounded-lg border flex items-center justify-center transition-colors active:scale-95 cursor-pointer shrink-0 ${
                             isBtOpen
                               ? 'bg-blue-600 text-white border-blue-600'
                               : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
                           }`}
                           title="Impresión directa a impresora portátil Bluetooth (Celular/Tablet)"
                         >
-                          <Bluetooth size={14} />
+                          <Bluetooth size={14} className="shrink-0" />
                         </button>
                       </div>
 
                       {/* Selector compacto Bluetooth para celular/tablet */}
                       {isBtOpen && (
                         <div className="p-2 rounded-lg bg-blue-50/90 border border-blue-200 flex items-center justify-between gap-1.5">
-                          <span className="text-[10px] font-bold text-blue-900 pl-1">
+                          <span className="text-[10px] font-bold text-blue-900 pl-1 truncate">
                             Bluetooth POS:
                           </span>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             <button
                               type="button"
                               onClick={() => handlePrintBluetoothTicket(order, 'kitchen')}
@@ -1825,13 +1828,11 @@ export default function ComanderoView() {
                   );
                 })}
 
-                {/* Nota de control de estados centralizado en Pedidos en Vivo / Caja */}
-                <div className="px-3 py-2 rounded-xl bg-slate-100/80 border border-slate-200/80 text-[11px] text-slate-600 flex items-center gap-2">
-                  <Lock size={13} className="text-slate-500 shrink-0" />
-                  <span>
-                    {isTableOrderServed
-                      ? 'Orden entregada en mesa. El cierre y liberación de la mesa se realiza desde Pedidos en Vivo (Caja).'
-                      : 'El paso a En Mesa y el cierre de la orden los gestiona Cocina / Caja desde Pedidos en Vivo.'}
+                {/* Nota concisa de control de estados */}
+                <div className="px-2.5 py-1.5 rounded-lg bg-slate-100/80 text-[11px] text-slate-500 flex items-center gap-1.5">
+                  <Lock size={12} className="text-slate-400 shrink-0" />
+                  <span className="truncate">
+                    Estados y cierre de cuenta desde <strong>Pedidos en Vivo</strong>.
                   </span>
                 </div>
               </div>

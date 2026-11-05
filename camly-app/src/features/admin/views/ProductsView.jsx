@@ -150,7 +150,7 @@ export default function ProductsView(props) {
                     {p.name}
                   </h4>
                   {viewMode === 'grid' && p.description && (
-                    <p className="text-xs text-gray-500 line-clamp-1 mt-1 leading-relaxed">
+                    <p className="text-xs text-gray-500 line-clamp-2 break-words overflow-hidden text-ellipsis mt-1 leading-relaxed">
                       {p.description}
                     </p>
                   )}
