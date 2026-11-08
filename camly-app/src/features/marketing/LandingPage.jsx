@@ -2,18 +2,19 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   MessageCircle, Smartphone, CheckCircle2,
-  Check, ArrowRight, Menu, X,
-  MapPin, Zap, Star, ChevronDown,
+  Check, ArrowRight, X,
+  ChevronDown,
   ShoppingBag, DollarSign,
-  Store, ShieldCheck, Clock,
-  CreditCard, PackageCheck, Pizza, Coffee,
+  Store, Zap,
+  Pizza, Coffee,
   Shirt, Cake, Fish, PawPrint, Beef, Navigation,
-  ChevronRight, ExternalLink, Play, CheckCircle
+  Play
 } from 'lucide-react';
 import storePreview from '../../assets/ejemplo.jpeg';
 import SEO from '../../components/common/SEO';
 import MarketingNavbar from './components/MarketingNavbar';
 import MarketingFooter from './components/MarketingFooter';
+import { SectionHeader } from './components/MarketingUI';
 
 const BUSINESS_TYPES = [
   { icon: ShoppingBag, label: 'Comidas Rápidas' },
@@ -24,6 +25,30 @@ const BUSINESS_TYPES = [
   { icon: Beef,        label: 'Carnicerías & Parrilla' },
   { icon: Shirt,       label: 'Boutiques & Ropa' },
   { icon: PawPrint,    label: 'Veterinarias & Mascotas' },
+];
+
+const STEPS = [
+  {
+    n: '01',
+    icon: Smartphone,
+    tone: 'bg-sky-100 text-sky-700',
+    title: 'Sube tus productos',
+    text: 'Agrega categorías, fotos, precios y opciones personalizadas en minutos desde tu celular o computador.',
+  },
+  {
+    n: '02',
+    icon: MessageCircle,
+    tone: 'bg-indigo-100 text-indigo-700',
+    title: 'Comparte tu enlace',
+    text: 'Pon tu enlace en la biografía de Instagram, estados de WhatsApp o envíalo a quien te pregunte por el menú.',
+  },
+  {
+    n: '03',
+    icon: CheckCircle2,
+    tone: 'bg-emerald-100 text-emerald-700',
+    title: 'Recibe pedidos listos',
+    text: 'El pedido llega a tu WhatsApp con productos, total exacto, método de pago y el enlace GPS para el repartidor.',
+  },
 ];
 
 const FAQS = [
@@ -54,17 +79,16 @@ const FAQS = [
 ];
 
 export default function LandingPage() {
-  const [billingAnnual, setBillingAnnual] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
   const [storeName, setStoreName] = useState('');
   const [monthlySales, setMonthlySales] = useState(3000000);
   const storeSlug = storeName.trim().toLocaleLowerCase('es-CO').normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 35);
+    .replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 35);
   const registrationUrl = storeSlug ? `/registro?tienda=${encodeURIComponent(storeSlug)}` : '/registro';
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-[#FBFBFC] text-gray-900 selection:bg-cyan-500 selection:text-white font-sans">
-      <SEO 
+    <div className="min-h-screen overflow-x-clip bg-white text-slate-900 selection:bg-sky-500 selection:text-white font-sans antialiased">
+      <SEO
         title="NEGU | Software para Restaurantes y Negocios | Menú Digital & Pedidos WhatsApp"
         description="NEGU es la plataforma todo-en-uno para restaurantes y comercios: crea tu menú digital interactivo con código QR, recibe pedidos organizados a WhatsApp con cálculo GPS de envío y gestiona tus ventas sin comisiones. Empieza gratis."
         canonical="https://negu.pro/"
@@ -72,177 +96,140 @@ export default function LandingPage() {
 
       <MarketingNavbar />
 
-      {/* ═══════════ HERO SECTION ═══════════ */}
-      <section className="relative pt-10 sm:pt-14 pb-12 sm:pb-16 overflow-hidden bg-slate-50 border-b border-gray-200/70">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
-            
-            {/* Left Column: Copy & Value Proposition */}
-            <div className="lg:col-span-7 text-center lg:text-left space-y-6">
-              
-              {/* Eyebrow Pill Badge */}
-              <div className="inline-flex items-center gap-2 bg-white/90 border border-blue-200/80 rounded-full pl-2 pr-3.5 py-1 text-xs font-semibold text-gray-700 shadow-sm mx-auto lg:mx-0">
-                <span className="bg-blue-600 text-white text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full">
-                  GPS & WHATSAPP
-                </span>
-                <span>Tu catálogo digital listo en menos de 3 minutos</span>
-              </div>
+      {/* ═══════════ HERO ═══════════ */}
+      <section className="relative overflow-hidden bg-slate-950 text-white">
+        {/* Ambient glows */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-40 -left-32 h-[32rem] w-[32rem] rounded-full bg-sky-600/25 blur-3xl" />
+          <div className="absolute top-1/3 -right-40 h-[28rem] w-[28rem] rounded-full bg-cyan-400/15 blur-3xl" />
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.06)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
+        </div>
 
-              {/* Display Headline */}
-              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black text-gray-950 tracking-tight leading-[1.03]">
-                Tu catálogo digital,<br />
-                <span className="text-sky-700">listo en minutos</span><br />
-                <span className="text-gray-600 font-sans text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight block mt-1">
-                  conectado a WhatsApp.
-                </span>
-              </h1>
-
-              {/* Sub-headline */}
-              <p className="text-base sm:text-lg text-gray-600 max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
-                Tus clientes arman su pedido interactivo y lo envían directo a tu WhatsApp con <strong className="text-gray-900 font-semibold">ubicación GPS exacta</strong> para el repartidor o recogida en tienda. Sin programar, sin contratos y con 0% de comisiones.
-              </p>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-2">
-                <Link 
-                  to="/registro" 
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm sm:text-base px-5 py-3 rounded-lg border border-gray-800 shadow-card hover:shadow-sm transition-all duration-200 active:scale-95"
-                >
-                  <span>Crear mi tienda gratis</span>
-                  <ArrowRight size={16} className="text-[#11CEFC]" />
-                </Link>
-
-                <a 
-                  href="#como-funciona" 
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-800 font-bold text-sm sm:text-base px-5 py-3 rounded-lg border border-gray-200/90 shadow-xs hover:border-gray-300 transition-all duration-150"
-                >
-                  <Play size={16} className="text-[#0284C7] fill-[#0284C7]" />
-                  <span>Ver cómo funciona</span>
-                </a>
-              </div>
-
-              {/* Trust Badges */}
-              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-y-2 gap-x-6 text-xs sm:text-sm font-semibold text-gray-600">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                  <span>Sin tarjeta de crédito</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                  <span>0% comisiones por venta</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                  <span>Ruta GPS para Maps y Waze</span>
-                </div>
-              </div>
-
+        <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-4 pt-12 pb-16 sm:px-6 sm:pt-16 sm:pb-20 lg:grid-cols-12 lg:gap-10 lg:pt-20 lg:pb-28">
+          {/* Copy */}
+          <div className="lg:col-span-7 space-y-7 text-center lg:text-left">
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 py-1 pl-1.5 pr-3.5 text-xs font-semibold text-slate-200 backdrop-blur lg:mx-0">
+              <span className="rounded-full bg-cyan-400 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-950">
+                GPS &amp; WhatsApp
+              </span>
+              <span>Tu catálogo digital listo en menos de 3 minutos</span>
             </div>
 
-            {/* Right Column: Realistic Interactive Device Showcase */}
-            <div className="lg:col-span-5 flex justify-center">
-              <div className="relative w-full max-w-[290px] sm:max-w-[330px]">
-                
-                {/* Background Frame */}
-                <div className="absolute -inset-2 rounded-[2.5rem] border border-slate-200/70 -z-10" />
+            <h1 className="font-display text-[2.6rem] leading-[1.02] font-extrabold tracking-tight sm:text-6xl lg:text-[4.25rem]">
+              Tu catálogo digital,{' '}
+              <span className="bg-gradient-to-r from-cyan-300 via-sky-300 to-sky-500 bg-clip-text text-transparent">
+                listo en minutos
+              </span>
+              <span className="mt-2 block text-2xl font-bold tracking-tight text-slate-300 sm:text-4xl lg:text-[2.6rem]">
+                conectado a WhatsApp.
+              </span>
+            </h1>
 
-                {/* Smartphone Mockup */}
-                <div className="rounded-[2.8rem] p-3 bg-gray-950 shadow-md border-4 border-gray-800/90">
-                  
-                  {/* Speaker and Camera notch */}
-                  <div className="relative rounded-[2.3rem] overflow-hidden bg-white aspect-[9/16] shadow-inner">
-                    <img 
-                      src={storePreview}
-                      alt="Vista previa catálogo NEGU" 
-                      className="w-full h-full object-cover object-top" 
-                      loading="eager" 
-                    />
-                  </div>
-                </div>
+            <p className="mx-auto max-w-xl text-base leading-relaxed text-slate-300 sm:text-lg lg:mx-0">
+              Tus clientes arman su pedido interactivo y lo envían directo a tu WhatsApp con{' '}
+              <strong className="font-semibold text-white">ubicación GPS exacta</strong> para el repartidor o recogida en tienda. Sin programar, sin contratos y con 0% de comisiones.
+            </p>
 
-                {/* Floating Card 1: WhatsApp Incoming Order */}
-                <div className="absolute -top-3 left-1 sm:-left-6 bg-white/95 backdrop-blur-md rounded-xl p-2.5 sm:p-3 shadow-card border border-gray-200/90 flex items-center gap-2.5 z-20 max-w-[225px] sm:max-w-[240px]">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                    <MessageCircle size={18} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Nuevo pedido WhatsApp</p>
-                    <p className="text-xs font-extrabold text-gray-900 truncate">#1048 · 2x Burger Doble</p>
-                    <p className="text-[10px] text-gray-500 font-medium">Total: $42.000 · Pago confirmado</p>
-                  </div>
-                </div>
+            <div className="flex flex-col items-center justify-center gap-3 pt-1 sm:flex-row lg:justify-start">
+              <Link
+                to="/registro"
+                className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-6 py-3.5 text-sm font-bold text-slate-950 shadow-[0_8px_30px_-6px_rgba(34,211,238,0.5)] transition-all duration-200 hover:bg-cyan-300 hover:-translate-y-0.5 active:translate-y-0 sm:w-auto sm:text-base"
+              >
+                <span>Crear mi tienda gratis</span>
+                <ArrowRight size={17} className="transition-transform group-hover:translate-x-0.5" />
+              </Link>
 
-                {/* Floating Card 2: GPS Location Pin */}
-                <div className="absolute bottom-7 right-1 sm:-right-6 bg-white/95 backdrop-blur-md rounded-xl p-2.5 sm:p-3 shadow-card border border-gray-200/90 flex items-center gap-2.5 z-20 max-w-[210px] sm:max-w-[220px]">
-                  <div className="w-9 h-9 rounded-lg bg-slate-900 text-[#11CEFC] border border-gray-800 flex items-center justify-center shrink-0">
-                    <Navigation size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold text-sky-700 uppercase tracking-wider">Ruta directa GPS</p>
-                    <p className="text-xs font-extrabold text-gray-900 truncate">Google Maps & Waze</p>
-                    <p className="text-[10px] text-gray-500 font-medium">El repartidor va sin perderse</p>
-                  </div>
-                </div>
-
-                {/* Floating Badge 3: 0% Commissions */}
-                <div className="absolute -bottom-3 left-4 bg-slate-900 text-white rounded-full px-3.5 py-1.5 text-[11px] font-bold shadow-card flex items-center gap-1.5 border border-gray-800">
-                  <DollarSign size={12} className="text-[#11CEFC]" />
-                  <span>0% comisiones sobre tus ventas</span>
-                </div>
-
-              </div>
+              <a
+                href="#como-funciona"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-bold text-white backdrop-blur transition-colors duration-200 hover:bg-white/10 sm:w-auto sm:text-base"
+              >
+                <Play size={15} className="fill-white" />
+                <span>Ver cómo funciona</span>
+              </a>
             </div>
 
+            <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 pt-3 text-xs font-semibold text-slate-300 sm:text-sm lg:justify-start">
+              {['Sin tarjeta de crédito', '0% comisiones por venta', 'Ruta GPS para Maps y Waze'].map(t => (
+                <li key={t} className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="shrink-0 text-cyan-400" />
+                  <span>{t}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Device showcase */}
+          <div className="lg:col-span-5 flex justify-center">
+            <div className="relative w-full max-w-[300px] sm:max-w-[340px]">
+              {/* Glow behind phone */}
+              <div aria-hidden="true" className="absolute inset-x-8 top-10 bottom-10 rounded-[3rem] bg-sky-500/30 blur-2xl" />
+
+              <div className="relative rounded-[2.6rem] border border-white/10 bg-slate-900 p-2.5 shadow-2xl ring-1 ring-white/10">
+                <div className="relative aspect-[9/16] overflow-hidden rounded-[2.1rem] bg-white">
+                  <img
+                    src={storePreview}
+                    alt="Vista previa del catálogo NEGU en un celular"
+                    width={390}
+                    height={693}
+                    className="h-full w-full object-cover object-top"
+                    loading="eager"
+                    fetchPriority="high"
+                  />
+                </div>
+              </div>
+
+              {/* Floating: incoming WhatsApp order */}
+              <div className="absolute -top-4 -left-2 sm:-left-8 z-20 flex max-w-[240px] items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur-md">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white">
+                  <MessageCircle size={19} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Nuevo pedido WhatsApp</p>
+                  <p className="truncate text-xs font-extrabold text-slate-900">#1048 · 2x Burger Doble</p>
+                  <p className="text-[10px] font-medium text-slate-500">Total: $42.000 · Pago confirmado</p>
+                </div>
+              </div>
+
+              {/* Floating: GPS route */}
+              <div className="absolute bottom-10 -right-2 sm:-right-8 z-20 flex max-w-[220px] items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur-md">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-cyan-300">
+                  <Navigation size={17} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-sky-700">Ruta directa GPS</p>
+                  <p className="truncate text-xs font-extrabold text-slate-900">Google Maps &amp; Waze</p>
+                  <p className="text-[10px] font-medium text-slate-500">El repartidor va sin perderse</p>
+                </div>
+              </div>
+
+              {/* Floating badge */}
+              <div className="absolute -bottom-4 left-6 z-20 flex items-center gap-1.5 rounded-full bg-cyan-400 px-3.5 py-1.5 text-[11px] font-bold text-slate-950 shadow-lg">
+                <DollarSign size={13} />
+                <span>0% comisiones sobre tus ventas</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="border-b border-slate-200 bg-white py-8 sm:py-10">
-        <div className="mx-auto grid max-w-6xl gap-6 px-4 sm:px-6 md:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 sm:p-6">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Tu enlace de tienda</span>
-            <h2 className="mt-1 text-lg font-bold text-slate-900">Prepara el enlace de tu negocio</h2>
-            <p className="mt-1 text-sm text-slate-600">Define cómo encontrarán tu catálogo tus clientes.</p>
-            <label htmlFor="store-slug" className="sr-only">Nombre de tu tienda</label>
-            <div className="mt-4 flex overflow-hidden rounded-lg border border-slate-300 bg-white focus-within:ring-2 focus-within:ring-brand/20">
-              <span className="flex items-center border-r border-slate-200 bg-slate-50 px-3 text-xs text-slate-500">negu.pro/</span>
-              <input id="store-slug" value={storeName} onChange={e => setStoreName(e.target.value)} placeholder="mi-negocio" className="min-w-0 flex-1 px-3 py-2.5 text-sm outline-none" />
-            </div>
-            {storeName && <p className="mt-2 text-xs text-slate-500">Vista previa: <span className="font-medium text-slate-700">negu.pro/{storeSlug || 'mi-tienda'}</span></p>}
-            <Link to={registrationUrl} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Continuar gratis <ArrowRight size={15} /></Link>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Calculadora de ahorro</span>
-            <h2 className="mt-1 text-lg font-bold text-slate-900">Vende sin pagar comisión por pedido</h2>
-            <label htmlFor="sales-value" className="mt-4 block text-sm text-slate-600">Ventas mensuales aproximadas</label>
-            <div className="mt-2 flex items-center gap-3">
-              <input id="sales-value" type="range" min="500000" max="30000000" step="250000" value={monthlySales} onChange={e => setMonthlySales(Number(e.target.value))} className="w-full accent-sky-700" />
-              <span className="w-28 text-right text-sm font-semibold tabular-nums text-slate-800">${monthlySales.toLocaleString('es-CO')}</span>
-            </div>
-            <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">Con una comisión de referencia del 5%, ahorrarías <strong>${Math.round(monthlySales * 0.05).toLocaleString('es-CO')}</strong> al mes con 0% de comisión de NEGU.</p>
-            <p className="mt-2 text-[11px] text-slate-500">Estimación ilustrativa usando una comisión de referencia del 5%.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════ CONTINUOUS TICKER MARQUEE ═══════════ */}
-      <div className="bg-white border-b border-gray-200/80 py-4 overflow-hidden">
+      {/* ═══════════ CREATED FOR (TICKER) ═══════════ */}
+      <div className="border-b border-slate-200 bg-white py-5 overflow-hidden">
         <div className="flex items-center">
-          <div className="shrink-0 px-5 sm:px-8 border-r border-gray-200">
-            <span className="text-xs font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">
+          <div className="shrink-0 border-r border-slate-200 px-5 sm:px-8">
+            <span className="whitespace-nowrap text-xs font-extrabold uppercase tracking-widest text-slate-500">
               Creado para
             </span>
           </div>
-          <div className="flex-1 overflow-hidden relative">
+          <div className="relative flex-1 overflow-hidden">
             <div className="flex gap-3 pl-4" style={{ animation: 'marquee-slide 34s linear infinite', width: 'max-content' }}>
               {[...BUSINESS_TYPES, ...BUSINESS_TYPES].map((item, i) => {
                 const Icon = item.icon;
                 return (
-                  <span 
-                    key={i} 
-                    className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-gray-50 border border-gray-200/70 text-gray-700 text-xs sm:text-sm font-semibold whitespace-nowrap shrink-0 hover:border-cyan-300 hover:bg-cyan-50/50 transition-colors"
+                  <span
+                    key={i}
+                    className="inline-flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-700 transition-colors hover:border-sky-300 hover:bg-sky-50 sm:text-sm"
                   >
-                    <Icon size={15} className="text-[#0284C7] shrink-0" />
+                    <Icon size={15} className="shrink-0 text-sky-700" />
                     <span>{item.label}</span>
                   </span>
                 );
@@ -252,540 +239,364 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* ═══════════ CÓMO FUNCIONA (THE 3-STEP FLOW) ═══════════ */}
-      <section id="como-funciona" className="py-12 sm:py-16 bg-white border-b border-gray-200/70">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          
-          {/* Header */}
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs font-bold">
-              <Zap size={13} className="text-[#0284C7]" />
-              <span>Flujo en 3 pasos sencillos</span>
+      {/* ═══════════ TOOLS: STORE LINK + SAVINGS ═══════════ */}
+      <section className="bg-slate-50 py-14 sm:py-16 border-b border-slate-200">
+        <div className="mx-auto grid max-w-6xl gap-5 px-4 sm:px-6 md:grid-cols-2">
+          <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm">
+            <span className="text-xs font-bold uppercase tracking-wider text-sky-700">Tu enlace de tienda</span>
+            <h2 className="mt-2 font-display text-xl font-extrabold text-slate-950">Prepara el enlace de tu negocio</h2>
+            <p className="mt-1.5 text-sm text-slate-600">Define cómo encontrarán tu catálogo tus clientes.</p>
+
+            <label htmlFor="store-slug" className="sr-only">Nombre de tu tienda</label>
+            <div className="mt-5 flex overflow-hidden rounded-xl border border-slate-300 bg-white transition-shadow focus-within:border-sky-500 focus-within:ring-4 focus-within:ring-sky-500/15">
+              <span className="flex items-center border-r border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-500">negu.pro/</span>
+              <input
+                id="store-slug"
+                value={storeName}
+                onChange={e => setStoreName(e.target.value)}
+                placeholder="mi-negocio"
+                className="min-w-0 flex-1 px-3.5 py-3 text-sm outline-none placeholder:text-slate-400"
+              />
             </div>
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-gray-950 tracking-tight leading-tight">
-              Así de simple es vender con NEGU
-            </h2>
-            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
-              Tus clientes piden desde su celular en segundos y tú recibes la comanda completa en WhatsApp. Sin apps ni enredos.
+            <p className="mt-2 min-h-[1.25rem] text-xs text-slate-500">
+              {storeName && <>Vista previa: <span className="font-semibold text-slate-800">negu.pro/{storeSlug || 'mi-tienda'}</span></>}
             </p>
+
+            <Link to={registrationUrl} className="mt-auto inline-flex w-fit items-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-slate-800">
+              Continuar gratis <ArrowRight size={15} />
+            </Link>
           </div>
 
-          {/* 3 Step Editorial Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            
-            {/* Step 1 */}
-            <div className="relative p-4 sm:p-5 rounded-xl bg-gray-50/70 border border-gray-200/80 hover:border-blue-300 hover:shadow-card transition-all duration-200 space-y-5">
-              <div className="flex items-center justify-between">
-                <span className="font-display text-3xl sm:text-4xl font-black text-blue-600">01</span>
-                <div className="w-12 h-12 rounded-2xl bg-blue-100/60 text-blue-600 flex items-center justify-center">
-                  <Smartphone size={22} />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Sube tus productos</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Agrega categorías, fotos, precios y opciones personalizadas en minutos desde tu celular o computador.
-                </p>
-              </div>
-            </div>
+          <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Calculadora de ahorro</span>
+            <h2 className="mt-2 font-display text-xl font-extrabold text-slate-950">Vende sin pagar comisión por pedido</h2>
 
-            {/* Step 2 */}
-            <div className="relative p-4 sm:p-5 rounded-xl bg-gray-50/70 border border-gray-200/80 hover:border-blue-300 hover:shadow-card transition-all duration-200 space-y-5">
-              <div className="flex items-center justify-between">
-                <span className="font-display text-3xl sm:text-4xl font-black text-blue-600">02</span>
-                <div className="w-12 h-12 rounded-2xl bg-indigo-100/60 text-indigo-600 flex items-center justify-center">
-                  <MessageCircle size={22} />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Comparte tu enlace</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Pon tu enlace en la biografía de Instagram, estados de WhatsApp o envíalo a quien te pregunte por el menú.
-                </p>
-              </div>
+            <div className="mt-5 flex items-end justify-between gap-3">
+              <label htmlFor="sales-value" className="text-sm text-slate-600">Ventas mensuales aproximadas</label>
+              <span className="font-display text-lg font-extrabold tabular-nums text-slate-900">${monthlySales.toLocaleString('es-CO')}</span>
             </div>
+            <input
+              id="sales-value"
+              type="range"
+              min="500000"
+              max="30000000"
+              step="250000"
+              value={monthlySales}
+              onChange={e => setMonthlySales(Number(e.target.value))}
+              className="mt-3 w-full accent-sky-700"
+            />
 
-            {/* Step 3 */}
-            <div className="relative p-4 sm:p-5 rounded-xl bg-gray-50/70 border border-gray-200/80 hover:border-blue-300 hover:shadow-card transition-all duration-200 space-y-5">
-              <div className="flex items-center justify-between">
-                <span className="font-display text-3xl sm:text-4xl font-black text-blue-600">03</span>
-                <div className="w-12 h-12 rounded-2xl bg-emerald-100/60 text-emerald-600 flex items-center justify-center">
-                  <CheckCircle2 size={22} />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Recibe pedidos listos</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  El pedido llega a tu WhatsApp con productos, total exacto, método de pago y el enlace GPS para el repartidor.
-                </p>
-              </div>
+            <div className="mt-5 rounded-xl bg-emerald-50 px-4 py-3.5 text-sm text-emerald-900">
+              Con una comisión de referencia del 5%, ahorrarías{' '}
+              <strong className="font-extrabold">${Math.round(monthlySales * 0.05).toLocaleString('es-CO')}</strong> al mes con 0% de comisión de NEGU.
             </div>
-
+            <p className="mt-auto pt-3 text-[11px] text-slate-500">Estimación ilustrativa usando una comisión de referencia del 5%.</p>
           </div>
-
         </div>
       </section>
 
-      {/* ═══════════ BENTO GRID: VENTAJAS Y VALOR ═══════════ */}
-      <section id="solucion" className="py-12 sm:py-16 bg-gray-50/60 border-b border-gray-200/70">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
-              <CheckCircle size={13} />
-              <span>Diseñado para dueños de negocios</span>
-            </div>
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-gray-950 tracking-tight leading-tight">
-              Todo lo que necesitas para vender más por WhatsApp
-            </h2>
-            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
-              Herramientas precisas para organizar tus ventas sin pagar el 30% a plataformas intermediarias.
-            </p>
-          </div>
+      {/* ═══════════ CÓMO FUNCIONA ═══════════ */}
+      <section id="como-funciona" className="bg-white py-16 sm:py-24 border-b border-slate-200">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionHeader eyebrow={<><Zap size={13} className="text-sky-700" /> Flujo en 3 pasos</>} title="Así de simple es vender con NEGU">
+            Tus clientes piden desde su celular en segundos y tú recibes la comanda completa en WhatsApp. Sin apps ni enredos.
+          </SectionHeader>
 
-          {/* Bento Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-            
-            {/* Bento Card 1: GPS y Domicilios (Large) */}
-            <div className="md:col-span-8 p-4 sm:p-5 rounded-xl bg-white border border-gray-200/90 shadow-card hover:shadow-card transition-all duration-200 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+          <ol className="relative grid grid-cols-1 gap-6 md:grid-cols-3 lg:gap-8">
+            {/* Connector line (desktop) */}
+            <div aria-hidden="true" className="absolute top-12 left-[16%] right-[16%] hidden h-px bg-gradient-to-r from-sky-200 via-indigo-200 to-emerald-200 md:block" />
+
+            {STEPS.map(step => {
+              const Icon = step.icon;
+              return (
+                <li key={step.n} className="group relative rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-sky-200 hover:shadow-xl hover:shadow-sky-900/5">
+                  <div className="flex items-center justify-between">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${step.tone}`}>
+                      <Icon size={22} />
+                    </div>
+                    <span className="font-display text-3xl font-extrabold text-slate-200 transition-colors group-hover:text-sky-200">{step.n}</span>
+                  </div>
+                  <h3 className="mt-6 font-display text-lg sm:text-xl font-extrabold text-slate-950">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.text}</p>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      </section>
+
+      {/* ═══════════ BENTO: VENTAJAS ═══════════ */}
+      <section id="solucion" className="bg-slate-50 py-16 sm:py-24 border-b border-slate-200">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionHeader eyebrow={<><CheckCircle2 size={13} /> Diseñado para dueños de negocios</>} tone="emerald" title="Todo lo que necesitas para vender más por WhatsApp">
+            Herramientas precisas para organizar tus ventas sin pagar el 30% a plataformas intermediarias.
+          </SectionHeader>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-12">
+            {/* Large: GPS */}
+            <article className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm md:col-span-8 md:row-span-1">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
                 <Navigation size={22} />
               </div>
-              <div className="space-y-2">
-                <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Cálculo de domicilio con pin GPS en el mapa</h3>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed max-w-2xl">
-                  Tu cliente marca su ubicación exacta en el mapa satelital. El sistema calcula la distancia por kilómetro desde tu local y envía la ruta directa para que tu repartidor abra Google Maps o Waze sin preguntar "¿por dónde queda tu casa?".
-                </p>
+              <h3 className="mt-6 font-display text-xl sm:text-2xl font-extrabold text-slate-950">Cálculo de domicilio con pin GPS en el mapa</h3>
+              <p className="mt-3 max-w-2xl text-sm sm:text-base leading-relaxed text-slate-600">
+                Tu cliente marca su ubicación exacta en el mapa satelital. El sistema calcula la distancia por kilómetro desde tu local y envía la ruta directa para que tu repartidor abra Google Maps o Waze sin preguntar "¿por dónde queda tu casa?".
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
+                {['Ruta Waze & Maps', 'Cálculo exacto por KM', 'Cero llamadas de repartidores'].map(t => (
+                  <span key={t} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">{t}</span>
+                ))}
               </div>
-              <div className="pt-2 flex flex-wrap gap-2 text-xs font-bold text-gray-600">
-                <span className="px-3 py-1.5 rounded-full bg-gray-100">Ruta Waze & Maps</span>
-                <span className="px-3 py-1.5 rounded-full bg-gray-100">Cálculo exacto por KM</span>
-                <span className="px-3 py-1.5 rounded-full bg-gray-100">Cero llamadas de repartidores</span>
-              </div>
-            </div>
+              <div aria-hidden="true" className="pointer-events-none absolute -right-16 -bottom-16 h-48 w-48 rounded-full bg-sky-100/70 blur-2xl" />
+            </article>
 
-            {/* Bento Card 2: 0% Comisiones (Small) */}
-            <div className="md:col-span-4 p-4 sm:p-5 rounded-xl bg-white border border-gray-200/90 shadow-card hover:shadow-card transition-all duration-200 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            {/* Small: 0% */}
+            <article className="flex flex-col rounded-2xl bg-slate-950 p-6 sm:p-8 text-white shadow-sm md:col-span-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-400/15 text-emerald-300">
                 <DollarSign size={22} />
               </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold text-gray-900">0% Comisiones</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Tus ventas son 100% tuyas. Los clientes pagan directo a tu cuenta de Nequi, Daviplata o en efectivo.
-                </p>
-              </div>
-              <div className="pt-2 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-xl p-2.5">
-                Conserva todo el margen de tus ventas.
-              </div>
-            </div>
+              <h3 className="mt-6 font-display text-xl font-extrabold">0% Comisiones</h3>
+              <p className="mt-3 text-sm leading-relaxed text-slate-300">
+                Tus ventas son 100% tuyas. Los clientes pagan directo a tu cuenta de Nequi, Daviplata o en efectivo.
+              </p>
+              <p className="mt-auto pt-6 text-xs font-bold text-emerald-300">Conserva todo el margen de tus ventas.</p>
+            </article>
 
-            {/* Bento Card 3: Recogida en Local (Small) */}
-            <div className="md:col-span-4 p-4 sm:p-5 rounded-xl bg-white border border-gray-200/90 shadow-card hover:shadow-card transition-all duration-200 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            {/* Small: pickup */}
+            <article className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm md:col-span-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
                 <Store size={22} />
               </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold text-gray-900">Recogida en tienda</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Permite a tus clientes pedir con anticipación para recoger en el local sin hacer filas.
-                </p>
-              </div>
-            </div>
+              <h3 className="mt-6 font-display text-xl font-extrabold text-slate-950">Recogida en tienda</h3>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                Permite a tus clientes pedir con anticipación para recoger en el local sin hacer filas.
+              </p>
+            </article>
 
-            {/* Bento Card 4: Panel en vivo (Large) */}
-            <div className="md:col-span-8 p-4 sm:p-5 rounded-xl bg-white border border-gray-200/90 shadow-card hover:shadow-card transition-all duration-200 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            {/* Large: live panel */}
+            <article className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm md:col-span-8">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
                 <Smartphone size={22} />
               </div>
-              <div className="space-y-2">
-                <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Control total desde tu celular en tiempo real</h3>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed max-w-2xl">
-                  Actualiza precios, sube fotos, oculta productos agotados y consulta el historial de ventas diarias sin depender de un programador o diseñador gráfico.
-                </p>
+              <h3 className="mt-6 font-display text-xl sm:text-2xl font-extrabold text-slate-950">Control total desde tu celular en tiempo real</h3>
+              <p className="mt-3 max-w-2xl text-sm sm:text-base leading-relaxed text-slate-600">
+                Actualiza precios, sube fotos, oculta productos agotados y consulta el historial de ventas diarias sin depender de un programador o diseñador gráfico.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
+                {['Sin reimprimir cartas', 'Gestión de repartidores', 'Reportes de ingresos'].map(t => (
+                  <span key={t} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">{t}</span>
+                ))}
               </div>
-              <div className="pt-2 flex flex-wrap gap-2 text-xs font-bold text-gray-600">
-                <span className="px-3 py-1.5 rounded-full bg-gray-100">Sin reimprimir cartas</span>
-                <span className="px-3 py-1.5 rounded-full bg-gray-100">Gestión de repartidores</span>
-                <span className="px-3 py-1.5 rounded-full bg-gray-100">Reportes de ingresos</span>
-              </div>
-            </div>
-
+            </article>
           </div>
-
         </div>
       </section>
 
-      {/* ═══════════ ANTES VS CON MOVE (COMPARATIVA) ═══════════ */}
-      <section id="comparativa" className="py-12 sm:py-16 bg-white border-b border-gray-200/70">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs font-bold">
-              <span>El antes y después</span>
-            </div>
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-gray-950 tracking-tight leading-tight">
-              ¿Por qué los negocios eligen NEGU?
-            </h2>
-            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
-              Compara la diferencia entre atender por chat tradicional y contar con un catálogo automatizado.
-            </p>
-          </div>
+      {/* ═══════════ ANTES VS NEGU ═══════════ */}
+      <section id="comparativa" className="bg-white py-16 sm:py-24 border-b border-slate-200">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionHeader eyebrow="El antes y después" title="¿Por qué los negocios eligen NEGU?">
+            Compara la diferencia entre atender por chat tradicional y contar con un catálogo automatizado.
+          </SectionHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
-            
-            {/* Antes: Caos */}
-            <div className="p-4 sm:p-5 rounded-xl bg-rose-50/40 border border-rose-200/70 space-y-5">
-              <div className="flex items-center gap-2.5 text-rose-700 font-extrabold text-sm uppercase tracking-wider">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+          <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-2 lg:gap-8">
+            {/* Antes */}
+            <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-6 sm:p-8">
+              <div className="flex items-center gap-2.5 text-xs font-extrabold uppercase tracking-wider text-rose-700">
+                <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
                 <span>El método tradicional (Caos)</span>
               </div>
-              <ul className="space-y-3.5 text-sm text-gray-700">
-                <li className="flex items-start gap-3">
-                  <X size={18} className="text-rose-600 shrink-0 mt-0.5" />
-                  <span>10 a 15 mensajes repetitivos por cada cliente preguntando precios y sabores.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <X size={18} className="text-rose-600 shrink-0 mt-0.5" />
-                  <span>Direcciones incompletas que hacen que los domiciliarios se pierdan y tarden el doble.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <X size={18} className="text-rose-600 shrink-0 mt-0.5" />
-                  <span>Fotos borrosas enviadas por chat que saturan la memoria del teléfono.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <X size={18} className="text-rose-600 shrink-0 mt-0.5" />
-                  <span>Comisiones de hasta el 30% en apps de domicilios tradicionales.</span>
-                </li>
+              <ul className="mt-6 space-y-4 text-sm text-slate-700">
+                {[
+                  '10 a 15 mensajes repetitivos por cada cliente preguntando precios y sabores.',
+                  'Direcciones incompletas que hacen que los domiciliarios se pierdan y tarden el doble.',
+                  'Fotos borrosas enviadas por chat que saturan la memoria del teléfono.',
+                  'Comisiones de hasta el 30% en apps de domicilios tradicionales.',
+                ].map(t => (
+                  <li key={t} className="flex items-start gap-3">
+                    <X size={18} className="mt-0.5 shrink-0 text-rose-600" />
+                    <span>{t}</span>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            {/* Después: Con NEGU */}
-            <div className="p-4 sm:p-5 rounded-xl bg-sky-50/50 border border-sky-200 shadow-card space-y-5 relative">
-              <div className="absolute -top-3.5 right-6 bg-gray-950 text-[#11CEFC] text-[11px] font-extrabold uppercase px-3 py-1 rounded-full shadow-sm border border-gray-800">
+            {/* Con NEGU */}
+            <div className="relative rounded-2xl border border-sky-300 bg-gradient-to-b from-sky-50 to-white p-6 sm:p-8 shadow-xl shadow-sky-900/5">
+              <span className="absolute -top-3.5 right-6 rounded-full bg-slate-950 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-cyan-300 shadow-sm">
                 Con NEGU
-              </div>
-              <div className="flex items-center gap-2.5 text-sky-900 font-extrabold text-sm uppercase tracking-wider">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#0284C7]" />
+              </span>
+              <div className="flex items-center gap-2.5 text-xs font-extrabold uppercase tracking-wider text-sky-800">
+                <span className="h-2.5 w-2.5 rounded-full bg-sky-600" />
                 <span>La experiencia NEGU</span>
               </div>
-              <ul className="space-y-3.5 text-sm text-gray-900 font-medium">
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 size={18} className="text-[#0284C7] shrink-0 mt-0.5" />
-                  <span>Un solo mensaje de WhatsApp con la comanda lista, precios sumados y método de pago.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 size={18} className="text-[#0284C7] shrink-0 mt-0.5" />
-                  <span>Pin GPS exacto que abre Waze o Google Maps en 1 toque en el celular del repartidor.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 size={18} className="text-[#0284C7] shrink-0 mt-0.5" />
-                  <span>Catálogo rápido, elegante y con fotos profesionales que abre sin descargar nada.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 size={18} className="text-[#0284C7] shrink-0 mt-0.5" />
-                  <span>0% comisiones. El dinero entra completo y directo a tu Nequi, Daviplata o cuenta.</span>
-                </li>
+              <ul className="mt-6 space-y-4 text-sm font-medium text-slate-900">
+                {[
+                  'Un solo mensaje de WhatsApp con la comanda lista, precios sumados y método de pago.',
+                  'Pin GPS exacto que abre Waze o Google Maps en 1 toque en el celular del repartidor.',
+                  'Catálogo rápido, elegante y con fotos profesionales que abre sin descargar nada.',
+                  '0% comisiones. El dinero entra completo y directo a tu Nequi, Daviplata o cuenta.',
+                ].map(t => (
+                  <li key={t} className="flex items-start gap-3">
+                    <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-sky-700" />
+                    <span>{t}</span>
+                  </li>
+                ))}
               </ul>
             </div>
-
           </div>
-
         </div>
       </section>
 
-      {/* ═══════════ PLANES Y PRECIOS ═══════════ */}
-      <section id="precios" className="py-12 sm:py-16 bg-gray-50/60 border-b border-gray-200/70">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          
-          <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold">
-              <span>Precios claros</span>
-            </div>
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black text-gray-950 tracking-tight leading-tight">
-              Sin comisiones sorpresa. Paga mes a mes.
-            </h2>
-            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
-              Comienza hoy con 7 días de prueba completa. Cancela cuando quieras sin compromisos.
-            </p>
+      {/* ═══════════ PRECIOS ═══════════ */}
+      <section id="precios" className="bg-slate-50 py-16 sm:py-24 border-b border-slate-200">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionHeader eyebrow="Precios claros" title="Sin comisiones sorpresa. Paga mes a mes.">
+            Comienza hoy con 7 días de prueba completa. Cancela cuando quieras sin compromisos.
+          </SectionHeader>
 
-            {/* Annual Billing Switch */}
-            <div className="pt-4 flex items-center justify-center gap-3">
-              <button
-                onClick={() => setBillingAnnual(false)}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
-                  !billingAnnual ? 'bg-white shadow-xs text-blue-600 border border-gray-200' : 'text-gray-500 hover:text-gray-800'
-                }`}
-              >
-                Mensual
-              </button>
-              <button
-                onClick={() => setBillingAnnual(true)}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  billingAnnual ? 'bg-blue-600 text-white shadow-glow-blue' : 'text-gray-500 hover:text-gray-800'
-                }`}
-              >
-                <span>Anual</span>
-                <span className="bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full font-extrabold">Ahorra 2 meses</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Pricing Cards */}
-          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
-            
-            {/* Plan 1: Prueba Gratis */}
-            <div className="p-4 sm:p-5 rounded-xl bg-white border border-gray-200/90 shadow-card flex flex-col justify-between space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <h3 className="text-xl font-bold text-gray-900">Prueba Gratuita</h3>
-                  <p className="text-xs text-gray-500">Conoce el sistema y pon tu tienda en línea</p>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-display text-4xl sm:text-5xl font-black text-gray-950">$0</span>
-                  <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">/ 7 días</span>
-                </div>
-                <ul className="space-y-3 pt-4 border-t border-gray-100 text-xs sm:text-sm text-gray-600">
-                  <li className="flex items-center gap-2.5">
-                    <Check size={16} className="text-blue-600 shrink-0" />
-                    <span>Catálogo interactivo completo</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check size={16} className="text-blue-600 shrink-0" />
-                    <span>Recepción de pedidos a WhatsApp</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check size={16} className="text-blue-600 shrink-0" />
-                    <span>Cálculo GPS por kilómetro</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check size={16} className="text-blue-600 shrink-0" />
-                    <span>Sin tarjeta de crédito requerida</span>
-                  </li>
-                </ul>
+          <div className="mx-auto grid max-w-4xl grid-cols-1 items-stretch gap-6 md:grid-cols-2 lg:gap-8">
+            {/* Prueba */}
+            <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
+              <div>
+                <h3 className="font-display text-xl font-extrabold text-slate-950">Prueba Gratuita</h3>
+                <p className="mt-1 text-sm text-slate-600">Conoce el sistema y pon tu tienda en línea</p>
               </div>
-
-              <Link 
-                to="/registro" 
-                className="w-full py-3.5 px-6 rounded-full text-center text-sm font-bold text-gray-800 bg-gray-100 hover:bg-gray-200 transition-colors"
-              >
+              <div className="mt-6 flex items-baseline gap-1.5">
+                <span className="font-display text-5xl font-extrabold tracking-tight text-slate-950">$0</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">/ 7 días</span>
+              </div>
+              <ul className="mt-6 flex-1 space-y-3.5 border-t border-slate-100 pt-6 text-sm text-slate-700">
+                {['Catálogo interactivo completo', 'Recepción de pedidos a WhatsApp', 'Cálculo GPS por kilómetro', 'Sin tarjeta de crédito requerida'].map(t => (
+                  <li key={t} className="flex items-center gap-3">
+                    <Check size={17} className="shrink-0 text-sky-700" />
+                    <span>{t}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link to="/registro" className="mt-8 block w-full rounded-xl border border-slate-300 bg-white py-3.5 text-center text-sm font-bold text-slate-900 transition-colors hover:bg-slate-50">
                 Comenzar prueba gratis
               </Link>
             </div>
 
-            {/* Plan 2: Plan Pro */}
-            <div className="p-4 sm:p-5 rounded-xl bg-white border border-blue-200 shadow-card flex flex-col justify-between space-y-6 relative">
-              <div className="absolute -top-3.5 right-6 bg-blue-600 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-sm tracking-wider">
-                MÁS POPULAR
+            {/* Pro */}
+            <div className="relative flex flex-col rounded-2xl border-2 border-sky-600 bg-white p-6 sm:p-8 shadow-xl shadow-sky-900/10">
+              <span className="absolute -top-3.5 right-6 rounded-full bg-sky-700 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-sm">
+                Más popular
+              </span>
+              <div>
+                <h3 className="font-display text-xl font-extrabold text-slate-950">Plan Profesional</h3>
+                <p className="mt-1 text-sm font-semibold text-sky-700">Todo ilimitado para negocios en crecimiento</p>
               </div>
-
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <h3 className="text-xl font-bold text-gray-900">Plan Profesional</h3>
-                  <p className="text-xs text-blue-600 font-semibold">Todo ilimitado para negocios en crecimiento</p>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-display text-4xl sm:text-5xl font-black text-gray-950">
-                    {billingAnnual ? '$49.000' : '$59.000'}
-                  </span>
-                  <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">COP / mes</span>
-                </div>
-                <ul className="space-y-3 pt-4 border-t border-gray-100 text-xs sm:text-sm text-gray-800 font-medium">
-                  <li className="flex items-center gap-2.5">
-                    <Check size={16} className="text-blue-600 shrink-0" />
-                    <span>Productos y categorías ilimitadas</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check size={16} className="text-blue-600 shrink-0" />
-                    <span>Cálculo automático de domicilio GPS</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check size={16} className="text-blue-600 shrink-0" />
-                    <span>Personalización con tu logo y colores</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check size={16} className="text-blue-600 shrink-0" />
-                    <span>Asignación de repartidores en tiempo real</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check size={16} className="text-blue-600 shrink-0" />
-                    <span>Soporte prioritario por WhatsApp</span>
-                  </li>
-                </ul>
+              <div className="mt-6 flex items-baseline gap-1.5">
+                <span className="font-display text-5xl font-extrabold tracking-tight text-slate-950 tabular-nums">
+                  $60.000
+                </span>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">COP / mes</span>
               </div>
-
-              <Link 
-                to="/registro" 
-                className="w-full py-3.5 px-6 rounded-full text-center text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-glow-blue transition-all"
-              >
+              <ul className="mt-6 flex-1 space-y-3.5 border-t border-slate-100 pt-6 text-sm font-medium text-slate-800">
+                {[
+                  'Productos y categorías ilimitadas',
+                  'Cálculo automático de domicilio GPS',
+                  'Personalización con tu logo y colores',
+                  'Asignación de repartidores en tiempo real',
+                  'Soporte prioritario por WhatsApp',
+                ].map(t => (
+                  <li key={t} className="flex items-center gap-3">
+                    <Check size={17} className="shrink-0 text-sky-700" />
+                    <span>{t}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link to="/registro" className="mt-8 block w-full rounded-xl bg-sky-700 py-3.5 text-center text-sm font-bold text-white shadow-md shadow-sky-700/25 transition-all hover:bg-sky-800 hover:-translate-y-0.5">
                 Activar con 7 días gratis
               </Link>
             </div>
-
           </div>
-
         </div>
       </section>
 
-      {/* ═══════════ TESTIMONIOS ═══════════ */}
-      <section className="py-12 sm:py-16 bg-white border-b border-gray-200/70">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            
-            {/* Rating side block */}
-            <div className="lg:col-span-4 space-y-4 text-center lg:text-left">
-              <div className="flex items-center justify-center lg:justify-start gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={20} fill="currentColor" className="text-amber-400" />
-                ))}
-              </div>
-              <h2 className="font-display text-2xl sm:text-3xl font-black text-gray-950 tracking-tight leading-snug">
-                4.9 / 5 recomendado por negocios locales
-              </h2>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Emprendedores y restaurantes en Colombia mueven sus pedidos con NEGU todos los días.
-              </p>
-              <Link 
-                to="/registro" 
-                className="inline-flex items-center gap-2 text-sm font-bold text-[#0284C7] hover:text-sky-700 transition-colors"
-              >
-                <span>Únete a NEGU hoy</span>
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-
-            {/* Testimonials cards */}
-            <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
-              <div className="rounded-xl border border-gray-200/80 bg-gray-50/60 p-6 space-y-4 hover:shadow-card transition-shadow duration-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#0284C7] text-white text-xs font-black flex items-center justify-center shrink-0">
-                    SR
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">Sandra Restrepo</p>
-                    <p className="text-xs text-gray-500">Comidas Rápidas El Gordo · Bogotá</p>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  "Antes nos enredábamos porque los clientes daban direcciones incompletas por chat. Ahora todo llega organizado y el domiciliario va directo con el GPS."
-                </p>
-                <div className="flex items-center gap-0.5">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} size={13} fill="currentColor" className="text-amber-400" />
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-gray-200/80 bg-gray-50/60 p-6 space-y-4 hover:shadow-card transition-shadow duration-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-900 text-[#11CEFC] text-xs font-black flex items-center justify-center shrink-0 border border-gray-800">
-                    MH
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">Mauricio Henao</p>
-                    <p className="text-xs text-gray-500">Pizzería Napolitana · Medellín</p>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  "Muchos clientes piden para pasar a recoger. El pedido ya está listo cuando llegan y nos pagan directo al Nequi sin pagarle porcentajes a nadie."
-                </p>
-                <div className="flex items-center gap-0.5">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} size={13} fill="currentColor" className="text-amber-400" />
-                  ))}
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* ═══════════ PREGUNTAS FRECUENTES (FAQ ACCORDION) ═══════════ */}
-      <section id="faq" className="py-12 sm:py-16 bg-gray-50/60 border-b border-gray-200/70">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          
-          <div className="text-center mb-12 space-y-3">
-            <span className="text-xs font-extrabold uppercase tracking-widest text-gray-400">
-              Respuestas rápidas
-            </span>
-            <h2 className="font-display text-3xl sm:text-4xl font-black text-gray-950 tracking-tight">
-              Preguntas frecuentes
-            </h2>
+      {/* ═══════════ FAQ ═══════════ */}
+      <section id="faq" className="bg-slate-50 py-16 sm:py-24 border-b border-slate-200">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6">
+          <div className="mb-12 space-y-3 text-center">
+            <span className="text-xs font-extrabold uppercase tracking-widest text-sky-700">Respuestas rápidas</span>
+            <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-950">Preguntas frecuentes</h2>
           </div>
 
           <div className="space-y-3">
-            {FAQS.map((faq, idx) => (
-              <div 
-                key={idx}
-                className="rounded-2xl border border-gray-200/90 bg-white overflow-hidden transition-all duration-200 shadow-xs"
-              >
-                <button 
-                  onClick={() => setOpenFaq(openFaq === idx ? -1 : idx)}
-                  className="w-full px-5 sm:px-6 py-4 text-left text-sm sm:text-base font-bold text-gray-900 flex items-center justify-between gap-4 hover:bg-gray-50/70 transition-colors"
+            {FAQS.map((faq, idx) => {
+              const isOpen = openFaq === idx;
+              return (
+                <div
+                  key={faq.q}
+                  className={`overflow-hidden rounded-2xl border bg-white transition-colors duration-200 ${isOpen ? 'border-sky-200 shadow-sm' : 'border-slate-200'}`}
                 >
-                  <span>{faq.q}</span>
-                  <ChevronDown 
-                    size={16} 
-                    className={`text-gray-400 shrink-0 transition-transform duration-200 ${
-                      openFaq === idx ? 'rotate-180 text-[#0284C7]' : ''
-                    }`} 
-                  />
-                </button>
-                {openFaq === idx && (
-                  <div className="px-5 sm:px-6 pb-5 text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            ))}
+                  <h3>
+                    <button
+                      type="button"
+                      aria-expanded={isOpen}
+                      aria-controls={`faq-panel-${idx}`}
+                      id={`faq-button-${idx}`}
+                      onClick={() => setOpenFaq(isOpen ? -1 : idx)}
+                      className="flex w-full items-center justify-between gap-4 px-5 py-4 sm:px-6 sm:py-5 text-left text-sm sm:text-base font-bold text-slate-900 transition-colors hover:bg-slate-50"
+                    >
+                      <span>{faq.q}</span>
+                      <ChevronDown
+                        size={18}
+                        aria-hidden="true"
+                        className={`shrink-0 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180 text-sky-700' : ''}`}
+                      />
+                    </button>
+                  </h3>
+                  {isOpen && (
+                    <div id={`faq-panel-${idx}`} role="region" aria-labelledby={`faq-button-${idx}`} className="border-t border-slate-100 px-5 pb-5 pt-4 text-sm leading-relaxed text-slate-600 sm:px-6">
+                      {faq.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-
         </div>
       </section>
 
-      {/* ═══════════ CTA FINAL (HIGH IMPACT) ═══════════ */}
-      <section className="py-14 sm:py-20 bg-slate-950 text-white relative overflow-hidden">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 relative z-10 text-center space-y-6">
-          
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-sky-300 text-xs font-bold">
-            <CheckCircle2 size={14} className="text-[#11CEFC]" />
+      {/* ═══════════ CTA FINAL ═══════════ */}
+      <section className="relative overflow-hidden bg-slate-950 py-20 sm:py-28 text-white">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+          <div className="absolute left-1/2 top-0 h-80 w-[40rem] -translate-x-1/2 rounded-full bg-sky-600/25 blur-3xl" />
+        </div>
+        <div className="relative mx-auto max-w-4xl space-y-7 px-4 text-center sm:px-6">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-bold text-cyan-200">
+            <CheckCircle2 size={14} className="text-cyan-400" />
             <span>Únete a los negocios que ya venden con NEGU</span>
-          </div>
+          </span>
 
-          <h2 className="font-display text-3xl sm:text-5xl font-black text-white tracking-tight leading-[1.08] max-w-3xl mx-auto">
+          <h2 className="font-display text-3xl sm:text-5xl font-extrabold leading-[1.08] tracking-tight">
             Empieza a vender hoy.<br />
-            <span className="text-[#11CEFC]">Tu catálogo conectado a WhatsApp.</span>
+            <span className="bg-gradient-to-r from-cyan-300 to-sky-400 bg-clip-text text-transparent">Tu catálogo conectado a WhatsApp.</span>
           </h2>
 
-          <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed">
+          <p className="mx-auto max-w-xl text-sm sm:text-base leading-relaxed text-slate-300">
             En menos de 3 minutos tienes tu catálogo en línea con GPS, recogida en local y pedidos organizados a tu WhatsApp.
           </p>
 
-          <div className="pt-1 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link 
-              to="/registro" 
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-sm transition-all duration-200"
+          <div className="flex flex-col items-center justify-center gap-3 pt-2">
+            <Link
+              to="/registro"
+              className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl bg-cyan-400 px-7 py-4 text-sm font-bold text-slate-950 shadow-[0_8px_30px_-6px_rgba(34,211,238,0.5)] transition-all duration-200 hover:bg-cyan-300 hover:-translate-y-0.5 sm:w-auto sm:text-base"
             >
               <span>Crear mi tienda en 3 minutos</span>
-              <ArrowRight size={17} />
+              <ArrowRight size={17} className="transition-transform group-hover:translate-x-0.5" />
             </Link>
+            <p className="text-xs font-medium text-slate-400">
+              7 días de prueba gratis · Sin tarjeta de crédito · Cancela en cualquier momento
+            </p>
           </div>
-
-          <p className="text-xs text-slate-300 font-medium pt-1">
-            7 días de prueba gratis · Sin tarjeta de crédito · Cancela en cualquier momento
-          </p>
-
         </div>
       </section>
 
-      {/* ═══════════ FOOTER COMPONENT ═══════════ */}
       <MarketingFooter />
-
     </div>
   );
 }

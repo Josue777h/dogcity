@@ -1,234 +1,111 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  ClipboardList, 
-  Printer, 
-  TrendingUp, 
-  ArrowRight, 
-  CheckCircle2, 
-  Clock, 
-  Smartphone, 
-  FileSpreadsheet, 
-  ChevronRight,
-  ShieldCheck
-} from 'lucide-react';
+import { ClipboardList, Printer, FileSpreadsheet, CheckCircle2 } from 'lucide-react';
 import SEO from '../../components/common/SEO';
 import MarketingNavbar from './components/MarketingNavbar';
 import MarketingFooter from './components/MarketingFooter';
+import { PageHero, Section, SectionHeader, FeatureCard, LinkCard, CtaBand } from './components/MarketingUI';
 import { MARKETING_SEO } from './seo-pages';
+
+const TRACK_STEPS = ['Recibido', 'En cocina', 'En camino', 'Entregado'];
 
 export default function GestionPedidosPage() {
   return (
-    <div className="min-h-screen overflow-x-clip bg-[#FBFBFC] text-gray-900 font-sans">
+    <div className="min-h-screen overflow-x-clip bg-white text-slate-900 font-sans antialiased">
       <SEO {...MARKETING_SEO.gestionPedidos} />
 
       <MarketingNavbar />
 
       <main>
-        {/* ── HERO SECTION ── */}
-        <section className="pt-12 sm:pt-20 pb-16 sm:pb-24 border-b border-gray-200/70 bg-slate-50">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-6">
-            
-            <div className="inline-flex items-center gap-2 bg-white/90 border border-sky-200/80 rounded-full pl-2 pr-3.5 py-1 text-xs font-semibold text-gray-700 shadow-xs mx-auto">
-              <span className="bg-gray-950 text-[#11CEFC] text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full">
-                PANEL DE CONTROL
-              </span>
-              <span>Cero comandas perdidas en horas pico</span>
-            </div>
+        <PageHero
+          eyebrow="Panel de control · Cero comandas perdidas en horas pico"
+          title="Gestión y control de pedidos en"
+          highlight="tiempo real para negocios"
+          description="Administra el ciclo completo de tus ventas: desde que entra la comanda hasta que el domiciliario entrega en la puerta. Visualiza estados, imprime tickets térmicos y exporta tus ingresos sin complicaciones."
+          ctaTo="/registro"
+          ctaLabel="Probar panel administrativo gratis"
+          note="Prueba 7 días gratis · Funciona desde celular, tablet o computador"
+        />
 
-            <h1 className="font-display text-4xl sm:text-6xl font-black text-gray-950 tracking-tight leading-[1.05]">
-              Gestión y control de pedidos en<br />
-              <span className="font-semibold text-sky-700">
-                tiempo real para negocios
-              </span>
-            </h1>
+        {/* Características */}
+        <Section>
+          <SectionHeader eyebrow="Operación ágil" title="Todo lo que necesitas para operar tu negocio como un profesional" />
 
-            <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Administra el ciclo completo de tus ventas: desde que entra la comanda hasta que el domiciliario entrega en la puerta. Visualiza estados, imprime tickets térmicos y exporta tus ingresos sin complicaciones.
-            </p>
-
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link
-                to="/registro"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm sm:text-base px-5 py-3 rounded-lg border border-gray-800 shadow-card hover:shadow-sm transition-all duration-200 active:scale-95"
-              >
-                <span>Probar panel administrativo gratis</span>
-                <ArrowRight size={16} className="text-[#11CEFC]" />
-              </Link>
-            </div>
-
-            <p className="text-xs text-gray-500 font-medium pt-1">
-              Prueba 7 días gratis · Funciona desde celular, tablet o computador
-            </p>
-
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <FeatureCard icon={ClipboardList} tone="sky" title="Estados de pedido en vivo">
+              Pasa pedidos de <em>Pendiente</em> a <em>En preparación</em>, <em>En camino</em> o <em>Completado</em> con un solo toque. Tu equipo de cocina sabe exactamente qué preparar primero.
+            </FeatureCard>
+            <FeatureCard icon={Printer} tone="cyan" title="Impresión térmica Bluetooth y comanda">
+              Conecta tu impresora térmica portátil Bluetooth (58mm o 80mm) para imprimir comandas instantáneas para cocina o facturas de entrega para el cliente.
+            </FeatureCard>
+            <FeatureCard icon={FileSpreadsheet} tone="emerald" title="Reportes de ventas en Excel (CSV)">
+              Descarga el historial de pedidos con desglose de métodos de pago, totales diarios y productos más vendidos en un archivo compatible con Excel en 1 clic.
+            </FeatureCard>
           </div>
-        </section>
+        </Section>
 
-        {/* ── CARACTERÍSTICAS DEL PANEL ── */}
-        <section className="py-12 sm:py-16 bg-white border-b border-gray-200/70">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
-            
-            <div className="text-center max-w-2xl mx-auto space-y-3">
-              <span className="text-xs font-extrabold uppercase tracking-widest text-[#0284C7]">
-                Operación ágil
-              </span>
-              <h2 className="font-display text-3xl sm:text-4xl font-black text-gray-950 tracking-tight">
-                Todo lo que necesitas para operar tu negocio como un profesional
+        {/* Seguimiento para el cliente */}
+        <Section muted>
+          <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-2">
+            <div className="space-y-5">
+              <span className="text-xs font-extrabold uppercase tracking-widest text-sky-700">Experiencia del cliente</span>
+              <h2 className="font-display text-3xl font-extrabold leading-tight tracking-tight text-slate-950 sm:text-4xl">
+                Rastreo de pedido en vivo: reduce la ansiedad de tus compradores
               </h2>
+              <p className="leading-relaxed text-slate-600">
+                Cada comanda incluye un enlace de seguimiento seguro. El cliente puede consultar en tiempo real si su pedido ya está en el horno, empacado o en manos del repartidor.
+              </p>
+              <ul className="space-y-2.5 pt-2 text-sm text-slate-700">
+                {[
+                  'Evita llamadas insistentes preguntando "¿Ya salió mi pedido?".',
+                  'Visualización clara del método de entrega y resumen de artículos.',
+                  'Totalmente adaptado a pantallas móviles.',
+                ].map(t => (
+                  <li key={t} className="flex items-center gap-2.5">
+                    <CheckCircle2 size={17} className="shrink-0 text-sky-700" aria-hidden="true" />
+                    <span>{t}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              
-              <div className="p-6 rounded-xl bg-gray-50 border border-gray-200/80 space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center">
-                  <ClipboardList size={22} />
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-900/10 sm:p-7">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500" aria-hidden="true" />
+                  <span className="text-xs font-bold text-slate-900">Estado: En preparación</span>
                 </div>
-                <h3 className="font-bold text-base text-gray-950">Estados de pedido en vivo</h3>
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  Pasa pedidos de <em>Pendiente</em> a <em>En preparación</em>, <em>En camino</em> o <em>Completado</em> con un solo toque. Tu equipo de cocina sabe exactamente qué preparar primero.
-                </p>
+                <span className="text-xs text-slate-500">Pedido #1082</span>
               </div>
-
-              <div className="p-6 rounded-xl bg-gray-50 border border-gray-200/80 space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-cyan-100 text-[#0284C7] flex items-center justify-center">
-                  <Printer size={22} />
+              <div className="mt-5 space-y-3">
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-label="Avance del pedido" aria-valuemin={0} aria-valuemax={100} aria-valuenow={66}>
+                  <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-sky-600 to-cyan-400" />
                 </div>
-                <h3 className="font-bold text-base text-gray-950">Impresión térmica Bluetooth & Comanda</h3>
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  Conecta tu impresora térmica portátil Bluetooth (58mm o 80mm) para imprimir comandas instantáneas para cocina o facturas de entrega para el cliente.
-                </p>
-              </div>
-
-              <div className="p-6 rounded-xl bg-gray-50 border border-gray-200/80 space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                  <FileSpreadsheet size={22} />
-                </div>
-                <h3 className="font-bold text-base text-gray-950">Reportes de ventas en Excel (CSV)</h3>
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  Descarga el historial de pedidos con desglose de métodos de pago, totales diarios y productos más vendidos en un archivo compatible con Excel en 1 clic.
-                </p>
-              </div>
-
-            </div>
-
-          </div>
-        </section>
-
-        {/* ── SEGUIMIENTO PARA EL CLIENTE ── */}
-        <section className="py-12 sm:py-16 bg-gray-50/60 border-b border-gray-200/70">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-              
-              <div className="space-y-4">
-                <span className="text-xs font-extrabold uppercase tracking-widest text-[#0284C7]">
-                  Experiencia del cliente
-                </span>
-                <h2 className="font-display text-3xl sm:text-4xl font-black text-gray-950 tracking-tight leading-tight">
-                  Rastreo de pedido en vivo: reduce la ansiedad de tus compradores
-                </h2>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Cada comanda incluye un enlace de seguimiento seguro. El cliente puede consultar en tiempo real si su pedido ya está en el horno, empacado o en manos del repartidor.
-                </p>
-                <div className="space-y-2 pt-2 text-xs text-gray-700">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 size={16} className="text-[#0284C7]" />
-                    <span>Evita llamadas insistentes preguntando "¿Ya salió mi pedido?".</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 size={16} className="text-[#0284C7]" />
-                    <span>Visualización clara del método de entrega y resumen de artículos.</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 size={16} className="text-[#0284C7]" />
-                    <span>Totalmente adaptado a pantallas móviles.</span>
-                  </div>
+                <div className="flex justify-between text-[11px] font-medium text-slate-500">
+                  {TRACK_STEPS.map((s, i) => (
+                    <span key={s} className={i === 1 ? 'font-bold text-sky-700' : ''}>{s}</span>
+                  ))}
                 </div>
               </div>
-
-              <div className="p-6 rounded-xl bg-white border border-gray-200/80 shadow-lg space-y-4">
-                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-xs font-bold text-gray-900">Estado: En preparación</span>
-                  </div>
-                  <span className="text-xs text-gray-500">Pedido #1082</span>
-                </div>
-                <div className="space-y-3">
-                  <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-[#0284C7] to-[#11CEFC] w-2/3 rounded-full" />
-                  </div>
-                  <div className="flex justify-between text-[11px] text-gray-500 font-medium">
-                    <span>Recibido</span>
-                    <span className="text-sky-600 font-bold">En Cocina</span>
-                    <span>En Camino</span>
-                    <span>Entregado</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-        </section>
-
-        {/* ── ENLACES INTERNOS ── */}
-        <section className="py-12 bg-white border-b border-gray-200/70">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
-              Otras áreas de la plataforma
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Link 
-                to="/para-restaurantes" 
-                className="p-4 rounded-2xl bg-gray-50 border border-gray-200/80 hover:border-cyan-300 hover:shadow-xs transition-all flex items-center justify-between group"
-              >
-                <div>
-                  <p className="text-sm font-bold text-gray-900 group-hover:text-cyan-600 transition-colors">
-                    Software para restaurantes
-                  </p>
-                  <p className="text-xs text-gray-500">Comandas de cocina, cálculo de rutas y catálogo interactivo</p>
-                </div>
-                <ChevronRight size={18} className="text-gray-400 group-hover:text-cyan-600 transition-colors" />
-              </Link>
-
-              <Link 
-                to="/para-negocios" 
-                className="p-4 rounded-2xl bg-gray-50 border border-gray-200/80 hover:border-cyan-300 hover:shadow-xs transition-all flex items-center justify-between group"
-              >
-                <div>
-                  <p className="text-sm font-bold text-gray-900 group-hover:text-cyan-600 transition-colors">
-                    Software para pequeños negocios
-                  </p>
-                  <p className="text-xs text-gray-500">Tiendas, cafeterías, reposterías y comercios locales</p>
-                </div>
-                <ChevronRight size={18} className="text-gray-400 group-hover:text-cyan-600 transition-colors" />
-              </Link>
             </div>
           </div>
-        </section>
+        </Section>
 
-        {/* ── CTA FINAL ── */}
-        <section className="py-16 sm:py-20 bg-slate-950 text-white text-center">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
-            <h2 className="font-display text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
-              Toma el control de tus ventas y pedidos hoy
-            </h2>
-            <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed">
-              Empieza tus 7 días de prueba gratis y organiza tu negocio como siempre quisiste.
-            </p>
-            <div>
-              <Link
-                to="/registro"
-                className="inline-flex items-center gap-2 bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-sm transition-all"
-              >
-                <span>Crear mi cuenta gratis</span>
-                <ArrowRight size={16} />
-              </Link>
-            </div>
+        {/* Enlaces internos */}
+        <Section className="py-12 sm:py-14">
+          <p className="mb-5 text-xs font-bold uppercase tracking-widest text-slate-500">Otras áreas de la plataforma</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <LinkCard to="/para-restaurantes" title="Software para restaurantes" description="Comandas de cocina, cálculo de rutas y catálogo interactivo" />
+            <LinkCard to="/para-negocios" title="Software para pequeños negocios" description="Tiendas, cafeterías, reposterías y comercios locales" />
           </div>
-        </section>
+        </Section>
       </main>
+
+      <CtaBand
+        title="Toma el control de tus ventas y pedidos hoy"
+        description="Empieza tus 7 días de prueba gratis y organiza tu negocio como siempre quisiste."
+        ctaTo="/registro"
+        ctaLabel="Crear mi cuenta gratis"
+      />
 
       <MarketingFooter />
     </div>

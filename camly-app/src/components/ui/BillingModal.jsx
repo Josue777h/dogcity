@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle2, ShieldCheck, CreditCard, ChevronRight } from 'lucide-react';
 import { useBusinessStore } from '../../stores';
-import { getSupabase } from '../../lib/supabase';
 
 export default function BillingModal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -89,26 +88,6 @@ export default function BillingModal() {
                  <ShieldCheck size={12} /> Activación instantánea y segura
                </p>
 
-               {/* BOTÓN DE DESARROLLADOR PARA PRUEBAS (Se puede eliminar en producción) */}
-               <button 
-                 onClick={async () => {
-                   try {
-                     const d = new Date();
-                     d.setDate(d.getDate() + 30);
-                     await getSupabase().from('suscripciones').update({
-                       estado: 'activo', 
-                       es_trial: false, 
-                       fecha_inicio: new Date().toISOString(), 
-                       fecha_fin: d.toISOString()
-                     }).eq('negocio_id', business.id);
-                     alert('¡Suscripción Activa por 30 días! Refrescando...');
-                     window.location.reload();
-                   } catch(e) { console.error(e); }
-                 }}
-                 className="w-full text-center text-brand text-[10px] font-black uppercase tracking-widest hover:underline p-2 border border-dashed border-brand/30 rounded-xl bg-brand/5"
-               >
-                 DEV: Simular Pago (+30 Días)
-               </button>
             </div>
          </div>
       </div>

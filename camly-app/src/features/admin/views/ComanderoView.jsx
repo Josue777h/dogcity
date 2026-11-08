@@ -883,69 +883,6 @@ export default function ComanderoView() {
 
   return (
     <div className="space-y-3 sm:space-y-4 pb-24 lg:pb-6 font-sans">
-      {/* Header superior compacto en una sola fila sin espacios en blanco desperdiciados */}
-      <div className="flex items-center justify-between gap-2 bg-white px-3.5 py-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm sm:text-lg font-bold text-slate-900 flex items-center gap-2 truncate">
-              <Utensils className="text-slate-700 shrink-0" size={18} />
-              <span className="truncate">Comandero</span>
-            </h1>
-            <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-900 text-white shrink-0">
-              Mesa #{selectedTable}
-            </span>
-            <span className="hidden md:inline-flex px-2.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 items-center gap-1.5 shrink-0">
-              <ChefHat size={13} className="text-slate-600" />
-              Toma de pedidos en salón
-            </span>
-          </div>
-          <p className="hidden sm:block text-xs text-slate-500 mt-0.5 truncate">
-            Toma órdenes directamente desde el celular o tablet y envíalas a cocina al instante.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={handleToggleWaiterLock}
-            title={isWaiterLocked ? 'Ingresar PIN de administrador para desbloquear todo el panel' : 'Bloquear pantalla en Modo Mesero (oculta menú e ingresos)'}
-            aria-label={isWaiterLocked ? 'Desbloquear panel con PIN' : 'Activar Modo Mesero con PIN'}
-            className={`h-9 px-2.5 sm:px-3 rounded-xl transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer border shrink-0 ${
-              isWaiterLocked
-                ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300'
-                : 'bg-slate-900 hover:bg-black text-white border-slate-900'
-            }`}
-          >
-            {isWaiterLocked ? <Unlock size={14} className="shrink-0" /> : <Lock size={14} className="shrink-0" />}
-            <span className="sm:hidden">{isWaiterLocked ? 'Salir PIN' : 'Modo Mesero'}</span>
-            <span className="hidden sm:inline">{isWaiterLocked ? 'Salir Modo Mesero (PIN)' : 'Bloquear Modo Mesero'}</span>
-          </button>
-
-          {!isWaiterLocked && localStorage.getItem(pinStorageKey) && (
-            <button
-              type="button"
-              onClick={() => { setPinInput(''); setPinModalMode('setup'); }}
-              title="Cambiar el PIN de 4 dígitos"
-              className="h-9 px-2 sm:px-2.5 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold cursor-pointer transition-colors shrink-0"
-            >
-              <span className="sm:hidden">PIN</span>
-              <span className="hidden sm:inline">Cambiar PIN</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => reloadOrders()}
-            title="Refrescar comandas y mesas"
-            aria-label="Refrescar comandas y mesas"
-            className="h-9 w-9 sm:w-auto sm:px-3 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer shrink-0"
-          >
-            <RefreshCw size={15} />
-            <span className="hidden sm:inline">Actualizar</span>
-          </button>
-        </div>
-      </div>
-
       {/* Modal de Configuración / Desbloqueo por PIN de 4 dígitos */}
       {pinModalMode && (
         <div className="fixed inset-0 z-[180] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
@@ -1009,14 +946,15 @@ export default function ComanderoView() {
         </div>
       )}
 
-      {/* Salón y Selector de Mesas Profesional (Ágil en móvil y completo en PC) */}
+      {/* Salón y Comandero Unificado (Ágil en móvil, cero espacios vacíos) */}
       <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
-        <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+        <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100 flex-wrap sm:flex-nowrap">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xs font-bold text-slate-800 uppercase tracking-wide shrink-0">
-              Salón:
-            </span>
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-brand text-white shadow-2xs shrink-0">
+            <h1 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-1.5 shrink-0">
+              <Utensils className="text-slate-700 shrink-0" size={17} />
+              <span>Comandero</span>
+            </h1>
+            <span className="text-xs font-black px-2.5 py-0.5 rounded-lg bg-brand text-white shadow-2xs shrink-0">
               Mesa #{selectedTable}
             </span>
             {primaryActiveOrder && (
@@ -1031,25 +969,50 @@ export default function ComanderoView() {
             )}
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
-            <div className="hidden md:flex items-center gap-3 text-[11px] text-slate-500">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-slate-300" /> Libre
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-amber-500" /> En Cocina
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-indigo-500" /> En Mesa
-              </span>
-            </div>
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+            <button
+              type="button"
+              onClick={handleToggleWaiterLock}
+              title={isWaiterLocked ? 'Ingresar PIN de administrador para desbloquear todo el panel' : 'Bloquear pantalla en Modo Mesero'}
+              aria-label={isWaiterLocked ? 'Desbloquear panel con PIN' : 'Activar Modo Mesero con PIN'}
+              className={`h-9 px-2.5 sm:px-3 rounded-xl transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer border shrink-0 ${
+                isWaiterLocked
+                  ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300'
+                  : 'bg-slate-900 hover:bg-black text-white border-slate-900'
+              }`}
+            >
+              {isWaiterLocked ? <Unlock size={13} className="shrink-0" /> : <Lock size={13} className="shrink-0" />}
+              <span className="hidden sm:inline">{isWaiterLocked ? 'Salir PIN' : 'Modo Mesero'}</span>
+            </button>
+
+            {!isWaiterLocked && localStorage.getItem(pinStorageKey) && (
+              <button
+                type="button"
+                onClick={() => { setPinInput(''); setPinModalMode('setup'); }}
+                title="Cambiar el PIN de 4 dígitos"
+                className="h-9 px-2 sm:px-2.5 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold cursor-pointer transition-colors shrink-0"
+              >
+                PIN
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => reloadOrders()}
+              title="Refrescar comandas y mesas"
+              aria-label="Refrescar comandas y mesas"
+              className="h-9 w-9 sm:w-auto sm:px-2.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer shrink-0"
+            >
+              <RefreshCw size={14} />
+              <span className="hidden sm:inline">Actualizar</span>
+            </button>
 
             <button
               type="button"
               onClick={() => setShowAllTablesMobile((v) => !v)}
-              className="lg:hidden text-[11px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+              className="lg:hidden h-9 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 rounded-xl transition-colors cursor-pointer shrink-0"
             >
-              {showAllTablesMobile ? 'Compactar mesas' : 'Ver cuadrícula'}
+              {showAllTablesMobile ? 'Fila' : 'Mesas ▾'}
             </button>
           </div>
         </div>

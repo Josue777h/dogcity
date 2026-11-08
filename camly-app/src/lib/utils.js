@@ -1,5 +1,22 @@
 import { useState, useEffect } from 'react';
 
+/** Escapa texto no confiable antes de insertarlo en HTML (recibos y comandas). */
+export function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Celda CSV entre comillas que neutraliza fórmulas (=, +, -, @) para evitar CSV injection. */
+function csvCell(value) {
+  let text = String(value ?? '');
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
 export function useAnimatedCounter(target, duration = 1500) {
   const [count, setCount] = useState(0);
   useEffect(() => {
@@ -281,17 +298,17 @@ export function exportOrdersToCSV(orders, businessName = 'Negu') {
       `#${o.id?.toString().slice(-6).toUpperCase() || o.id}`,
       dateStr,
       timeStr,
-      `"${(o.nombre || '').replace(/"/g, '""')}"`,
-      `"${(o.telefono || '').replace(/"/g, '""')}"`,
+      csvCell(o.nombre || ''),
+      csvCell(o.telefono || ''),
       o.entrega_metodo === 'envio' ? 'Domicilio' : 'Retiro en tienda',
-      `"${(o.direccion || o.ubicacion_link || '').replace(/"/g, '""')}"`,
+      csvCell(o.direccion || o.ubicacion_link || ''),
       o.pago_metodo === 'transferencia' ? 'Transferencia' : 'Efectivo',
       (o.status || o.estado || 'nuevo').toUpperCase(),
       subtotal,
       domCost,
       total,
-      `"${itemsSummary.replace(/"/g, '""')}"`,
-      `"${(o.comentarios || '').replace(/"/g, '""')}"`
+      csvCell(itemsSummary),
+      csvCell(o.comentarios || '')
     ];
   });
 
@@ -397,9 +414,9 @@ export function printThermalReceipt(order, business, options = {}) {
     return `
       <div style="margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed #999;">
         <div style="font-weight: 900; font-size: 15px; line-height: 1.25;">
-          ${qty}x ${name}
+          ${qty}x ${escapeHtml(name)}
         </div>
-        ${optText ? `<div style="font-size: 12px; margin-left: 8px; color: #000; font-weight: 700; margin-top: 3px;">+ ${optText}</div>` : ''}
+        ${optText ? `<div style="font-size: 12px; margin-left: 8px; color: #000; font-weight: 700; margin-top: 3px;">+ ${escapeHtml(optText)}</div>` : ''}
         ${nota ? `<div style="font-size: 12px; margin-left: 8px; font-weight: 900; background: #e5e7eb; padding: 3px 6px; border-left: 3px solid #000; margin-top: 4px;">NOTA: ${nota.toUpperCase()}</div>` : ''}
       </div>
     `;
@@ -418,11 +435,11 @@ export function printThermalReceipt(order, business, options = {}) {
     return `
       <div style="margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed #bbb;">
         <div style="display: flex; justify-content: space-between; gap: 8px; font-weight: 700; font-size: 12px;">
-          <span>${qty}x ${name}</span>
+          <span>${qty}x ${escapeHtml(name)}</span>
           <span style="white-space: nowrap;">$${itemTotal.toLocaleString('es-CO')}</span>
         </div>
-        ${optText ? `<div style="font-size: 11px; margin-left: 6px; color: #222; margin-top: 2px;">+ ${optText}</div>` : ''}
-        ${nota ? `<div style="font-size: 10px; margin-left: 6px; color: #333; margin-top: 2px;">Nota: ${nota}</div>` : ''}
+        ${optText ? `<div style="font-size: 11px; margin-left: 6px; color: #222; margin-top: 2px;">+ ${escapeHtml(optText)}</div>` : ''}
+        ${nota ? `<div style="font-size: 10px; margin-left: 6px; color: #333; margin-top: 2px;">Nota: ${escapeHtml(nota)}</div>` : ''}
       </div>
     `;
   }).join('');
@@ -434,7 +451,7 @@ export function printThermalReceipt(order, business, options = {}) {
   }
 
   const locationLabel = isMesa
-    ? `MESA #${tableNum}`
+    ? `MESA #${escapeHtml(tableNum)}`
     : isEnvio
       ? 'SERVICIO A DOMICILIO'
       : 'PARA RECOGER EN LOCAL';
@@ -450,7 +467,7 @@ export function printThermalReceipt(order, business, options = {}) {
     <html>
       <head>
         <meta charset="utf-8">
-        <title>${mode === 'kitchen' ? 'Comanda Cocina' : 'Cuenta'} #${shortId} - ${businessName}</title>
+        <title>${mode === 'kitchen' ? 'Comanda Cocina' : 'Cuenta'} #${shortId} - ${escapeHtml(businessName)}</title>
         <style>
           @page { margin: 0; size: auto; }
           body {
@@ -524,7 +541,7 @@ export function printThermalReceipt(order, business, options = {}) {
             <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
               ${isAddition ? 'ADICIÓN DE COCINA' : 'COMANDA DE COCINA'}
             </div>
-            <div class="badge-mode">${locationLabel}</div>
+            <div class="badge-mode">${escapeHtml(locationLabel)}</div>
           </div>
 
           <div class="double-divider"></div>
@@ -536,7 +553,7 @@ export function printThermalReceipt(order, business, options = {}) {
           ${!isMesa && order.nombre ? `
           <div class="row" style="font-size: 11px;">
             <span>Cliente:</span>
-            <span class="bold">${order.nombre}</span>
+            <span class="bold">${escapeHtml(order.nombre)}</span>
           </div>` : ''}
 
           <div class="divider"></div>
@@ -546,7 +563,7 @@ export function printThermalReceipt(order, business, options = {}) {
 
           ${order.comentarios ? `
           <div style="background: #e5e7eb; padding: 6px; border-left: 3px solid #000; margin: 8px 0; font-size: 12px; font-weight: 800;">
-            OBSERVACIÓN: ${order.comentarios}
+            OBSERVACIÓN: ${escapeHtml(order.comentarios)}
           </div>` : ''}
 
           <div class="double-divider"></div>
@@ -558,10 +575,10 @@ export function printThermalReceipt(order, business, options = {}) {
         <!-- VISTA 2: CUENTA / RECIBO DE COBRO (PLATOS + PRECIOS + TOTAL) -->
         <div id="view-bill" style="display: ${mode === 'bill' ? 'block' : 'none'};">
           <div class="text-center">
-            <div style="font-size: 15px; font-weight: 900; text-transform: uppercase;">${businessName}</div>
-            ${businessPhone ? `<div style="font-size: 11px;">Tel: ${businessPhone}</div>` : ''}
+            <div style="font-size: 15px; font-weight: 900; text-transform: uppercase;">${escapeHtml(businessName)}</div>
+            ${businessPhone ? `<div style="font-size: 11px;">Tel: ${escapeHtml(businessPhone)}</div>` : ''}
             <div style="font-size: 11px; font-weight: 800; margin-top: 4px; padding: 2px 8px; border: 1px solid #000; display: inline-block; border-radius: 4px;">
-              ${locationLabel}
+              ${escapeHtml(locationLabel)}
             </div>
           </div>
 
@@ -579,7 +596,7 @@ export function printThermalReceipt(order, business, options = {}) {
           ${order.telefono ? `
           <div class="row">
             <span>Teléfono:</span>
-            <span>${order.telefono}</span>
+            <span>${escapeHtml(order.telefono)}</span>
           </div>` : ''}
           ${isEnvio ? `
           <div style="margin-top: 3px;">
@@ -615,12 +632,12 @@ export function printThermalReceipt(order, business, options = {}) {
 
           <div class="row" style="margin-top: 6px; font-size: 11px;">
             <span>Método de pago:</span>
-            <span class="bold">${paymentLabel}</span>
+            <span class="bold">${escapeHtml(paymentLabel)}</span>
           </div>
 
           <div class="divider"></div>
           <div class="text-center" style="font-size: 10px; margin-top: 6px;">
-            Gracias por su compra en ${businessName}
+            Gracias por su compra en ${escapeHtml(businessName)}
           </div>
         </div>
 

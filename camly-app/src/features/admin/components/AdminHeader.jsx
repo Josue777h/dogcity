@@ -58,26 +58,26 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
   };
 
   return (
-    <header className="sticky top-0 z-[80] bg-white border-b border-gray-200/90 shadow-2xs">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-13 sm:h-14 flex items-center justify-between gap-2">
+    <header className="sticky top-0 z-[80] bg-white/90 backdrop-blur-md border-b border-slate-200">
+      <div className="mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
         
         {/* Izquierda: Menú Hamburguesa + Título claro de sección (nunca cortado) */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <button
             onClick={onOpenMenu}
-            className="lg:hidden w-8.5 h-8.5 flex items-center justify-center rounded-lg text-gray-700 hover:text-gray-950 hover:bg-gray-100 transition-colors shrink-0"
+            className="lg:hidden w-10 h-10 flex items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
             aria-label="Abrir menú"
           >
             <Menu size={19} />
           </button>
           
           <div className="min-w-0 flex-1">
-            <h1 aria-label={tabLabel} title={tabLabel} className="truncate text-sm sm:text-base font-bold text-gray-900 tracking-tight leading-tight">
+            <h1 aria-label={tabLabel} title={tabLabel} className="truncate font-display text-base sm:text-lg font-bold text-slate-950 tracking-tight leading-tight">
               <span className="sm:hidden">{mobileTabLabel}</span>
               <span className="hidden sm:inline">{tabLabel}</span>
             </h1>
             {business?.nombre_visible && (
-              <p className="text-[11px] text-gray-500 truncate hidden sm:block">
+              <p className="text-xs text-slate-500 truncate hidden sm:block">
                 {business.nombre_visible} · {business.direccion || 'Tienda activa'}
               </p>
             )}
@@ -109,12 +109,12 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
           ) : null}
 
           {/* Acciones de tienda en Desktop / Tablet */}
-          <div className="hidden sm:flex items-center gap-1 bg-gray-50 p-0.5 rounded-lg border border-gray-200/70">
+          <div className="hidden sm:flex items-center gap-0.5 bg-slate-50 p-0.5 rounded-lg border border-slate-200">
             <button
               type="button"
               onClick={copyLink}
               title="Copiar enlace de tu tienda"
-              className="h-7.5 px-2 rounded-md hover:bg-white text-gray-700 hover:text-gray-900 flex items-center gap-1 text-[11px] font-medium transition-all"
+              className="h-8 px-2.5 rounded-md hover:bg-white text-slate-700 hover:text-slate-950 flex items-center gap-1.5 text-xs font-medium transition-all"
             >
               {copied ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
               <span>{copied ? 'Copiado' : 'Copiar link'}</span>
@@ -125,7 +125,7 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
               target="_blank"
               rel="noreferrer"
               title="Abrir catálogo público"
-              className="h-7.5 px-2 rounded-md hover:bg-white text-gray-700 hover:text-gray-900 flex items-center gap-1 text-[11px] font-medium transition-all"
+              className="h-8 px-2.5 rounded-md hover:bg-white text-slate-700 hover:text-slate-950 flex items-center gap-1.5 text-xs font-medium transition-all"
             >
               <ExternalLink size={13} />
               <span>Ver tienda</span>
@@ -139,7 +139,7 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
             rel="noreferrer"
             title="Ver catálogo público"
             aria-label="Ver catálogo público"
-            className="sm:hidden h-8 px-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 flex items-center gap-1 text-xs font-semibold transition-colors shrink-0"
+            className="sm:hidden h-10 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center gap-1 text-xs font-semibold transition-colors shrink-0"
           >
             <span>Tienda</span>
             <ExternalLink size={12} />
@@ -151,7 +151,7 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
             onClick={onOpenAssistant}
             title="Asistente Movia"
             aria-label="Abrir Asistente Movia"
-            className="h-8 px-2.5 rounded-lg bg-gray-900 hover:bg-black text-white font-medium flex items-center gap-1.5 text-xs transition-colors shrink-0"
+            className="h-10 sm:h-9 px-3 rounded-lg bg-slate-950 hover:bg-slate-800 text-white font-medium flex items-center gap-1.5 text-xs transition-colors shrink-0"
           >
             <Sparkles size={13} className="text-amber-400 shrink-0" />
             <span className="text-xs font-semibold">Movia</span>
@@ -159,7 +159,7 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
 
           {/* Avatar del usuario (Desktop/Tablet) */}
           <div
-            className="hidden sm:flex w-8 h-8 rounded-lg bg-brand text-white text-xs font-bold items-center justify-center shrink-0 select-none shadow-2xs"
+            className="hidden sm:flex w-9 h-9 rounded-full bg-brand text-white text-sm font-bold items-center justify-center shrink-0 select-none"
             title={userEmail}
           >
             {userInitial}

@@ -285,7 +285,7 @@ export default function AdminPage() {
 
   return (
     <div 
-      className="min-h-dvh bg-slate-50 flex flex-col lg:h-dvh lg:max-h-dvh lg:overflow-hidden lg:flex-row"
+      className="admin-theme min-h-dvh bg-slate-50 flex flex-col lg:h-dvh lg:max-h-dvh lg:overflow-hidden lg:flex-row"
       style={{ 
         '--primary-brand': business?.theme_color || '#0284C7',
         '--secondary-brand': business?.color_secundario || '#F9FAFB'
@@ -316,7 +316,7 @@ export default function AdminPage() {
           />
         )}
 
-        <main className="flex-1 px-3 pb-4 pt-1.5 sm:px-5 sm:pt-2.5 lg:min-h-0 lg:px-6 lg:overflow-y-auto lg:overscroll-y-contain relative">
+        <main className="flex-1 px-3 pb-24 pt-3 sm:px-6 sm:pt-5 sm:pb-8 lg:min-h-0 lg:px-8 lg:pb-8 lg:overflow-y-auto lg:overscroll-y-contain relative">
           {isExpired && (
             <Suspense fallback={null}>
               <PlanExpiredView onOpenBilling={() => window.dispatchEvent(new CustomEvent('open-billing-modal'))} />

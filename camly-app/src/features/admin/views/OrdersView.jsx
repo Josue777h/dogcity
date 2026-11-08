@@ -120,8 +120,8 @@ function MerchantCancelModal({ isOpen, order, onClose, onConfirmed }) {
                 <label
                   key={reason}
                   className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${selectedReason === reason
-                      ? 'border-rose-500 bg-rose-50/60 text-rose-950 ring-1 ring-rose-400'
-                      : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                    ? 'border-rose-500 bg-rose-50/60 text-rose-950 ring-1 ring-rose-400'
+                    : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
                     }`}
                 >
                   <input
@@ -304,16 +304,16 @@ function OrderTimeline({
                         : `Cambiar estado a "${stepLabel(step)}"`
                 }
                 className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all select-none ${disabled
-                    ? 'opacity-50 cursor-wait'
-                    : isCurrent
-                      ? 'bg-blue-600 text-white ring-4 ring-blue-100 shadow-xs scale-110 font-bold cursor-default'
-                      : isPendingTarget
-                        ? 'bg-amber-500 text-white ring-4 ring-amber-100 scale-105 font-bold cursor-pointer'
-                        : isPassed
-                          ? hasTableConflict
-                            ? 'bg-gray-300 text-white cursor-not-allowed opacity-70'
-                            : 'bg-blue-600 text-white hover:bg-amber-600 cursor-pointer'
-                          : 'bg-white text-gray-600 border-2 border-gray-300 hover:border-blue-600 hover:text-blue-600 cursor-pointer'
+                  ? 'opacity-50 cursor-wait'
+                  : isCurrent
+                    ? 'bg-blue-600 text-white ring-4 ring-blue-100 shadow-xs scale-110 font-bold cursor-default'
+                    : isPendingTarget
+                      ? 'bg-amber-500 text-white ring-4 ring-amber-100 scale-105 font-bold cursor-pointer'
+                      : isPassed
+                        ? hasTableConflict
+                          ? 'bg-gray-300 text-white cursor-not-allowed opacity-70'
+                          : 'bg-blue-600 text-white hover:bg-amber-600 cursor-pointer'
+                        : 'bg-white text-gray-600 border-2 border-gray-300 hover:border-blue-600 hover:text-blue-600 cursor-pointer'
                   }`}
               >
                 {isPassed && !isCurrent ? (
@@ -329,14 +329,14 @@ function OrderTimeline({
                 disabled={isStepBlocked}
                 onClick={() => handleSelectStep(step, i)}
                 className={`text-[11px] sm:text-xs mt-1 font-bold transition-colors text-center leading-tight ${isCurrent
-                    ? 'text-blue-700 cursor-default'
-                    : isPendingTarget
-                      ? 'text-amber-700 underline'
-                      : isPassed
-                        ? hasTableConflict
-                          ? 'text-gray-400 cursor-not-allowed'
-                          : 'text-gray-800 hover:text-amber-700 hover:underline cursor-pointer'
-                        : 'text-gray-500 hover:text-blue-700 hover:underline cursor-pointer'
+                  ? 'text-blue-700 cursor-default'
+                  : isPendingTarget
+                    ? 'text-amber-700 underline'
+                    : isPassed
+                      ? hasTableConflict
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-gray-800 hover:text-amber-700 hover:underline cursor-pointer'
+                      : 'text-gray-500 hover:text-blue-700 hover:underline cursor-pointer'
                   }`}
               >
                 {stepLabel(step)}
@@ -350,8 +350,8 @@ function OrderTimeline({
       {pendingStep && (
         <div
           className={`px-2.5 py-1.5 rounded-lg border flex items-center justify-between gap-2 text-xs animate-fade-in ${pendingStep.isRevert
-              ? 'bg-amber-50 border-amber-200 text-amber-950'
-              : 'bg-blue-50/90 border-blue-200 text-blue-950'
+            ? 'bg-amber-50 border-amber-200 text-amber-950'
+            : 'bg-blue-50/90 border-blue-200 text-blue-950'
             }`}
         >
           <span className="font-semibold truncate text-[11px] sm:text-xs">
@@ -372,8 +372,8 @@ function OrderTimeline({
               disabled={disabled}
               onClick={handleConfirmStep}
               className={`px-2.5 py-1 rounded-md text-white font-bold text-[11px] cursor-pointer shadow-2xs ${pendingStep.isRevert
-                  ? 'bg-amber-600 hover:bg-amber-700'
-                  : 'bg-blue-600 hover:bg-blue-700'
+                ? 'bg-amber-600 hover:bg-amber-700'
+                : 'bg-blue-600 hover:bg-blue-700'
                 }`}
             >
               {pendingStep.isRevert ? 'Sí, corregir' : 'Confirmar'}
@@ -1019,8 +1019,8 @@ export default function OrdersView(props) {
               aria-label="Filtrar por retiro en local"
               onClick={() => toggleDeliveryFilter('pickup')}
               className={`relative flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition-all ${deliveryFilter === 'pickup'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-white/60 text-slate-600 hover:bg-white hover:text-emerald-700'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-white/60 text-slate-600 hover:bg-white hover:text-emerald-700'
                 }`}
               title={`Retiro en local (${getDeliveryCount('pickup')})`}
             >
@@ -1041,8 +1041,8 @@ export default function OrdersView(props) {
               aria-label="Filtrar por servicio en mesa"
               onClick={() => toggleDeliveryFilter('mesa')}
               className={`relative flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition-all ${deliveryFilter === 'mesa'
-                  ? 'bg-purple-600 text-white shadow-xs'
-                  : 'bg-white/60 text-slate-600 hover:bg-white hover:text-purple-700'
+                ? 'bg-purple-600 text-white shadow-xs'
+                : 'bg-white/60 text-slate-600 hover:bg-white hover:text-purple-700'
                 }`}
               title={`Servicio en mesa (${getDeliveryCount('mesa')})`}
             >
@@ -1063,8 +1063,8 @@ export default function OrdersView(props) {
               aria-label="Filtrar por domicilios"
               onClick={() => toggleDeliveryFilter('envio')}
               className={`relative flex min-w-0 items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition-all ${deliveryFilter === 'envio'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-white/60 text-slate-600 hover:bg-white hover:text-blue-700'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'bg-white/60 text-slate-600 hover:bg-white hover:text-blue-700'
                 }`}
               title={`Domicilios (${getDeliveryCount('envio')})`}
             >
@@ -1094,8 +1094,8 @@ export default function OrdersView(props) {
           title={soundEnabled ? 'Silenciar timbre de pedidos' : 'Activar timbre de pedidos'}
           aria-label={soundEnabled ? 'Timbre activo' : 'Timbre mudo'}
           className={`h-10 px-2.5 sm:px-3 rounded-lg text-xs font-semibold border transition-colors flex items-center justify-center gap-1.5 shrink-0 ${soundEnabled
-              ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'
-              : 'bg-white text-gray-400 border-gray-200 hover:text-gray-600'
+            ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'
+            : 'bg-white text-gray-400 border-gray-200 hover:text-gray-600'
             }`}
         >
           {soundEnabled ? (
@@ -1186,7 +1186,7 @@ export default function OrdersView(props) {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-wrap justify-end">
+                  <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-nowrap justify-end">
                     {getStatusBadge(status, order)}
                     {status !== 'CANCELADO' && status !== 'cancelado' && status !== 'ENTREGADO' && status !== 'entregado' && (
                       <button
@@ -1195,7 +1195,7 @@ export default function OrdersView(props) {
                           e.stopPropagation();
                           setOrderToCancel(order);
                         }}
-                        className="w-8 h-8 rounded-lg border border-transparent hover:border-amber-200 bg-gray-50 hover:bg-amber-50 text-gray-500 hover:text-amber-700 flex items-center justify-center transition-colors shrink-0"
+                        className="hidden sm:inline-flex w-8 h-8 rounded-lg border border-transparent hover:border-amber-200 bg-gray-50 hover:bg-amber-50 text-gray-500 hover:text-amber-700 items-center justify-center transition-colors shrink-0"
                         title="Cancelar pedido con motivo"
                         aria-label="Cancelar pedido"
                       >
@@ -1208,7 +1208,7 @@ export default function OrdersView(props) {
                         e.stopPropagation();
                         printThermalReceipt(order, business, { mode: 'kitchen' });
                       }}
-                      className="w-8 h-8 rounded-lg border border-transparent hover:border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 flex items-center justify-center transition-colors shrink-0"
+                      className="hidden sm:inline-flex w-8 h-8 rounded-lg border border-transparent hover:border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 items-center justify-center transition-colors shrink-0"
                       title="Imprimir comanda de cocina (sin precios)"
                       aria-label="Imprimir comanda de cocina"
                     >
@@ -1220,7 +1220,7 @@ export default function OrdersView(props) {
                         e.stopPropagation();
                         printThermalReceipt(order, business, { mode: 'bill' });
                       }}
-                      className="w-8 h-8 rounded-lg border border-transparent hover:border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 flex items-center justify-center transition-colors shrink-0"
+                      className="hidden sm:inline-flex w-8 h-8 rounded-lg border border-transparent hover:border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 items-center justify-center transition-colors shrink-0"
                       title="Imprimir cuenta / recibo de cobro (con precios)"
                       aria-label="Imprimir cuenta de cobro"
                     >
@@ -1229,11 +1229,11 @@ export default function OrdersView(props) {
                     <button
                       type="button"
                       onClick={(e) => handleDeleteClick(e, order)}
-                      className="w-8.5 h-8.5 rounded-lg border border-transparent hover:border-rose-200 bg-rose-50/50 hover:bg-rose-100 text-rose-500 hover:text-rose-700 flex items-center justify-center transition-colors shrink-0"
+                      className="w-8 h-8 rounded-lg border border-transparent hover:border-rose-200 bg-rose-50/50 hover:bg-rose-100 text-rose-500 hover:text-rose-700 flex items-center justify-center transition-colors shrink-0"
                       title="Eliminar pedido"
                       aria-label="Eliminar pedido"
                     >
-                      <Trash2 size={17} />
+                      <Trash2 size={16} />
                     </button>
                     <ChevronRight size={16} className={`text-gray-400 transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
                   </div>
@@ -1512,8 +1512,8 @@ export default function OrdersView(props) {
                             disabled={printingBluetoothId === order.id}
                             onClick={() => setBtMenuOrderId(btMenuOrderId === order.id ? null : order.id)}
                             className={`h-9 w-9 rounded-lg border flex items-center justify-center transition-colors active:scale-95 cursor-pointer shrink-0 ${btMenuOrderId === order.id
-                                ? 'bg-blue-600 text-white border-blue-600'
-                                : 'border-blue-200 hover:border-blue-400 bg-blue-50/70 hover:bg-blue-100 text-blue-800'
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'border-blue-200 hover:border-blue-400 bg-blue-50/70 hover:bg-blue-100 text-blue-800'
                               }`}
                             title="Impresión portátil Bluetooth para celular o tablet (POS-58/80)"
                             aria-label="Opciones de impresión Bluetooth"

@@ -119,7 +119,7 @@ BEGIN
     IF OLD.status NOT IN ('COTIZACION_ENVIADA','CONFIRMADO_GRACIA') OR OLD.estado NOT IN ('COTIZACION_ENVIADA','CONFIRMADO_GRACIA') THEN
       RAISE EXCEPTION 'El pedido ya no se puede cancelar desde el seguimiento';
     END IF;
-    IF OLD.status='CONFIRMADO_GRACIA' AND (OLD.confirmed_at IS NULL OR OLD.confirmed_at <= now()-interval '30 seconds') THEN
+    IF OLD.status='CONFIRMADO_GRACIA' AND (OLD.confirmed_at IS NULL OR OLD.confirmed_at <= now()-interval '60 seconds') THEN
       RAISE EXCEPTION 'Terminó el tiempo para deshacer el pedido';
     END IF;
   END IF;
@@ -156,6 +156,7 @@ DROP POLICY IF EXISTS "Public insert pedidos" ON public.pedidos;
 DROP POLICY IF EXISTS "Tenant read pedidos" ON public.pedidos;
 DROP POLICY IF EXISTS "Tenant update pedidos" ON public.pedidos;
 DROP POLICY IF EXISTS "Tenant delete pedidos" ON public.pedidos;
+DROP POLICY IF EXISTS "Public select pedidos with token" ON public.pedidos;
 CREATE POLICY negocios_public_read ON public.negocios FOR SELECT TO anon,authenticated USING (true);
 CREATE POLICY negocios_owner_write ON public.negocios FOR ALL TO authenticated USING (user_id=auth.uid()) WITH CHECK (user_id=auth.uid());
 CREATE POLICY categorias_public_read ON public.categorias FOR SELECT TO anon,authenticated USING (true);
@@ -164,10 +165,8 @@ CREATE POLICY productos_public_read ON public.productos FOR SELECT TO anon,authe
 CREATE POLICY productos_owner_write ON public.productos FOR ALL TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid())) WITH CHECK (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
 CREATE POLICY domiciliarios_owner_all ON public.domiciliarios FOR ALL TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid())) WITH CHECK (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
 CREATE POLICY suscripciones_public_read ON public.suscripciones FOR SELECT TO anon,authenticated USING (true);
-CREATE POLICY suscripciones_owner_write ON public.suscripciones FOR ALL TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid())) WITH CHECK (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
 CREATE POLICY "Public insert pedidos" ON public.pedidos FOR INSERT TO anon,authenticated WITH CHECK (true);
 CREATE POLICY "Tenant read pedidos" ON public.pedidos FOR SELECT TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
-CREATE POLICY "Public select pedidos with token" ON public.pedidos FOR SELECT TO anon,authenticated USING (token IS NOT NULL);
 CREATE POLICY "Tenant update pedidos" ON public.pedidos FOR UPDATE TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid())) WITH CHECK (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
 CREATE POLICY "Tenant delete pedidos" ON public.pedidos FOR DELETE TO authenticated USING (EXISTS(SELECT 1 FROM public.negocios n WHERE n.id=negocio_id AND n.user_id=auth.uid()));
 
@@ -175,7 +174,7 @@ GRANT SELECT ON public.negocios,public.categorias,public.productos,public.suscri
 REVOKE SELECT ON public.negocios FROM anon,PUBLIC;
 GRANT SELECT (id,nombre,nombre_visible,telefono,whatsapp_contacto,direccion,theme_color,color_secundario,instagram,facebook,tiktok,footer_message,pago_banco,pago_alias,metodos_pago,lat,lng,tipo_domicilio,costo_por_km,domicilio_minimo,precio_domicilio,logo_url,business_type,horario,catalog_design,timezone) ON public.negocios TO anon;
 GRANT SELECT ON public.categorias,public.productos,public.suscripciones TO anon;
-GRANT INSERT,UPDATE,DELETE ON public.negocios,public.categorias,public.productos,public.domiciliarios,public.suscripciones TO authenticated;
+GRANT INSERT,UPDATE,DELETE ON public.negocios,public.categorias,public.productos,public.domiciliarios TO authenticated;
 GRANT SELECT,INSERT,UPDATE,DELETE ON public.pedidos TO authenticated;
 GRANT SELECT,INSERT ON public.pedidos TO anon;
 REVOKE UPDATE,DELETE ON public.pedidos FROM anon,PUBLIC;
@@ -255,7 +254,7 @@ BEGIN
   SELECT * INTO o FROM public.pedidos WHERE id=p_order_id AND token=p_token FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Pedido o token inválido'; END IF;
   IF o.status NOT IN ('COTIZACION_ENVIADA','CONFIRMADO_GRACIA') OR o.estado NOT IN ('COTIZACION_ENVIADA','CONFIRMADO_GRACIA') THEN RAISE EXCEPTION 'El pedido ya no se puede cancelar desde el seguimiento'; END IF;
-  IF o.status='CONFIRMADO_GRACIA' AND (o.confirmed_at IS NULL OR o.confirmed_at<=now()-interval '30 seconds') THEN RAISE EXCEPTION 'Terminó el tiempo para deshacer el pedido'; END IF;
+  IF o.status='CONFIRMADO_GRACIA' AND (o.confirmed_at IS NULL OR o.confirmed_at<=now()-interval '60 seconds') THEN RAISE EXCEPTION 'Terminó el tiempo para deshacer el pedido'; END IF;
   UPDATE public.pedidos SET status='CANCELADO',estado='CANCELADO',cancelled_by='customer',cancellation_reason=left(coalesce(p_reason,'Cancelado por el cliente'),500),updated_at=now() WHERE id=p_order_id;
   RETURN jsonb_build_object('success',true,'status','CANCELADO');
 END $$;
@@ -265,7 +264,7 @@ DECLARE o public.pedidos%ROWTYPE;
 BEGIN
   SELECT * INTO o FROM public.pedidos WHERE id=p_order_id AND token=p_token FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Pedido o token inválido'; END IF;
-  IF o.status<>'CONFIRMADO_GRACIA' OR o.estado<>'CONFIRMADO_GRACIA' OR o.confirmed_at IS NULL OR o.confirmed_at>now()-interval '30 seconds' THEN RAISE EXCEPTION 'El período de gracia sigue activo o el pedido cambió'; END IF;
+  IF o.status<>'CONFIRMADO_GRACIA' OR o.estado<>'CONFIRMADO_GRACIA' OR o.confirmed_at IS NULL OR o.confirmed_at>now()-interval '60 seconds' THEN RAISE EXCEPTION 'El período de gracia sigue activo o el pedido cambió'; END IF;
   UPDATE public.pedidos SET status='EN_PREPARACION',estado='EN_PREPARACION',updated_at=now() WHERE id=p_order_id;
   RETURN jsonb_build_object('success',true,'status','EN_PREPARACION');
 END $$;
@@ -314,3 +313,38 @@ DO $$ BEGIN
   END IF;
 END $$;
 NOTIFY pgrst,'reload schema';
+-- Integridad de suscripciones: solo el servidor escribe en `suscripciones`.
+-- Antes, el dueño tenía una política FOR ALL y podía activarse PRO a sí mismo.
+
+DROP POLICY IF EXISTS suscripciones_owner_write ON public.suscripciones;
+REVOKE INSERT, UPDATE, DELETE ON public.suscripciones FROM anon, authenticated;
+
+-- Crea la prueba inicial de 7 días. No reinicia una suscripción existente.
+CREATE OR REPLACE FUNCTION public.create_trial_subscription(p_negocio_id uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.negocios WHERE id = p_negocio_id AND user_id = auth.uid()) THEN
+    RAISE EXCEPTION 'Negocio no encontrado o sin permiso';
+  END IF;
+  INSERT INTO public.suscripciones (negocio_id, plan, estado, es_trial, fecha_inicio, fecha_fin)
+  VALUES (p_negocio_id, 'pro', 'trial', true, now(), now() + interval '7 days')
+  ON CONFLICT (negocio_id) DO NOTHING;
+  RETURN jsonb_build_object('success', true);
+END $$;
+
+-- Marca como vencida una suscripción cuya fecha_fin ya pasó.
+CREATE OR REPLACE FUNCTION public.mark_subscription_expired(p_negocio_id uuid) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+BEGIN
+  UPDATE public.suscripciones
+     SET estado = 'vencido', es_trial = false, updated_at = now()
+   WHERE negocio_id = p_negocio_id
+     AND estado IN ('trial', 'activo')
+     AND fecha_fin < now()
+     AND EXISTS (SELECT 1 FROM public.negocios n WHERE n.id = p_negocio_id AND n.user_id = auth.uid());
+END $$;
+
+REVOKE ALL ON FUNCTION public.create_trial_subscription(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.mark_subscription_expired(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.create_trial_subscription(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.mark_subscription_expired(uuid) TO authenticated;

@@ -1,281 +1,126 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  QrCode, 
-  Smartphone, 
-  ArrowRight, 
-  CheckCircle2, 
-  XCircle, 
-  Zap, 
-  Clock, 
-  Layers, 
-  ChevronRight 
-} from 'lucide-react';
+import { QrCode, Smartphone, XCircle, CheckCircle2, Zap, Clock, Layers } from 'lucide-react';
 import SEO from '../../components/common/SEO';
 import MarketingNavbar from './components/MarketingNavbar';
 import MarketingFooter from './components/MarketingFooter';
+import { PageHero, Section, SectionHeader, FeatureCard, LinkCard, CtaBand } from './components/MarketingUI';
 import { MARKETING_SEO } from './seo-pages';
 
 export default function MenuDigitalPage() {
   return (
-    <div className="min-h-screen overflow-x-clip bg-[#FBFBFC] text-gray-900 font-sans">
+    <div className="min-h-screen overflow-x-clip bg-white text-slate-900 font-sans antialiased">
       <SEO {...MARKETING_SEO.menuDigital} />
 
       <MarketingNavbar />
 
       <main>
-        {/* ── HERO SECTION ── */}
-        <section className="pt-12 sm:pt-20 pb-16 sm:pb-24 border-b border-gray-200/70 bg-slate-50">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-6">
-            
-            <div className="inline-flex items-center gap-2 bg-white/90 border border-cyan-200/80 rounded-full pl-2 pr-3.5 py-1 text-xs font-semibold text-gray-700 shadow-xs mx-auto">
-              <span className="bg-gray-950 text-[#11CEFC] text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full">
-                CATÁLOGO EN LÍNEA
-              </span>
-              <span>Reemplaza los PDFs pesados y fotos borrosas</span>
-            </div>
+        <PageHero
+          eyebrow="Catálogo en línea · Reemplaza los PDFs pesados y fotos borrosas"
+          title="Menú digital interactivo para"
+          highlight="negocios y restaurantes"
+          description="Tus clientes exploran tu carta desde su celular con fotos de alta calidad, eligen sus opciones o adicionales y arman su pedido en segundos sin descargar ninguna aplicación."
+          ctaTo="/registro"
+          ctaLabel="Crear mi menú digital gratis"
+          note="Prueba 7 días gratis · Sin contratos · Listo en 3 minutos"
+        />
 
-            <h1 className="font-display text-4xl sm:text-6xl font-black text-gray-950 tracking-tight leading-[1.05]">
-              Menú digital interactivo para<br />
-              <span className="font-semibold text-sky-700">
-                negocios y restaurantes
-              </span>
-            </h1>
-
-            <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Tus clientes exploran tu carta desde su celular con fotos de alta calidad, eligen sus opciones o adicionales y arman su pedido en segundos sin descargar ninguna aplicación.
-            </p>
-
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link
-                to="/registro"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm sm:text-base px-5 py-3 rounded-lg border border-gray-800 shadow-card hover:shadow-sm transition-all duration-200 active:scale-95"
-              >
-                <span>Crear mi menú digital gratis</span>
-                <ArrowRight size={16} className="text-[#11CEFC]" />
-              </Link>
-            </div>
-
-            <p className="text-xs text-gray-500 font-medium pt-1">
-              Prueba 7 días gratis · Sin contratos · Listo en 3 minutos
-            </p>
-
-          </div>
-        </section>
-
-        {/* ── QUÉ ES UN MENÚ DIGITAL ── */}
-        <section className="py-12 sm:py-16 bg-white border-b border-gray-200/70">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-              <div className="space-y-4">
-                <span className="text-xs font-extrabold uppercase tracking-widest text-[#0284C7]">
-                  Tecnología para tu comercio
-                </span>
-                <h2 className="font-display text-3xl sm:text-4xl font-black text-gray-950 tracking-tight leading-tight">
-                  ¿Qué es un menú digital con NEGU y por qué supera al PDF tradicional?
-                </h2>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
-                  Un menú digital en PDF es estático: los clientes tienen que hacer zoom, no suma los precios y no te permite actualizar un precio sin volver a diseñar y enviar el archivo a todos tus contactos.
-                </p>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
-                  Con el <strong>menú digital interactivo de NEGU</strong>, tu negocio tiene un enlace web propio y un código QR que abre al instante en el navegador de cualquier teléfono (Android o iPhone), con carrito de compras integrado y cálculo exacto.
-                </p>
-              </div>
-
-              {/* Comparativa Visual */}
-              <div className="space-y-4">
-                <div className="p-5 rounded-2xl bg-rose-50/50 border border-rose-200/70 space-y-2">
-                  <div className="flex items-center gap-2 text-rose-700 font-bold text-sm">
-                    <XCircle size={18} />
-                    <span>El problema del Menú en PDF o Imagen</span>
-                  </div>
-                  <p className="text-xs text-gray-600 leading-relaxed">
-                    Pesa megabytes, satura la memoria del cliente, desactualizado cuando cambias precios y requiere que el cliente calcule las cuentas manualmente por mensaje.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-sky-50/60 border-2 border-[#0284C7] space-y-2 shadow-xs">
-                  <div className="flex items-center gap-2 text-sky-950 font-bold text-sm">
-                    <CheckCircle2 size={18} className="text-[#0284C7]" />
-                    <span>El Menú Digital Interactivo de NEGU</span>
-                  </div>
-                  <p className="text-xs text-gray-700 leading-relaxed font-medium">
-                    Abre en 1 segundo, fotos profesionales, categorías ordenadas, modificadores de ingredientes y envía el pedido listo y calculado a tu WhatsApp.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        {/* ── CÓMO FUNCIONA ── */}
-        <section className="py-12 sm:py-16 bg-gray-50/60 border-b border-gray-200/70">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
-            
-            <div className="text-center max-w-2xl mx-auto space-y-3">
-              <span className="text-xs font-extrabold uppercase tracking-widest text-gray-400">
-                Flujo intuitivo
-              </span>
-              <h2 className="font-display text-3xl sm:text-4xl font-black text-gray-950 tracking-tight">
-                Cómo compran tus clientes con tu menú digital
+        {/* Qué es */}
+        <Section>
+          <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-2">
+            <div className="space-y-5">
+              <span className="text-xs font-extrabold uppercase tracking-widest text-sky-700">Tecnología para tu comercio</span>
+              <h2 className="font-display text-3xl font-extrabold leading-tight tracking-tight text-slate-950 sm:text-4xl">
+                ¿Qué es un menú digital con NEGU y por qué supera al PDF tradicional?
               </h2>
-              <p className="text-sm text-gray-600">
-                Diseñado para que una persona haga su pedido en menos de 60 segundos sin fricciones.
+              <p className="leading-relaxed text-slate-600">
+                Un menú digital en PDF es estático: los clientes tienen que hacer zoom, no suma los precios y no te permite actualizar un precio sin volver a diseñar y enviar el archivo a todos tus contactos.
+              </p>
+              <p className="leading-relaxed text-slate-600">
+                Con el <strong className="text-slate-900">menú digital interactivo de NEGU</strong>, tu negocio tiene un enlace web propio y un código QR que abre al instante en el navegador de cualquier teléfono (Android o iPhone), con carrito de compras integrado y cálculo exacto.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-xs space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-cyan-50 text-[#0284C7] flex items-center justify-center font-bold">
-                  <QrCode size={24} />
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-6">
+                <div className="flex items-center gap-2 text-sm font-bold text-rose-700">
+                  <XCircle size={18} aria-hidden="true" />
+                  <span>El problema del menú en PDF o imagen</span>
                 </div>
-                <h3 className="font-bold text-base text-gray-950">1. Escanea o abre tu enlace</h3>
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  Desde tu biografía de Instagram, mensaje de WhatsApp, sticker QR en mesas o código en empaques. Abre directamente en el navegador.
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Pesa megabytes, satura la memoria del cliente, queda desactualizado cuando cambias precios y obliga al cliente a calcular las cuentas manualmente por mensaje.
                 </p>
               </div>
 
-              <div className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-xs space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
-                  <Layers size={24} />
+              <div className="rounded-2xl border-2 border-sky-600 bg-white p-6 shadow-xl shadow-sky-900/10">
+                <div className="flex items-center gap-2 text-sm font-bold text-slate-950">
+                  <CheckCircle2 size={18} className="text-sky-700" aria-hidden="true" />
+                  <span>El menú digital interactivo de NEGU</span>
                 </div>
-                <h3 className="font-bold text-base text-gray-950">2. Personaliza su producto</h3>
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  Selecciona sabores, salsas, términos de cocción o adiciones con cobro extra automático. El carrito calcula los subtotales en tiempo real.
+                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-700">
+                  Abre en 1 segundo, fotos profesionales, categorías ordenadas, modificadores de ingredientes y envía el pedido listo y calculado a tu WhatsApp.
                 </p>
               </div>
-
-              <div className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-xs space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                  <Zap size={24} />
-                </div>
-                <h3 className="font-bold text-base text-gray-950">3. Envío directo a WhatsApp</h3>
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  El cliente confirma si es para recoger o a domicilio, añade su ubicación GPS y el pedido entra a tu WhatsApp estructurado como comanda.
-                </p>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        {/* ── BENEFICIOS PARA EL NEGOCIO ── */}
-        <section className="py-12 sm:py-16 bg-white border-b border-gray-200/70">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
-            
-            <div className="text-center max-w-2xl mx-auto space-y-3">
-              <h2 className="font-display text-3xl sm:text-4xl font-black text-gray-950 tracking-tight">
-                Ventajas para el dueño del negocio
-              </h2>
-              <p className="text-sm text-gray-600">
-                Control total de tu catálogo desde tu propio celular o computador en tiempo real.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="p-5 rounded-2xl bg-gray-50 border border-gray-200/80 space-y-2">
-                <div className="text-[#0284C7] font-bold text-sm flex items-center gap-1.5">
-                  <Clock size={16} />
-                  <span>Agotados en 1 clic</span>
-                </div>
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  ¿Se terminó un ingrediente? Desactiva el producto en segundos para evitar que los clientes lo pidan.
-                </p>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-gray-50 border border-gray-200/80 space-y-2">
-                <div className="text-[#0284C7] font-bold text-sm flex items-center gap-1.5">
-                  <Layers size={16} />
-                  <span>Cambio de precios</span>
-                </div>
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  Actualiza tus precios al instante sin gastar en reimpresión de cartas de papel ni rediseño de PDFs.
-                </p>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-gray-50 border border-gray-200/80 space-y-2">
-                <div className="text-[#0284C7] font-bold text-sm flex items-center gap-1.5">
-                  <Zap size={16} />
-                  <span>0% comisiones</span>
-                </div>
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  Todo el dinero que ingresa es tuyo. Los clientes pagan a tu Nequi, Daviplata, Bancolombia o efectivo.
-                </p>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-gray-50 border border-gray-200/80 space-y-2">
-                <div className="text-[#0284C7] font-bold text-sm flex items-center gap-1.5">
-                  <Smartphone size={16} />
-                  <span>Código QR incluido</span>
-                </div>
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  Genera el QR de tu catálogo para imprimir en acrílicos de mesa, volantes, cajas o vitrinas.
-                </p>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        {/* ── ENLACES INTERNOS RELACIONADOS ── */}
-        <section className="py-12 bg-gray-50 border-b border-gray-200/70">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
-              Explora más soluciones de NEGU
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Link 
-                to="/pedidos-whatsapp" 
-                className="p-4 rounded-2xl bg-white border border-gray-200/80 hover:border-cyan-300 hover:shadow-xs transition-all flex items-center justify-between group"
-              >
-                <div>
-                  <p className="text-sm font-bold text-gray-900 group-hover:text-cyan-600 transition-colors">
-                    Pedidos por WhatsApp para negocios
-                  </p>
-                  <p className="text-xs text-gray-500">Cómo automatizar la comanda con GPS y WhatsApp</p>
-                </div>
-                <ChevronRight size={18} className="text-gray-400 group-hover:text-cyan-600 transition-colors" />
-              </Link>
-
-              <Link 
-                to="/para-restaurantes" 
-                className="p-4 rounded-2xl bg-white border border-gray-200/80 hover:border-cyan-300 hover:shadow-xs transition-all flex items-center justify-between group"
-              >
-                <div>
-                  <p className="text-sm font-bold text-gray-900 group-hover:text-cyan-600 transition-colors">
-                    Software para restaurantes y gastronomía
-                  </p>
-                  <p className="text-xs text-gray-500">Comandas para cocina, impresión térmica y domicilios</p>
-                </div>
-                <ChevronRight size={18} className="text-gray-400 group-hover:text-cyan-600 transition-colors" />
-              </Link>
             </div>
           </div>
-        </section>
+        </Section>
 
-        {/* ── CTA FINAL ── */}
-        <section className="py-16 sm:py-20 bg-slate-950 text-white text-center">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
-            <h2 className="font-display text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
-              Crea tu menú digital hoy y simplifica tus ventas
-            </h2>
-            <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed">
-              Empieza tus 7 días de prueba sin tarjeta de crédito ni contratos.
-            </p>
-            <div>
-              <Link
-                to="/registro"
-                className="inline-flex items-center gap-2 bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-sm transition-all"
-              >
-                <span>Crear mi menú digital</span>
-                <ArrowRight size={16} />
-              </Link>
-            </div>
+        {/* Cómo funciona */}
+        <Section muted>
+          <SectionHeader eyebrow="Flujo intuitivo" title="Cómo compran tus clientes con tu menú digital">
+            Diseñado para que una persona haga su pedido en menos de 60 segundos sin fricciones.
+          </SectionHeader>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <FeatureCard icon={QrCode} tone="sky" title="1. Escanea o abre tu enlace">
+              Desde tu biografía de Instagram, mensaje de WhatsApp, sticker QR en mesas o código en empaques. Abre directamente en el navegador.
+            </FeatureCard>
+            <FeatureCard icon={Layers} tone="cyan" title="2. Personaliza su producto">
+              Selecciona sabores, salsas, términos de cocción o adiciones con cobro extra automático. El carrito calcula los subtotales en tiempo real.
+            </FeatureCard>
+            <FeatureCard icon={Zap} tone="emerald" title="3. Envío directo a WhatsApp">
+              El cliente confirma si es para recoger o a domicilio, añade su ubicación GPS y el pedido entra a tu WhatsApp estructurado como comanda.
+            </FeatureCard>
           </div>
-        </section>
+        </Section>
+
+        {/* Beneficios */}
+        <Section>
+          <SectionHeader eyebrow="Para el dueño" title="Ventajas para el dueño del negocio">
+            Control total de tu catálogo desde tu propio celular o computador en tiempo real.
+          </SectionHeader>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <FeatureCard icon={Clock} tone="amber" title="Agotados en 1 clic">
+              ¿Se terminó un ingrediente? Desactiva el producto en segundos para evitar que los clientes lo pidan.
+            </FeatureCard>
+            <FeatureCard icon={Layers} tone="sky" title="Cambio de precios">
+              Actualiza tus precios al instante sin gastar en reimpresión de cartas de papel ni rediseño de PDFs.
+            </FeatureCard>
+            <FeatureCard icon={Zap} tone="emerald" title="0% comisiones">
+              Todo el dinero que ingresa es tuyo. Los clientes pagan a tu Nequi, Daviplata, Bancolombia o efectivo.
+            </FeatureCard>
+            <FeatureCard icon={Smartphone} tone="indigo" title="Código QR incluido">
+              Genera el QR de tu catálogo para imprimir en acrílicos de mesa, volantes, cajas o vitrinas.
+            </FeatureCard>
+          </div>
+        </Section>
+
+        {/* Enlaces internos */}
+        <Section muted className="py-12 sm:py-14">
+          <p className="mb-5 text-xs font-bold uppercase tracking-widest text-slate-500">Explora más soluciones de NEGU</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <LinkCard to="/pedidos-whatsapp" title="Pedidos por WhatsApp para negocios" description="Cómo automatizar la comanda con GPS y WhatsApp" />
+            <LinkCard to="/para-restaurantes" title="Software para restaurantes y gastronomía" description="Comandas para cocina, impresión térmica y domicilios" />
+          </div>
+        </Section>
       </main>
+
+      <CtaBand
+        title="Crea tu menú digital hoy y simplifica tus ventas"
+        description="Empieza tus 7 días de prueba sin tarjeta de crédito ni contratos."
+        ctaTo="/registro"
+        ctaLabel="Crear mi menú digital"
+      />
 
       <MarketingFooter />
     </div>

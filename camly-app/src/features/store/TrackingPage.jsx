@@ -67,7 +67,7 @@ export default function TrackingPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [graceSeconds, setGraceSeconds] = useState(30);
+  const [graceSeconds, setGraceSeconds] = useState(60);
   const [copyFeedback, setCopyFeedback] = useState(null);
   const [receiptUploading, setReceiptUploading] = useState(false);
   const [receiptDisplayUrl, setReceiptDisplayUrl] = useState('');
@@ -140,11 +140,11 @@ export default function TrackingPage() {
     OrderService.getReceiptUrl(path).then(setReceiptDisplayUrl).catch(console.error);
   }, [currentOrder.payment_receipt_url, isDemo]);
 
-  // Ventana de gracia de 30 segundos calculada desde confirmed_at o momento actual
+  // Ventana de gracia de 60 segundos calculada desde confirmed_at o momento actual
   useEffect(() => {
     if (statusStr !== 'CONFIRMADO_GRACIA') return;
 
-    const GRACE_PERIOD_SECONDS = 30;
+    const GRACE_PERIOD_SECONDS = 60;
 
     // Calcular el timestamp base
     let startMs = Date.now();
@@ -199,7 +199,7 @@ export default function TrackingPage() {
     try {
       if (!isDemo && currentOrder.id && currentOrder.token) {
         const result = await OrderService.customerAcceptQuote(currentOrder.id, currentOrder.token);
-        setGraceSeconds(30);
+        setGraceSeconds(60);
         setOrder((prev) => ({
           ...prev,
           status: 'CONFIRMADO_GRACIA',
@@ -208,7 +208,7 @@ export default function TrackingPage() {
         }));
         return;
       }
-      setGraceSeconds(30);
+      setGraceSeconds(60);
       setOrder((prev) => ({
         ...prev,
         status: 'CONFIRMADO_GRACIA',
@@ -485,7 +485,7 @@ export default function TrackingPage() {
             <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
               <div
                 className="bg-blue-600 h-full transition-all duration-1000 ease-linear rounded-full"
-                style={{ width: `${(Math.min(30, graceSeconds) / 30) * 100}%` }}
+                style={{ width: `${(Math.min(60, graceSeconds) / 60) * 100}%` }}
               />
             </div>
           </div>

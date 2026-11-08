@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
   TrendingUp, ShoppingBag, DollarSign,
-  ArrowUpRight, ArrowDownRight, Package, PackagePlus, Trophy,
-  Settings, ExternalLink, Share2, CheckCircle2, ChevronRight
+  ArrowUpRight, Package, PackagePlus, Trophy,
+  Settings, ExternalLink, ChevronRight
 } from 'lucide-react';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip,
@@ -12,46 +12,32 @@ import {
 import { formatMoney, getGreeting, useAnimatedCounter } from '../../../lib/utils';
 import PremiumLock from '../../../components/ui/PremiumLock';
 
-function StatCard({ label, value, rawValue, isMoney, icon: Icon, trend, trendPositive, sparkData }) {
+function StatCard({ label, rawValue, isMoney, icon: Icon, trend, trendPositive, sparkData }) {
   const animated = useAnimatedCounter(rawValue ?? 0, 1000);
   const display  = isMoney ? formatMoney(animated) : animated;
 
   return (
-    <div className="card p-3.5 sm:p-4 bg-white border-gray-200/80 shadow-xs flex flex-col justify-between">
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{label}</p>
-          <div className="w-7 h-7 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
-            <Icon size={14} strokeWidth={2} />
-          </div>
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between min-w-0">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold text-slate-500 truncate">{label}</p>
+        <div className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0">
+          <Icon size={17} strokeWidth={2} aria-hidden="true" />
         </div>
-        <p className="text-lg sm:text-xl lg:text-2xl font-black text-gray-900 tracking-tight tabular-nums truncate">
-          {display}
+      </div>
+      <p className="mt-2 font-display text-xl sm:text-2xl font-bold text-slate-950 tracking-tight tabular-nums truncate">
+        {display}
+      </p>
+      {trend !== undefined && (
+        <p className={`mt-1 text-xs font-medium flex items-center gap-1 ${trendPositive ? 'text-emerald-700' : 'text-slate-500'}`}>
+          {trendPositive && <ArrowUpRight size={13} aria-hidden="true" />}
+          <span className="truncate">{trend}</span>
         </p>
-      </div>
-
-      <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between text-[11px]">
-        {trend !== undefined && (
-          <span className={`font-semibold flex items-center gap-1 ${trendPositive ? 'text-emerald-600' : 'text-gray-500'}`}>
-            {trendPositive && <ArrowUpRight size={12} />}
-            <span className="truncate">{trend}</span>
-          </span>
-        )}
-      </div>
-
+      )}
       {sparkData && sparkData.some(v => v > 0) && (
-        <div className="mt-1.5 h-6 min-w-0">
+        <div className="mt-2 h-8 min-w-0">
           <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <AreaChart data={sparkData.map((v, i) => ({ v, i }))} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-              <Area
-                type="monotone"
-                dataKey="v"
-                stroke="#EA580C"
-                strokeWidth={1.5}
-                fill="#EA580C"
-                fillOpacity={0.1}
-                dot={false}
-              />
+              <Area type="monotone" dataKey="v" stroke="var(--color-brand)" strokeWidth={1.5} fill="var(--color-brand)" fillOpacity={0.1} dot={false} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -155,251 +141,154 @@ export default function DashboardView(props) {
   const greeting = getGreeting();
   const pendingOrders = orders.filter(o => ['nuevo', 'new', 'pending'].includes((o.status || o.estado)?.toLowerCase()));
 
-  const completedConfigTasks = [
-    Boolean(business?.nombre_visible),
-    Boolean(business?.telefono || business?.whatsapp_contacto),
-    products.length > 0,
-    orders.length > 0
-  ];
-  const configPercent = Math.round((completedConfigTasks.filter(Boolean).length / completedConfigTasks.length) * 100);
-
   return (
-    <div className="space-y-4 animate-fade-in-up">
-      
-      {/* Top Welcome Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-xl border border-gray-200/80 shadow-2xs">
-        <div>
-          <h2 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
+    <div className="space-y-5 animate-fade-in-up">
+
+      <div className="admin-page-head !mb-0">
+        <div className="min-w-0">
+          <h2 className="admin-page-title">
             {greeting}, {business?.nombre_visible?.split(' ')[0] || 'Administrador'}
           </h2>
-          <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-            Resumen operativo y comercial de tu negocio en tiempo real.
-          </p>
+          <p className="admin-page-sub">Resumen operativo y comercial de tu negocio en tiempo real.</p>
         </div>
-
-        <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
-          <button
-            onClick={() => handleNavigate('products')}
-            className="btn-primary py-2 px-3 text-xs font-semibold flex-1 sm:flex-initial justify-center shadow-2xs"
-          >
-            <PackagePlus size={14} />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button onClick={() => handleNavigate('products')} className="btn-primary flex-1 sm:flex-initial">
+            <PackagePlus size={16} aria-hidden="true" />
             <span>Nuevo producto</span>
           </button>
-          <a
-            href={`/${business?.nombre || ''}`}
-            target="_blank"
-            rel="noreferrer"
-            className="btn-secondary py-2 px-3 text-xs font-semibold flex-1 sm:flex-initial justify-center shadow-2xs"
-          >
+          <a href={`/${business?.nombre || ''}`} target="_blank" rel="noreferrer" className="btn-secondary flex-1 sm:flex-initial">
             <span>Ver tienda</span>
-            <ExternalLink size={12} />
+            <ExternalLink size={14} aria-hidden="true" />
           </a>
         </div>
       </div>
 
-      {/* Pending orders alert */}
       {pendingOrders.length > 0 && (
-        <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 border-l-4 border-l-amber-500 flex items-center justify-between gap-3 animate-fade-in-down">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
-              <ShoppingBag size={14} />
+        <div role="status" className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in-down">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+              <ShoppingBag size={17} aria-hidden="true" />
             </div>
-            <div>
-              <p className="text-xs font-bold text-amber-900">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-amber-950">
                 Tienes {pendingOrders.length} pedido{pendingOrders.length > 1 ? 's' : ''} pendiente{pendingOrders.length > 1 ? 's' : ''} de confirmación
               </p>
-              <p className="text-[10px] text-amber-700">Atiéndelos rápido para mejorar la experiencia de tus clientes.</p>
+              <p className="text-xs text-amber-800">Atiéndelos rápido para mejorar la experiencia de tus clientes.</p>
             </div>
           </div>
-          <button
-            onClick={() => handleNavigate('orders')}
-            className="btn-secondary py-1 px-2.5 text-xs font-bold text-amber-900 border-amber-300 hover:bg-amber-100 shrink-0"
-          >
+          <button onClick={() => handleNavigate('orders')} className="btn-secondary border-amber-300 text-amber-950 hover:!bg-amber-100 shrink-0 w-full sm:w-auto">
             Ver pedidos
           </button>
         </div>
       )}
 
-      {/* KPI Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-        <StatCard
-          label="Ventas de hoy"
-          rawValue={stats.todaySales}
-          isMoney
-          icon={DollarSign}
-          trend={`${stats.todayOrders.length} pedidos hoy`}
-          trendPositive={stats.todayOrders.length > 0}
-          sparkData={stats.sparkSales}
-        />
-        <StatCard
-          label="Ventas del mes"
-          rawValue={stats.monthSales}
-          isMoney
-          icon={TrendingUp}
-          trend={`${stats.monthOrders.length} pedidos este mes`}
-          trendPositive={stats.monthOrders.length > 0}
-        />
-        <StatCard
-          label="Total acumulado"
-          rawValue={stats.totalSales}
-          isMoney
-          icon={DollarSign}
-          trend={`${orders.length} pedidos totales`}
-          trendPositive={orders.length > 0}
-        />
-        <StatCard
-          label="Catálogo activo"
-          rawValue={products.filter(p => p.disponible).length}
-          icon={Package}
-          trend={`${products.length} productos registrados`}
-          trendPositive
-        />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <StatCard label="Ventas de hoy" rawValue={stats.todaySales} isMoney icon={DollarSign}
+          trend={`${stats.todayOrders.length} pedidos hoy`} trendPositive={stats.todayOrders.length > 0} sparkData={stats.sparkSales} />
+        <StatCard label="Ventas del mes" rawValue={stats.monthSales} isMoney icon={TrendingUp}
+          trend={`${stats.monthOrders.length} pedidos este mes`} trendPositive={stats.monthOrders.length > 0} />
+        <StatCard label="Total acumulado" rawValue={stats.totalSales} isMoney icon={DollarSign}
+          trend={`${orders.length} pedidos totales`} trendPositive={orders.length > 0} />
+        <StatCard label="Catálogo activo" rawValue={products.filter(p => p.disponible).length} icon={Package}
+          trend={`${products.length} productos registrados`} trendPositive />
       </div>
 
-      {/* Charts & Top Products */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4">
-        
-        {/* Sales Chart (8 Cols) */}
-        <div className="lg:col-span-8 card p-3.5 sm:p-4 bg-white border-gray-200/80 shadow-xs">
-          <div className="flex items-center justify-between mb-3">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <section className="lg:col-span-8 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm min-w-0">
+          <div className="flex items-start justify-between gap-3 mb-4">
             <div>
-              <h3 className="text-xs sm:text-sm font-bold text-gray-900">
-                Tendencia de ventas · lunes a domingo
-              </h3>
-              <p className="text-[10px] sm:text-[11px] text-gray-500">Volumen diario facturado a través de tu tienda</p>
+              <h3 className="text-base font-bold text-slate-950">Tendencia de ventas</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Lunes a domingo · volumen diario facturado</p>
             </div>
-            <span className="badge badge-neutral text-[10px]">Semanal</span>
+            <span className="badge badge-neutral">Semanal</span>
           </div>
 
           <PremiumLock featureName="Gráfico de Ventas Avanzado">
             {stats.chartData.some(d => d.ventas > 0) ? (
-              <div className="h-44 sm:h-48 min-w-0 w-full">
+              <div className="h-52 sm:h-64 min-w-0 w-full">
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                  <AreaChart data={stats.chartData} margin={{ top: 6, right: 6, bottom: 0, left: -18 }}>
+                  <AreaChart data={stats.chartData} margin={{ top: 6, right: 6, bottom: 0, left: -14 }}>
                     <defs>
                       <linearGradient id="gradVentas" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#EA580C" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#EA580C" stopOpacity={0.0} />
+                        <stop offset="5%" stopColor="var(--color-brand)" stopOpacity={0.22} />
+                        <stop offset="95%" stopColor="var(--color-brand)" stopOpacity={0.0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 10, fill: '#6B7280' }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}
-                      tick={{ fontSize: 10, fill: '#6B7280' }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} tick={{ fontSize: 12, fill: '#64748B' }} axisLine={false} tickLine={false} />
                     <Tooltip
                       formatter={v => [formatMoney(v), 'Ventas']}
-                      contentStyle={{
-                        background: '#ffffff',
-                        border: '1px solid #E5E7EB',
-                        borderRadius: '10px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-                        fontSize: '11px',
-                        padding: '6px 10px'
-                      }}
+                      contentStyle={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: '10px', boxShadow: '0 4px 12px rgba(15,23,42,0.08)', fontSize: '12px', padding: '8px 12px' }}
                     />
-                    <Area
-                      type="monotone"
-                      dataKey="ventas"
-                      stroke="#EA580C"
-                      strokeWidth={2}
-                      fill="url(#gradVentas)"
-                      dot={{ r: 2.5, fill: '#EA580C' }}
-                      activeDot={{ r: 4.5, fill: '#C2410C' }}
-                    />
+                    <Area type="monotone" dataKey="ventas" stroke="var(--color-brand)" strokeWidth={2} fill="url(#gradVentas)"
+                      dot={{ r: 3, fill: 'var(--color-brand)' }} activeDot={{ r: 5, fill: 'var(--color-brand)' }} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-44 sm:h-48 flex flex-col items-center justify-center text-center p-4 bg-gray-50/60 rounded-xl border border-dashed border-gray-200">
-                <TrendingUp size={26} className="text-gray-300 mb-1.5" />
-                <p className="text-xs font-bold text-gray-700">Aún no hay ventas en los últimos 7 días</p>
-                <p className="text-[10px] sm:text-[11px] text-gray-400 max-w-xs mt-0.5">
+              <div className="h-52 sm:h-64 flex flex-col items-center justify-center text-center p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <TrendingUp size={28} className="text-slate-400 mb-2" aria-hidden="true" />
+                <p className="text-sm font-semibold text-slate-800">Aún no hay ventas en los últimos 7 días</p>
+                <p className="text-xs text-slate-500 max-w-xs mt-1">
                   Comparte el link de tu tienda en redes sociales y WhatsApp para empezar a registrar ventas.
                 </p>
               </div>
             )}
           </PremiumLock>
-        </div>
+        </section>
 
-        {/* Top Selling Products (4 Cols) */}
-        <div className="lg:col-span-4 card p-3.5 sm:p-4 bg-white border-gray-200/80 shadow-xs flex flex-col justify-between">
+        <section className="lg:col-span-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm flex flex-col justify-between min-w-0">
           <div>
-            <div className="flex items-center justify-between mb-2.5">
-              <div className="flex items-center gap-2">
-                <Trophy size={15} className="text-orange-600" />
-                <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  Más vendidos
-                </h3>
-              </div>
+            <div className="flex items-center gap-2 mb-3">
+              <Trophy size={17} className="text-brand" aria-hidden="true" />
+              <h3 className="text-base font-bold text-slate-950">Más vendidos</h3>
             </div>
 
             {stats.topProducts.length > 0 ? (
-              <div className="space-y-2">
+              <ol className="divide-y divide-slate-100">
                 {stats.topProducts.map((p, i) => (
-                  <div key={p.name} className="flex items-center justify-between text-xs py-1 border-b border-gray-50 last:border-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className={`w-4 h-4 rounded-md flex items-center justify-center text-[9px] font-bold shrink-0 ${
-                        i === 0 ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        #{i + 1}
-                      </span>
-                      <span className="font-semibold text-gray-800 truncate text-[11px] sm:text-xs">{p.name}</span>
+                  <li key={p.name} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
+                        i === 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'
+                      }`}>{i + 1}</span>
+                      <span className="font-medium text-slate-800 truncate">{p.name}</span>
                     </div>
-                    <span className="font-bold text-gray-900 shrink-0 tabular-nums ml-2 text-[11px] sm:text-xs">{p.count} uds</span>
-                  </div>
+                    <span className="font-semibold text-slate-950 shrink-0 tabular-nums">{p.count} uds</span>
+                  </li>
                 ))}
-              </div>
+              </ol>
             ) : (
-              <div className="py-6 text-center text-gray-400 text-xs">
-                <PackagePlus size={24} className="opacity-40 mx-auto mb-1.5" />
-                <p className="font-medium text-gray-500 text-xs">Sin datos de ventas aún</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">Aparecerán cuando despaches pedidos</p>
+              <div className="py-8 text-center">
+                <PackagePlus size={26} className="text-slate-400 mx-auto mb-2" aria-hidden="true" />
+                <p className="text-sm font-semibold text-slate-700">Sin datos de ventas aún</p>
+                <p className="text-xs text-slate-500 mt-0.5">Aparecerán cuando despaches pedidos</p>
               </div>
             )}
           </div>
 
-          <div className="pt-2.5 border-t border-gray-100 mt-2.5">
-            <button
-              onClick={() => handleNavigate('products')}
-              className="text-xs font-semibold text-orange-600 hover:text-orange-700 flex items-center justify-between w-full cursor-pointer py-1"
-            >
-              <span>Gestionar todos los productos</span>
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
-
+          <button onClick={() => handleNavigate('products')} className="mt-3 pt-3 border-t border-slate-100 text-sm font-semibold text-brand hover:opacity-80 flex items-center justify-between w-full min-h-10">
+            <span>Gestionar todos los productos</span>
+            <ChevronRight size={16} aria-hidden="true" />
+          </button>
+        </section>
       </div>
 
-      {/* Quick Action Navigation Tiles */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {[
           { label: 'Pedidos en vivo', tab: 'orders', icon: ShoppingBag, desc: 'Atiende clientes' },
           { label: 'Catálogo de menú', tab: 'products', icon: Package, desc: 'Precios e imágenes' },
           { label: 'Reporte de ventas', tab: 'revenue', icon: DollarSign, desc: 'Historial e ingresos' },
           { label: 'Configuración', tab: 'settings', icon: Settings, desc: 'Horarios y marca' },
         ].map(a => (
-          <button
-            key={a.tab}
-            onClick={() => handleNavigate(a.tab)}
-            className="card p-3 sm:p-3.5 bg-white border-gray-200/80 hover:border-orange-400 hover:shadow-xs transition-all text-left group cursor-pointer active:scale-[0.98]"
-          >
-            <div className="w-7 h-7 rounded-lg bg-gray-50 text-gray-600 group-hover:bg-orange-50 group-hover:text-orange-600 transition-colors flex items-center justify-center mb-2">
-              <a.icon size={15} />
+          <button key={a.tab} onClick={() => handleNavigate(a.tab)}
+            className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-brand/40 hover:shadow-md transition-all text-left group active:scale-[0.98] min-h-[5.5rem]">
+            <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 group-hover:bg-brand/10 group-hover:text-brand transition-colors flex items-center justify-center mb-2.5">
+              <a.icon size={17} aria-hidden="true" />
             </div>
-            <p className="text-xs sm:text-sm font-bold text-gray-900 group-hover:text-orange-600 transition-colors">
-              {a.label}
-            </p>
-            <p className="text-[10px] text-gray-400 mt-0.5">{a.desc}</p>
+            <p className="text-sm font-semibold text-slate-950">{a.label}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{a.desc}</p>
           </button>
         ))}
       </div>

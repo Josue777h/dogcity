@@ -45,7 +45,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
     getSelectedItems, clearCart, increment, decrement
   } = useCartStore();
 
-  const [deliveryMethod, setDeliveryMethod] = useState(() => tableNumber ? 'mesa' : '');
+  const [deliveryMethod, setDeliveryMethod] = useState(() => tableNumber ? 'mesa' : 'envio');
   const [paymentMethod,  setPaymentMethod]  = useState('');
 
   useEffect(() => {
@@ -76,7 +76,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
   const handleClose = () => {
     setOrderResult(null);
     setLocation('', '');
-    setDeliveryMethod(tableNumber ? 'mesa' : '');
+    setDeliveryMethod(tableNumber ? 'mesa' : 'envio');
     setPaymentMethod('');
     setMapCoords(null);
     onClose();
@@ -86,7 +86,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
     if (!isOpen) {
       setOrderResult(null);
       setLocation('', '');
-      setDeliveryMethod(tableNumber ? 'mesa' : '');
+      setDeliveryMethod(tableNumber ? 'mesa' : 'envio');
       setPaymentMethod('');
       setMapCoords(null);
     }
@@ -94,14 +94,14 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
 
   useEffect(() => {
     if (isOpen) {
-      setDeliveryMethod('');
+      setDeliveryMethod(tableNumber ? 'mesa' : 'envio');
       setPaymentMethod('');
       setDeliveryFee(0);
       setDistanceKm(null);
       setMapCoords(null);
       setLocation('', '');
     }
-  }, [isOpen]);
+  }, [isOpen, tableNumber]);
 
   useEffect(() => {
     if (isOpen) {
@@ -590,8 +590,8 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                   ) : (
                     <div className="grid grid-cols-2 gap-2.5">
                       {[
-                        { id: 'envio', label: 'A domicilio', icon: Truck },
-                        { id: 'recogida', label: 'Recoger en local', icon: ShoppingBag },
+                        { id: 'envio', label: 'A domicilio', desc: 'Te lo enviamos', icon: Truck },
+                        { id: 'recogida', label: 'Recoger en local', desc: 'Retiro en tienda', icon: ShoppingBag },
                       ].map(m => {
                         const isSelectedMethod = deliveryMethod === m.id;
                         return (
@@ -607,19 +607,34 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                                 setMapCoords(null);
                               }
                             }}
-                            className={`relative flex flex-col items-center justify-center gap-1.5 p-3.5 rounded-xl border-2 text-sm transition-all active:scale-95 cursor-pointer ${
+                            className={`relative flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl border-2 text-center transition-all active:scale-95 cursor-pointer min-h-[82px] ${
                               isSelectedMethod
-                                ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-semibold shadow-sm'
-                                : 'border-slate-200 bg-white text-slate-600 font-medium hover:border-slate-300 hover:bg-slate-50'
+                                ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 shadow-xs ring-1 ring-emerald-500/25'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                             }`}
                           >
-                            {isSelectedMethod && (
-                              <span className="absolute right-2 top-2 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center">
-                                <Check size={10} strokeWidth={3} />
+                            <span
+                              className={`absolute right-2 top-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                isSelectedMethod
+                                  ? 'border-emerald-600 bg-emerald-600 text-white shadow-2xs'
+                                  : 'border-slate-300 bg-white'
+                              }`}
+                            >
+                              {isSelectedMethod && <Check size={11} strokeWidth={3.5} />}
+                            </span>
+                            <m.icon
+                              size={22}
+                              strokeWidth={isSelectedMethod ? 2.2 : 1.75}
+                              className={isSelectedMethod ? 'text-emerald-700' : 'text-slate-500'}
+                            />
+                            <div>
+                              <span className="block text-xs sm:text-sm font-bold leading-tight">
+                                {m.label}
                               </span>
-                            )}
-                            <m.icon size={20} strokeWidth={isSelectedMethod ? 2.2 : 1.75} />
-                            <span>{m.label}</span>
+                              <span className={`block text-[10px] mt-0.5 ${isSelectedMethod ? 'text-emerald-800 font-medium' : 'text-slate-400'}`}>
+                                {m.desc}
+                              </span>
+                            </div>
                           </button>
                         );
                       })}

@@ -245,7 +245,7 @@ export async function fetchSubscription(negocioId) {
       data.estado = 'vencido';
       data.es_trial = false;
       // Actualizar en base de datos 
-      await getSupabase().from('suscripciones').update({ estado: 'vencido', es_trial: false }).eq('id', data.id);
+      await getSupabase().rpc('mark_subscription_expired', { p_negocio_id: negocioId });
     }
   }
 
@@ -400,7 +400,7 @@ export async function saveOrder(rawPayload) {
           .maybeSingle();
         if (byToken?.id) return byToken.id;
       }
-      return Date.now();
+      throw new Error('No se pudo confirmar el ID del pedido. Verifica que la función customer_create_order esté desplegada.');
     }
     throw error;
   }
@@ -563,15 +563,7 @@ async function createBusinessForUser(user) {
     throw businessError;
   }
 
-  const trialEndsAt = new Date();
-  trialEndsAt.setDate(trialEndsAt.getDate() + 7);
-  const { error: subscriptionError } = await supabase.from('suscripciones').upsert({
-    negocio_id: business.id,
-    plan: 'pro',
-    estado: 'trial',
-    fecha_fin: trialEndsAt.toISOString(),
-    es_trial: true,
-  }, { onConflict: 'negocio_id' });
+  const { error: subscriptionError } = await supabase.rpc('create_trial_subscription', { p_negocio_id: business.id });
   if (subscriptionError) console.error('Error creando la suscripción inicial:', subscriptionError);
 
   return business;
