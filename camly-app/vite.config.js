@@ -9,6 +9,14 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      devOptions: {
+        enabled: false,
+      },
+      workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+      },
       includeAssets: ['favicon.ico', 'favicon.png', 'icono.png', 'og-image.png'],
       manifest: {
         name: 'NEGU',
@@ -33,6 +41,35 @@ export default defineConfig({
       }
     })
   ],
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'zustand',
+      '@supabase/supabase-js',
+      'lucide-react',
+      'qrcode',
+      'leaflet',
+      'react-leaflet',
+      'recharts',
+    ],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (id.includes('@supabase/supabase-js')) return 'vendor-supabase';
+          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
+          if (id.includes('leaflet') || id.includes('react-leaflet')) return 'vendor-maps';
+          if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) {
+            return 'vendor-react';
+          }
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     open: true,

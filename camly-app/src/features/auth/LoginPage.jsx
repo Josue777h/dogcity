@@ -64,7 +64,7 @@ export default function LoginPage() {
         noindex={false}
       />
 
-      <aside className="relative hidden min-h-screen overflow-hidden bg-slate-950 px-12 py-14 text-white lg:flex lg:flex-col lg:justify-between xl:px-20">
+      <aside className="relative hidden overflow-hidden bg-slate-950 px-12 py-14 text-white lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:justify-between xl:px-20">
         <Link to="/" className="inline-flex w-fit rounded-lg"><SaaSLogo className="h-12 text-white" /></Link>
         <div className="relative z-10 max-w-xl pb-12">
           <span className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-200">Panel de tu negocio</span>

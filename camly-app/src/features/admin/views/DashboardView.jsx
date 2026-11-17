@@ -12,7 +12,8 @@ import {
 import { formatMoney, getGreeting, useAnimatedCounter } from '../../../lib/utils';
 import PremiumLock from '../../../components/ui/PremiumLock';
 
-function StatCard({ label, rawValue, isMoney, icon: Icon, trend, trendPositive, sparkData }) {
+function StatCard({ label, rawValue, isMoney, icon, trend, trendPositive, sparkData }) {
+  const IconComponent = icon;
   const animated = useAnimatedCounter(rawValue ?? 0, 1000);
   const display  = isMoney ? formatMoney(animated) : animated;
 
@@ -21,7 +22,7 @@ function StatCard({ label, rawValue, isMoney, icon: Icon, trend, trendPositive, 
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold text-slate-500 truncate">{label}</p>
         <div className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0">
-          <Icon size={17} strokeWidth={2} aria-hidden="true" />
+          <IconComponent size={17} strokeWidth={2} aria-hidden="true" />
         </div>
       </div>
       <p className="mt-2 font-display text-xl sm:text-2xl font-bold text-slate-950 tracking-tight tabular-nums truncate">
@@ -50,8 +51,8 @@ export default function DashboardView(props) {
   const outletCtx = useOutletContext() || {};
   const navigate = useNavigate();
 
-  const orders = props.orders ?? outletCtx.orders ?? [];
-  const products = props.products ?? outletCtx.products ?? [];
+  const orders = useMemo(() => props.orders ?? outletCtx.orders ?? [], [props.orders, outletCtx.orders]);
+  const products = useMemo(() => props.products ?? outletCtx.products ?? [], [props.products, outletCtx.products]);
   const business = props.business ?? outletCtx.business ?? null;
 
   const handleNavigate = (target) => {
@@ -93,12 +94,6 @@ export default function DashboardView(props) {
     const todayStr = dateKey(now);
     const thisMonthStr = todayStr.slice(0, 7);
 
-    const totalSales  = orders.reduce((acc, o) => acc + (o.total || 0), 0);
-    const todayOrders = orders.filter(o => orderDateKey(o) === todayStr);
-    const monthOrders = orders.filter(o => orderDateKey(o).startsWith(thisMonthStr));
-    const todaySales  = todayOrders.reduce((acc, o) => acc + (o.total || 0), 0);
-    const monthSales  = monthOrders.reduce((acc, o) => acc + (o.total || 0), 0);
-
     const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
     const weekDates = [...Array(7)].map((_, i) => {
@@ -106,43 +101,89 @@ export default function DashboardView(props) {
       date.setDate(monday.getDate() + i);
       return dateKey(date);
     });
+    const weekSet = new Set(weekDates);
 
-    const chartData = weekDates.map(date => {
-      const dayOrders = orders.filter(o => orderDateKey(o) === date);
-      return {
-        name: new Date(`${date}T12:00:00`).toLocaleDateString('es-CO', { weekday: 'short' }).replace('.', ''),
-        ventas: dayOrders.reduce((acc, o) => acc + (o.total || 0), 0),
-        pedidos: dayOrders.length
-      };
-    });
+    let totalSales = 0;
+    let todaySales = 0;
+    let todayCount = 0;
+    let monthSales = 0;
+    let monthCount = 0;
+    let pendingCount = 0;
+    const salesByDate = Object.create(null);
+    const countsByDate = Object.create(null);
+    const productCounts = Object.create(null);
 
-    const productCounts = {};
-    orders.forEach(o => {
-      const items = o.items || o.productos;
-      if (Array.isArray(items)) {
-        items.forEach(p => {
-          productCounts[p.nombre || p.name] = (productCounts[p.nombre || p.name] || 0) + (p.cantidad || p.quantity || 1);
-        });
+    for (const o of orders) {
+      const orderTotal = Number(o.total) || 0;
+      const st = (o.status || o.estado || '').toLowerCase();
+      const isCancelled = st.includes('cancel');
+
+      if (!isCancelled) {
+        totalSales += orderTotal;
       }
-    });
+
+      const key = orderDateKey(o);
+      if (key === todayStr) {
+        if (!isCancelled) todaySales += orderTotal;
+        todayCount += 1;
+      }
+      if (key.startsWith(thisMonthStr)) {
+        if (!isCancelled) monthSales += orderTotal;
+        monthCount += 1;
+      }
+      if (weekSet.has(key)) {
+        if (!isCancelled) salesByDate[key] = (salesByDate[key] || 0) + orderTotal;
+        countsByDate[key] = (countsByDate[key] || 0) + 1;
+      }
+
+      if (st === 'nuevo' || st === 'new' || st === 'pending') {
+        pendingCount += 1;
+      }
+
+      if (!isCancelled) {
+        const items = o.items || o.productos;
+        if (Array.isArray(items)) {
+          for (const p of items) {
+            const pName = p.nombre || p.name;
+            if (pName) {
+              productCounts[pName] = (productCounts[pName] || 0) + (p.cantidad || p.quantity || 1);
+            }
+          }
+        }
+      }
+    }
+
+    const chartData = weekDates.map(date => ({
+      name: new Date(`${date}T12:00:00`).toLocaleDateString('es-CO', { weekday: 'short' }).replace('.', ''),
+      ventas: salesByDate[date] || 0,
+      pedidos: countsByDate[date] || 0,
+    }));
+
+    const sparkSales = weekDates.map(date => salesByDate[date] || 0);
 
     const topProducts = Object.entries(productCounts)
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    const sparkSales = weekDates.map(date =>
-      orders.filter(o => orderDateKey(o) === date).reduce((acc, o) => acc + (o.total || 0), 0)
-    );
-
-    return { totalSales, todaySales, monthSales, todayOrders, monthOrders, chartData, topProducts, sparkSales };
+    return {
+      totalSales,
+      todaySales,
+      todayCount,
+      monthSales,
+      monthCount,
+      pendingCount,
+      chartData,
+      topProducts,
+      sparkSales,
+    };
   }, [orders]);
 
+  const activeProductsCount = useMemo(() => products.filter(p => p.disponible).length, [products]);
   const greeting = getGreeting();
-  const pendingOrders = orders.filter(o => ['nuevo', 'new', 'pending'].includes((o.status || o.estado)?.toLowerCase()));
 
   return (
-    <div className="space-y-5 animate-fade-in-up">
+    <div className="flex flex-col gap-5 animate-fade-in-up">
 
       <div className="admin-page-head !mb-0">
         <div className="min-w-0">
@@ -163,7 +204,7 @@ export default function DashboardView(props) {
         </div>
       </div>
 
-      {pendingOrders.length > 0 && (
+      {stats.pendingCount > 0 && (
         <div role="status" className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in-down">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
@@ -171,7 +212,7 @@ export default function DashboardView(props) {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-amber-950">
-                Tienes {pendingOrders.length} pedido{pendingOrders.length > 1 ? 's' : ''} pendiente{pendingOrders.length > 1 ? 's' : ''} de confirmación
+                Tienes {stats.pendingCount} pedido{stats.pendingCount > 1 ? 's' : ''} pendiente{stats.pendingCount > 1 ? 's' : ''} de confirmación
               </p>
               <p className="text-xs text-amber-800">Atiéndelos rápido para mejorar la experiencia de tus clientes.</p>
             </div>
@@ -184,12 +225,12 @@ export default function DashboardView(props) {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Ventas de hoy" rawValue={stats.todaySales} isMoney icon={DollarSign}
-          trend={`${stats.todayOrders.length} pedidos hoy`} trendPositive={stats.todayOrders.length > 0} sparkData={stats.sparkSales} />
+          trend={`${stats.todayCount} pedidos hoy`} trendPositive={stats.todayCount > 0} sparkData={stats.sparkSales} />
         <StatCard label="Ventas del mes" rawValue={stats.monthSales} isMoney icon={TrendingUp}
-          trend={`${stats.monthOrders.length} pedidos este mes`} trendPositive={stats.monthOrders.length > 0} />
+          trend={`${stats.monthCount} pedidos este mes`} trendPositive={stats.monthCount > 0} />
         <StatCard label="Total acumulado" rawValue={stats.totalSales} isMoney icon={DollarSign}
           trend={`${orders.length} pedidos totales`} trendPositive={orders.length > 0} />
-        <StatCard label="Catálogo activo" rawValue={products.filter(p => p.disponible).length} icon={Package}
+        <StatCard label="Catálogo activo" rawValue={activeProductsCount} icon={Package}
           trend={`${products.length} productos registrados`} trendPositive />
       </div>
 

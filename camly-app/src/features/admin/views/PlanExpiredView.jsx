@@ -1,40 +1,37 @@
-import { Lock, CreditCard, ChevronRight, Zap } from 'lucide-react';
+import { Lock, CreditCard, ChevronRight } from 'lucide-react';
 
 export default function PlanExpiredView({ onOpenBilling }) {
   return (
-    <div className="absolute inset-0 z-50 bg-bg-alt/90 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-white rounded-[2rem] border border-border shadow-2xl shadow-brand/10 max-w-lg w-full p-8 sm:p-12 text-center animate-in fade-in zoom-in-95 duration-500 relative overflow-hidden">
-        
-        {/* Background Accents */}
-        <div className="absolute -top-32 -right-32 w-64 h-64 bg-error/10 rounded-full blur-[80px] pointer-events-none" />
-        <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-brand/10 rounded-full blur-[80px] pointer-events-none" />
+    <div className="absolute inset-0 z-50 bg-slate-950/45 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-lg max-w-md w-full p-6 sm:p-8 text-center animate-fade-in">
+        <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 border border-amber-200/80 flex items-center justify-center mx-auto mb-4">
+          <Lock size={22} />
+        </div>
 
-        <div className="relative z-10">
-          <div className="w-20 h-20 bg-error/10 text-error rounded-[2rem] flex items-center justify-center mx-auto mb-6">
-            <Lock size={40} className="animate-pulse" />
-          </div>
+        <h2 className="text-xl font-bold text-slate-950 tracking-tight mb-2">
+          Tu periodo de prueba finalizó
+        </h2>
 
-          <h2 className="text-3xl font-black text-dark tracking-tighter uppercase mb-3">
-            TU PRUEBA <span className="text-error">TERMINÓ</span>
-          </h2>
-          
-          <p className="text-sm font-medium text-muted mb-8 leading-relaxed">
-            Se acabaron tus 7 días de prueba gratis. Activa el Plan Profesional para recuperar el acceso a tu tienda y seguir recibiendo pedidos por WhatsApp.
+        <p className="text-xs sm:text-sm text-slate-600 mb-6 leading-relaxed">
+          Tu catálogo, productos y configuración siguen guardados. Activa el Plan Pro para continuar recibiendo pedidos.
+        </p>
+
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={onOpenBilling}
+            className="btn-primary w-full rounded-xl py-3 px-5 font-semibold text-xs sm:text-sm justify-between cursor-pointer"
+          >
+            <span className="flex items-center gap-2">
+              <CreditCard size={16} />
+              <span>Activar Plan Pro</span>
+            </span>
+            <ChevronRight size={16} />
+          </button>
+
+          <p className="text-[11px] font-medium text-slate-500">
+            Mismo enlace de tienda, sin perder datos ni historial
           </p>
-
-          <div className="space-y-4">
-            <button 
-              onClick={onOpenBilling}
-              className="w-full bg-dark text-white rounded-2xl py-4 px-6 font-black text-sm tracking-widest uppercase flex items-center justify-between hover:bg-dark/90 transition-all shadow-xl shadow-dark/20 group"
-            >
-              <span className="flex items-center gap-2"><CreditCard size={18} /> ACTIVAR PLAN PRO</span>
-              <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            <div className="flex items-center justify-center gap-2 text-[10px] font-black text-muted uppercase tracking-widest pt-4">
-              <Zap size={14} className="text-brand" /> Mismo link, sin perder datos
-            </div>
-          </div>
         </div>
       </div>
     </div>

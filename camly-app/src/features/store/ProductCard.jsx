@@ -1,11 +1,10 @@
-import { useState, useMemo } from 'react';
-import { ShoppingCart, Plus, Minus, X, PackageCheck, Check, Layers, AlertCircle, Sparkles, ChevronDown } from 'lucide-react';
+import { useState, useMemo, useEffect, memo } from 'react';
+import { Plus, Minus, X, PackageCheck, Check, Layers, ChevronDown } from 'lucide-react';
 import { formatMoney } from '../../lib/utils';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
 
-export default function ProductCard({ 
+const ProductCard = memo(function ProductCard({ 
   product, 
-  _index = 0, 
   isStoreOpen = true, 
   storeClosedMessage = '',
   isTableMode = false
@@ -14,15 +13,29 @@ export default function ProductCard({
   const bid      = business?.id;
   const addToast = useToastStore(s => s.addToast);
 
-  const { addItem, increment, decrement } = useCartStore();
+  const addItem   = useCartStore(s => s.addItem);
+  const increment = useCartStore(s => s.increment);
+  const decrement = useCartStore(s => s.decrement);
   const totalProductQty = useCartStore(s => s.getProductTotalQuantity(bid, product.id));
   const isSelected = totalProductQty > 0;
 
   const [showModal, setShowModal] = useState(false);
   const [imgError, setImgError] = useState(!product.image);
 
+  useEffect(() => {
+    if (!showModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setShowModal(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showModal]);
+
   // Opciones y toppings configurados en este producto
   const hasOptions = Array.isArray(product.opciones) && product.opciones.length > 0;
+  const hasPaidRequiredOptions = hasOptions && product.opciones.some(g =>
+    g.requerido && Array.isArray(g.opciones) && g.opciones.some(o => Number(o?.precio) > 0)
+  );
 
   const getDefaultOptions = () => {
     const initial = {};
@@ -257,6 +270,9 @@ export default function ProductCard({
             <img
               src={product.image}
               alt={product.name}
+              width="400"
+              height="250"
+              decoding="async"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               loading="lazy"
               onError={() => setImgError(true)}
@@ -268,14 +284,14 @@ export default function ProductCard({
             </div>
           )}
 
-          {/* Micro-tag minimalista si tiene opciones (sin tapar la foto con texto) */}
+          {/* Micro-tag legible cuando el producto tiene variantes o adicionales */}
           {hasOptions && (
-            <div 
-              className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm text-white shadow-2xs"
+            <div
+              className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm shadow-2xs"
               title="Producto personalizable"
-              aria-label="Producto personalizable"
             >
-              <Layers size={12} />
+              <Layers size={11} aria-hidden="true" />
+              <span>Opciones</span>
             </div>
           )}
 
@@ -304,9 +320,19 @@ export default function ProductCard({
           </div>
 
           <div className="mt-auto flex flex-col gap-2 border-t border-[#f0ede7] pt-2.5">
-            <span className="truncate text-sm font-extrabold tabular-nums text-slate-900 sm:text-base">
-              {formatMoney(product.price)}
-            </span>
+            <div className="flex items-baseline gap-1 min-w-0">
+              {hasPaidRequiredOptions && (
+                <span className="text-[11px] font-medium text-slate-500 shrink-0">Desde</span>
+              )}
+              <span className="truncate text-sm font-extrabold tabular-nums text-slate-900 sm:text-base">
+                {formatMoney(product.price)}
+              </span>
+              {product.unit && product.unit.toLowerCase() !== 'unidad' && (
+                <span className="truncate text-[11px] font-medium text-slate-500">
+                  / {product.unit}
+                </span>
+              )}
+            </div>
 
             {isTableMode ? (
               <button
@@ -366,7 +392,12 @@ export default function ProductCard({
 
       {/* Modal de Detalle y Personalización (Sabores & Toppings) */}
       {showModal && (
-        <div className="fixed inset-0 z-[160] flex items-center justify-center overflow-hidden p-3 sm:p-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Detalle de ${product.name}`}
+          className="fixed inset-0 z-[160] flex items-center justify-center overflow-hidden p-3 sm:p-4"
+        >
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-xs animate-fade-in"
             onClick={() => setShowModal(false)}
@@ -670,4 +701,6 @@ export default function ProductCard({
       )}
     </>
   );
-}
+});
+
+export default ProductCard;

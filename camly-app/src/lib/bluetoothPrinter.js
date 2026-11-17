@@ -3,7 +3,7 @@
  * Soporta impresoras térmicas portátiles POS-58 / POS-80 (Goojprt, MPT-II, etc.)
  */
 
-import { formatMoney, getOrderSubtotal } from './utils';
+import { getOrderSubtotal } from './utils';
 
 // UUIDs comunes de impresoras térmicas BLE
 const PRINTER_SERVICES = [

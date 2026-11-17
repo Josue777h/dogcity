@@ -17,11 +17,44 @@ function csvCell(value) {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
+export async function clearClientCaches() {
+  try {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(reg => reg.unregister()));
+    }
+  } catch (err) {
+    console.warn('No se pudieron desregistrar los Service Workers:', err);
+  }
+  try {
+    if (typeof window !== 'undefined' && 'caches' in window) {
+      const keys = await window.caches.keys();
+      await Promise.all(keys.map(key => window.caches.delete(key)));
+    }
+  } catch (err) {
+    console.warn('No se pudieron limpiar las cachés del navegador:', err);
+  }
+}
+
+export async function reloadWithFreshCache() {
+  await clearClientCaches();
+  try {
+    sessionStorage.removeItem('negu_preload_recovered');
+    sessionStorage.removeItem('negu_lazy_recovered');
+  } catch (err) {
+    console.debug('sessionStorage no disponible:', err);
+  }
+  window.location.reload();
+}
+
 export function useAnimatedCounter(target, duration = 1500) {
+  const num = typeof target === 'number' ? target : parseFloat(String(target).replace(/[^0-9.]/g, '')) || 0;
   const [count, setCount] = useState(0);
   useEffect(() => {
-    const num = typeof target === 'number' ? target : parseFloat(String(target).replace(/[^0-9.]/g, '')) || 0;
-    if (num === 0) { setCount(0); return; }
+    if (num === 0) {
+      const frame = requestAnimationFrame(() => setCount(0));
+      return () => cancelAnimationFrame(frame);
+    }
     let start = 0;
     const step = num / (duration / 16);
     const timer = setInterval(() => {
@@ -30,8 +63,8 @@ export function useAnimatedCounter(target, duration = 1500) {
       else setCount(Math.floor(start));
     }, 16);
     return () => clearInterval(timer);
-  }, [target, duration]);
-  return count;
+  }, [num, duration]);
+  return num === 0 ? 0 : count;
 }
 
 export function getGreeting() {
@@ -60,11 +93,6 @@ export function formatMoney(value) {
     currency: 'COP',
     maximumFractionDigits: 0,
   }).format(value || 0);
-}
-
-export function getBusinessSlug() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get('negocio') || '';
 }
 
 /**
@@ -135,35 +163,6 @@ export function isDeliveryPending(order) {
   if (domCost > 0) return false;
   const subtotal = getOrderSubtotal(order);
   return Math.abs(subtotal - (Number(order?.total) || 0)) < 1;
-}
-
-/** Mensaje WhatsApp al cliente con domicilio ya confirmado */
-export function buildDeliveryConfirmationMessage(order, businessName, domicilioCosto, trackingUrl) {
-  const items = order.items || order.productos || [];
-  const subtotal = getOrderSubtotal(order);
-  const total = subtotal + domicilioCosto;
-  const orderRef = order.id?.toString().slice(-6).toUpperCase();
-
-  const itemsLines = items.map(i => {
-    const qty = i.cantidad ?? i.quantity ?? 1;
-    const name = i.nombre ?? i.name ?? 'Producto';
-    const price = i.precio ?? i.price ?? 0;
-    return `• ${qty}x ${name} — ${formatMoney(price * qty)}`;
-  }).join('\n');
-
-  return [
-    `¡Hola ${order.nombre}!`,
-    '',
-    `Tu pedido *#${orderRef}* en *${businessName}*:`,
-    '',
-    itemsLines,
-    `Domicilio: ${formatMoney(domicilioCosto)}`,
-    '',
-    `*TOTAL A PAGAR: ${formatMoney(total)}*`,
-    '',
-    `¿Confirmamos tu pedido? Responde *SI* para continuar`,
-    trackingUrl ? `Seguimiento: ${trackingUrl}` : '',
-  ].filter(Boolean).join('\n');
 }
 
 /** Obtener dirección legible desde coordenadas (Photon reverse geocoding) */

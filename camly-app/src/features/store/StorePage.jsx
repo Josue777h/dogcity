@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
-import { ShoppingCart, Search, Store, Clock, X, ChevronRight, Phone, MessageCircle, Bell, Utensils } from 'lucide-react';
+import {
+  ShoppingCart, Search, Store, Clock, X, ChevronRight,
+  Phone, MessageCircle, Bell, Utensils, Truck, CreditCard
+} from 'lucide-react';
 import { useBusinessStore, useCartStore, useToastStore } from '../../stores';
-import Badge from '../../components/ui/Badge';
-import { fetchBusiness, fetchProducts, fetchSubscription, fetchCategories } from '../../lib/supabase';
+import { fetchBusiness, fetchProducts, fetchSubscription, fetchCategories, emitTableCallEvent, subscribeToTableCalls } from '../../lib/supabase';
 import { formatMoney, checkBusinessSchedule } from '../../lib/utils';
 import ProductCard from './ProductCard';
 import OrderDrawer from './OrderDrawer';
@@ -24,12 +26,17 @@ export default function StorePage() {
 
   const mesaParam = useMemo(() => {
     if (rawMesa) {
-      try { sessionStorage.setItem(`negu_mesa_${slug || 'active'}`, rawMesa); } catch (_) {}
+      try {
+        sessionStorage.setItem(`negu_mesa_${slug || 'active'}`, rawMesa);
+      } catch (err) {
+        console.debug('sessionStorage no disponible:', err);
+      }
       return rawMesa;
     }
     try {
       return sessionStorage.getItem(`negu_mesa_${slug || 'active'}`) || '';
-    } catch (_) {
+    } catch (err) {
+      console.debug('sessionStorage no disponible:', err);
       return '';
     }
   }, [rawMesa, slug]);
@@ -57,17 +64,7 @@ export default function StorePage() {
       timestamp: Date.now()
     };
 
-    // 1. Notificación instantánea por BroadcastChannel entre pestañas / meseros
-    try {
-      const bc = new BroadcastChannel('negu_orders_channel');
-      bc.postMessage(eventPayload);
-      setTimeout(() => bc.close(), 1000);
-    } catch (_) {}
-
-    // 2. Evento en localStorage para sincronización entre ventanas
-    try {
-      localStorage.setItem('negu_table_call_event', JSON.stringify(eventPayload));
-    } catch (_) {}
+    emitTableCallEvent(bid, eventPayload);
 
     addToast(`Mesero avisado para la Mesa #${mesaParam}. En breve se acercarán a atenderte.`, 'success');
   };
@@ -80,24 +77,35 @@ export default function StorePage() {
     return () => clearInterval(timer);
   }, [waiterCalledCooldown]);
 
-  // Escuchar cuando el mesero atiende la mesa para resetear la llamada
+  // Escuchar cuando el mesero atiende la mesa para resetear la llamada (local y entre dispositivos)
   useEffect(() => {
+    const handleEvent = (data) => {
+      if (data?.type === 'RESOLVE_WAITER_CALL' && String(data.mesa) === String(mesaParam) && (!data.businessId || data.businessId === bid)) {
+        setWaiterCalledCooldown(0);
+        try {
+          localStorage.removeItem('negu_table_call_event');
+        } catch (err) {
+          console.debug('localStorage no disponible:', err);
+        }
+        addToast(`Mesa #${mesaParam} atendida por el mesero`, 'info');
+      }
+    };
+
     let bc;
     try {
       bc = new BroadcastChannel('negu_orders_channel');
-      bc.onmessage = (msg) => {
-        if (msg?.data?.type === 'RESOLVE_WAITER_CALL' && String(msg.data.mesa) === String(mesaParam)) {
-          setWaiterCalledCooldown(0);
-          try { localStorage.removeItem('negu_table_call_event'); } catch (_) {}
-          addToast(`Mesa #${mesaParam} atendida por el mesero`, 'info');
-        }
-      };
-    } catch (_) {}
+      bc.onmessage = (msg) => handleEvent(msg?.data);
+    } catch (err) {
+      console.debug('BroadcastChannel no disponible:', err);
+    }
+
+    const tableSub = subscribeToTableCalls(bid, handleEvent);
 
     return () => {
       if (bc) bc.close();
+      tableSub.unsubscribe();
     };
-  }, [mesaParam, addToast]);
+  }, [bid, mesaParam, addToast]);
 
   const scheduleStatus = useMemo(() => checkBusinessSchedule(business), [business]);
 
@@ -127,7 +135,7 @@ export default function StorePage() {
       }
     }
     load();
-  }, [slug]);
+  }, [slug, addToast, setBusiness, setCategories, setError, setLoading, setProducts]);
 
   // Apply brand color — tenant theming (do not remove)
   useEffect(() => {
@@ -140,14 +148,18 @@ export default function StorePage() {
 
   const visibleCategories = useMemo(() => {
     if (categories?.length > 0) {
-      const sorted = [...categories].sort((a, b) => a.nombre.localeCompare(b.nombre)).map(c => c.nombre);
+      const sorted = [...categories]
+        .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+        .map(c => c.nombre)
+        .filter(Boolean);
       return ['Todos', ...sorted];
     }
-    const cats = [...new Set(products.map(p => p.categoria).filter(Boolean))].sort();
+    const cats = [...new Set(products.map(p => p.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b));
     return ['Todos', ...cats];
   }, [categories, products]);
 
   const visible = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
     return products.filter(p => {
       if (!p.disponible) return false;
       let pCatName = p.categoria;
@@ -155,11 +167,51 @@ export default function StorePage() {
         const found = categories.find(c => c.id === p.categoria_id);
         if (found) pCatName = found.nombre;
       }
-      const matchesCat    = currentCategory === 'Todos' || (pCatName || '').trim() === currentCategory.trim();
-      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCat = currentCategory === 'Todos' || (pCatName || '').trim() === currentCategory.trim();
+      const matchesSearch = !q ||
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.description || '').toLowerCase().includes(q) ||
+        (Array.isArray(p.opciones) && p.opciones.some(g =>
+          (g.titulo || '').toLowerCase().includes(q) ||
+          (Array.isArray(g.opciones) && g.opciones.some(o => (o.nombre || '').toLowerCase().includes(q)))
+        ));
       return matchesCat && matchesSearch;
     });
   }, [products, currentCategory, searchTerm, categories]);
+
+  const deliverySummary = useMemo(() => {
+    const tipoDom = business?.tipo_domicilio || 'automatico';
+    if (tipoDom === 'fijo') {
+      const fixedFee = Math.max(0, Number(business?.precio_domicilio ?? 0));
+      return fixedFee === 0 ? 'Envío gratis' : `Envío: ${formatMoney(fixedFee)}`;
+    }
+    if (tipoDom === 'manual') {
+      return 'Envío por cotizar';
+    }
+    const minFee = Math.max(0, Number(business?.domicilio_minimo ?? 3000));
+    return minFee === 0 ? 'Envío por distancia' : `Envío desde ${formatMoney(minFee)}`;
+  }, [business?.tipo_domicilio, business?.precio_domicilio, business?.domicilio_minimo]);
+
+  const metodosPago = business?.metodos_pago;
+  const pagoBanco = business?.pago_banco;
+  const paymentSummary = useMemo(() => {
+    const methods = Array.isArray(metodosPago) && metodosPago.length > 0
+      ? metodosPago
+      : ['efectivo', 'transferencia'];
+    const bankLabel = pagoBanco?.trim() || 'Transferencia';
+    const labels = methods.map(m => {
+      if (m === 'efectivo') return 'Efectivo';
+      if (m === 'transferencia') return bankLabel;
+      if (m === 'datafono') return 'Datáfono';
+      return m;
+    });
+    return [...new Set(labels)].join(' · ');
+  }, [metodosPago, pagoBanco]);
+
+  const rawContactPhone = String(business?.whatsapp_contacto || business?.telefono || '').replace(/\D/g, '');
+  const formattedWhatsAppPhone = rawContactPhone.length === 10 && rawContactPhone.startsWith('3')
+    ? `57${rawContactPhone}`
+    : rawContactPhone;
 
   const brandColor = business?.theme_color || '#EA580C';
 
@@ -411,6 +463,54 @@ export default function StorePage() {
         </nav>
       </header>
 
+      {/* Franja informativa: horario, domicilio, recogida y métodos de pago */}
+      {!mesaParam && (
+        <section
+          aria-label="Información de envío, recogida y pagos"
+          className="border-b border-[#e7e3db] bg-white/95"
+        >
+          <div className="fluid-container py-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium ${
+                  scheduleStatus.isOpen
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                    : 'border-amber-200 bg-amber-50 text-amber-900'
+                }`}
+              >
+                <Clock size={12} className="shrink-0" />
+                <span>{scheduleStatus.message}</span>
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#e1ddd5] bg-[#faf9f6] px-2.5 py-1 font-semibold text-slate-800 hover:border-slate-400 hover:bg-[#f2f0eb] transition-colors cursor-pointer"
+                title="Ver detalles de envío y realizar pedido"
+              >
+                <Truck size={12} className="shrink-0" style={{ color: brandColor }} />
+                <span>{deliverySummary}</span>
+              </button>
+
+              <span
+                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#e1ddd5] bg-[#faf9f6] px-2.5 py-1 font-medium text-slate-700"
+                title={business.direccion ? `Recogida en tienda: ${business.direccion}` : 'Recogida en tienda disponible'}
+              >
+                <Store size={12} className="shrink-0 text-slate-500" />
+                <span className="truncate">
+                  Recogida en tienda{business.direccion ? ` · ${business.direccion}` : ''}
+                </span>
+              </span>
+
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e1ddd5] bg-[#faf9f6] px-2.5 py-1 font-medium text-slate-700">
+                <CreditCard size={12} className="shrink-0 text-slate-500" />
+                <span>{paymentSummary}</span>
+              </span>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Franja de Servicio en Mesa (Carta Digital) */}
       {mesaParam && (
         <aside
@@ -462,7 +562,9 @@ export default function StorePage() {
               </div>
               <h3 className="text-sm font-semibold text-slate-800">No encontramos productos</h3>
               <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
-                No hay productos que coincidan con &quot;{searchTerm}&quot; en esta categoría.
+                {searchTerm.trim()
+                  ? `No hay productos que coincidan con "${searchTerm.trim()}"${currentCategory !== 'Todos' ? ` en ${currentCategory}` : ''}.`
+                  : 'Esta tienda aún no tiene productos disponibles en esta categoría.'}
               </p>
               <button
                 onClick={() => { setSearchTerm(''); setCurrentCategory('Todos'); }}
@@ -473,11 +575,10 @@ export default function StorePage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-3">
-              {visible.map((p, i) => (
+              {visible.map((p) => (
                 <ProductCard
                   key={p.id}
                   product={p}
-                  index={i}
                   isStoreOpen={scheduleStatus.isOpen}
                   storeClosedMessage={scheduleStatus.message}
                   isTableMode={Boolean(mesaParam)}
@@ -493,15 +594,17 @@ export default function StorePage() {
                 <MessageCircle size={15} className="text-emerald-600 shrink-0" />
                 <span>Pedido directo a la tienda · Entrega o recogida según disponibilidad</span>
               </div>
-              <a
-                href={`https://wa.me/${business?.whatsapp_contacto || business?.telefono || '573143243707'}`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
-              >
-                <Phone size={13} />
-                Preguntar
-              </a>
+              {formattedWhatsAppPhone && (
+                <a
+                  href={`https://wa.me/${formattedWhatsAppPhone}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                >
+                  <Phone size={13} />
+                  Preguntar
+                </a>
+              )}
             </div>
           )}
         </div>
@@ -558,11 +661,11 @@ export default function StorePage() {
 
       {/* Drawer exclusivo para pedidos a domicilio o recogida */}
       {!mesaParam && (
-        <OrderDrawer 
-          isOpen={drawerOpen} 
-          onClose={() => setDrawerOpen(false)} 
-          scheduleStatus={scheduleStatus} 
-          tableNumber=""
+        <OrderDrawer
+          isOpen={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          scheduleStatus={scheduleStatus}
+          tableNumber={mesaParam}
         />
       )}
     </div>

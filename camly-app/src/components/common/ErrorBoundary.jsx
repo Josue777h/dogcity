@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { reloadWithFreshCache } from '../../lib/utils';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -11,12 +12,18 @@ export default class ErrorBoundary extends React.Component {
     return { hasError: true, error };
   }
 
+  componentDidUpdate(prevProps) {
+    if (this.props.resetKey !== prevProps.resetKey && this.state.hasError) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary atrapó un error no controlado:', error, errorInfo);
   }
 
-  handleReload = () => {
-    window.location.reload();
+  handleReload = async () => {
+    await reloadWithFreshCache();
   };
 
   handleReset = () => {
@@ -31,9 +38,11 @@ export default class ErrorBoundary extends React.Component {
           : this.props.fallback;
       }
 
+      const errorMsg = String(this.state.error?.message || '').toLowerCase();
       const isChunkError =
-        this.state.error?.message?.includes?.('dynamically imported module') ||
-        this.state.error?.message?.includes?.('Loading chunk');
+        errorMsg.includes('dynamically imported module') ||
+        errorMsg.includes('loading chunk') ||
+        errorMsg.includes('importing a module script failed');
 
       return (
         <div className="min-h-[50vh] flex items-center justify-center p-6">
@@ -47,7 +56,7 @@ export default class ErrorBoundary extends React.Component {
               </h2>
               <p className="text-xs text-gray-500 mt-1">
                 {isChunkError
-                  ? 'La aplicación se actualizó. Por favor recarga para ver la versión más reciente.'
+                  ? 'La aplicación se actualizó. Recarga con caché limpio o reintenta para continuar.'
                   : 'Ocurrió un error inesperado al cargar este elemento. Puedes intentar recargar.'}
               </p>
             </div>
@@ -60,15 +69,13 @@ export default class ErrorBoundary extends React.Component {
                 <RefreshCw size={14} />
                 <span>Recargar página</span>
               </button>
-              {this.props.allowReset && (
-                <button
-                  type="button"
-                  onClick={this.handleReset}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Reintentar
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={this.handleReset}
+                className="px-4 py-2 text-xs font-semibold rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Reintentar
+              </button>
             </div>
           </div>
         </div>

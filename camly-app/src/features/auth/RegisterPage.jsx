@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Store, Mail, Lock, Eye, EyeOff, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import {
+  Store, Mail, Lock, Eye, EyeOff, ArrowLeft, CheckCircle2,
+  Utensils, ShoppingBag, Sparkles, CakeSlice, Package
+} from 'lucide-react';
 import { registerBusiness } from '../../lib/supabase';
+import { BUSINESS_VERTICALS, getVerticalById } from '../../lib/modules';
 import { useToastStore, useAuthStore, useBusinessStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
 import SEO from '../../components/common/SEO';
@@ -10,6 +14,15 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+
+const VERTICAL_ICONS = {
+  food: Utensils,
+  desserts: CakeSlice,
+  fashion: ShoppingBag,
+  perfumes: Sparkles,
+  retail: Package,
+  other: Store,
+};
 
 export default function RegisterPage() {
   const navigate   = useNavigate();
@@ -29,6 +42,7 @@ export default function RegisterPage() {
     businessName: '',
     storeSlug: requestedSlug,
     phone: '',
+    verticalId: 'food',
     email: '',
     password: '',
   });
@@ -43,12 +57,33 @@ export default function RegisterPage() {
   };
   const normalizedSlug = slugify(form.storeSlug || form.businessName);
   const isColombianMobile = /^3\d{9}$/.test(form.phone);
+  const selectedVertical = getVerticalById(form.verticalId);
 
   const passwordStrength = getPasswordStrength(form.password);
   const isPasswordValid = form.password.length >= 8;
 
+  const handleStep1Continue = () => {
+    if (!form.ownerName.trim()) {
+      addToast('Escribe tu nombre para continuar.', 'warning');
+      return;
+    }
+    if (!form.businessName.trim() || !normalizedSlug) {
+      addToast('Escribe un nombre válido para tu negocio.', 'warning');
+      return;
+    }
+    if (!isColombianMobile) {
+      addToast('Ingresa un celular colombiano de 10 dígitos que comience por 3.', 'warning');
+      return;
+    }
+    setStep(2);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (step === 1) {
+      handleStep1Continue();
+      return;
+    }
     if (!form.ownerName.trim() || !form.businessName.trim() || !isColombianMobile || !normalizedSlug || !form.email.trim() || !isPasswordValid || !termsAccepted || !privacyAccepted) {
       addToast('Por favor completa todos los campos (contraseña mínimo 8 caracteres).', 'warning');
       return;
@@ -61,6 +96,8 @@ export default function RegisterPage() {
         ownerName: form.ownerName.trim(),
         phone: `57${form.phone}`,
         storeSlug: normalizedSlug,
+        verticalId: form.verticalId,
+        businessType: selectedVertical.businessType,
         legalAcceptances: {
           acceptedAt,
           termsVersion: '2026-10-20-v1.1',
@@ -93,7 +130,7 @@ export default function RegisterPage() {
         noindex={false}
       />
 
-      <aside className="relative hidden min-h-screen overflow-hidden bg-slate-950 px-12 py-14 text-white lg:flex lg:flex-col lg:justify-between xl:px-20">
+      <aside className="relative hidden overflow-hidden bg-slate-950 px-12 py-14 text-white lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:justify-between xl:px-20">
         <Link to="/" className="inline-flex w-fit rounded-lg"><SaaSLogo className="h-12 text-white" /></Link>
         <div className="relative z-10 max-w-xl pb-12">
           <span className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-200">Empieza hoy</span>
@@ -129,7 +166,7 @@ export default function RegisterPage() {
         <Card className="w-full border border-slate-200 p-6 sm:p-8 shadow-md">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="mb-2 flex items-center gap-2" aria-label={`Paso ${step} de 2`}>
-              {[1, 2].map(number => <span key={number} className={`h-1.5 flex-1 rounded-full ${step >= number ? 'bg-brand' : 'bg-slate-200'}`} />)}
+              {[1, 2].map(number => <span key={number} className={`h-1.5 flex-1 rounded-full transition-colors ${step >= number ? 'bg-brand' : 'bg-slate-200'}`} />)}
               <span className="ml-1 text-xs font-medium text-slate-500">Paso {step} de 2</span>
             </div>
             {step === 1 && <>
@@ -156,6 +193,37 @@ export default function RegisterPage() {
                 {form.businessName.trim().length >= 2 && (
                   <CheckCircle2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600 pointer-events-none" />
                 )}
+              </div>
+              <p className="mt-1.5 text-xs text-slate-500">
+                Enlace de tu tienda: <span className="font-mono font-medium text-slate-700">negu.pro/{normalizedSlug || 'tu-negocio'}</span>
+              </p>
+            </div>
+
+            <div>
+              <span className="block text-sm font-medium text-slate-700 mb-1.5">
+                Tipo de negocio
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {BUSINESS_VERTICALS.map((v) => {
+                  const VIcon = VERTICAL_ICONS[v.id] || Package;
+                  const isSelected = form.verticalId === v.id;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setForm(current => ({ ...current, verticalId: v.id }))}
+                      aria-pressed={isSelected}
+                      className={`min-h-11 px-3 py-2 rounded-lg border text-left text-xs sm:text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'border-[#0284C7] bg-sky-50/70 text-[#0369A1] ring-1 ring-[#0284C7]/20'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <VIcon size={15} className={`shrink-0 ${isSelected ? 'text-[#0284C7]' : 'text-slate-400'}`} />
+                      <span className="truncate">{v.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -190,21 +258,7 @@ export default function RegisterPage() {
               <p id="reg-phone-hint" className="mt-1.5 text-xs text-slate-500">Ingresa los 10 dígitos del celular, sin repetir el +57.</p>
             </div>
 
-            <Button type="button" fullWidth onClick={() => {
-              if (!form.ownerName.trim()) {
-                addToast('Escribe tu nombre para continuar.', 'warning');
-                return;
-              }
-              if (!form.businessName.trim() || !normalizedSlug) {
-                addToast('Escribe un nombre válido para tu negocio.', 'warning');
-                return;
-              }
-              if (!isColombianMobile) {
-                addToast('Ingresa un celular colombiano de 10 dígitos que comience por 3.', 'warning');
-                return;
-              }
-              setStep(2);
-            }}>Continuar</Button>
+            <Button type="button" fullWidth onClick={handleStep1Continue}>Continuar</Button>
             </>}
 
             {step === 2 && <>
@@ -322,7 +376,7 @@ export default function RegisterPage() {
             <Button type="submit" disabled={loading || !termsAccepted || !privacyAccepted} fullWidth>
               {loading ? <><LoadingSpinner size={16} /><span>Creando tu tienda...</span></> : <span>Crear mi tienda</span>}
             </Button>
-            <Button type="button" variant="ghost" fullWidth onClick={() => setStep(1)}>Volver al negocio</Button>
+            <Button type="button" variant="ghost" fullWidth onClick={() => setStep(1)}>Volver</Button>
             </>}
           </form>
 

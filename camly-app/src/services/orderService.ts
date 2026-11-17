@@ -1,5 +1,4 @@
 import { getSupabase } from '../lib/supabase';
-import { formatMoney, formatWhatsAppMessage } from '../lib/utils';
 import type { Order } from '../types/order';
 
 export const OrderService = {
@@ -16,21 +15,6 @@ export const OrderService = {
     }).eq('id', orderId).eq('status', 'COTIZACION_PENDIENTE').select('*, negocios(*)').single();
     if (error) throw error;
     return data as Order;
-  },
-
-  buildQuoteWhatsAppUrl(order: Order): string {
-    const phone = (order.telefono || '').replace(/\D/g, '');
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://negu.pro';
-    const trackingUrl = `${origin}/tracking/${order.id}?token=${encodeURIComponent(order.token)}`;
-    const fee = Number(order.delivery_fee || order.domicilio_costo || 0);
-    const subtotal = Number(order.subtotal_amount || 0);
-    const total = Number(order.total_amount || order.total || 0);
-    const storeName = order.negocios?.nombre_visible || 'la tienda';
-    const message = formatWhatsAppMessage(`ACTUALIZACIÓN DEL PEDIDO #${order.id} | ${storeName}`, [
-      { title: 'Envío', lines: [`Costo de domicilio: ${formatMoney(fee)}`, ...(subtotal ? [`Subtotal: ${formatMoney(subtotal)}`] : []), `Total: ${formatMoney(total)}`] },
-      { title: 'Confirmación', lines: ['Revisa el detalle y confirma el pedido desde este enlace:', trackingUrl] },
-    ]);
-    return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   },
 
   async merchantCancelOrder(orderId: number, reason: string): Promise<void> {

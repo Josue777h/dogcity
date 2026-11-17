@@ -1,100 +1,38 @@
-# Sistema de Pedidos para Restaurante
+# NEGU — Plataforma SaaS Multi-Tenant de Catálogos Digitales y Pedidos
 
-Aplicación web de pedidos por WhatsApp para restaurante, conectada 100% con Supabase.
+Aplicación web principal de **NEGU** ubicada en [`camly-app/`](./camly-app), construida con React 19, Vite, Tailwind CSS v4, Zustand y Supabase.
 
-## Tecnologías
+## Stack Tecnológico
 
-- Frontend: HTML, CSS y JavaScript puro
-- Base de datos online: Supabase (tabla `productos`)
-- Cliente de datos: `@supabase/supabase-js` desde CDN
+- **Frontend:** React 19, Vite 8 (`vite-plugin-pwa`), React Router, Tailwind CSS v4, Zustand, Leaflet, Recharts, Lucide Icons.
+- **Backend y Base de Datos:** Supabase (PostgreSQL, Auth, Storage, RPC, Realtime y políticas RLS en [`camly-app/supabase/schema.sql`](./camly-app/supabase/schema.sql)).
+- **Despliegue:** Netlify ([`netlify.toml`](./netlify.toml)).
 
-## Archivos principales
+## Estructura del Proyecto
 
-- `index.html`: tienda para clientes
-- `admin.html`: panel para el dueño del restaurante
-- `app.js`: lógica de frontend para tienda y admin
-- `styles.css`: estilos de la aplicación
+- `camly-app/src/features/marketing`: página principal y rutas SEO públicas.
+- `camly-app/src/features/auth`: registro de negocios, inicio de sesión, verificación y recuperación de contraseña.
+- `camly-app/src/features/store`: catálogo público por slug (`/:slug`), tarjetas de producto, carrito con domicilio/recogida y seguimiento en vivo (`/tracking/:id`).
+- `camly-app/src/features/admin`: dashboard, pedidos en vivo, comandero de mesas, productos, categorías, domiciliarios, ingresos y configuración.
+- `camly-app/src/lib` y `camly-app/src/services`: cliente de Supabase, impresión térmica Bluetooth, utilidades y servicio de pedidos.
+- `camly-app/ESPECIFICACION.md` y `camly-app/PROJECT_SPEC.md`: documentación técnica del sistema.
 
-## Configuración Supabase
+## Comandos de Desarrollo
 
-En `index.html` y `admin.html` define:
+Ejecuta los comandos dentro de `camly-app/`:
 
-```html
-<script>
-  window.SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
-  window.SUPABASE_ANON_KEY = "TU_ANON_KEY";
-</script>
+```bash
+cd camly-app
+npm install --legacy-peer-deps
+npm run dev
+npm run lint
+npm run build
 ```
 
-La tabla `productos` debe tener al menos estas columnas:
+## Variables de Entorno
 
-- `id` (integer o bigint, PK)
-- `name` (text)
-- `price` (numeric/int)
-- `description` (text)
-- `unit` (text)
-- `image` (text)
+Define en `camly-app/.env.local` (o en las variables del entorno de Netlify):
 
-## Autenticación Admin
-
-El panel `admin.html` ahora usa `Supabase Auth` con correo y contraseña.
-
-Recomendado:
-
-1. Crea un usuario administrador en `Authentication > Users`
-2. Inicia sesión en `admin.html` con ese correo y contraseña
-3. Protege la tabla `productos` con RLS
-
-SQL sugerido en Supabase:
-
-```sql
-alter table public.productos enable row level security;
-
-create policy "Productos visibles para todos"
-on public.productos
-for select
-to anon, authenticated
-using (true);
-
-create policy "Solo admin autenticado puede insertar"
-on public.productos
-for insert
-to authenticated
-with check (true);
-
-create policy "Solo admin autenticado puede actualizar"
-on public.productos
-for update
-to authenticated
-using (true)
-with check (true);
-
-create policy "Solo admin autenticado puede eliminar"
-on public.productos
-for delete
-to authenticated
-using (true);
-```
-
-Si quieres seguridad más fuerte, el siguiente paso es restringir por email o por rol, no solo por `authenticated`.
-
-## Cómo ejecutar
-
-No necesitas Flask ni backend local.
-
-1. Abre `index.html` para la tienda
-2. Abre `admin.html` para el panel admin
-3. Inicia sesión con tu usuario admin de Supabase
-4. Verifica que puedes crear/editar/eliminar productos en Supabase
-
-## Funcionalidades
-
-- Cliente:
-  - consulta productos desde Supabase
-  - selecciona cantidades y genera pedido por WhatsApp
-  - incluye comentarios y ubicación en el mensaje
-- Admin:
-  - crear productos
-  - actualizar productos
-  - eliminar productos
-  - sembrar automáticamente el menú base de DogCity si la tabla `productos` está vacía
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_SUPABASE_PRODUCT_BUCKET` (opcional, por defecto `product-images`)

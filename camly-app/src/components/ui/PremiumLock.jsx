@@ -3,49 +3,46 @@ import { useBusinessStore } from '../../stores';
 
 export default function PremiumLock({ children, featureName, compact = false }) {
   const isPro = useBusinessStore((s) => s.isPro);
-  const subscription = useBusinessStore((s) => s.subscription);
 
-  // If the user has a valid PRO subscription, just render the feature normally
   if (isPro) {
     return <>{children}</>;
   }
 
-  // Handle the Upgrade action
   const handleUpgradeClick = () => {
-    // We launch a custom event to open the Billing Modal globally (or navigate)
     window.dispatchEvent(new CustomEvent('open-billing-modal'));
   };
 
   return (
-    <div className="relative group overflow-hidden rounded-[2rem]">
-      {/* The original content, blurry and disabled */}
-      <div className="opacity-40 blur-[2px] pointer-events-none select-none transition-all duration-500 group-hover:blur-[4px]">
+    <div className="relative overflow-hidden rounded-2xl">
+      <div className="opacity-40 blur-[2px] pointer-events-none select-none">
         {children}
       </div>
-      
-      {/* The overlay lock */}
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center bg-white/20 backdrop-blur-sm">
-        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-2xl text-dark mb-4 animate-bounce">
-          <Lock size={24} />
+
+      <div className="absolute inset-0 z-10 flex items-center justify-center p-4 bg-white/80 backdrop-blur-xs">
+        <div className={`w-full ${compact ? 'max-w-[260px] p-4' : 'max-w-xs p-5'} rounded-2xl border border-slate-200 bg-white text-center shadow-sm`}>
+          <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center mx-auto mb-3">
+            <Lock size={18} />
+          </div>
+
+          {!compact && (
+            <>
+              <h4 className="text-sm font-bold text-slate-950 tracking-tight">
+                Disponible en el Plan Pro
+              </h4>
+              <p className="text-xs text-slate-500 leading-relaxed mt-1 mb-4">
+                Activa {featureName} y todas las herramientas avanzadas para tu negocio.
+              </p>
+            </>
+          )}
+
+          <button
+            type="button"
+            onClick={handleUpgradeClick}
+            className="btn-primary w-full py-2.5 px-4 text-xs font-semibold rounded-xl cursor-pointer"
+          >
+            Activar Plan Pro
+          </button>
         </div>
-        
-        {!compact && (
-          <>
-             <h4 className="text-xl font-black text-dark uppercase tracking-tight leading-none mb-2">
-               FUNCIÓN PRO
-             </h4>
-             <p className="text-dark/70 text-xs font-bold leading-relaxed max-w-[200px] mb-6">
-               Desbloquea {featureName} y muchas más herramientas para escalar tu operación.
-             </p>
-          </>
-        )}
-        
-        <button 
-           onClick={handleUpgradeClick}
-           className="btn-primary !py-3 !px-6 !text-xs !bg-dark hover:!bg-brand transition-colors shadow-2xl shadow-dark/20"
-        >
-           MEJORAR PLAN
-        </button>
       </div>
     </div>
   );

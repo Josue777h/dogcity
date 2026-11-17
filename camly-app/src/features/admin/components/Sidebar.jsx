@@ -5,7 +5,7 @@ import { isModuleEnabled } from '../../../lib/modules';
 
 const MAIN_TABS = [
   { path: '/admin/dashboard',  label: 'Inicio', icon: LayoutDashboard, module: null },
-  { path: '/admin/comandero',  label: 'Comandero', icon: Utensils, module: 'orders' },
+  { path: '/admin/comandero',  label: 'Comandero', icon: Utensils, module: 'kitchen' },
   { path: '/admin/pedidos',    label: 'Pedidos en vivo', icon: ShoppingBag, module: 'orders' },
   { path: '/admin/ingresos',   label: 'Ingresos y ventas', icon: DollarSign, module: null },
   { path: '/admin/productos',  label: 'Productos', icon: Package, module: 'catalog' },

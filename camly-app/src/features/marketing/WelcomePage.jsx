@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, Package, Settings, ExternalLink } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { useAuthStore, useBusinessStore, useToastStore } from '../../stores';
 import SaaSLogo from '../../components/common/SaaSLogo';
@@ -86,11 +86,49 @@ export default function WelcomePage() {
           </div>
           </div>
           <p className="mt-4 text-sm leading-6 text-slate-600 sm:ml-[4.75rem]">
-            Tu negocio ya está creado. Entra al panel para agregar tu primer producto y dejar todo listo.
+            Tu negocio ya está listo. Entra al panel para cargar tu catálogo y configurar tus horarios o envíos.
           </p>
 
-          <Link to="/admin" className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950 sm:ml-[4.75rem] sm:w-[calc(100%-4.75rem)]">
-            Ir al panel <ArrowRight size={17} />
+          <div className="mt-5 space-y-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:ml-[4.75rem]">
+            <p className="px-1 text-xs font-bold uppercase tracking-wider text-slate-500">Primeros pasos</p>
+            <Link
+              to="/admin/productos"
+              className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <span className="flex items-center gap-2.5 min-w-0">
+                <Package size={16} className="shrink-0 text-brand" />
+                <span className="truncate">1. Agregar mi primer producto</span>
+              </span>
+              <ArrowRight size={15} className="shrink-0 text-slate-400" />
+            </Link>
+            <Link
+              to="/admin/configuracion"
+              className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <span className="flex items-center gap-2.5 min-w-0">
+                <Settings size={16} className="shrink-0 text-brand" />
+                <span className="truncate">2. Configurar tarifas de envío y medios de pago</span>
+              </span>
+              <ArrowRight size={15} className="shrink-0 text-slate-400" />
+            </Link>
+            {business?.nombre && (
+              <a
+                href={`/${business.nombre}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-slate-50"
+              >
+                <span className="flex items-center gap-2.5 min-w-0">
+                  <ExternalLink size={16} className="shrink-0 text-brand" />
+                  <span className="truncate">3. Ver mi catálogo público</span>
+                </span>
+                <ArrowRight size={15} className="shrink-0 text-slate-400" />
+              </a>
+            )}
+          </div>
+
+          <Link to="/admin/dashboard" className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand sm:ml-[4.75rem] sm:w-[calc(100%-4.75rem)]">
+            Ir al panel de administración <ArrowRight size={17} />
           </Link>
           </div>
         </div>

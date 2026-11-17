@@ -6,6 +6,7 @@ import { useToastStore, useBusinessStore } from '../../../stores';
 import PremiumLock from '../../../components/ui/PremiumLock';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
+import { isModuleEnabled } from '../../../lib/modules';
 
 const SUGGESTED_CATEGORIES = [
   'Hamburguesas',
@@ -22,6 +23,7 @@ const SUGGESTED_CATEGORIES = [
 export default function CategoriesView(props) {
   const outletCtx = useOutletContext() || {};
   const businessId = props.businessId ?? outletCtx.business?.id;
+  const hasKitchen = isModuleEnabled(outletCtx.business, 'kitchen');
 
   const { categories, setCategories, products: storeProducts } = useBusinessStore();
   const products = outletCtx.products?.length ? outletCtx.products : storeProducts || [];
@@ -175,7 +177,7 @@ export default function CategoriesView(props) {
           className={`w-full sm:w-auto py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer ${
             isAdding
               ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
-              : 'bg-slate-900 hover:bg-black text-white shadow-2xs'
+              : 'btn-primary'
           }`}
         >
           {isAdding ? (
@@ -220,7 +222,7 @@ export default function CategoriesView(props) {
                 <button
                   type="submit"
                   disabled={loading || !newCatName.trim()}
-                  className="py-2.5 px-5 rounded-xl bg-slate-900 hover:bg-black disabled:opacity-50 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer"
+                  className="btn-primary py-2.5 px-5 rounded-xl text-xs sm:text-sm font-bold shrink-0 cursor-pointer"
                 >
                   {loading ? <LoadingSpinner size={15} /> : <><Check size={15} /> Crear categoría</>}
                 </button>
@@ -240,7 +242,7 @@ export default function CategoriesView(props) {
                         onClick={() => setNewCatName(sug)}
                         className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
                           newCatName.trim().toLowerCase() === sug.toLowerCase()
-                            ? 'bg-slate-900 text-white border-slate-900'
+                            ? 'bg-brand text-white border-brand'
                             : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                         }`}
                       >
@@ -312,7 +314,7 @@ export default function CategoriesView(props) {
                         <button
                           type="button"
                           onClick={() => handleUpdate(cat.id)}
-                          className="w-10 h-10 rounded-xl bg-slate-900 hover:bg-black text-white flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+                          className="w-10 h-10 rounded-xl bg-brand hover:bg-brand-dark text-white flex items-center justify-center shrink-0 transition-colors cursor-pointer"
                           title="Guardar cambios"
                           aria-label="Guardar cambios"
                         >
@@ -337,7 +339,7 @@ export default function CategoriesView(props) {
                           {cat.nombre}
                         </h4>
                         <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shrink-0">
-                          {count} {count === 1 ? 'plato' : 'platos'}
+                          {count} {hasKitchen ? (count === 1 ? 'plato' : 'platos') : (count === 1 ? 'producto' : 'productos')}
                         </span>
                       </div>
 
@@ -347,7 +349,7 @@ export default function CategoriesView(props) {
                           to="/admin/productos"
                           className="min-h-10 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-950 text-xs font-bold inline-flex items-center gap-1 transition-colors shrink-0"
                         >
-                          <span>Ver platos →</span>
+                          <span>{hasKitchen ? 'Ver platos →' : 'Ver productos →'}</span>
                         </Link>
 
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -391,7 +393,7 @@ export default function CategoriesView(props) {
                 <button
                   type="button"
                   onClick={() => setIsAdding(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-colors cursor-pointer"
+                  className="btn-primary px-4 py-2 rounded-xl text-xs font-bold cursor-pointer"
                 >
                   <Plus size={14} />
                   <span>Crear primera categoría</span>

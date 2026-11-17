@@ -4,13 +4,14 @@ import {
   Package, CheckCircle2, Clock, Truck,
   AlertCircle, ArrowLeft, Store, MessageCircle,
   MapPin, ShoppingCart, CreditCard, Lock,
-  X, RotateCcw, Copy, Check, Upload, FileText,
-  ExternalLink, Ban, ChevronRight, Utensils
+  X, RotateCcw, Copy, Check, Upload,
+  ExternalLink, Ban, Utensils
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { formatMoney, getOrderSubtotal } from '../../lib/utils';
 import { OrderService } from '../../services/orderService';
 import { getStatusCopy, getStepperSteps } from '../../lib/status-labels';
+import { useToastStore } from '../../stores';
 import SEO from '../../components/common/SEO';
 import PageLoading from '../../components/common/PageLoading';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -59,7 +60,8 @@ export default function TrackingPage() {
   const [searchParams] = useSearchParams();
   const id = routeId || searchParams.get('id') || searchParams.get('order');
   const token = searchParams.get('token');
-  const isDemo = searchParams.get('store') === 'demo' || !id;
+  const isDemo = searchParams.get('store') === 'demo';
+  const addToast = useToastStore(s => s.addToast);
 
   const [order, setOrder] = useState(null);
   const [loadError, setLoadError] = useState('');
@@ -78,14 +80,15 @@ export default function TrackingPage() {
     async function loadOrder() {
       setLoading(true);
       setLoadError('');
-      if (!id || searchParams.get('store') === 'demo') {
+      if (isDemo) {
         setOrder(DEMO_ORDER);
         setLoading(false);
         return;
       }
 
       try {
-        if (!token && searchParams.get('store') !== 'demo') throw new Error('El enlace no contiene el token de seguimiento. Solicita al comercio un enlace nuevo.');
+        if (!id) throw new Error('Falta el número de pedido en el enlace. Abre el enlace directo enviado al finalizar tu compra.');
+        if (!token) throw new Error('El enlace no contiene el token de seguimiento. Solicita al comercio un enlace nuevo.');
         const { data: resultData, error } = await getSupabase().rpc('customer_get_order', {
           p_order_id: Number(id), p_token: token,
         });
@@ -114,35 +117,45 @@ export default function TrackingPage() {
     }, 5000) : null;
 
     return () => { if (poll) window.clearInterval(poll); };
-  }, [id, token, isDemo, retryCount, searchParams]);
+  }, [id, token, isDemo, retryCount]);
 
-  const currentOrder = order || DEMO_ORDER;
-  const isMesa = currentOrder.delivery_type === 'dine_in' ||
-    currentOrder.entrega_metodo === 'mesa' ||
-    (typeof currentOrder.direccion === 'string' && /mesa/i.test(currentOrder.direccion)) ||
-    Boolean(currentOrder.mesa || currentOrder.table_number);
-  const deliveryMethod = isMesa ? 'mesa' : (currentOrder.delivery_type === 'pickup' || currentOrder.entrega_metodo === 'recogida' ? 'pickup' : 'envio');
-  const rawStatus = (currentOrder.status || currentOrder.estado || '').toString();
+  const currentOrder = isDemo ? (order || DEMO_ORDER) : order;
+  const effectiveToken = currentOrder?.token || token || '';
+  const isMesa = Boolean(
+    currentOrder?.delivery_type === 'dine_in' ||
+    currentOrder?.entrega_metodo === 'mesa' ||
+    (typeof currentOrder?.direccion === 'string' && /mesa/i.test(currentOrder.direccion)) ||
+    currentOrder?.mesa ||
+    currentOrder?.table_number
+  );
+  const deliveryMethod = isMesa ? 'mesa' : (currentOrder?.delivery_type === 'pickup' || currentOrder?.entrega_metodo === 'recogida' ? 'pickup' : 'envio');
+  const rawStatus = (currentOrder?.status || currentOrder?.estado || '').toString();
   const statusStr = (deliveryMethod === 'pickup' || deliveryMethod === 'mesa') && ['EN_CAMINO', 'en_camino', 'enviado'].includes(rawStatus)
     ? 'LISTO_PARA_RECOGER'
     : rawStatus;
-  const business = currentOrder.negocios || DEMO_ORDER.negocios;
-  const items = typeof currentOrder.items === 'string' ? JSON.parse(currentOrder.items) : (currentOrder.items || currentOrder.productos || []);
+  const business = isDemo ? (currentOrder?.negocios || DEMO_ORDER.negocios) : (currentOrder?.negocios || {});
+  let items = [];
+  if (typeof currentOrder?.items === 'string') {
+    try { items = JSON.parse(currentOrder.items); } catch { items = []; }
+  } else {
+    items = currentOrder?.items || currentOrder?.productos || [];
+  }
   const brandColor = business?.theme_color || '#EA580C';
+  const supportPhone = (business?.whatsapp_contacto || business?.telefono || (isDemo ? '573143243707' : '')).replace(/\D/g, '');
 
-  const subtotal = getOrderSubtotal(currentOrder);
-  const deliveryFee = Number(currentOrder.delivery_fee || currentOrder.domicilio_costo || 0);
-  const totalAmount = Number(currentOrder.total_amount || currentOrder.total || (subtotal + deliveryFee));
+  const subtotal = currentOrder ? getOrderSubtotal(currentOrder) : 0;
+  const deliveryFee = Number(currentOrder?.delivery_fee || currentOrder?.domicilio_costo || 0);
+  const totalAmount = Number(currentOrder?.total_amount || currentOrder?.total || (subtotal + deliveryFee));
 
   useEffect(() => {
-    const path = currentOrder.payment_receipt_url;
+    const path = currentOrder?.payment_receipt_url;
     if (!path || path.startsWith('http') || isDemo) return;
     OrderService.getReceiptUrl(path).then(setReceiptDisplayUrl).catch(console.error);
-  }, [currentOrder.payment_receipt_url, isDemo]);
+  }, [currentOrder?.payment_receipt_url, isDemo]);
 
   // Ventana de gracia de 60 segundos calculada desde confirmed_at o momento actual
   useEffect(() => {
-    if (statusStr !== 'CONFIRMADO_GRACIA') return;
+    if (statusStr !== 'CONFIRMADO_GRACIA' || !currentOrder) return;
 
     const GRACE_PERIOD_SECONDS = 60;
 
@@ -172,8 +185,8 @@ export default function TrackingPage() {
       if (rem <= 0 && !advanceInFlight && Date.now() >= nextAdvanceAttemptAt) {
         advanceInFlight = true;
         try {
-          if (!isDemo && currentOrder.id && currentOrder.token) {
-            await OrderService.advanceToPreparation(currentOrder.id, currentOrder.token);
+          if (!isDemo && currentOrder.id && effectiveToken) {
+            await OrderService.advanceToPreparation(currentOrder.id, effectiveToken);
           }
           setOrder(prev => prev ? { ...prev, status: 'EN_PREPARACION', estado: 'EN_PREPARACION' } : prev);
         } catch (err) {
@@ -191,14 +204,18 @@ export default function TrackingPage() {
     return () => {
       window.clearInterval(timer);
     };
-  }, [statusStr, currentOrder.confirmed_at, currentOrder.id, currentOrder.token, isDemo]);
+  }, [statusStr, currentOrder?.confirmed_at, currentOrder?.updated_at, currentOrder?.created_at, currentOrder?.id, effectiveToken, isDemo]);
 
   // Manejo de Aceptar Cotización
   const handleAcceptQuote = async () => {
     setActionLoading(true);
     try {
-      if (!isDemo && currentOrder.id && currentOrder.token) {
-        const result = await OrderService.customerAcceptQuote(currentOrder.id, currentOrder.token);
+      if (!isDemo) {
+        if (!currentOrder?.id || !effectiveToken) {
+          addToast('No pudimos validar el token de tu pedido.', 'error');
+          return;
+        }
+        const result = await OrderService.customerAcceptQuote(currentOrder.id, effectiveToken);
         setGraceSeconds(60);
         setOrder((prev) => ({
           ...prev,
@@ -217,7 +234,7 @@ export default function TrackingPage() {
       }));
     } catch (err) {
       console.error(err);
-      alert(err.message || 'No fue posible confirmar la orden.');
+      addToast(err.message || 'No fue posible confirmar la orden.', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -227,8 +244,12 @@ export default function TrackingPage() {
   const handleRejectOrCancel = async (reason = 'Cliente rechazó costo de envío') => {
     setActionLoading(true);
     try {
-      if (!isDemo && currentOrder.id && currentOrder.token) {
-        await OrderService.customerCancelOrder(currentOrder.id, currentOrder.token, reason);
+      if (!isDemo) {
+        if (!currentOrder?.id || !effectiveToken) {
+          addToast('No pudimos validar el token de tu pedido.', 'error');
+          return;
+        }
+        await OrderService.customerCancelOrder(currentOrder.id, effectiveToken, reason);
       }
       setOrder((prev) => ({
         ...prev,
@@ -240,7 +261,7 @@ export default function TrackingPage() {
       setShowCancelModal(false);
     } catch (err) {
       console.error(err);
-      alert(err.message || 'Error al cancelar la orden.');
+      addToast(err.message || 'Error al cancelar la orden.', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -250,10 +271,14 @@ export default function TrackingPage() {
   const handleUndoGrace = async () => {
     setActionLoading(true);
     try {
-      if (!isDemo && currentOrder.id && currentOrder.token) {
+      if (!isDemo) {
+        if (!currentOrder?.id || !effectiveToken) {
+          addToast('No pudimos validar el token de tu pedido.', 'error');
+          return;
+        }
         await OrderService.customerCancelOrder(
           currentOrder.id,
-          currentOrder.token,
+          effectiveToken,
           'Cancelado por el cliente'
         );
       }
@@ -266,7 +291,7 @@ export default function TrackingPage() {
       }));
     } catch (err) {
       console.error(err);
-      alert(err.message || 'Error al deshacer.');
+      addToast(err.message || 'Error al deshacer.', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -288,8 +313,12 @@ export default function TrackingPage() {
     setReceiptUploading(true);
     try {
       let receiptUrl = '';
-      if (!isDemo && currentOrder.id && currentOrder.token) {
-        const storagePath = await OrderService.uploadPaymentReceipt(currentOrder.id, currentOrder.token, file);
+      if (!isDemo) {
+        if (!currentOrder?.id || !effectiveToken) {
+          addToast('No pudimos validar el token de tu pedido.', 'error');
+          return;
+        }
+        const storagePath = await OrderService.uploadPaymentReceipt(currentOrder.id, effectiveToken, file);
         setReceiptDisplayUrl(await OrderService.getReceiptUrl(storagePath));
         receiptUrl = storagePath;
       } else {
@@ -303,7 +332,7 @@ export default function TrackingPage() {
       }));
     } catch (err) {
       console.error(err);
-      alert('Error al subir el comprobante. Por favor intenta de nuevo.');
+      addToast(err?.message || 'Error al subir el comprobante. Por favor intenta de nuevo.', 'error');
     } finally {
       setReceiptUploading(false);
     }
@@ -313,8 +342,8 @@ export default function TrackingPage() {
     return <PageLoading label="Cargando pedido" />;
   }
 
-  if (loadError && !order) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6"><div className="max-w-sm rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm"><AlertCircle className="mx-auto mb-3 text-amber-600" /><h1 className="font-bold text-gray-900">No pudimos abrir el seguimiento</h1><p className="mt-2 text-sm text-gray-600">{loadError}</p><button type="button" onClick={() => setRetryCount(count => count + 1)} className="mt-4 inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Reintentar</button></div></div>;
+  if (!currentOrder || (loadError && !order)) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6"><div className="max-w-sm rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm"><AlertCircle className="mx-auto mb-3 text-amber-600" /><h1 className="font-bold text-gray-900">No pudimos abrir el seguimiento</h1><p className="mt-2 text-sm text-gray-600">{loadError || 'El enlace de seguimiento está incompleto o el pedido no existe.'}</p><button type="button" onClick={() => setRetryCount(count => count + 1)} className="mt-4 inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Reintentar</button></div></div>;
   }
 
   // Cálculo de progreso del stepper
@@ -598,15 +627,17 @@ export default function TrackingPage() {
                   <Lock size={14} className="text-gray-500 shrink-0 mt-0.5" />
                   <span>{statusCopy.cancelLockedNotice}</span>
                 </p>
-                <a
-                  href={`https://wa.me/${business?.whatsapp_contacto || business?.telefono || '573143243707'}?text=${encodeURIComponent(`Hola, tengo una consulta sobre mi orden #${currentOrder.id}`)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-2xs transition-colors"
-                >
-                  <MessageCircle size={14} />
-                  <span>WhatsApp directo al comercio</span>
-                </a>
+                {supportPhone && (
+                  <a
+                    href={`https://wa.me/${supportPhone}?text=${encodeURIComponent(`Hola, tengo una consulta sobre mi orden #${currentOrder.id}`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-2xs transition-colors"
+                  >
+                    <MessageCircle size={14} />
+                    <span>WhatsApp directo al comercio</span>
+                  </a>
+                )}
               </div>
             )}
           </div>
@@ -799,21 +830,23 @@ export default function TrackingPage() {
         </div>
 
         {/* ── SOPORTE POR WHATSAPP ── */}
-        <div className="card p-4 bg-white shadow-xs border-gray-200/80 flex items-center justify-between gap-3">
-          <div className="text-xs">
-            <p className="font-bold text-gray-900">¿Tienes dudas o necesitas ayuda?</p>
-            <p className="text-gray-500">Contacta a la tienda directamente.</p>
+        {supportPhone && (
+          <div className="card p-4 bg-white shadow-xs border-gray-200/80 flex items-center justify-between gap-3">
+            <div className="text-xs">
+              <p className="font-bold text-gray-900">¿Tienes dudas o necesitas ayuda?</p>
+              <p className="text-gray-500">Contacta a la tienda directamente.</p>
+            </div>
+            <a
+              href={`https://wa.me/${supportPhone}?text=${encodeURIComponent(`Hola, estoy siguiendo mi orden #${currentOrder.id} y tengo una duda.`)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-whatsapp py-2 px-3 text-xs font-semibold shrink-0"
+            >
+              <MessageCircle size={15} />
+              <span>Chat de soporte</span>
+            </a>
           </div>
-          <a
-            href={`https://wa.me/${business?.whatsapp_contacto || business?.telefono || '573143243707'}?text=${encodeURIComponent(`Hola, estoy siguiendo mi orden #${currentOrder.id} y tengo una duda.`)}`}
-            target="_blank"
-            rel="noreferrer"
-            className="btn-whatsapp py-2 px-3 text-xs font-semibold shrink-0"
-          >
-            <MessageCircle size={15} />
-            <span>Chat de soporte</span>
-          </a>
-        </div>
+        )}
 
       </div>
 

@@ -1,43 +1,84 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect, Suspense, lazy } from 'react';
 import AuthGuard from './features/auth/AuthGuard';
 import ToastContainer from './components/ui/ToastContainer';
 import PageLoading from './components/common/PageLoading';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import { clearClientCaches } from './lib/utils';
 
-// Code Splitting (Lazy Loading)
-const StorePage = lazy(() => import('./features/store/StorePage'));
-const AdminPage = lazy(() => import('./features/admin/AdminPage'));
-const LoginPage = lazy(() => import('./features/auth/LoginPage'));
-const RegisterPage = lazy(() => import('./features/auth/RegisterPage'));
-const EmailVerificationPage = lazy(() => import('./features/auth/EmailVerificationPage'));
-const AuthCallbackPage = lazy(() => import('./features/auth/AuthCallbackPage'));
-const PasswordRecoveryPage = lazy(() => import('./features/auth/PasswordRecoveryPage'));
-const ResetPasswordPage = lazy(() => import('./features/auth/ResetPasswordPage'));
-const TrackingPage = lazy(() => import('./features/store/TrackingPage'));
-const LandingPage = lazy(() => import('./features/marketing/LandingPage'));
-const WelcomePage = lazy(() => import('./features/marketing/WelcomePage'));
+function lazyWithRetry(factory) {
+  return lazy(async () => {
+    try {
+      return await factory();
+    } catch (firstErr) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      try {
+        return await factory();
+      } catch (secondErr) {
+        if (!import.meta.env.DEV) {
+          let alreadyReloaded = false;
+          try {
+            alreadyReloaded = sessionStorage.getItem('negu_lazy_recovered') === '1';
+            if (!alreadyReloaded) {
+              sessionStorage.setItem('negu_lazy_recovered', '1');
+            }
+          } catch (storageErr) {
+            console.debug('sessionStorage no disponible:', storageErr);
+          }
+          if (!alreadyReloaded) {
+            await clearClientCaches();
+            window.location.reload();
+            return new Promise(() => {});
+          }
+        }
+        throw secondErr || firstErr;
+      }
+    }
+  });
+}
+
+function RouteErrorBoundary({ children }) {
+  const location = useLocation();
+  return (
+    <ErrorBoundary resetKey={`${location.pathname}${location.search}`}>
+      {children}
+    </ErrorBoundary>
+  );
+}
+
+// Code Splitting (Lazy Loading with retry)
+const StorePage = lazyWithRetry(() => import('./features/store/StorePage'));
+const AdminPage = lazyWithRetry(() => import('./features/admin/AdminPage'));
+const LoginPage = lazyWithRetry(() => import('./features/auth/LoginPage'));
+const RegisterPage = lazyWithRetry(() => import('./features/auth/RegisterPage'));
+const EmailVerificationPage = lazyWithRetry(() => import('./features/auth/EmailVerificationPage'));
+const AuthCallbackPage = lazyWithRetry(() => import('./features/auth/AuthCallbackPage'));
+const PasswordRecoveryPage = lazyWithRetry(() => import('./features/auth/PasswordRecoveryPage'));
+const ResetPasswordPage = lazyWithRetry(() => import('./features/auth/ResetPasswordPage'));
+const TrackingPage = lazyWithRetry(() => import('./features/store/TrackingPage'));
+const LandingPage = lazyWithRetry(() => import('./features/marketing/LandingPage'));
+const WelcomePage = lazyWithRetry(() => import('./features/marketing/WelcomePage'));
 
 // Commercial SEO Landing Pages
-const MenuDigitalPage = lazy(() => import('./features/marketing/MenuDigitalPage'));
-const PedidosWhatsAppPage = lazy(() => import('./features/marketing/PedidosWhatsAppPage'));
-const GestionPedidosPage = lazy(() => import('./features/marketing/GestionPedidosPage'));
-const ParaRestaurantesPage = lazy(() => import('./features/marketing/ParaRestaurantesPage'));
-const ParaNegociosPage = lazy(() => import('./features/marketing/ParaNegociosPage'));
-const NotFoundPage = lazy(() => import('./features/marketing/NotFoundPage'));
-const TermsPage = lazy(() => import('./features/legal/TermsPage'));
-const PrivacyPage = lazy(() => import('./features/legal/PrivacyPage'));
-const CookiesPage = lazy(() => import('./features/legal/CookiesPage'));
+const MenuDigitalPage = lazyWithRetry(() => import('./features/marketing/MenuDigitalPage'));
+const PedidosWhatsAppPage = lazyWithRetry(() => import('./features/marketing/PedidosWhatsAppPage'));
+const GestionPedidosPage = lazyWithRetry(() => import('./features/marketing/GestionPedidosPage'));
+const ParaRestaurantesPage = lazyWithRetry(() => import('./features/marketing/ParaRestaurantesPage'));
+const ParaNegociosPage = lazyWithRetry(() => import('./features/marketing/ParaNegociosPage'));
+const NotFoundPage = lazyWithRetry(() => import('./features/marketing/NotFoundPage'));
+const TermsPage = lazyWithRetry(() => import('./features/legal/TermsPage'));
+const PrivacyPage = lazyWithRetry(() => import('./features/legal/PrivacyPage'));
+const CookiesPage = lazyWithRetry(() => import('./features/legal/CookiesPage'));
 
 // Admin Views (Lazy Loaded)
-const DashboardView = lazy(() => import('./features/admin/views/DashboardView'));
-const ComanderoView = lazy(() => import('./features/admin/views/ComanderoView'));
-const OrdersView = lazy(() => import('./features/admin/views/OrdersView'));
-const ProductsView = lazy(() => import('./features/admin/views/ProductsView'));
-const CategoriesView = lazy(() => import('./features/admin/views/CategoriesView'));
-const DriversView = lazy(() => import('./features/admin/views/DriversView'));
-const RevenueView = lazy(() => import('./features/admin/views/RevenueView'));
-const SettingsView = lazy(() => import('./features/admin/views/SettingsView'));
+const DashboardView = lazyWithRetry(() => import('./features/admin/views/DashboardView'));
+const ComanderoView = lazyWithRetry(() => import('./features/admin/views/ComanderoView'));
+const OrdersView = lazyWithRetry(() => import('./features/admin/views/OrdersView'));
+const ProductsView = lazyWithRetry(() => import('./features/admin/views/ProductsView'));
+const CategoriesView = lazyWithRetry(() => import('./features/admin/views/CategoriesView'));
+const DriversView = lazyWithRetry(() => import('./features/admin/views/DriversView'));
+const RevenueView = lazyWithRetry(() => import('./features/admin/views/RevenueView'));
+const SettingsView = lazyWithRetry(() => import('./features/admin/views/SettingsView'));
 
 import { useBusinessStore } from './stores';
 
@@ -59,7 +100,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <ToastContainer />
-      <ErrorBoundary>
+      <RouteErrorBoundary>
         <Suspense fallback={<PageLoading label="Cargando página" />}>
           <Routes>
           {/* ── MARKETING & PUBLIC SEO ───────────────────────── */}
@@ -129,7 +170,7 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         </Suspense>
-      </ErrorBoundary>
+      </RouteErrorBoundary>
     </BrowserRouter>
   );
 }

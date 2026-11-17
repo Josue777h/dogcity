@@ -5,7 +5,7 @@ import {
   X, ChefHat, Clock, RefreshCw, PenLine, Lock, Unlock, Bluetooth, FileText, CheckCircle2
 } from 'lucide-react';
 import { formatMoney, playNewOrderSound, printThermalReceipt, playTableCallSound } from '../../../lib/utils';
-import { saveOrder, updateOrderRecord, updateOrderStatus } from '../../../lib/supabase';
+import { saveOrder, updateOrderRecord, updateOrderStatus, emitTableCallEvent, subscribeToTableCalls } from '../../../lib/supabase';
 import { printOrderViaBluetooth, isWebBluetoothSupported } from '../../../lib/bluetoothPrinter';
 import { useToastStore, useBusinessStore } from '../../../stores';
 
@@ -153,75 +153,80 @@ export default function ComanderoView() {
     return {};
   });
 
-  // Limpiar llamado de una mesa de forma definitiva y sincronizada
+  // Limpiar llamado de una mesa de forma definitiva y sincronizada (local + entre dispositivos)
   const clearTableCall = (tbl) => {
     const strMesa = String(tbl);
     setTableCalls(prev => {
       const next = { ...prev };
       delete next[strMesa];
-      try {
-        localStorage.setItem('negu_active_table_calls', JSON.stringify(next));
-        localStorage.removeItem('negu_table_call_event');
-      } catch (_) {}
       return next;
     });
 
-    try {
-      const bc = new BroadcastChannel('negu_orders_channel');
-      bc.postMessage({ type: 'RESOLVE_WAITER_CALL', mesa: strMesa, businessId: business?.id });
-      setTimeout(() => bc.close(), 500);
-    } catch (_) {}
+    emitTableCallEvent(business?.id, {
+      type: 'RESOLVE_WAITER_CALL',
+      mesa: strMesa,
+      businessId: business?.id
+    });
   };
 
-  // Escuchar llamados y cambios de estado desde Pedidos en Vivo en tiempo real por BroadcastChannel y storage
+  // Escuchar llamados y cambios de estado desde Pedidos en Vivo / QR cliente por Realtime, BroadcastChannel y storage
   useEffect(() => {
-    let bc;
-    try {
-      bc = new BroadcastChannel('negu_orders_channel');
-      bc.onmessage = (msg) => {
-        if (msg?.data?.type === 'CALL_WAITER') {
-          const mesa = String(msg.data.mesa || '');
-          if (mesa) {
-            setTableCalls(prev => {
-              const next = { ...prev, [mesa]: Date.now() };
-              try { localStorage.setItem('negu_active_table_calls', JSON.stringify(next)); } catch (_) {}
-              return next;
-            });
-            playTableCallSound();
-            addToast(`Mesa #${mesa} solicita atención del mesero`, 'info');
-          }
-        } else if (msg?.data?.type === 'RESOLVE_WAITER_CALL') {
-          const mesa = String(msg.data.mesa || '');
-          if (mesa) {
-            setTableCalls(prev => {
+    const handleIncomingSignal = (data) => {
+      if (!data) return;
+      if (data.businessId && business?.id && data.businessId !== business.id) return;
+
+      if (data.type === 'CALL_WAITER') {
+        const mesa = String(data.mesa || '');
+        if (mesa) {
+          setTableCalls(prev => {
+            const next = { ...prev, [mesa]: data.timestamp || Date.now() };
+            try { localStorage.setItem('negu_active_table_calls', JSON.stringify(next)); } catch (err) { console.debug(err); }
+            return next;
+          });
+          playTableCallSound();
+          addToast(`Mesa #${mesa} solicita atención del mesero`, 'info');
+        }
+      } else if (data.type === 'RESOLVE_WAITER_CALL') {
+        const mesa = String(data.mesa || '');
+        if (mesa) {
+          setTableCalls(prev => {
+            const next = { ...prev };
+            delete next[mesa];
+            return next;
+          });
+        }
+      } else if (data.type === 'TABLE_ORDER_STATUS_CHANGED') {
+        const mesa = String(data.mesa || '');
+        const st = String(data.newStatus || '').toUpperCase();
+        if (mesa) {
+          // Si la orden pasó a En Mesa o Finalizado, limpiar cualquier borrador/edición pendiente de esa mesa
+          if (['LISTO_PARA_RECOGER', 'ENTREGADO'].includes(st)) {
+            setComandasByTable(prev => ({ ...prev, [mesa]: [] }));
+            setEditingOrderByTable(prev => {
               const next = { ...prev };
               delete next[mesa];
               return next;
             });
           }
-        } else if (msg?.data?.type === 'TABLE_ORDER_STATUS_CHANGED') {
-          const mesa = String(msg.data.mesa || '');
-          const st = String(msg.data.newStatus || '').toUpperCase();
-          if (mesa) {
-            // Si la orden pasó a En Mesa o Finalizado, limpiar cualquier borrador/edición pendiente de esa mesa
-            if (['LISTO_PARA_RECOGER', 'ENTREGADO'].includes(st)) {
-              setComandasByTable(prev => ({ ...prev, [mesa]: [] }));
-              setEditingOrderByTable(prev => {
-                const next = { ...prev };
-                delete next[mesa];
-                return next;
-              });
-            }
-            if (st === 'LISTO_PARA_RECOGER') {
-              addToast(`Mesa #${mesa}: Pedido listo y marcado como En Mesa`, 'info');
-            } else if (st === 'ENTREGADO') {
-              addToast(`Mesa #${mesa}: Cuenta finalizada y mesa liberada`, 'success');
-            }
-            reloadOrders();
+          if (st === 'LISTO_PARA_RECOGER') {
+            addToast(`Mesa #${mesa}: Pedido listo y marcado como En Mesa`, 'info');
+          } else if (st === 'ENTREGADO') {
+            addToast(`Mesa #${mesa}: Cuenta finalizada y mesa liberada`, 'success');
           }
+          reloadOrders();
         }
-      };
-    } catch (_) {}
+      }
+    };
+
+    let bc;
+    try {
+      bc = new BroadcastChannel('negu_orders_channel');
+      bc.onmessage = (msg) => handleIncomingSignal(msg?.data);
+    } catch (err) {
+      console.debug('BroadcastChannel no disponible:', err);
+    }
+
+    const tableSub = subscribeToTableCalls(business?.id, handleIncomingSignal);
 
     const handleStorage = (e) => {
       if (e.key === 'negu_table_call_event' && e.newValue) {
@@ -231,22 +236,27 @@ export default function ComanderoView() {
           if (mesa) {
             setTableCalls(prev => {
               const next = { ...prev, [mesa]: parsed.timestamp || Date.now() };
-              try { localStorage.setItem('negu_active_table_calls', JSON.stringify(next)); } catch (_) {}
+              try { localStorage.setItem('negu_active_table_calls', JSON.stringify(next)); } catch (err) { console.debug(err); }
               return next;
             });
             playTableCallSound();
           }
-        } catch (_) {}
+        } catch (err) {
+          console.debug('Error leyendo llamado de mesa:', err);
+        }
       } else if (e.key === 'negu_active_table_calls' && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
           setTableCalls(parsed || {});
-        } catch (_) {}
+        } catch (err) {
+          console.debug('Error leyendo llamados activos:', err);
+        }
       }
     };
     window.addEventListener('storage', handleStorage);
 
     return () => {
+      tableSub.unsubscribe();
       if (bc) bc.close();
       window.removeEventListener('storage', handleStorage);
     };
@@ -1442,12 +1452,13 @@ export default function ComanderoView() {
                 activeTicket.map(item => (
                   <div
                     key={item.uid}
-                    className="border-b border-slate-200/80 pb-3 mb-3 last:border-b-0 last:pb-0 last:mb-0 space-y-2"
+                    className="border-b border-slate-200/80 pb-2.5 mb-2.5 last:border-b-0 last:pb-0 last:mb-0 space-y-2"
                   >
+                    {/* Fila 1: Cantidad, nombre, opciones y precio */}
                     <div className="flex items-start justify-between gap-2.5">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start gap-2">
-                          <span className="inline-block bg-slate-900 text-white text-[11px] font-extrabold px-1.5 py-0.5 rounded-md shrink-0">
+                          <span className="inline-block bg-slate-900 text-white text-[11px] font-extrabold px-1.5 py-0.5 rounded-md shrink-0 tabular-nums">
                             x{item.quantity}
                           </span>
                           <span className="font-bold text-sm text-slate-900 leading-snug break-words">
@@ -1460,31 +1471,6 @@ export default function ComanderoView() {
                             + {item.options.map(o => o.nombre || o.label || o.name).join(', ')}
                           </div>
                         )}
-
-                        {/* Micro-píldora de nota del cocinero subordinada al plato */}
-                        <div className="ml-6 mt-1.5">
-                          {item.note ? (
-                            <button
-                              type="button"
-                              onClick={() => openItemNoteModal(item)}
-                              className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-200/90 hover:bg-amber-100 transition-colors cursor-pointer text-left break-words"
-                              title="Toca para editar instrucción"
-                            >
-                              <PenLine size={11} className="text-amber-700 shrink-0" />
-                              <span>{item.note}</span>
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => openItemNoteModal(item)}
-                              className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-slate-800 bg-slate-100/80 hover:bg-slate-200/70 px-2 py-1 rounded-md transition-colors cursor-pointer"
-                              title="Agregar instrucción para cocina a este plato"
-                            >
-                              <PenLine size={11} className="text-slate-400 shrink-0" />
-                              <span>+ Nota cocina</span>
-                            </button>
-                          )}
-                        </div>
                       </div>
 
                       <div className="text-right shrink-0">
@@ -1499,38 +1485,62 @@ export default function ComanderoView() {
                       </div>
                     </div>
 
-                    {/* Controles de cantidad y borrar con hit-target mínimo de 40x40px */}
-                    <div className="flex items-center justify-between pt-0.5">
-                      <div className="flex items-center bg-slate-100 rounded-xl border border-slate-200/80 overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() => updateItemQuantity(item.uid, -1)}
-                          className="w-10 h-10 flex items-center justify-center text-slate-700 hover:bg-white active:scale-95 transition-all cursor-pointer"
-                          aria-label="Restar unidad"
-                        >
-                          <Minus size={14} />
-                        </button>
-                        <span className="w-8 text-center text-xs sm:text-sm font-bold tabular-nums text-slate-900">
-                          {item.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => updateItemQuantity(item.uid, 1)}
-                          className="w-10 h-10 flex items-center justify-center text-slate-700 hover:bg-white active:scale-95 transition-all cursor-pointer"
-                          aria-label="Sumar unidad"
-                        >
-                          <Plus size={14} />
-                        </button>
+                    {/* Fila 2: Stepper compacto, nota cocina y eliminar en una sola línea */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <div className="flex items-center bg-slate-100 rounded-lg border border-slate-200/80 overflow-hidden shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => updateItemQuantity(item.uid, -1)}
+                            className="w-8 h-8 flex items-center justify-center text-slate-700 hover:bg-white active:scale-95 transition-all cursor-pointer"
+                            aria-label="Restar unidad"
+                          >
+                            <Minus size={13} />
+                          </button>
+                          <span className="w-7 text-center text-xs font-bold tabular-nums text-slate-900">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateItemQuantity(item.uid, 1)}
+                            className="w-8 h-8 flex items-center justify-center text-slate-700 hover:bg-white active:scale-95 transition-all cursor-pointer"
+                            aria-label="Sumar unidad"
+                          >
+                            <Plus size={13} />
+                          </button>
+                        </div>
+
+                        {item.note ? (
+                          <button
+                            type="button"
+                            onClick={() => openItemNoteModal(item)}
+                            className="inline-flex h-8 max-w-full items-center gap-1.5 text-xs font-semibold px-2.5 rounded-lg bg-amber-50 text-amber-900 border border-amber-200/90 hover:bg-amber-100 transition-colors cursor-pointer text-left truncate"
+                            title="Toca para editar instrucción"
+                          >
+                            <PenLine size={11} className="text-amber-700 shrink-0" />
+                            <span className="truncate">{item.note}</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => openItemNoteModal(item)}
+                            className="inline-flex h-8 items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-slate-800 bg-slate-100/80 hover:bg-slate-200/70 px-2.5 rounded-lg transition-colors cursor-pointer shrink-0"
+                            title="Agregar instrucción para cocina a este plato"
+                          >
+                            <PenLine size={11} className="text-slate-400 shrink-0" />
+                            <span>Nota cocina</span>
+                          </button>
+                        )}
                       </div>
 
                       <button
                         type="button"
                         onClick={() => removeItemFromTicket(item.uid)}
-                        className="w-10 h-10 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 active:scale-95 transition-all flex items-center justify-center cursor-pointer shrink-0 border border-slate-200/60 hover:border-rose-200 bg-white"
+                        className="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 active:scale-95 transition-all flex items-center justify-center cursor-pointer shrink-0 border border-slate-200/60 hover:border-rose-200 bg-white"
                         title="Eliminar plato de la comanda"
                         aria-label="Eliminar plato de la comanda"
                       >
-                        <Trash2 size={17} />
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </div>
@@ -1871,11 +1881,17 @@ export default function ComanderoView() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-3.5 sm:p-4 overflow-y-auto space-y-3 flex-1 overscroll-contain">
+            <div className="p-3.5 sm:p-4 pb-5 overflow-y-auto space-y-3 flex-1 overscroll-contain">
               {/* Grupos de opciones y toppings */}
               {Array.isArray(customizingProduct.opciones) && customizingProduct.opciones.map(group => {
                 const currentSelections = selectedOptions[group.id] || [];
                 const isSingle = group.tipo === 'unica' || Number(group.max_opciones) === 1;
+                const maxLimit = !isSingle && Number(group.max_opciones) > 0 ? Number(group.max_opciones) : null;
+                const badgeText = isSingle
+                  ? (group.requerido ? 'Elige 1 · Obligatorio' : 'Elige 1 · Opcional')
+                  : maxLimit
+                    ? `Hasta ${maxLimit} · ${group.requerido ? 'Obligatorio' : 'Opcional'}`
+                    : (group.requerido ? 'Obligatorio' : 'Opcional');
 
                 return (
                   <div key={group.id} className="space-y-1.5 rounded-xl border border-slate-200 bg-slate-50/60 p-2 sm:p-2.5">
@@ -1888,7 +1904,7 @@ export default function ComanderoView() {
                           ? 'bg-amber-50 border-amber-200 text-amber-800'
                           : 'bg-white border-slate-200 text-slate-500'
                       }`}>
-                        {isSingle ? (group.requerido ? 'Elige 1 · Obligatorio' : 'Elige 1 · Opcional') : (group.requerido ? 'Obligatorio' : 'Opcional')}
+                        {badgeText}
                       </span>
                     </div>
 
@@ -1900,30 +1916,30 @@ export default function ComanderoView() {
                             key={opt.id}
                             type="button"
                             onClick={() => toggleOption(group, opt)}
-                            className={`px-2 py-1.5 rounded-lg border text-left flex items-center justify-between gap-1.5 transition-colors cursor-pointer text-xs ${
+                            className={`px-2.5 py-2 rounded-lg border text-left flex items-center justify-between gap-1.5 transition-colors cursor-pointer text-xs ${
                               isChosen
-                                ? 'bg-slate-900 text-white border-slate-900 font-semibold shadow-2xs'
+                                ? 'border-slate-900 bg-slate-900/[0.04] text-slate-950 font-semibold ring-1 ring-slate-900/10'
                                 : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                             }`}
                           >
                             <div className="flex items-center gap-1.5 min-w-0">
                               {isSingle ? (
-                                <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${isChosen ? 'border-white' : 'border-slate-300'}`}>
+                                <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${isChosen ? 'border-slate-900 bg-slate-900' : 'border-slate-300 bg-white'}`}>
                                   {isChosen && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                                 </div>
                               ) : (
-                                <div className={`w-3.5 h-3.5 rounded-md border-2 flex items-center justify-center shrink-0 ${isChosen ? 'border-white bg-white text-slate-900' : 'border-slate-300'}`}>
+                                <div className={`w-3.5 h-3.5 rounded-md border-2 flex items-center justify-center shrink-0 ${isChosen ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white'}`}>
                                   {isChosen && <Check size={10} strokeWidth={3} />}
                                 </div>
                               )}
                               <span className="text-xs font-medium truncate">{opt.nombre || opt.label}</span>
                             </div>
                             {Number(opt.precio) > 0 ? (
-                              <span className={`text-xs tabular-nums shrink-0 ${isChosen ? 'text-amber-300 font-bold' : 'text-slate-500'}`}>
+                              <span className={`text-xs tabular-nums shrink-0 ${isChosen ? 'text-slate-950 font-bold' : 'text-slate-500'}`}>
                                 +{formatMoney(opt.precio)}
                               </span>
                             ) : (
-                              <span className={`text-[11px] shrink-0 ${isChosen ? 'text-slate-300' : 'text-slate-400'}`}>
+                              <span className={`text-[11px] shrink-0 ${isChosen ? 'text-slate-600 font-medium' : 'text-slate-400'}`}>
                                 Inc.
                               </span>
                             )}
@@ -1936,7 +1952,7 @@ export default function ComanderoView() {
               })}
 
               {/* Tags rápidos de cocina */}
-              <div className="space-y-1.5 pt-2 border-t border-slate-200">
+              <div className="space-y-1.5 pt-2 pb-1 border-t border-slate-200">
                 <label className="block text-xs font-bold text-slate-800">
                   Indicaciones rápidas para cocina:
                 </label>

@@ -11,7 +11,7 @@ import {
   printThermalReceipt, playNewOrderSound
 } from '../../../lib/utils';
 import { isWebBluetoothSupported, printOrderViaBluetooth } from '../../../lib/bluetoothPrinter';
-import { updateOrderStatus, getSupabase, deleteOrder } from '../../../lib/supabase';
+import { updateOrderStatus, getSupabase, deleteOrder, emitTableCallEvent } from '../../../lib/supabase';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import { OrderService } from '../../../services/orderService';
 import { getStatusCopy } from '../../../lib/status-labels';
@@ -405,12 +405,19 @@ function OrderItems({ order }) {
             <div key={idx} className="border-b border-slate-100 pb-2.5 mb-2.5 last:border-b-0 last:pb-0 last:mb-0">
               <div className="flex justify-between items-start text-xs sm:text-sm gap-2">
                 <div className="flex items-start gap-2 font-bold text-slate-900 leading-snug min-w-0">
-                  <span className="px-1.5 py-0.5 bg-slate-900 text-white rounded-md font-extrabold text-[11px] shrink-0">
+                  <span className="px-1.5 py-0.5 bg-slate-900 text-white rounded-md font-extrabold text-[11px] shrink-0 tabular-nums">
                     x{qty}
                   </span>
                   <span className="break-words">{name}</span>
                 </div>
-                <span className="text-slate-900 tabular-nums font-bold shrink-0">{formatMoney(price * qty)}</span>
+                <div className="text-right shrink-0">
+                  <span className="text-slate-900 tabular-nums font-bold block">{formatMoney(price * qty)}</span>
+                  {qty > 1 && (
+                    <span className="block text-[11px] font-medium text-slate-500 tabular-nums">
+                      {formatMoney(price)} c/u
+                    </span>
+                  )}
+                </div>
               </div>
 
               {optionsText && (
@@ -900,27 +907,18 @@ export default function OrdersView(props) {
             }
           }
 
-          try {
-            const bc = new BroadcastChannel('negu_orders_channel');
-            bc.postMessage({
-              type: 'TABLE_ORDER_STATUS_CHANGED',
-              mesa: String(tbl),
-              orderId,
-              newStatus,
-              businessId: business?.id
-            });
-            bc.postMessage({ type: 'RESOLVE_WAITER_CALL', mesa: String(tbl), businessId: business?.id });
-            setTimeout(() => bc.close(), 500);
-          } catch (_) { }
-          try {
-            const stored = localStorage.getItem('negu_active_table_calls');
-            if (stored) {
-              const parsed = JSON.parse(stored);
-              delete parsed[String(tbl)];
-              localStorage.setItem('negu_active_table_calls', JSON.stringify(parsed));
-            }
-            localStorage.removeItem('negu_table_call_event');
-          } catch (_) { }
+          emitTableCallEvent(business?.id, {
+            type: 'TABLE_ORDER_STATUS_CHANGED',
+            mesa: String(tbl),
+            orderId,
+            newStatus,
+            businessId: business?.id
+          });
+          emitTableCallEvent(business?.id, {
+            type: 'RESOLVE_WAITER_CALL',
+            mesa: String(tbl),
+            businessId: business?.id
+          });
         }
       }
 
@@ -1128,6 +1126,10 @@ export default function OrdersView(props) {
           const canNotifyCustomer = hasValidPhone && !isMesa && (isPickup ? pickupReady : ['EN_CAMINO', 'ENVIADO'].includes(normalizedStatus));
           const deliveryPending = isDeliveryPending(order);
           const isExpanded = expandedOrderId === order.id;
+          const orderItemsList = order.items || order.productos || [];
+          const totalOrderUnits = Array.isArray(orderItemsList)
+            ? orderItemsList.reduce((sum, it) => sum + Number(it.cantidad ?? it.quantity ?? 1), 0)
+            : 0;
 
           const borderAccent = deliveryPending
             ? 'border-l-4 border-l-amber-500'
@@ -1188,44 +1190,48 @@ export default function OrdersView(props) {
 
                   <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-nowrap justify-end">
                     {getStatusBadge(status, order)}
-                    {status !== 'CANCELADO' && status !== 'cancelado' && status !== 'ENTREGADO' && status !== 'entregado' && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOrderToCancel(order);
-                        }}
-                        className="hidden sm:inline-flex w-8 h-8 rounded-lg border border-transparent hover:border-amber-200 bg-gray-50 hover:bg-amber-50 text-gray-500 hover:text-amber-700 items-center justify-center transition-colors shrink-0"
-                        title="Cancelar pedido con motivo"
-                        aria-label="Cancelar pedido"
-                      >
-                        <Ban size={15} />
-                      </button>
+                    {!isExpanded && (
+                      <>
+                        {status !== 'CANCELADO' && status !== 'cancelado' && status !== 'ENTREGADO' && status !== 'entregado' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOrderToCancel(order);
+                            }}
+                            className="hidden sm:inline-flex w-8 h-8 rounded-lg border border-transparent hover:border-amber-200 bg-gray-50 hover:bg-amber-50 text-gray-500 hover:text-amber-700 items-center justify-center transition-colors shrink-0"
+                            title="Cancelar pedido con motivo"
+                            aria-label="Cancelar pedido"
+                          >
+                            <Ban size={15} />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            printThermalReceipt(order, business, { mode: 'kitchen' });
+                          }}
+                          className="hidden sm:inline-flex w-8 h-8 rounded-lg border border-transparent hover:border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 items-center justify-center transition-colors shrink-0"
+                          title="Imprimir comanda de cocina (sin precios)"
+                          aria-label="Imprimir comanda de cocina"
+                        >
+                          <ChefHat size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            printThermalReceipt(order, business, { mode: 'bill' });
+                          }}
+                          className="hidden sm:inline-flex w-8 h-8 rounded-lg border border-transparent hover:border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 items-center justify-center transition-colors shrink-0"
+                          title="Imprimir cuenta / recibo de cobro (con precios)"
+                          aria-label="Imprimir cuenta de cobro"
+                        >
+                          <Printer size={15} />
+                        </button>
+                      </>
                     )}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        printThermalReceipt(order, business, { mode: 'kitchen' });
-                      }}
-                      className="hidden sm:inline-flex w-8 h-8 rounded-lg border border-transparent hover:border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 items-center justify-center transition-colors shrink-0"
-                      title="Imprimir comanda de cocina (sin precios)"
-                      aria-label="Imprimir comanda de cocina"
-                    >
-                      <ChefHat size={15} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        printThermalReceipt(order, business, { mode: 'bill' });
-                      }}
-                      className="hidden sm:inline-flex w-8 h-8 rounded-lg border border-transparent hover:border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 items-center justify-center transition-colors shrink-0"
-                      title="Imprimir cuenta / recibo de cobro (con precios)"
-                      aria-label="Imprimir cuenta de cobro"
-                    >
-                      <Printer size={15} />
-                    </button>
                     <button
                       type="button"
                       onClick={(e) => handleDeleteClick(e, order)}
@@ -1343,7 +1349,7 @@ export default function OrdersView(props) {
                               <Store size={12} /> Recogida en local
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200">
                               <Bike size={12} /> Domicilio
                             </span>
                           )}
@@ -1352,14 +1358,14 @@ export default function OrdersView(props) {
                         {/* Cliente y Teléfono / WhatsApp */}
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex min-w-0 flex-1 items-center gap-2">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${isMesa ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${isMesa ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700'
                               }`}>
                               {isMesa ? <Utensils size={14} /> : <User size={15} />}
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="line-clamp-2 text-xs sm:text-sm font-bold text-gray-950 leading-tight break-words">{order.nombre}</p>
                               {hasValidPhone ? (
-                                <a href={`tel:${cleanCustomerPhone}`} className="text-[11px] sm:text-xs font-bold text-blue-700 hover:underline leading-tight block mt-0.5 whitespace-nowrap">
+                                <a href={`tel:${cleanCustomerPhone}`} className="text-[11px] sm:text-xs font-semibold text-slate-600 hover:text-slate-950 hover:underline leading-tight block mt-0.5 whitespace-nowrap">
                                   {order.telefono}
                                 </a>
                               ) : (
@@ -1376,7 +1382,7 @@ export default function OrdersView(props) {
                                 <button
                                   type="button"
                                   onClick={() => handleNotifyCustomerDispatch(order)}
-                                  className="inline-flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 sm:px-2.5 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200"
+                                  className="inline-flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 sm:px-2.5 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200"
                                   title={isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
                                   aria-label={isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
                                 >
@@ -1405,7 +1411,7 @@ export default function OrdersView(props) {
                             {isMesa ? (
                               <Utensils size={15} className="text-purple-600 mt-0.5 shrink-0" />
                             ) : (
-                              <MapPin size={15} className="text-blue-600 mt-0.5 shrink-0" />
+                              <MapPin size={15} className="text-slate-500 mt-0.5 shrink-0" />
                             )}
                             <div className="leading-snug break-words">
                               {isMesa ? (
@@ -1426,13 +1432,13 @@ export default function OrdersView(props) {
                               href={order.ubicacion_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion)}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200 transition-all text-xs text-blue-950 font-bold group"
+                              className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all text-xs text-slate-900 font-bold group"
                             >
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <Map size={14} className="text-blue-700 shrink-0 group-hover:scale-110 transition-transform" />
+                                <Map size={14} className="text-slate-600 shrink-0 group-hover:scale-110 transition-transform" />
                                 <span className="truncate">Ver ubicación en Google Maps</span>
                               </div>
-                              <span className="text-[11px] text-blue-700 font-bold shrink-0">Abrir ↗</span>
+                              <span className="text-[11px] text-slate-700 font-bold shrink-0">Abrir ↗</span>
                             </a>
                           )}
                         </div>
@@ -1463,7 +1469,7 @@ export default function OrdersView(props) {
                           {order.domiciliario_id && (
                             <button
                               onClick={() => handleDispatch(order)}
-                              className="h-8.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors shrink-0"
+                              className="h-8.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-colors shrink-0"
                             >
                               Despachar
                             </button>
@@ -1477,8 +1483,8 @@ export default function OrdersView(props) {
                       <div>
                         <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
                           <p className="text-xs font-bold text-gray-900 uppercase tracking-wider">Productos del pedido</p>
-                          <span className="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md">
-                            {(order.items || order.productos || []).length} items
+                          <span className="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md tabular-nums">
+                            {totalOrderUnits} {totalOrderUnits === 1 ? 'producto' : 'productos'}
                           </span>
                         </div>
                         <OrderItems order={order} />

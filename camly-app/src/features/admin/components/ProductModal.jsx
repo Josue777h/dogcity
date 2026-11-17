@@ -500,16 +500,18 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
       </div>
 
       {/* Modal Independiente de Toppings */}
-      <ToppingsManagerModal
-        isOpen={isToppingsModalOpen}
-        onClose={() => setIsToppingsModalOpen(false)}
-        opciones={formData.opciones || []}
-        businessId={businessId}
-        onSave={(newOpciones) => {
-          setFormData(prev => ({ ...prev, opciones: newOpciones }));
-          addToast('Toppings y opciones actualizados', 'success');
-        }}
-      />
+      {isToppingsModalOpen && (
+        <ToppingsManagerModal
+          isOpen={isToppingsModalOpen}
+          onClose={() => setIsToppingsModalOpen(false)}
+          opciones={formData.opciones || []}
+          businessId={businessId}
+          onSave={(newOpciones) => {
+            setFormData(prev => ({ ...prev, opciones: newOpciones }));
+            addToast('Toppings y opciones actualizados', 'success');
+          }}
+        />
+      )}
 
       {/* Modal de confirmación al salir con cambios sin guardar */}
       {showExitConfirm && (

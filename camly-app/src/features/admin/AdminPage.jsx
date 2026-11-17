@@ -1,14 +1,14 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Store, ChevronRight, LogOut, Bike, Sparkles } from 'lucide-react';
-import { 
-  getSupabase, 
-  fetchProducts, 
-  createProduct, 
-  updateProduct, 
-  deleteProduct, 
-  fetchOrders, 
+import {
+  getSupabase,
+  fetchProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  fetchOrders,
   subscribeToOrders,
+  subscribeToTableCalls,
   fetchSubscription,
   fetchCategories
 } from '../../lib/supabase';
@@ -21,7 +21,6 @@ import Sidebar from './components/Sidebar';
 import AdminHeader from './components/AdminHeader';
 import ProductModal from './components/ProductModal';
 import BillingModal from '../../components/ui/BillingModal';
-import AiAssistantModal from './components/AiAssistantModal';
 import SEO from '../../components/common/SEO';
 import PageLoading from '../../components/common/PageLoading';
 
@@ -37,7 +36,6 @@ export default function AdminPage() {
   const currentPathSegment = location.pathname.split('/')[2] || 'dashboard';
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [isWaiterLocked, setIsWaiterLocked] = useState(() => {
     try {
       return localStorage.getItem('negu_waiter_lock_active') === 'true';
@@ -57,15 +55,12 @@ export default function AdminPage() {
   // Data States
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => Boolean(session?.user?.id));
   const [editingProduct, setEditingProduct] = useState(null);
 
   useEffect(() => {
     const userId = session?.user?.id;
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
+    if (!userId) return;
     loadData(userId, true);
   }, [session?.user?.id]);
 
@@ -107,38 +102,58 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (business?.id && session?.user?.id) {
-      // 1. Supabase Postgres Realtime
+      // 1. Supabase Postgres Realtime (aislado por negocio_id)
       const sub = subscribeToOrders((payload) => {
         loadData(session.user.id, false);
         if (!payload || payload.eventType === 'INSERT') {
           notifyNewOrder();
         }
-      });
+      }, business.id);
 
-      // 2. BroadcastChannel instantáneo entre pestañas
+      const handleTableSignal = (data) => {
+        if (!data) return;
+        if (data.type === 'NEW_ORDER' && (!data.negocioId || data.negocioId === business.id)) {
+          loadData(session.user.id, false);
+          notifyNewOrder();
+        } else if (data.type === 'CALL_WAITER' && (!data.businessId || data.businessId === business.id)) {
+          const strMesa = String(data.mesa || '');
+          if (strMesa) {
+            try {
+              const stored = localStorage.getItem('negu_active_table_calls');
+              const parsed = stored ? JSON.parse(stored) : {};
+              parsed[strMesa] = data.timestamp || Date.now();
+              localStorage.setItem('negu_active_table_calls', JSON.stringify(parsed));
+            } catch (err) {
+              console.debug('Error guardando llamado de mesa:', err);
+            }
+          }
+          notifyTableCall(data.mesa);
+        } else if (data.type === 'RESOLVE_WAITER_CALL' && (!data.businessId || data.businessId === business.id)) {
+          delete lastCallNotifiedRef[String(data.mesa)];
+          try {
+            const stored = localStorage.getItem('negu_active_table_calls');
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              delete parsed[String(data.mesa)];
+              localStorage.setItem('negu_active_table_calls', JSON.stringify(parsed));
+            }
+            localStorage.removeItem('negu_table_call_event');
+          } catch (err) {
+            console.debug('Error limpiando llamado de mesero:', err);
+          }
+        }
+      };
+
+      // 2. BroadcastChannel instantáneo entre pestañas + Realtime entre dispositivos
       let bc;
       try {
         bc = new BroadcastChannel('negu_orders_channel');
-        bc.onmessage = (msg) => {
-          if (msg?.data?.type === 'NEW_ORDER' && (!msg.data.negocioId || msg.data.negocioId === business.id)) {
-            loadData(session.user.id, false);
-            notifyNewOrder();
-          } else if (msg?.data?.type === 'CALL_WAITER' && (!msg.data.businessId || msg.data.businessId === business.id)) {
-            notifyTableCall(msg.data.mesa);
-          } else if (msg?.data?.type === 'RESOLVE_WAITER_CALL') {
-            delete lastCallNotifiedRef[String(msg.data.mesa)];
-            try {
-              const stored = localStorage.getItem('negu_active_table_calls');
-              if (stored) {
-                const parsed = JSON.parse(stored);
-                delete parsed[String(msg.data.mesa)];
-                localStorage.setItem('negu_active_table_calls', JSON.stringify(parsed));
-              }
-              localStorage.removeItem('negu_table_call_event');
-            } catch (_) {}
-          }
-        };
-      } catch {}
+        bc.onmessage = (msg) => handleTableSignal(msg?.data);
+      } catch (err) {
+        console.debug('BroadcastChannel no disponible:', err);
+      }
+
+      const tableSub = subscribeToTableCalls(business.id, handleTableSignal);
 
       // 3. Fallback de localStorage entre ventanas
       const handleStorage = (e) => {
@@ -149,14 +164,18 @@ export default function AdminPage() {
               loadData(session.user.id, false);
               notifyNewOrder();
             }
-          } catch {}
+          } catch (err) {
+            console.debug('Error leyendo evento de pedido:', err);
+          }
         } else if (e.key === 'negu_table_call_event' && e.newValue) {
           try {
             const parsed = JSON.parse(e.newValue);
             if (!parsed.businessId || parsed.businessId === business.id) {
               notifyTableCall(parsed.mesa);
             }
-          } catch {}
+          } catch (err) {
+            console.debug('Error leyendo llamado de mesa:', err);
+          }
         }
       };
       window.addEventListener('storage', handleStorage);
@@ -175,6 +194,7 @@ export default function AdminPage() {
 
       return () => {
         sub.unsubscribe();
+        tableSub.unsubscribe();
         if (bc) bc.close();
         window.removeEventListener('storage', handleStorage);
         window.removeEventListener('focus', handleFocus);
@@ -248,6 +268,7 @@ export default function AdminPage() {
     } catch (err) {
       console.error(err);
       addToast('Error al procesar producto', 'error');
+      throw err;
     }
   };
 
@@ -312,7 +333,6 @@ export default function AdminPage() {
             title={currentPathSegment} 
             business={business} 
             onOpenMenu={() => setIsMenuOpen(true)}
-            onOpenAssistant={() => setIsAssistantOpen(true)}
           />
         )}
 
@@ -353,34 +373,6 @@ export default function AdminPage() {
       )}
       
       <BillingModal />
-
-      {/* AI Assistant Modal */}
-      <AiAssistantModal 
-        isOpen={isAssistantOpen}
-        onClose={() => setIsAssistantOpen(false)}
-        business={business}
-        productsCount={products.length}
-        onNavigateTab={(tab) => {
-          const tabToPath = {
-            dashboard: '/admin/dashboard',
-            comandero: '/admin/comandero',
-            mesas: '/admin/comandero',
-            orders: '/admin/pedidos',
-            pedidos: '/admin/pedidos',
-            products: '/admin/productos',
-            productos: '/admin/productos',
-            categories: '/admin/categorias',
-            categorias: '/admin/categorias',
-            drivers: '/admin/domiciliarios',
-            domiciliarios: '/admin/domiciliarios',
-            settings: '/admin/configuracion',
-            configuracion: '/admin/configuracion',
-            revenue: '/admin/ingresos',
-            ingresos: '/admin/ingresos',
-          };
-          navigate(tabToPath[tab] || `/admin/${tab}`);
-        }}
-      />
     </div>
   );
 }

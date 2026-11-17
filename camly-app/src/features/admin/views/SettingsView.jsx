@@ -1,17 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { 
-  Save, User, Phone, MapPin, Globe,
-  Instagram, Facebook, MessageSquare, Palette,
-  CheckCircle2, CreditCard, Upload, Smartphone, Check, Settings,
+  Save, User,
+  Instagram, Facebook, Palette,
+  CheckCircle2, CreditCard, Upload, Smartphone, Check,
   Music2, Wallet, Truck, Navigation, Search, Clock, Sparkles,
-  ShoppingBag, ShoppingCart, Eye, Store, Utensils, Plus, X,
-  QrCode, Printer, Download, ExternalLink, Copy, HelpCircle
+  ShoppingCart, Eye, Store, Utensils, Plus,
+  QrCode, Printer, Download, ExternalLink, Copy
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { getSupabase, updateBusiness, uploadImage } from '../../../lib/supabase';
 import { useToastStore, useAuthStore } from '../../../stores';
-import PremiumLock from '../../../components/ui/PremiumLock';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 
 const CURATED_COLORS = [
@@ -100,9 +99,9 @@ export default function SettingsView(props) {
     lat: business?.lat || '',
     lng: business?.lng || '',
     tipo_domicilio: business?.tipo_domicilio || 'automatico',
-    precio_domicilio: business?.precio_domicilio || 0,
-    costo_por_km: business?.costo_por_km || 1000,
-    domicilio_minimo: business?.domicilio_minimo || 3000,
+    precio_domicilio: business?.precio_domicilio ?? 0,
+    costo_por_km: business?.costo_por_km ?? 1000,
+    domicilio_minimo: business?.domicilio_minimo ?? 3000,
     business_type: business?.business_type || 'general',
     color_secundario: business?.color_secundario || '#FFF7ED',
     timezone: business?.timezone || 'America/Bogota',
@@ -156,6 +155,9 @@ export default function SettingsView(props) {
   const currentSnapshot = JSON.stringify({ formData, designData, scheduleData });
   const [savedSnapshot, setSavedSnapshot] = useState(null);
   const hasUnsavedChanges = savedSnapshot !== null && currentSnapshot !== savedSnapshot;
+  const syncedBusinessIdRef = useRef(business?.id ?? null);
+  const hasUnsavedChangesRef = useRef(false);
+  useEffect(() => { hasUnsavedChangesRef.current = hasUnsavedChanges; }, [hasUnsavedChanges]);
   useEffect(() => { setSavedSnapshot(null); }, [business?.id]);
   useEffect(() => { if (savedSnapshot === null) setSavedSnapshot(currentSnapshot); }, [currentSnapshot, savedSnapshot]);
 
@@ -348,6 +350,8 @@ export default function SettingsView(props) {
 
   useEffect(() => {
     if (!business) return;
+    if (business.id === syncedBusinessIdRef.current && hasUnsavedChangesRef.current) return;
+    syncedBusinessIdRef.current = business.id;
 
     setFormData({
       nombre_visible: business.nombre_visible || '',
@@ -366,9 +370,9 @@ export default function SettingsView(props) {
       lat: business.lat || '',
       lng: business.lng || '',
       tipo_domicilio: business.tipo_domicilio || 'automatico',
-      precio_domicilio: business.precio_domicilio || 0,
-      costo_por_km: business.costo_por_km || 1000,
-      domicilio_minimo: business.domicilio_minimo || 3000,
+      precio_domicilio: business.precio_domicilio ?? 0,
+      costo_por_km: business.costo_por_km ?? 1000,
+      domicilio_minimo: business.domicilio_minimo ?? 3000,
       business_type: business.business_type || 'general',
       color_secundario: business.color_secundario || '#FFF7ED',
       timezone: business.timezone || 'America/Bogota',
@@ -515,15 +519,16 @@ export default function SettingsView(props) {
         lat,
         lng,
         tipo_domicilio: formData.tipo_domicilio || 'automatico',
-        precio_domicilio: Number(formData.precio_domicilio) || 0,
-        costo_por_km: Number(formData.costo_por_km) || 0,
-        domicilio_minimo: Number(formData.domicilio_minimo) || 0,
+        precio_domicilio: Number(formData.precio_domicilio ?? 0),
+        costo_por_km: Number(formData.costo_por_km ?? 0),
+        domicilio_minimo: Number(formData.domicilio_minimo ?? 0),
       };
 
       const data = await updateBusiness(business.id, payload);
       if (!data) throw new Error('No se encontró el negocio o no tienes permiso para actualizarlo.');
       
       addToast('Diseño y configuración guardados', 'success');
+      hasUnsavedChangesRef.current = false;
       setSavedSnapshot(currentSnapshot);
       onUpdate();
     } catch (err) {

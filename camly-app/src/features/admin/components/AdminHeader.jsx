@@ -38,7 +38,7 @@ const MOBILE_TAB_LABELS = {
   ingresos: 'Ingresos',
 };
 
-export default function AdminHeader({ title, business, onOpenMenu, onOpenAssistant }) {
+export default function AdminHeader({ title, business, onOpenMenu }) {
   const addToast  = useToastStore(s => s.addToast);
   const session   = useAuthStore(s => s.session);
   const { isPro, isExpired, trialDaysLeft, subscription } = useBusinessStore();
@@ -144,18 +144,6 @@ export default function AdminHeader({ title, business, onOpenMenu, onOpenAssista
             <span>Tienda</span>
             <ExternalLink size={12} />
           </a>
-
-          {/* Movia (Asistente) */}
-          <button
-            type="button"
-            onClick={onOpenAssistant}
-            title="Asistente Movia"
-            aria-label="Abrir Asistente Movia"
-            className="h-10 sm:h-9 px-3 rounded-lg bg-slate-950 hover:bg-slate-800 text-white font-medium flex items-center gap-1.5 text-xs transition-colors shrink-0"
-          >
-            <Sparkles size={13} className="text-amber-400 shrink-0" />
-            <span className="text-xs font-semibold">Movia</span>
-          </button>
 
           {/* Avatar del usuario (Desktop/Tablet) */}
           <div

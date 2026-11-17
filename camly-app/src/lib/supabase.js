@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, PRODUCT_SCHEMA_VARIANTS, DEFAULT_IMAGE, SUPABASE_PRODUCT_BUCKET } from './constants';
+import { getVerticalById } from './modules';
 
 // ── Singleton client ──
 let client = null;
@@ -296,12 +297,12 @@ export async function deleteProduct(id, negocioId = null) {
 }
 
 // ── Orders ──
-export async function fetchOrders(negocioId = null) {
+export async function fetchOrders(negocioId = null, limit = 500) {
   let query = getSupabase()
     .from('pedidos')
     .select('*')
-    .order('created_at', { ascending: false })
-    .limit(50);
+    .order('created_at', { ascending: false });
+  if (Number(limit) > 0) query = query.limit(Number(limit));
   if (negocioId) query = query.eq('negocio_id', negocioId);
   const { data, error } = await query;
   if (error) throw error;
@@ -444,17 +445,6 @@ export async function updateOrderRecord(id, updates, negocioId = null) {
   }
 }
 
-export async function confirmOrderDelivery(id, domicilioCosto, newTotal) {
-  const { error } = await getSupabase()
-    .from('pedidos')
-    .update({
-      domicilio_costo: domicilioCosto,
-      total: newTotal,
-    })
-    .eq('id', id);
-  if (error) throw error;
-}
-
 export async function deleteOrder(id) {
   const { data, error } = await getSupabase()
     .from('pedidos')
@@ -493,12 +483,6 @@ export async function updateAccountPassword(password) {
   const { data, error } = await getSupabase().auth.updateUser({ password });
   if (error) throw error;
   return data.user;
-}
-
-export async function signUp(email, password) {
-  const { data, error } = await getSupabase().auth.signUp({ email, password });
-  if (error) throw error;
-  return data;
 }
 
 export async function signOut() {
@@ -542,19 +526,56 @@ async function createBusinessForUser(user) {
     if (fallbackInUse) throw new Error('No pudimos asignar un enlace único a tu tienda. Contacta al soporte para terminar el registro.');
   }
 
-  const { data: business, error: businessError } = await supabase
-    .from('negocios')
-    .insert({
-      nombre: slug,
-      nombre_visible: businessName,
-      telefono: phone,
-      user_id: user.id,
-      theme_color: '#2563EB',
-      color_secundario: '#F9FAFB',
-      metodos_pago: ['efectivo'],
-    })
-    .select()
-    .single();
+  const vertical = getVerticalById(metadata.negu_vertical_id || metadata.negu_business_type || 'food');
+  const insertPayload = {
+    nombre: slug,
+    nombre_visible: businessName,
+    telefono: phone,
+    user_id: user.id,
+    business_type: vertical.businessType,
+    theme_color: vertical.defaultThemeColor,
+    color_secundario: vertical.defaultSecondaryColor,
+    metodos_pago: ['efectivo', 'transferencia'],
+    catalog_design: {
+      button_style: 'pill',
+      font_family: 'sans',
+      footer_style: 'branded',
+      vertical_id: vertical.id,
+      modules: vertical.modules,
+      onboarding: {
+        delivery_preference: metadata.negu_delivery_preference || 'ambos',
+        experience_level: metadata.negu_experience_level || 'whatsapp_manual',
+      },
+    },
+  };
+
+  let business = null;
+  let businessError = null;
+  const legacyOptionalCols = ['business_type', 'catalog_design'];
+  while (true) {
+    const res = await supabase
+      .from('negocios')
+      .insert(insertPayload)
+      .select()
+      .single();
+    business = res.data;
+    businessError = res.error;
+    if (!businessError) break;
+
+    const missingCol = legacyOptionalCols.find(col =>
+      (col in insertPayload) && (
+        businessError.message?.includes(`'${col}'`) ||
+        businessError.message?.includes(`"${col}"`) ||
+        new RegExp(`\\bcolumn\\s+${col}\\b`, 'i').test(businessError.message || '')
+      )
+    );
+    if (missingCol && ['PGRST204', '42703'].includes(businessError.code)) {
+      delete insertPayload[missingCol];
+      continue;
+    }
+    break;
+  }
+
   if (businessError) {
     const { data: concurrentlyCreated, error: retryLookupError } = await supabase
       .from('negocios').select('*').eq('user_id', user.id).maybeSingle();
@@ -578,7 +599,19 @@ export async function completePendingBusinessRegistration(session) {
 }
 
 // ── Register Business ──
-export async function registerBusiness({ email, password, businessName, ownerName, phone, storeSlug, legalAcceptances }) {
+export async function registerBusiness({
+  email,
+  password,
+  businessName,
+  ownerName,
+  phone,
+  storeSlug,
+  verticalId = 'food',
+  businessType = 'food',
+  deliveryPreference = 'ambos',
+  experienceLevel = 'whatsapp_manual',
+  legalAcceptances,
+}) {
   const slug = String(storeSlug || businessName).toLowerCase().normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 35);
   if (!slug) throw new Error('El enlace de la tienda no es válido.');
@@ -586,6 +619,7 @@ export async function registerBusiness({ email, password, businessName, ownerNam
     .from('negocios').select('id').eq('nombre', slug).maybeSingle();
   if (lookupError) throw lookupError;
   if (existingStore) throw new Error('Ese enlace ya está en uso. Elige otro nombre para tu tienda.');
+  const resolvedVertical = getVerticalById(verticalId || businessType || 'food');
   const { data: authData, error: authError } = await getSupabase().auth.signUp({
     email,
     password,
@@ -595,6 +629,10 @@ export async function registerBusiness({ email, password, businessName, ownerNam
         negu_business_name: String(businessName || '').trim(),
         negu_store_slug: slug,
         negu_business_phone: String(phone || '').trim(),
+        negu_vertical_id: resolvedVertical.id,
+        negu_business_type: resolvedVertical.businessType,
+        negu_delivery_preference: deliveryPreference || 'ambos',
+        negu_experience_level: experienceLevel || 'whatsapp_manual',
         negu_terms_accepted_at: legalAcceptances?.acceptedAt || null,
         negu_terms_version: legalAcceptances?.termsVersion || null,
         negu_privacy_accepted_at: legalAcceptances?.acceptedAt || null,
@@ -631,16 +669,120 @@ export async function uploadImage(file, path) {
 }
 
 // ── Realtime ──
-export function subscribeToOrders(callback) {
+export function subscribeToOrders(callback, negocioId = null) {
+  const channelName = negocioId ? `orders-realtime-${negocioId}` : 'orders-realtime';
+  const pgConfig = negocioId
+    ? { event: '*', schema: 'public', table: 'pedidos', filter: `negocio_id=eq.${negocioId}` }
+    : { event: '*', schema: 'public', table: 'pedidos' };
   return getSupabase()
-    .channel('orders-realtime')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, callback)
+    .channel(channelName)
+    .on('postgres_changes', pgConfig, callback)
     .subscribe();
 }
 
-export function subscribeToProducts(callback) {
-  return getSupabase()
-    .channel('products-realtime')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'productos' }, callback)
-    .subscribe();
+const tableCallSubscriptions = new Map();
+
+export function emitTableCallEvent(businessId, payload) {
+  if (typeof window !== 'undefined') {
+    try {
+      const bc = new BroadcastChannel('negu_orders_channel');
+      bc.postMessage(payload);
+      setTimeout(() => bc.close(), 500);
+    } catch (err) {
+      console.debug('BroadcastChannel no disponible:', err);
+    }
+
+    try {
+      if (payload?.type === 'CALL_WAITER') {
+        localStorage.setItem('negu_table_call_event', JSON.stringify(payload));
+      } else if (payload?.type === 'RESOLVE_WAITER_CALL' && payload?.mesa) {
+        const stored = localStorage.getItem('negu_active_table_calls');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          delete parsed[String(payload.mesa)];
+          localStorage.setItem('negu_active_table_calls', JSON.stringify(parsed));
+        }
+        localStorage.removeItem('negu_table_call_event');
+      }
+    } catch (err) {
+      console.debug('localStorage no disponible:', err);
+    }
+  }
+
+  if (!businessId) return;
+
+  try {
+    const sb = getSupabase();
+    const shared = tableCallSubscriptions.get(businessId);
+    const sendPayload = (ch) => ch.send({
+      type: 'broadcast',
+      event: payload?.type || 'TABLE_EVENT',
+      payload,
+    });
+
+    if (shared?.channel) {
+      sendPayload(shared.channel);
+      return;
+    }
+
+    const channel = sb.channel(`negu-table-calls-${businessId}`);
+    let sent = false;
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED' && !sent) {
+        sent = true;
+        Promise.resolve(sendPayload(channel)).finally(() => {
+          setTimeout(() => {
+            if (!tableCallSubscriptions.has(businessId)) {
+              sb.removeChannel(channel);
+            }
+          }, 1500);
+        });
+      }
+    });
+  } catch (err) {
+    console.debug('Realtime table call emit failed:', err);
+  }
+}
+
+export function subscribeToTableCalls(businessId, onEvent) {
+  if (!businessId || typeof onEvent !== 'function') {
+    return { unsubscribe: () => {} };
+  }
+
+  const sb = getSupabase();
+  let entry = tableCallSubscriptions.get(businessId);
+
+  if (!entry) {
+    const listeners = new Set();
+    const channel = sb
+      .channel(`negu-table-calls-${businessId}`)
+      .on('broadcast', { event: '*' }, (msg) => {
+        if (msg?.payload) {
+          listeners.forEach((cb) => {
+            try {
+              cb(msg.payload);
+            } catch (err) {
+              console.debug('Error en listener de llamado de mesa:', err);
+            }
+          });
+        }
+      })
+      .subscribe();
+    entry = { channel, listeners };
+    tableCallSubscriptions.set(businessId, entry);
+  }
+
+  entry.listeners.add(onEvent);
+
+  return {
+    unsubscribe: () => {
+      const current = tableCallSubscriptions.get(businessId);
+      if (!current) return;
+      current.listeners.delete(onEvent);
+      if (current.listeners.size === 0) {
+        tableCallSubscriptions.delete(businessId);
+        sb.removeChannel(current.channel);
+      }
+    },
+  };
 }

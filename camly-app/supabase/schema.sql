@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS public.negocios (
   lat numeric, lng numeric, tipo_domicilio text DEFAULT 'automatico',
   costo_por_km numeric DEFAULT 0, domicilio_minimo numeric DEFAULT 0,
   precio_domicilio numeric DEFAULT 0, logo_url text,
-  business_type varchar(50) NOT NULL DEFAULT 'general',
+  business_type varchar(50) NOT NULL DEFAULT 'food',
   horario jsonb NOT NULL DEFAULT '{}'::jsonb,
   catalog_design jsonb NOT NULL DEFAULT '{}'::jsonb,
   timezone text NOT NULL DEFAULT 'America/Bogota',
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS public.pedidos (
 );
 
 -- Completar instalaciones previas sin borrar datos.
-ALTER TABLE public.negocios ADD COLUMN IF NOT EXISTS business_type varchar(50) NOT NULL DEFAULT 'general';
+ALTER TABLE public.negocios ADD COLUMN IF NOT EXISTS business_type varchar(50) NOT NULL DEFAULT 'food';
 ALTER TABLE public.negocios
   ADD COLUMN IF NOT EXISTS horario jsonb NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS catalog_design jsonb NOT NULL DEFAULT '{}'::jsonb,
@@ -182,16 +182,154 @@ REVOKE UPDATE,DELETE ON public.pedidos FROM anon,PUBLIC;
 CREATE OR REPLACE FUNCTION public.customer_create_order(p_order jsonb) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
 DECLARE
+  v_negocio_id uuid;
+  v_biz public.negocios%ROWTYPE;
   v_order_id bigint;
   v_token text;
+  v_clean_items jsonb := '[]'::jsonb;
+  v_item jsonb;
+  v_prod public.productos%ROWTYPE;
+  v_qty integer;
+  v_base_price numeric;
+  v_prod_opts jsonb;
+  v_opts_raw text;
+  v_opts_extra numeric;
+  v_sel jsonb;
+  v_sel_id text;
+  v_sel_name text;
+  v_sel_price numeric;
+  v_matched_opt_price numeric;
+  v_unit_price numeric;
+  v_verified_subtotal numeric := 0;
   v_subtotal numeric;
   v_fee numeric;
   v_total numeric;
 BEGIN
+  v_negocio_id := NULLIF(p_order->>'negocio_id', '')::uuid;
+  SELECT * INTO v_biz FROM public.negocios WHERE id = v_negocio_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Negocio no encontrado';
+  END IF;
+
   v_token := COALESCE(NULLIF(p_order->>'token', ''), gen_random_uuid()::text);
-  v_subtotal := COALESCE((p_order->>'subtotal_amount')::numeric, 0);
-  v_fee := COALESCE((p_order->>'delivery_fee')::numeric, (p_order->>'domicilio_costo')::numeric, 0);
-  v_total := COALESCE((p_order->>'total')::numeric, (p_order->>'total_amount')::numeric, (v_subtotal + v_fee));
+
+  -- Idempotencia: si ya existe una orden con el mismo token en este negocio, retornar la existente
+  SELECT id INTO v_order_id
+    FROM public.pedidos
+   WHERE negocio_id = v_negocio_id
+     AND token = v_token
+   LIMIT 1;
+  IF FOUND THEN
+    RETURN jsonb_build_object('id', v_order_id, 'token', v_token);
+  END IF;
+
+  -- Verificación server-side de precios de productos y opciones contra public.productos
+  FOR v_item IN
+    SELECT value FROM jsonb_array_elements(
+      CASE WHEN jsonb_typeof(p_order->'items') = 'array' THEN p_order->'items' ELSE '[]'::jsonb END
+    )
+  LOOP
+    v_qty := GREATEST(1, LEAST(999, COALESCE(
+      FLOOR(NULLIF(COALESCE(v_item->>'cantidad', v_item->>'quantity', '1'), '')::numeric)::integer,
+      1
+    )));
+
+    SELECT * INTO v_prod
+      FROM public.productos
+     WHERE negocio_id = v_negocio_id
+       AND id::text = COALESCE(v_item->>'id', v_item->>'productId', '')
+     LIMIT 1;
+
+    IF FOUND THEN
+      v_base_price := GREATEST(0, COALESCE(v_prod.precio, 0));
+      v_prod_opts := '[]'::jsonb;
+      v_opts_raw := substring(COALESCE(v_prod.descripcion, '') FROM '<!--(?:NEGU|CAMLY)_OPTIONS:(.*?)-->');
+      IF v_opts_raw IS NOT NULL AND v_opts_raw <> '' THEN
+        BEGIN
+          v_prod_opts := v_opts_raw::jsonb;
+          IF jsonb_typeof(v_prod_opts) <> 'array' THEN
+            v_prod_opts := '[]'::jsonb;
+          END IF;
+        EXCEPTION WHEN OTHERS THEN
+          v_prod_opts := '[]'::jsonb;
+        END;
+      END IF;
+
+      v_opts_extra := 0;
+      FOR v_sel IN
+        SELECT value FROM jsonb_array_elements(
+          CASE
+            WHEN jsonb_typeof(v_item->'opciones') = 'array' THEN v_item->'opciones'
+            WHEN jsonb_typeof(v_item->'options') = 'array' THEN v_item->'options'
+            ELSE '[]'::jsonb
+          END
+        )
+      LOOP
+        v_sel_price := GREATEST(0, COALESCE(NULLIF(v_sel->>'precio', '')::numeric, 0));
+        v_sel_id := COALESCE(v_sel->>'id', '');
+        v_sel_name := COALESCE(v_sel->>'nombre', '');
+        v_matched_opt_price := NULL;
+
+        IF jsonb_array_length(v_prod_opts) > 0 THEN
+          SELECT GREATEST(0, COALESCE(NULLIF(opt->>'precio', '')::numeric, 0))
+            INTO v_matched_opt_price
+            FROM jsonb_array_elements(v_prod_opts) AS grp(g),
+                 jsonb_array_elements(
+                   CASE WHEN jsonb_typeof(grp.g->'opciones') = 'array' THEN grp.g->'opciones' ELSE '[]'::jsonb END
+                 ) AS opt
+           WHERE (v_sel_id <> '' AND opt->>'id' = v_sel_id)
+              OR (v_sel_name <> '' AND lower(COALESCE(opt->>'nombre', '')) = lower(v_sel_name))
+           LIMIT 1;
+
+          IF FOUND AND v_matched_opt_price IS NOT NULL THEN
+            v_sel_price := v_matched_opt_price;
+          END IF;
+        END IF;
+
+        v_opts_extra := v_opts_extra + v_sel_price;
+      END LOOP;
+
+      v_unit_price := v_base_price + v_opts_extra;
+      v_clean_items := v_clean_items || jsonb_build_array(
+        v_item || jsonb_build_object(
+          'cantidad', v_qty,
+          'precio', v_unit_price,
+          'precio_base', v_base_price
+        )
+      );
+    ELSE
+      v_unit_price := GREATEST(0, COALESCE(NULLIF(COALESCE(v_item->>'precio', v_item->>'price'), '')::numeric, 0));
+      v_clean_items := v_clean_items || jsonb_build_array(
+        v_item || jsonb_build_object(
+          'cantidad', v_qty,
+          'precio', v_unit_price
+        )
+      );
+    END IF;
+
+    v_verified_subtotal := v_verified_subtotal + (v_unit_price * v_qty);
+  END LOOP;
+
+  v_subtotal := CASE
+    WHEN jsonb_array_length(v_clean_items) > 0 THEN v_verified_subtotal
+    ELSE GREATEST(0, COALESCE(NULLIF(p_order->>'subtotal_amount', '')::numeric, 0))
+  END;
+
+  IF COALESCE(p_order->>'entrega_metodo', '') IN ('recogida', 'mesa')
+     OR COALESCE(p_order->>'delivery_type', '') IN ('pickup', 'dine_in') THEN
+    v_fee := 0;
+  ELSIF v_biz.tipo_domicilio = 'fijo' THEN
+    v_fee := GREATEST(0, COALESCE(v_biz.precio_domicilio, 0));
+  ELSIF v_biz.tipo_domicilio = 'manual' THEN
+    v_fee := 0;
+  ELSE
+    v_fee := GREATEST(
+      COALESCE(v_biz.domicilio_minimo, 0),
+      COALESCE(NULLIF(COALESCE(p_order->>'delivery_fee', p_order->>'domicilio_costo'), '')::numeric, 0)
+    );
+  END IF;
+
+  v_total := v_subtotal + v_fee;
 
   INSERT INTO public.pedidos (
     negocio_id, nombre, telefono, direccion, ubicacion_link, comentarios,
@@ -199,7 +337,7 @@ BEGIN
     status, estado, delivery_type, items, productos,
     entrega_metodo, pago_metodo, payment_method, payment_status, token
   ) VALUES (
-    (p_order->>'negocio_id')::uuid,
+    v_negocio_id,
     COALESCE(p_order->>'nombre', 'Cliente'),
     COALESCE(p_order->>'telefono', ''),
     p_order->>'direccion',
@@ -210,8 +348,8 @@ BEGIN
     COALESCE(NULLIF(p_order->>'status', ''), NULLIF(p_order->>'estado', ''), 'nuevo'),
     COALESCE(NULLIF(p_order->>'estado', ''), NULLIF(p_order->>'status', ''), 'nuevo'),
     COALESCE(NULLIF(p_order->>'delivery_type', ''), CASE WHEN p_order->>'entrega_metodo' = 'mesa' OR p_order->>'direccion' ILIKE '%mesa%' THEN 'dine_in' ELSE 'fixed' END),
-    COALESCE(p_order->'items', '[]'::jsonb),
-    COALESCE(p_order->'items', '[]'::jsonb),
+    v_clean_items,
+    v_clean_items,
     COALESCE(NULLIF(p_order->>'entrega_metodo', ''), CASE WHEN p_order->>'delivery_type' = 'dine_in' OR p_order->>'direccion' ILIKE '%mesa%' THEN 'mesa' ELSE 'envio' END),
     COALESCE(NULLIF(p_order->>'pago_metodo', ''), 'efectivo'),
     COALESCE(NULLIF(p_order->>'payment_method', ''), 'cash'),
@@ -290,13 +428,21 @@ GRANT EXECUTE ON FUNCTION public.customer_get_order(bigint,text),public.customer
 GRANT EXECUTE ON FUNCTION public.customer_cancel_order(bigint,text,text) TO anon,authenticated;
 
 -- Supabase Storage: imágenes públicas del catálogo y comprobantes privados ligados a pedido+token.
-INSERT INTO storage.buckets(id,name,public) VALUES('product-images','product-images',true)
-ON CONFLICT(id) DO UPDATE SET public=true;
+INSERT INTO storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+VALUES('product-images','product-images',true,2097152,ARRAY['image/jpeg','image/png','image/webp','image/gif','image/svg+xml'])
+ON CONFLICT(id) DO UPDATE SET public=true,file_size_limit=2097152,allowed_mime_types=ARRAY['image/jpeg','image/png','image/webp','image/gif','image/svg+xml'];
 INSERT INTO storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
 VALUES('receipts','receipts',false,10485760,ARRAY['image/jpeg','image/png','image/webp','application/pdf'])
 ON CONFLICT(id) DO UPDATE SET public=false,file_size_limit=10485760,allowed_mime_types=ARRAY['image/jpeg','image/png','image/webp','application/pdf'];
 DROP POLICY IF EXISTS "Public Access product-images" ON storage.objects;
-CREATE POLICY "Public Access product-images" ON storage.objects FOR ALL USING(bucket_id='product-images') WITH CHECK(bucket_id='product-images');
+DROP POLICY IF EXISTS "Public Read product-images" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated Insert product-images" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated Update product-images" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated Delete product-images" ON storage.objects;
+CREATE POLICY "Public Read product-images" ON storage.objects FOR SELECT TO anon, authenticated USING(bucket_id='product-images');
+CREATE POLICY "Authenticated Insert product-images" ON storage.objects FOR INSERT TO authenticated WITH CHECK(bucket_id='product-images');
+CREATE POLICY "Authenticated Update product-images" ON storage.objects FOR UPDATE TO authenticated USING(bucket_id='product-images') WITH CHECK(bucket_id='product-images');
+CREATE POLICY "Authenticated Delete product-images" ON storage.objects FOR DELETE TO authenticated USING(bucket_id='product-images');
 DROP POLICY IF EXISTS "Public Receipt Upload" ON storage.objects;
 DROP POLICY IF EXISTS "Public Receipt Read" ON storage.objects;
 DROP POLICY IF EXISTS "Token Receipt Upload" ON storage.objects;

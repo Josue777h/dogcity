@@ -178,8 +178,6 @@ export const useCartStore = create(
       setLocation: (link, label) => set({ locationLink: link, locationLabel: label }),
 
       // Helpers
-      getCartData: (bid) => get()._getCart(bid),
-
       getProductTotalQuantity: (bid, productId) => {
         const cart = get()._getCart(bid);
         return cart.items
@@ -278,10 +276,9 @@ export const useBusinessStore = create((set) => ({
         trialDaysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       }
     } else {
-      // Si el negocio no tiene suscripción se bloquea como expired por seguridad
-      // o puedes dejarlo false dependiendo del flujo legacy
+      // Sin fila de suscripción explícita (tiendas recién migradas o previas)
+      isPro = true;
       isExpired = false;
-      // Se deja en `false` por ahora para no bloquear tiendas legacy (hasta migración completa).
     }
     set({ business, subscription, isPro, isExpired, trialDaysLeft, isLoading: false });
   },

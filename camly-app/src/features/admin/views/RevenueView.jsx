@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { 
-  DollarSign, TrendingUp, Calendar, Trash2, 
-  Download, Clock, ArrowUpRight, BarChart3, AlertCircle 
+import {
+  DollarSign, TrendingUp, Trash2,
+  Download, Clock, ArrowUpRight, BarChart3, AlertCircle
 } from 'lucide-react';
 import { formatMoney, exportOrdersToCSV } from '../../../lib/utils';
 import Select from '../../../components/ui/Select';
@@ -11,7 +11,7 @@ import { readMigratedLocalStorage } from '../../../lib/localStorage';
 
 export default function RevenueView(props) {
   const outletCtx = useOutletContext() || {};
-  const orders = props.orders ?? outletCtx.orders ?? [];
+  const orders = useMemo(() => props.orders ?? outletCtx.orders ?? [], [props.orders, outletCtx.orders]);
   const business = props.business ?? outletCtx.business ?? null;
 
   const bizId = business?.id;
@@ -39,7 +39,7 @@ export default function RevenueView(props) {
     if (bizId) {
       localStorage.setItem(retentionKey, retention);
     }
-  }, [retention, bizId]);
+  }, [retention, bizId, retentionKey]);
 
   const handleHideOrder = (orderId) => {
     const updated = [...hiddenOrderIds, orderId];
@@ -82,8 +82,13 @@ export default function RevenueView(props) {
     let daySales = 0;
     let weekSales = 0;
     let monthSales = 0;
+    let validCount = 0;
 
     visibleOrders.forEach((o) => {
+      const isCancelled = String(o.status || o.estado || '').toLowerCase().includes('cancel');
+      if (isCancelled) return;
+      validCount += 1;
+
       const daysDiff = getDaysDiff(o.created_at);
       const oDate = new Date(o.created_at);
       
@@ -100,7 +105,7 @@ export default function RevenueView(props) {
 
     return {
       filteredOrders: visibleOrders,
-      stats: { daySales, weekSales, monthSales, totalCount: visibleOrders.length }
+      stats: { daySales, weekSales, monthSales, totalCount: validCount }
     };
   }, [orders, hiddenOrderIds, retention]);
 
@@ -148,47 +153,47 @@ export default function RevenueView(props) {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-        <div className="card p-3.5 sm:p-4 bg-white border-gray-200/80 shadow-xs">
+        <div className="card p-3.5 sm:p-4 bg-white border-slate-200/80 shadow-xs">
           <div className="flex justify-between items-start mb-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Ingresos hoy</p>
-            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Ingresos hoy</p>
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
               <DollarSign size={16} />
             </div>
           </div>
-          <h4 className="text-2xl sm:text-3xl font-black text-gray-900 tabular-nums tracking-tight">
+          <h4 className="text-2xl sm:text-3xl font-black text-slate-950 tabular-nums tracking-tight">
             {formatMoney(stats.daySales)}
           </h4>
-          <span className="text-xs text-emerald-600 font-semibold flex items-center gap-0.5 mt-2">
+          <span className="text-xs text-emerald-700 font-semibold flex items-center gap-0.5 mt-2">
             <ArrowUpRight size={13} /> Facturación del día
           </span>
         </div>
 
-        <div className="card p-3.5 sm:p-4 bg-white border-gray-200/80 shadow-xs">
+        <div className="card p-3.5 sm:p-4 bg-white border-slate-200/80 shadow-xs">
           <div className="flex justify-between items-start mb-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Últimos 7 días</p>
-            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Últimos 7 días</p>
+            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
               <TrendingUp size={16} />
             </div>
           </div>
-          <h4 className="text-2xl sm:text-3xl font-black text-gray-900 tabular-nums tracking-tight">
+          <h4 className="text-2xl sm:text-3xl font-black text-slate-950 tabular-nums tracking-tight">
             {formatMoney(stats.weekSales)}
           </h4>
-          <span className="text-xs text-gray-500 flex items-center gap-0.5 mt-2">
+          <span className="text-xs text-slate-500 flex items-center gap-0.5 mt-2">
             Semana en curso
           </span>
         </div>
 
-        <div className="card p-3.5 sm:p-4 bg-white border-gray-200/80 shadow-xs">
+        <div className="card p-3.5 sm:p-4 bg-white border-slate-200/80 shadow-xs">
           <div className="flex justify-between items-start mb-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Últimos 30 días</p>
-            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Últimos 30 días</p>
+            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
               <BarChart3 size={16} />
             </div>
           </div>
-          <h4 className="text-2xl sm:text-3xl font-black text-gray-900 tabular-nums tracking-tight">
+          <h4 className="text-2xl sm:text-3xl font-black text-slate-950 tabular-nums tracking-tight">
             {formatMoney(stats.monthSales)}
           </h4>
-          <span className="text-xs text-gray-500 flex items-center gap-0.5 mt-2">
+          <span className="text-xs text-slate-500 flex items-center gap-0.5 mt-2">
             {stats.totalCount} {stats.totalCount === 1 ? 'pedido registrado' : 'pedidos registrados'}
           </span>
         </div>
@@ -236,43 +241,53 @@ export default function RevenueView(props) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredOrders.map((o) => (
-                  <tr key={o.id} className="hover:bg-gray-50/80 transition-colors">
-                    <td className="py-3 px-4 font-mono font-medium text-gray-700">
-                      #{o.id.toString().slice(-4).toUpperCase()}
-                    </td>
-                    <td className="py-3 px-4 text-gray-500">
-                      {new Date(o.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })} ·{' '}
-                      {new Date(o.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td className="py-3 px-4 font-medium text-gray-900">{o.nombre}</td>
-                    <td className="py-3 px-4 text-center">
-                      <span className={o.entrega_metodo === 'envio' ? 'badge badge-info text-[10px]' : 'badge badge-neutral text-[10px]'}>
-                        {o.entrega_metodo === 'envio' ? 'Domicilio' : 'Local'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <span className={o.pago_metodo === 'transferencia' ? 'badge badge-success text-[10px]' : 'badge badge-neutral text-[10px]'}>
-                        {o.pago_metodo === 'transferencia' ? 'Transferencia' : 'Efectivo'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right tabular-nums text-gray-500">
-                      {o.entrega_metodo === 'envio' ? formatMoney(o.domicilio_costo || 0) : '—'}
-                    </td>
-                    <td className="py-3 px-4 text-right font-semibold text-gray-900 tabular-nums">
-                      {formatMoney(o.total)}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => handleHideOrder(o.id)}
-                        className="btn-ghost p-1 text-gray-400 hover:text-gray-700"
-                        title="Ocultar de la tabla"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredOrders.map((o) => {
+                  const isCancelled = String(o.status || o.estado || '').toLowerCase().includes('cancel');
+                  return (
+                    <tr key={o.id} className="hover:bg-gray-50/80 transition-colors">
+                      <td className="py-3 px-4 font-mono font-medium text-gray-700">
+                        #{o.id.toString().slice(-4).toUpperCase()}
+                      </td>
+                      <td className="py-3 px-4 text-gray-500">
+                        {new Date(o.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })} ·{' '}
+                        {new Date(o.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="py-3 px-4 font-medium text-gray-900">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span>{o.nombre}</span>
+                          {isCancelled && (
+                            <span className="badge badge-error text-[10px]">Cancelado</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={o.entrega_metodo === 'envio' ? 'badge badge-info text-[10px]' : 'badge badge-neutral text-[10px]'}>
+                          {o.entrega_metodo === 'envio' ? 'Domicilio' : 'Local'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={o.pago_metodo === 'transferencia' ? 'badge badge-success text-[10px]' : 'badge badge-neutral text-[10px]'}>
+                          {o.pago_metodo === 'transferencia' ? 'Transferencia' : 'Efectivo'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right tabular-nums text-gray-500">
+                        {o.entrega_metodo === 'envio' ? formatMoney(o.domicilio_costo || 0) : '—'}
+                      </td>
+                      <td className={`py-3 px-4 text-right font-semibold tabular-nums ${isCancelled ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                        {formatMoney(o.total)}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          onClick={() => handleHideOrder(o.id)}
+                          className="btn-ghost p-1 text-gray-400 hover:text-gray-700"
+                          title="Ocultar de la tabla"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           ) : (
