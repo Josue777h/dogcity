@@ -8,6 +8,33 @@ const MULTIPLE_TITLE_HINT_RE = /(adicional|salsa|topping|extra|\bsin\b|agrega|co
 
 const FOOD_QUICK_TEMPLATES = [
   {
+    id: 'tpl_tamano',
+    label: 'Tamaño / Porciones',
+    titulo: 'Tamaño',
+    tipo: 'unica',
+    requerido: true,
+    max_opciones: null,
+    opciones: ['Personal (4 porciones)', 'Mediana (6 porciones)', 'Familiar (8 porciones)'],
+  },
+  {
+    id: 'tpl_borde',
+    label: 'Borde / Masa',
+    titulo: 'Borde o tipo de masa',
+    tipo: 'unica',
+    requerido: false,
+    max_opciones: null,
+    opciones: ['Masa tradicional', 'Masa delgada', 'Borde relleno de queso'],
+  },
+  {
+    id: 'tpl_mitad',
+    label: 'Mitad y Mitad (2 sabores)',
+    titulo: 'Sabores (Mitad y Mitad)',
+    tipo: 'multiple',
+    requerido: true,
+    max_opciones: 2,
+    opciones: ['Pepperoni', 'Hawaiana', 'Pollo con champiñones', 'Carnes'],
+  },
+  {
     id: 'tpl_proteina',
     label: 'Proteína / Sabor',
     titulo: 'Proteína o sabor',
@@ -23,7 +50,7 @@ const FOOD_QUICK_TEMPLATES = [
     tipo: 'multiple',
     requerido: false,
     max_opciones: null,
-    opciones: ['Queso extra', 'Tocineta', 'Papas'],
+    opciones: ['Queso mozzarella extra', 'Pepperoni extra', 'Tocineta', 'Champiñones', 'Maíz tierno'],
   },
   {
     id: 'tpl_salsas',
@@ -32,7 +59,7 @@ const FOOD_QUICK_TEMPLATES = [
     tipo: 'multiple',
     requerido: false,
     max_opciones: 3,
-    opciones: ['Casa', 'Ajo', 'Rosada', 'Piña'],
+    opciones: ['Ajo de la casa', 'Napolitana', 'Picante', 'Piña'],
   },
   {
     id: 'tpl_quitar',
@@ -41,7 +68,7 @@ const FOOD_QUICK_TEMPLATES = [
     tipo: 'multiple',
     requerido: false,
     max_opciones: null,
-    opciones: ['Sin cebolla', 'Sin vegetales', 'Sin salsas'],
+    opciones: ['Sin cebolla', 'Sin pimentón', 'Sin aceitunas', 'Sin salsas'],
   },
 ];
 
@@ -402,7 +429,7 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
           >
             <span>Biblioteca guardada</span>
             {allLibraryItems.length > 0 && (
-              <span className="text-[11px] bg-slate-900 text-white font-bold px-1.5 py-0.2 rounded-md tabular-nums">
+              <span className="text-[11px] bg-brand text-white font-bold px-1.5 py-0.2 rounded-md tabular-nums">
                 {allLibraryItems.length}
               </span>
             )}
@@ -418,7 +445,7 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
                 <button
                   type="button"
                   onClick={handleAddGroup}
-                  className="h-9 px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer active:scale-[0.99]"
+                  className="btn-primary h-9 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer active:scale-[0.99]"
                 >
                   <Plus size={15} strokeWidth={2.5} />
                   <span>Agregar grupo de opciones</span>
@@ -477,8 +504,8 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
                           type="text"
                           value={group.titulo}
                           onChange={(e) => handleUpdateGroup(group.id, 'titulo', e.target.value)}
-                          placeholder="Ej: Tipo de carne, Salsas, Adicionales..."
-                          className="w-full text-xs sm:text-sm font-semibold text-slate-950 bg-slate-50 focus:bg-white px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-slate-900 placeholder:text-slate-400 placeholder:font-normal"
+                          placeholder="Ej: Tamaño, Borde o tipo de masa, Adicionales..."
+                          className="w-full text-xs sm:text-sm font-semibold text-slate-950 bg-slate-50 focus:bg-white px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-brand placeholder:text-slate-400 placeholder:font-normal"
                         />
                       </div>
 
@@ -518,7 +545,7 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
                             onClick={() => handleUpdateGroup(group.id, 'tipo', 'unica')}
                             className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                               group.tipo === 'unica'
-                                ? 'bg-slate-900 text-white shadow-2xs'
+                                ? 'bg-brand text-white shadow-2xs'
                                 : 'text-slate-600 hover:text-slate-950'
                             }`}
                           >
@@ -529,7 +556,7 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
                             onClick={() => handleUpdateGroup(group.id, 'tipo', 'multiple')}
                             className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                               group.tipo === 'multiple'
-                                ? 'bg-slate-900 text-white shadow-2xs'
+                                ? 'bg-brand text-white shadow-2xs'
                                 : 'text-slate-600 hover:text-slate-950'
                             }`}
                           >
@@ -542,7 +569,7 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
                             aria-label="Máximo de opciones a elegir"
                             value={group.max_opciones || ''}
                             onChange={(e) => handleUpdateGroup(group.id, 'max_opciones', e.target.value ? Number(e.target.value) : null)}
-                            className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-800 focus:border-slate-900 focus:outline-none cursor-pointer"
+                            className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-800 focus:border-brand focus:outline-none cursor-pointer"
                           >
                             <option value="">Sin límite</option>
                             <option value="2">Máx. 2</option>
@@ -558,7 +585,7 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
                           type="checkbox"
                           checked={Boolean(group.requerido)}
                           onChange={(e) => handleUpdateGroup(group.id, 'requerido', e.target.checked)}
-                          className="w-4 h-4 rounded accent-slate-900 cursor-pointer"
+                          className="w-4 h-4 rounded accent-brand cursor-pointer"
                         />
                         <span>Obligatorio</span>
                       </label>
@@ -688,7 +715,7 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
                       <button
                         type="button"
                         onClick={() => handleUseFromLibrary(item)}
-                        className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1"
+                        className="btn-primary h-8 px-3 rounded-lg text-xs font-semibold cursor-pointer flex items-center gap-1"
                       >
                         <Plus size={13} />
                         <span>Usar</span>
@@ -728,7 +755,7 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
             <button
               type="button"
               onClick={handleConfirm}
-              className="h-9 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors cursor-pointer"
+              className="btn-primary h-9 px-4 rounded-lg text-xs font-semibold cursor-pointer"
             >
               Aplicar opciones
             </button>

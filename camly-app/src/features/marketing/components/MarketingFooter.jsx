@@ -4,9 +4,9 @@ import SaaSLogo from '../../../components/common/SaaSLogo';
 
 export default function MarketingFooter() {
   return (
-    <footer className="bg-black text-gray-400 text-sm border-t border-gray-900 pt-16 pb-12">
+    <footer className="bg-slate-950 text-slate-400 text-sm border-t border-slate-900 pt-14 pb-10">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-gray-900">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-slate-900">
           
           {/* Columna 1: Marca NEGU */}
           <div className="space-y-4 md:col-span-1">
@@ -80,7 +80,7 @@ export default function MarketingFooter() {
                 </Link>
               </li>
               <li>
-                <Link to="/tracking" className="hover:text-white transition-colors">
+                <Link to="/tracking?store=demo" className="hover:text-white transition-colors">
                   Rastreo de pedido en vivo
                 </Link>
               </li>

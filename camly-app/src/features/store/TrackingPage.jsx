@@ -86,9 +86,16 @@ export default function TrackingPage() {
         return;
       }
 
+      if (!id || !token) {
+        setLoadError(!id
+          ? 'Falta el número de pedido en el enlace. Abre el enlace directo enviado al finalizar tu compra.'
+          : 'El enlace no contiene el token de seguimiento. Solicita al comercio un enlace nuevo.');
+        setOrder(null);
+        setLoading(false);
+        return;
+      }
+
       try {
-        if (!id) throw new Error('Falta el número de pedido en el enlace. Abre el enlace directo enviado al finalizar tu compra.');
-        if (!token) throw new Error('El enlace no contiene el token de seguimiento. Solicita al comercio un enlace nuevo.');
         const { data: resultData, error } = await getSupabase().rpc('customer_get_order', {
           p_order_id: Number(id), p_token: token,
         });
@@ -492,8 +499,8 @@ export default function TrackingPage() {
                   {graceSeconds}s
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-bold text-xs sm:text-sm text-gray-900 truncate">Pedido confirmado</h3>
-                  <p className="text-xs text-gray-600 truncate">
+                  <h3 className="font-bold text-xs sm:text-sm text-gray-900">Pedido confirmado</h3>
+                  <p className="text-xs text-gray-600 leading-snug">
                     Entrando a preparación en <strong className="text-blue-700 font-bold">{graceSeconds}s</strong>...
                   </p>
                 </div>

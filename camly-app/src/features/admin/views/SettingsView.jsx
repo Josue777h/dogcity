@@ -4,37 +4,38 @@ import {
   Save, User,
   Instagram, Facebook, Palette,
   CheckCircle2, CreditCard, Upload, Smartphone, Check,
-  Music2, Wallet, Truck, Navigation, Search, Clock, Sparkles,
+  Music2, Wallet, Truck, Navigation, Search, Clock, Layers, KeyRound,
   ShoppingCart, Eye, Store, Utensils, Plus,
   QrCode, Printer, Download, ExternalLink, Copy
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { getSupabase, updateBusiness, uploadImage } from '../../../lib/supabase';
+import { isModuleEnabled } from '../../../lib/modules';
 import { useToastStore, useAuthStore } from '../../../stores';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 
 const CURATED_COLORS = [
+  { hex: '#0284C7', label: 'Azul NEGU' },
+  { hex: '#E11D48', label: 'Rojo Pizza' },
+  { hex: '#EA580C', label: 'Naranja Fuego' },
   { hex: '#0F172A', label: 'Carbón Noir' },
-  { hex: '#EA580C', label: 'Naranja Brasa' },
-  { hex: '#DC2626', label: 'Rojo Carmesí' },
   { hex: '#D97706', label: 'Ámbar Dorado' },
   { hex: '#059669', label: 'Esmeralda' },
   { hex: '#16A34A', label: 'Verde Bosque' },
   { hex: '#2563EB', label: 'Azul Real' },
   { hex: '#7C3AED', label: 'Violeta' },
-  { hex: '#DB2777', label: 'Fucsia Dulce' },
   { hex: '#78350F', label: 'Café Tostado' },
 ];
 
 const CURATED_SECONDARY_COLORS = [
-  { hex: '#FFFBF5', label: 'Blanco Crema' },
+  { hex: '#F0F9FF', label: 'Azul Suave' },
+  { hex: '#FFF1F2', label: 'Rojo Suave' },
   { hex: '#FFF7ED', label: 'Naranja Suave' },
-  { hex: '#FEF2F2', label: 'Rojo Suave' },
-  { hex: '#FEFCE8', label: 'Miel Claro' },
+  { hex: '#FFFBF5', label: 'Blanco Crema' },
   { hex: '#F0FDF4', label: 'Menta Suave' },
+  { hex: '#FEFCE8', label: 'Miel Claro' },
   { hex: '#EFF6FF', label: 'Azul Hielo' },
   { hex: '#F5F3FF', label: 'Lavanda' },
-  { hex: '#FDF2F8', label: 'Rosa Seda' },
   { hex: '#F8FAFC', label: 'Gris Glacial' },
   { hex: '#F5F5F4', label: 'Arena' },
 ];
@@ -64,6 +65,81 @@ const BUSINESS_TYPES = [
 const DEFAULT_DESIGN = { button_style: 'pill', font_family: 'sans', footer_style: 'branded' };
 const cleanFooterMessage = value => String(value || '').replace(/<!--(?:NEGU|CAMLY)_SCHEDULE:[\s\S]*?-->/g, '').replace(/<!--(?:NEGU|CAMLY)_DESIGN:[\s\S]*?-->/g, '').trim();
 
+function buildInitialFormData(business) {
+  return {
+    nombre_visible: business?.nombre_visible || '',
+    telefono: business?.telefono || '',
+    direccion: business?.direccion || '',
+    instagram: business?.instagram || '',
+    facebook: business?.facebook || '',
+    footer_message: cleanFooterMessage(business?.footer_message),
+    theme_color: business?.theme_color || '#0284C7',
+    logo_url: business?.logo_url || '',
+    whatsapp_contacto: business?.whatsapp_contacto || business?.telefono || '',
+    metodos_pago: Array.isArray(business?.metodos_pago) ? business.metodos_pago : ['efectivo', 'transferencia'],
+    pago_alias: business?.pago_alias || '',
+    pago_banco: business?.pago_banco || '',
+    tiktok: business?.tiktok || '',
+    lat: business?.lat || '',
+    lng: business?.lng || '',
+    tipo_domicilio: business?.tipo_domicilio || 'automatico',
+    precio_domicilio: business?.precio_domicilio ?? 0,
+    costo_por_km: business?.costo_por_km ?? 1000,
+    domicilio_minimo: business?.domicilio_minimo ?? 3000,
+    business_type: business?.business_type || 'general',
+    color_secundario: business?.color_secundario || business?.catalog_design?.color_secundario || '#F0F9FF',
+    timezone: business?.timezone || 'America/Bogota',
+  };
+}
+
+function buildInitialDesignData(business) {
+  const base = DEFAULT_DESIGN;
+  if (business?.catalog_design && typeof business.catalog_design === 'object' && Object.keys(business.catalog_design).length) {
+    return { ...base, ...business.catalog_design };
+  }
+  if (typeof business?.footer_message === 'string' && /<!--(?:NEGU|CAMLY)_DESIGN:/.test(business.footer_message)) {
+    try {
+      const match = business.footer_message.match(/<!--(?:NEGU|CAMLY)_DESIGN:(.*?)-->/);
+      if (match && match[1]) {
+        return { ...base, ...JSON.parse(match[1]) };
+      }
+    } catch (err) {
+      console.warn('Error parsing design config:', err);
+    }
+  }
+  return base;
+}
+
+function buildInitialScheduleData(business) {
+  const base = {
+    abierto_manual: true,
+    dias: {
+      lunes: { activo: true, abre: '11:00', cierra: '23:00' },
+      martes: { activo: true, abre: '11:00', cierra: '23:00' },
+      miercoles: { activo: true, abre: '11:00', cierra: '23:00' },
+      jueves: { activo: true, abre: '11:00', cierra: '23:00' },
+      viernes: { activo: true, abre: '11:00', cierra: '23:59' },
+      sabado: { activo: true, abre: '11:00', cierra: '23:59' },
+      domingo: { activo: true, abre: '12:00', cierra: '22:00' }
+    }
+  };
+  if (business?.horario && typeof business.horario === 'object' && Object.keys(business.horario).length) {
+    return { ...base, ...business.horario, dias: { ...base.dias, ...(business.horario.dias || {}) } };
+  }
+  if (typeof business?.footer_message === 'string' && /<!--(?:NEGU|CAMLY)_SCHEDULE:/.test(business.footer_message)) {
+    try {
+      const match = business.footer_message.match(/<!--(?:NEGU|CAMLY)_SCHEDULE:(.*?)-->/);
+      if (match && match[1]) {
+        const parsed = JSON.parse(match[1]);
+        return { ...base, ...parsed, dias: { ...base.dias, ...(parsed.dias || {}) } };
+      }
+    } catch (err) {
+      console.warn('Error parsing schedule:', err);
+    }
+  }
+  return base;
+}
+
 export default function SettingsView(props) {
   const outletCtx = useOutletContext() || {};
   const session = useAuthStore(s => s.session);
@@ -82,84 +158,33 @@ export default function SettingsView(props) {
   const mapInstance = useRef(null);
   const markerRef = useRef(null);
 
-  const [formData, setFormData] = useState({
-    nombre_visible: business?.nombre_visible || '',
-    telefono: business?.telefono || '',
-    direccion: business?.direccion || '',
-    instagram: business?.instagram || '',
-    facebook: business?.facebook || '',
-    footer_message: cleanFooterMessage(business?.footer_message),
-    theme_color: business?.theme_color || '#EA580C',
-    logo_url: business?.logo_url || '',
-    whatsapp_contacto: business?.whatsapp_contacto || business?.telefono || '',
-    metodos_pago: Array.isArray(business?.metodos_pago) ? business?.metodos_pago : ['efectivo', 'transferencia'],
-    pago_alias: business?.pago_alias || '',
-    pago_banco: business?.pago_banco || '',
-    tiktok: business?.tiktok || '',
-    lat: business?.lat || '',
-    lng: business?.lng || '',
-    tipo_domicilio: business?.tipo_domicilio || 'automatico',
-    precio_domicilio: business?.precio_domicilio ?? 0,
-    costo_por_km: business?.costo_por_km ?? 1000,
-    domicilio_minimo: business?.domicilio_minimo ?? 3000,
-    business_type: business?.business_type || 'general',
-    color_secundario: business?.color_secundario || '#FFF7ED',
-    timezone: business?.timezone || 'America/Bogota',
-  });
+  const [formData, setFormData] = useState(() => buildInitialFormData(business));
 
-  const [designData, setDesignData] = useState(() => {
-    const base = DEFAULT_DESIGN;
-    if (business?.catalog_design && typeof business.catalog_design === 'object' && Object.keys(business.catalog_design).length) return { ...base, ...business.catalog_design };
-    if (typeof business?.footer_message === 'string' && /<!--(?:NEGU|CAMLY)_DESIGN:/.test(business.footer_message)) {
-      try {
-        const match = business.footer_message.match(/<!--(?:NEGU|CAMLY)_DESIGN:(.*?)-->/);
-        if (match && match[1]) {
-          return { ...base, ...JSON.parse(match[1]) };
-        }
-      } catch (err) {
-        console.warn('Error parsing design config:', err);
-      }
+  const waiterPinKey = `negu_admin_pin_${business?.id || 'default'}`;
+  const [pinRevision, setPinRevision] = useState(0);
+  const [waiterPinDraft, setWaiterPinDraft] = useState('');
+  const hasConfiguredWaiterPin = (() => {
+    void pinRevision;
+    try {
+      return Boolean(localStorage.getItem(waiterPinKey));
+    } catch {
+      return false;
     }
-    return base;
-  });
+  })();
 
-  const [scheduleData, setScheduleData] = useState(() => {
-    const base = {
-      abierto_manual: true,
-      dias: {
-        lunes: { activo: true, abre: '11:00', cierra: '23:00' },
-        martes: { activo: true, abre: '11:00', cierra: '23:00' },
-        miercoles: { activo: true, abre: '11:00', cierra: '23:00' },
-        jueves: { activo: true, abre: '11:00', cierra: '23:00' },
-        viernes: { activo: true, abre: '11:00', cierra: '23:59' },
-        sabado: { activo: true, abre: '11:00', cierra: '23:59' },
-        domingo: { activo: true, abre: '12:00', cierra: '22:00' }
-      }
-    };
-    if (business?.horario && typeof business.horario === 'object' && Object.keys(business.horario).length) {
-      return { ...base, ...business.horario, dias: { ...base.dias, ...(business.horario.dias || {}) } };
-    }
-    if (typeof business?.footer_message === 'string' && /<!--(?:NEGU|CAMLY)_SCHEDULE:/.test(business.footer_message)) {
-      try {
-        const match = business.footer_message.match(/<!--(?:NEGU|CAMLY)_SCHEDULE:(.*?)-->/);
-        if (match && match[1]) {
-          const parsed = JSON.parse(match[1]);
-          return { ...base, ...parsed, dias: { ...base.dias, ...(parsed.dias || {}) } };
-        }
-      } catch (err) {
-        console.warn('Error parsing schedule:', err);
-      }
-    }
-    return base;
-  });
+  const [designData, setDesignData] = useState(() => buildInitialDesignData(business));
+
+  const [scheduleData, setScheduleData] = useState(() => buildInitialScheduleData(business));
   const currentSnapshot = JSON.stringify({ formData, designData, scheduleData });
-  const [savedSnapshot, setSavedSnapshot] = useState(null);
+  const [savedSnapshot, setSavedSnapshot] = useState(() => JSON.stringify({
+    formData: buildInitialFormData(business),
+    designData: buildInitialDesignData(business),
+    scheduleData: buildInitialScheduleData(business),
+  }));
   const hasUnsavedChanges = savedSnapshot !== null && currentSnapshot !== savedSnapshot;
   const syncedBusinessIdRef = useRef(business?.id ?? null);
   const hasUnsavedChangesRef = useRef(false);
   useEffect(() => { hasUnsavedChangesRef.current = hasUnsavedChanges; }, [hasUnsavedChanges]);
-  useEffect(() => { setSavedSnapshot(null); }, [business?.id]);
-  useEffect(() => { if (savedSnapshot === null) setSavedSnapshot(currentSnapshot); }, [currentSnapshot, savedSnapshot]);
 
   // ── QR CODE INTERACTIVO ──────────────────────────────────────────────
   const [qrMode, setQrMode] = useState('general'); // 'general' | 'mesa'
@@ -302,7 +327,7 @@ export default function SettingsView(props) {
     }
     const storeName = formData.nombre_visible || business?.nombre || 'Menú Digital';
     const isMesa = qrMode === 'mesa';
-    const color = formData.theme_color || '#EA580C';
+    const color = formData.theme_color || '#0284C7';
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -349,66 +374,62 @@ export default function SettingsView(props) {
   };
 
   useEffect(() => {
-    if (!business) return;
-    if (business.id === syncedBusinessIdRef.current && hasUnsavedChangesRef.current) return;
+    if (!business) return undefined;
+    if (business.id === syncedBusinessIdRef.current && hasUnsavedChangesRef.current) return undefined;
     syncedBusinessIdRef.current = business.id;
 
-    setFormData({
-      nombre_visible: business.nombre_visible || '',
-      telefono: business.telefono || '',
-      direccion: business.direccion || '',
-      instagram: business.instagram || '',
-      facebook: business.facebook || '',
-      footer_message: cleanFooterMessage(business.footer_message),
-      theme_color: business.theme_color || '#EA580C',
-      logo_url: business.logo_url || '',
-      whatsapp_contacto: business.whatsapp_contacto || business.telefono || '',
-      metodos_pago: Array.isArray(business.metodos_pago) ? business.metodos_pago : ['efectivo', 'transferencia'],
-      pago_alias: business.pago_alias || '',
-      pago_banco: business.pago_banco || '',
-      tiktok: business.tiktok || '',
-      lat: business.lat || '',
-      lng: business.lng || '',
-      tipo_domicilio: business.tipo_domicilio || 'automatico',
-      precio_domicilio: business.precio_domicilio ?? 0,
-      costo_por_km: business.costo_por_km ?? 1000,
-      domicilio_minimo: business.domicilio_minimo ?? 3000,
-      business_type: business.business_type || 'general',
-      color_secundario: business.color_secundario || '#FFF7ED',
-      timezone: business.timezone || 'America/Bogota',
+    let cancelled = false;
+    const nextForm = buildInitialFormData(business);
+    const nextDesign = buildInitialDesignData(business);
+    const nextSchedule = buildInitialScheduleData(business);
+    const nextSnapshot = JSON.stringify({
+      formData: nextForm,
+      designData: nextDesign,
+      scheduleData: nextSchedule,
     });
 
-    if (business.catalog_design && typeof business.catalog_design === 'object' && Object.keys(business.catalog_design).length) {
-      setDesignData({ ...DEFAULT_DESIGN, ...business.catalog_design });
-    } else if (typeof business.footer_message === 'string' && /<!--(?:NEGU|CAMLY)_DESIGN:/.test(business.footer_message)) {
-      try {
-        const match = business.footer_message.match(/<!--(?:NEGU|CAMLY)_DESIGN:(.*?)-->/);
-        if (match && match[1]) {
-          setDesignData(prev => ({ ...prev, ...JSON.parse(match[1]) }));
-        }
-      } catch (err) {
-        console.warn('Error parsing design config:', err);
-      }
-    }
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      setFormData(nextForm);
+      setDesignData(nextDesign);
+      setScheduleData(nextSchedule);
+      setSavedSnapshot(nextSnapshot);
+    });
 
-    if (business.horario && typeof business.horario === 'object' && Object.keys(business.horario).length) {
-      setScheduleData(prev => ({ ...prev, ...business.horario, dias: { ...prev.dias, ...(business.horario.dias || {}) } }));
-    } else if (typeof business.footer_message === 'string' && /<!--(?:NEGU|CAMLY)_SCHEDULE:/.test(business.footer_message)) {
-      try {
-        const match = business.footer_message.match(/<!--(?:NEGU|CAMLY)_SCHEDULE:(.*?)-->/);
-        if (match && match[1]) {
-          const parsed = JSON.parse(match[1]);
-          setScheduleData(prev => ({ ...prev, ...parsed, dias: { ...prev.dias, ...(parsed.dias || {}) } }));
-        }
-      } catch (err) {
-        console.warn('Error parsing schedule:', err);
-      }
-    }
+    return () => { cancelled = true; };
   }, [business]);
 
   const [isUploading, setIsUploading] = useState(false);
   const [isLocatingGps, setIsLocatingGps] = useState(false);
   const addToast = useToastStore(s => s.addToast);
+
+  const handleSaveWaiterPin = () => {
+    const cleanPin = waiterPinDraft.replace(/\D/g, '').slice(0, 4);
+    if (cleanPin.length !== 4) {
+      addToast('El PIN de mesero debe tener exactamente 4 dígitos numéricos.', 'warning');
+      return;
+    }
+    try {
+      localStorage.setItem(waiterPinKey, cleanPin);
+      setPinRevision(r => r + 1);
+      setWaiterPinDraft('');
+      addToast('PIN de Modo Mesero guardado en este dispositivo.', 'success');
+    } catch {
+      addToast('No se pudo guardar el PIN en este navegador.', 'error');
+    }
+  };
+
+  const handleClearWaiterPin = () => {
+    try {
+      localStorage.removeItem(waiterPinKey);
+      localStorage.removeItem('negu_waiter_lock_active');
+      setPinRevision(r => r + 1);
+      setWaiterPinDraft('');
+      addToast('PIN de Modo Mesero eliminado.', 'info');
+    } catch {
+      addToast('No se pudo eliminar el PIN.', 'error');
+    }
+  };
 
   const handleUseCurrentGps = () => {
     if (!navigator.geolocation) {
@@ -505,12 +526,15 @@ export default function SettingsView(props) {
         facebook: formData.facebook || '',
         tiktok: formData.tiktok || '',
         footer_message: cleanFooterMessage(formData.footer_message),
-        theme_color: formData.theme_color || '#EA580C',
-        color_secundario: formData.color_secundario || '#FFF7ED',
+        theme_color: formData.theme_color || '#0284C7',
+        color_secundario: formData.color_secundario || '#F0F9FF',
         business_type: formData.business_type,
         timezone: formData.timezone || 'America/Bogota',
         horario: scheduleData,
-        catalog_design: designData,
+        catalog_design: {
+          ...designData,
+          color_secundario: formData.color_secundario || '#F0F9FF',
+        },
         logo_url: formData.logo_url || '',
         whatsapp_contacto: formData.whatsapp_contacto || '',
         metodos_pago: methods,
@@ -540,7 +564,7 @@ export default function SettingsView(props) {
   };
 
   const handleLogoUpload = async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
@@ -549,22 +573,24 @@ export default function SettingsView(props) {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      addToast('El logo no debe pesar más de 2MB', 'error');
+    if (file.size > 10 * 1024 * 1024) {
+      addToast('El logo no debe pesar más de 10MB', 'error');
+      e.target.value = '';
       return;
     }
 
     setIsUploading(true);
     try {
-      const path = `logos/${business.id}-${Date.now()}.${file.name.split('.').pop()}`;
+      const path = `logos/${business.id}-${Date.now()}.webp`;
       const url = await uploadImage(file, path);
       setFormData(prev => ({ ...prev, logo_url: url }));
-      addToast('Logo actualizado', 'success');
+      addToast('Logo optimizado en WebP y actualizado', 'success');
     } catch (err) {
       console.error(err);
-      addToast('Error al subir el logo', 'error');
+      addToast(err?.message || 'Error al subir el logo', 'error');
     } finally {
       setIsUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -649,12 +675,12 @@ export default function SettingsView(props) {
   }, [activeTab]);
 
   return (
-    <div className="space-y-3 animate-fade-in-up">
-      {/* Tabs Header — Todos los módulos visibles y accesibles en 1 toque en móvil y PC */}
+    <div className={`space-y-3 animate-fade-in-up ${hasUnsavedChanges && activeTab !== 'qr' ? 'pb-20 sm:pb-0' : ''}`}>
+      {/* Tabs Header — Deslizable en una sola fila en móvil, compacto en PC */}
       <div
         role="tablist"
         aria-label="Secciones de configuración"
-        className="flex flex-wrap items-center gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200/90 shadow-2xs"
+        className="flex items-center gap-1.5 overflow-x-auto no-scrollbar lg:flex-wrap bg-white p-1.5 rounded-2xl border border-slate-200/90 shadow-2xs"
       >
         {[
           { id: 'perfil', label: 'General', icon: User },
@@ -673,9 +699,9 @@ export default function SettingsView(props) {
             aria-selected={activeTab === tab.id}
             aria-controls="settings-active-panel"
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`shrink-0 whitespace-nowrap flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               activeTab === tab.id
-                ? 'bg-slate-900 text-white shadow-2xs'
+                ? 'bg-brand text-white shadow-2xs'
                 : 'bg-slate-50/80 border border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
@@ -686,13 +712,15 @@ export default function SettingsView(props) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="sticky top-0 z-20 -mx-1 flex items-center justify-between gap-3 border-y border-gray-200 bg-white/95 px-3 py-2 backdrop-blur sm:mx-0 sm:rounded-xl sm:border sm:px-4">
-          <p className={`text-xs font-medium ${hasUnsavedChanges ? 'text-amber-700' : 'text-emerald-700'}`} aria-live="polite">{hasUnsavedChanges ? 'Tienes cambios sin guardar' : 'Configuración guardada'}</p>
-          <button type="submit" disabled={loading || !hasUnsavedChanges} className="btn-primary py-2 px-4 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50">
-            {loading ? <LoadingSpinner size={15} /> : <><Save size={15} /> Guardar</>}
-          </button>
-        </div>
-        <div id="settings-active-panel" role="tabpanel" aria-labelledby={`settings-tab-${activeTab}`} className="card p-3.5 sm:p-4 lg:p-5 bg-white border-gray-200/80 shadow-xs rounded-xl">
+        {activeTab !== 'qr' && (
+          <div className="sticky top-0 z-20 -mx-1 flex items-center justify-between gap-3 border-y border-slate-200 bg-white/95 px-3 py-2 backdrop-blur sm:mx-0 sm:rounded-xl sm:border sm:px-4">
+            <p className={`text-xs font-medium ${hasUnsavedChanges ? 'text-amber-700' : 'text-emerald-700'}`} aria-live="polite">{hasUnsavedChanges ? 'Tienes cambios sin guardar' : 'Configuración guardada'}</p>
+            <button type="submit" disabled={loading || !hasUnsavedChanges} className="btn-primary py-2 px-4 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50">
+              {loading ? <LoadingSpinner size={15} /> : <><Save size={15} /> Guardar</>}
+            </button>
+          </div>
+        )}
+        <div id="settings-active-panel" role="tabpanel" aria-labelledby={`settings-tab-${activeTab}`} className="card p-3.5 sm:p-4 lg:p-5 bg-white border-slate-200/80 shadow-xs rounded-xl">
           
           {/* ── PERFIL ── */}
           {activeTab === 'perfil' && (
@@ -706,7 +734,7 @@ export default function SettingsView(props) {
                   value={formData.nombre_visible}
                   onChange={e => setFormData({...formData, nombre_visible: e.target.value})}
                   className="input-field" 
-                  placeholder="Ej: Dog City Burger"
+                  placeholder="Ej: Pizzería La Toscana"
                 />
               </div>
 
@@ -746,6 +774,63 @@ export default function SettingsView(props) {
                   className="input-field" 
                 />
               </div>
+
+              {isModuleEnabled(business, 'kitchen') && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-brand/10 text-brand flex items-center justify-center shrink-0">
+                        <KeyRound size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-slate-900">PIN de Seguridad — Modo Mesero</h4>
+                        <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                          Protege el acceso administrativo cuando entregues la tablet o celular al mesero en el Comandero.
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                      hasConfiguredWaiterPin
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-white text-slate-600 border-slate-200'
+                    }`}>
+                      {hasConfiguredWaiterPin ? 'PIN activo' : 'Sin PIN'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={waiterPinDraft}
+                      onChange={e => setWaiterPinDraft(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder={hasConfiguredWaiterPin ? 'Nuevo PIN (4 dígitos)' : 'Crear PIN de 4 dígitos'}
+                      aria-label="PIN de Modo Mesero"
+                      className="input-field font-mono text-center tracking-[0.25em] sm:w-44"
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveWaiterPin}
+                        disabled={waiterPinDraft.length !== 4}
+                        className="btn-primary py-2 px-3.5 text-xs font-bold flex-1 sm:flex-initial disabled:opacity-50"
+                      >
+                        {hasConfiguredWaiterPin ? 'Cambiar PIN' : 'Guardar PIN'}
+                      </button>
+                      {hasConfiguredWaiterPin && (
+                        <button
+                          type="button"
+                          onClick={handleClearWaiterPin}
+                          className="btn-secondary py-2 px-3 text-xs font-semibold text-rose-700 border-rose-200 hover:bg-rose-50"
+                        >
+                          Quitar PIN
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -767,73 +852,105 @@ export default function SettingsView(props) {
 
                   <div 
                     style={{
-                      fontFamily: FONT_OPTIONS.find(f => f.id === designData.font_family)?.fontFamily || "'Inter', sans-serif"
+                      fontFamily: FONT_OPTIONS.find(f => f.id === designData.font_family)?.fontFamily || "'Inter', sans-serif",
+                      backgroundColor: formData.color_secundario || '#F0F9FF',
+                      borderColor: `${formData.theme_color || '#0284C7'}25`,
                     }}
-                    className="p-2.5 rounded-xl border border-gray-200 bg-gray-50/50 flex items-center justify-between gap-3 shadow-2xs"
+                    className="p-2.5 rounded-xl border space-y-2 shadow-2xs"
                   >
-                    {/* Mini Header / Logo */}
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <div className="w-9 h-9 rounded-lg bg-white border border-gray-200 p-0.5 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
-                        {formData.logo_url ? (
-                          <img src={formData.logo_url} alt="Logo" className="w-full h-full object-contain" />
-                        ) : (
-                          <div 
-                            style={{ backgroundColor: formData.theme_color || '#0284C7' }} 
-                            className="w-full h-full rounded flex items-center justify-center text-white text-[10px] font-black"
-                          >
-                            <Store size={14} />
-                          </div>
-                        )}
+                    <div className="flex items-center justify-between gap-3">
+                      {/* Mini Header / Logo */}
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div className="w-9 h-9 rounded-lg bg-white border border-gray-200 p-0.5 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+                          {formData.logo_url ? (
+                            <img src={formData.logo_url} alt="Logo" className="w-full h-full object-contain" />
+                          ) : (
+                            <div 
+                              style={{ backgroundColor: formData.theme_color || '#0284C7' }} 
+                              className="w-full h-full rounded flex items-center justify-center text-white text-[10px] font-black"
+                            >
+                              <Store size={14} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-black text-gray-900 truncate leading-tight">
+                            {formData.nombre_visible || 'Nombre de tu negocio'}
+                          </p>
+                          <p className="text-[10px] text-gray-600 truncate">
+                            {({ food: 'Pizza Pepperoni Artesanal', retail: 'Artículo destacado', pharmacy: 'Producto de cuidado', stationery: 'Útiles escolares', general: 'Producto destacado' })[formData.business_type] || 'Producto destacado'} · <strong className="text-gray-900 font-bold">$28.000</strong>
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-black text-gray-900 truncate leading-tight">
-                          {formData.nombre_visible || 'Nombre de tu negocio'}
-                        </p>
-                        <p className="text-[10px] text-gray-500 truncate">
-                          {({ food: 'Producto destacado', retail: 'Artículo destacado', pharmacy: 'Producto de cuidado', stationery: 'Útiles escolares', general: 'Producto destacado' })[formData.business_type] || 'Producto destacado'} · <strong className="text-gray-900 font-bold">$24.000</strong>
-                        </p>
+
+                      {/* Botón dinámico reflejando el color y estilo seleccionado en vivo */}
+                      <div className="shrink-0">
+                        {designData.button_style === 'outline' ? (
+                          <button
+                            type="button"
+                            style={{ borderColor: formData.theme_color || '#0284C7', color: formData.theme_color || '#0284C7' }}
+                            className="py-1 px-3 text-xs font-bold rounded-lg border-2 bg-white shadow-2xs flex items-center gap-1"
+                          >
+                            <Plus size={12} />
+                            <span>Elegir</span>
+                          </button>
+                        ) : designData.button_style === 'square' ? (
+                          <button
+                            type="button"
+                            style={{ backgroundColor: formData.theme_color || '#0284C7' }}
+                            className="py-1.5 px-3 text-xs font-black uppercase tracking-wider rounded-none text-white shadow-2xs flex items-center gap-1"
+                          >
+                            <Plus size={12} />
+                            <span>Elegir</span>
+                          </button>
+                        ) : designData.button_style === 'soft' ? (
+                          <button
+                            type="button"
+                            style={{ backgroundColor: formData.theme_color || '#0284C7' }}
+                            className="py-1.5 px-3.5 text-xs font-semibold rounded-md text-white shadow-2xs flex items-center gap-1"
+                          >
+                            <Plus size={12} />
+                            <span>Elegir</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            style={{ backgroundColor: formData.theme_color || '#0284C7' }}
+                            className="py-1.5 px-4 text-xs font-bold rounded-full text-white shadow-md flex items-center gap-1"
+                          >
+                            <Plus size={12} />
+                            <span>Elegir</span>
+                          </button>
+                        )}
                       </div>
                     </div>
 
-                    {/* Botón dinámico reflejando el color y estilo seleccionado en vivo */}
-                    <div className="shrink-0">
-                      {designData.button_style === 'outline' ? (
-                        <button
-                          type="button"
-                          style={{ borderColor: formData.theme_color || '#0284C7', color: formData.theme_color || '#0284C7' }}
-                          className="py-1 px-3 text-xs font-bold rounded-lg border-2 bg-white shadow-2xs flex items-center gap-1"
-                        >
-                          <Plus size={12} />
-                          <span>Elegir</span>
-                        </button>
-                      ) : designData.button_style === 'square' ? (
-                        <button
-                          type="button"
-                          style={{ backgroundColor: formData.theme_color || '#0284C7' }}
-                          className="py-1.5 px-3 text-xs font-black uppercase tracking-wider rounded-none text-white shadow-2xs flex items-center gap-1"
-                        >
-                          <Plus size={12} />
-                          <span>Elegir</span>
-                        </button>
-                      ) : designData.button_style === 'soft' ? (
-                        <button
-                          type="button"
-                          style={{ backgroundColor: formData.theme_color || '#0284C7' }}
-                          className="py-1.5 px-3.5 text-xs font-semibold rounded-md text-white shadow-2xs flex items-center gap-1"
-                        >
-                          <Plus size={12} />
-                          <span>Elegir</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          style={{ backgroundColor: formData.theme_color || '#0284C7' }}
-                          className="py-1.5 px-4 text-xs font-bold rounded-full text-white shadow-md flex items-center gap-1"
-                        >
-                          <Plus size={12} />
-                          <span>Elegir</span>
-                        </button>
-                      )}
+                    {/* Chips de categoría de muestra en vivo */}
+                    <div className="flex items-center gap-1.5 overflow-hidden pt-1 border-t border-black/5">
+                      <span
+                        style={{ backgroundColor: formData.theme_color || '#0284C7', color: '#ffffff' }}
+                        className="text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0"
+                      >
+                        Todos
+                      </span>
+                      <span
+                        style={{
+                          backgroundColor: formData.color_secundario || '#F0F9FF',
+                          borderColor: `${formData.theme_color || '#0284C7'}30`,
+                        }}
+                        className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border text-slate-800 shrink-0"
+                      >
+                        Pizzas
+                      </span>
+                      <span
+                        style={{
+                          backgroundColor: formData.color_secundario || '#F0F9FF',
+                          borderColor: `${formData.theme_color || '#0284C7'}30`,
+                        }}
+                        className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border text-slate-800 shrink-0"
+                      >
+                        Bebidas
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -868,7 +985,7 @@ export default function SettingsView(props) {
                               type="button"
                               onClick={() => setFormData({ ...formData, theme_color: c.hex })}
                               className={`w-7 h-7 rounded-full shrink-0 border-2 transition-transform active:scale-90 ${
-                                isSelected ? 'border-gray-950 ring-2 ring-gray-950/20 scale-110 shadow-xs' : 'border-white shadow-2xs hover:scale-105'
+                                isSelected ? 'border-white ring-2 ring-brand scale-110 shadow-xs' : 'border-white shadow-2xs hover:scale-105'
                               }`}
                               style={{ backgroundColor: c.hex }}
                               title={c.label}
@@ -888,12 +1005,12 @@ export default function SettingsView(props) {
                           <input 
                             aria-label="Color secundario de marca" 
                             type="color" 
-                            value={formData.color_secundario || '#FFF7ED'} 
+                            value={formData.color_secundario || '#F0F9FF'} 
                             onChange={e => setFormData(prev => ({ ...prev, color_secundario: e.target.value }))} 
                             className="h-8 w-10 rounded border border-gray-300 bg-white p-0.5 cursor-pointer shrink-0" 
                           />
                           <span className="text-[11px] font-mono font-bold text-gray-700 uppercase">
-                            {formData.color_secundario || '#FFF7ED'}
+                            {formData.color_secundario || '#F0F9FF'}
                           </span>
                         </div>
                       </div>
@@ -901,19 +1018,19 @@ export default function SettingsView(props) {
                       {/* Swatches Rápidos de Tonos Secundarios */}
                       <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
                         {CURATED_SECONDARY_COLORS.map(c => {
-                          const isSelected = (formData.color_secundario || '#FFF7ED').toLowerCase() === c.hex.toLowerCase();
+                          const isSelected = (formData.color_secundario || '#F0F9FF').toLowerCase() === c.hex.toLowerCase();
                           return (
                             <button
                               key={c.hex}
                               type="button"
                               onClick={() => setFormData(prev => ({ ...prev, color_secundario: c.hex }))}
                               className={`w-7 h-7 rounded-full shrink-0 border-2 transition-transform active:scale-90 flex items-center justify-center ${
-                                isSelected ? 'border-gray-950 ring-2 ring-gray-950/20 scale-110 shadow-xs' : 'border-gray-200 shadow-2xs hover:scale-105'
+                                isSelected ? 'border-brand ring-2 ring-brand/25 scale-110 shadow-xs' : 'border-gray-200 shadow-2xs hover:scale-105'
                               }`}
                               style={{ backgroundColor: c.hex }}
                               title={c.label}
                             >
-                              {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-gray-950" />}
+                              {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-brand" />}
                             </button>
                           );
                         })}
@@ -937,33 +1054,33 @@ export default function SettingsView(props) {
                               onClick={() => setDesignData({ ...designData, button_style: b.id })}
                               className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-between gap-2 ${
                                 isSelected
-                                  ? 'bg-gray-950 text-white border-gray-950 shadow-xs ring-1 ring-gray-950'
-                                  : 'bg-gray-50/70 border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300'
+                                  ? 'border-brand bg-brand/5 text-slate-900 shadow-xs ring-1 ring-brand/20'
+                                  : 'bg-slate-50/70 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
                               }`}
                             >
                               {/* Preview visual del botón */}
                               <div className="w-full flex justify-center py-1">
                                 {b.id === 'outline' ? (
-                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${isSelected ? 'border-white text-white' : 'border-gray-700 text-gray-800'}`}>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border bg-white ${isSelected ? 'border-brand text-brand' : 'border-slate-700 text-slate-800'}`}>
                                     + Elegir
                                   </span>
                                 ) : b.id === 'square' ? (
-                                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-none ${isSelected ? 'bg-white text-gray-950' : 'bg-gray-800 text-white'}`}>
+                                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-none text-white ${isSelected ? 'bg-brand' : 'bg-slate-800'}`}>
                                     Elegir
                                   </span>
                                 ) : b.id === 'soft' ? (
-                                  <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-md ${isSelected ? 'bg-white text-gray-950' : 'bg-gray-800 text-white'}`}>
+                                  <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-md text-white ${isSelected ? 'bg-brand' : 'bg-slate-800'}`}>
                                     + Elegir
                                   </span>
                                 ) : (
-                                  <span className={`text-[10px] font-bold px-3 py-0.5 rounded-full shadow-2xs ${isSelected ? 'bg-white text-gray-950' : 'bg-gray-800 text-white'}`}>
+                                  <span className={`text-[10px] font-bold px-3 py-0.5 rounded-full shadow-2xs text-white ${isSelected ? 'bg-brand' : 'bg-slate-800'}`}>
                                     + Elegir
                                   </span>
                                 )}
                               </div>
                               <div>
                                 <p className="text-xs font-bold leading-tight">{b.name}</p>
-                                <p className={`text-[10px] ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>{b.desc}</p>
+                                <p className={`text-[10px] ${isSelected ? 'text-slate-600' : 'text-slate-500'}`}>{b.desc}</p>
                               </div>
                             </button>
                           );
@@ -989,13 +1106,13 @@ export default function SettingsView(props) {
                               onClick={() => setDesignData({ ...designData, font_family: f.id })}
                               className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
                                 isSelected
-                                  ? 'bg-gray-950 text-white border-gray-950 shadow-xs ring-1 ring-gray-950'
-                                  : 'bg-gray-50/70 border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300'
+                                  ? 'border-brand bg-brand/5 text-slate-900 shadow-xs ring-1 ring-brand/20'
+                                  : 'bg-slate-50/70 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
                               }`}
                             >
-                              <span className="text-sm font-extrabold block mb-0.5">Aa</span>
+                              <span className={`text-sm font-extrabold block mb-0.5 ${isSelected ? 'text-brand' : 'text-slate-900'}`}>Aa</span>
                               <p className="text-xs font-bold truncate">{f.name}</p>
-                              <p className={`text-[9px] font-sans truncate ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>{f.desc}</p>
+                              <p className={`text-[9px] font-sans truncate ${isSelected ? 'text-slate-600' : 'text-slate-500'}`}>{f.desc}</p>
                             </button>
                           );
                         })}
@@ -1064,10 +1181,10 @@ export default function SettingsView(props) {
                               type="button"
                               aria-pressed={isSelected}
                               onClick={() => setDesignData({ ...designData, footer_style: style.id })}
-                              className={`rounded-xl border p-2.5 text-left transition-colors ${
+                              className={`rounded-xl border p-2.5 text-left transition-colors cursor-pointer ${
                                 isSelected
-                                  ? 'border-gray-950 bg-gray-50 ring-1 ring-gray-950'
-                                  : 'border-gray-200 bg-white hover:border-gray-400'
+                                  ? 'border-brand bg-brand/5 ring-1 ring-brand/20'
+                                  : 'border-slate-200 bg-white hover:border-slate-300'
                               }`}
                             >
                               <div
@@ -1162,16 +1279,16 @@ export default function SettingsView(props) {
                         </span>
                         <span 
                           style={{ 
-                            backgroundColor: formData.color_secundario || '#FFF7ED', 
+                            backgroundColor: formData.color_secundario || '#F0F9FF', 
                             borderColor: `${formData.theme_color || '#0284C7'}25` 
                           }}
                           className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border text-gray-700 shrink-0"
                         >
-                          Especiales
+                          Pizzas
                         </span>
                         <span 
                           style={{ 
-                            backgroundColor: formData.color_secundario || '#FFF7ED', 
+                            backgroundColor: formData.color_secundario || '#F0F9FF', 
                             borderColor: `${formData.theme_color || '#0284C7'}25` 
                           }}
                           className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border text-gray-700 shrink-0"
@@ -1181,7 +1298,10 @@ export default function SettingsView(props) {
                       </div>
 
                       {/* Card de Producto Simulada */}
-                      <div className="p-2.5 bg-gray-50/30 space-y-2">
+                      <div
+                        style={{ backgroundColor: `color-mix(in srgb, ${formData.color_secundario || '#F0F9FF'} 50%, white)` }}
+                        className="p-2.5 space-y-2"
+                      >
                         <div 
                           style={{ borderColor: `${formData.theme_color || '#0284C7'}35` }}
                           className="bg-white p-2.5 rounded-2xl border shadow-xs relative overflow-hidden"
@@ -1190,20 +1310,23 @@ export default function SettingsView(props) {
                             style={{ backgroundColor: formData.theme_color || '#0284C7', color: '#ffffff' }}
                             className="inline-flex items-center gap-1 text-[8px] font-bold px-2 py-0.5 rounded-md mb-1.5 shadow-2xs"
                           >
-                            <Sparkles size={8} />
-                            <span>Personalizable</span>
+                            <Layers size={8} />
+                            <span>Opciones</span>
                           </div>
 
                           <div className="flex gap-2">
-                            <div className="w-12 h-12 rounded-xl bg-gray-100 border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
-                              <Utensils size={18} className="text-gray-300" />
+                            <div
+                              style={{ backgroundColor: formData.color_secundario || '#F0F9FF' }}
+                              className="w-12 h-12 rounded-xl border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden"
+                            >
+                              <Utensils size={18} className="text-slate-400" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-gray-900 truncate">Producto Estrella</p>
-                              <p className="text-[9px] text-gray-500 line-clamp-1">Ingredientes frescos y preparación</p>
+                              <p className="text-xs font-bold text-gray-900 truncate">Pizza Pepperoni Artesanal</p>
+                              <p className="text-[9px] text-gray-500 line-clamp-1">Masa artesanal, mozzarella gratinada y pepperoni.</p>
                               
                               <div className="flex items-center justify-between mt-1.5">
-                                <span className="text-xs font-black text-gray-900">$ 24.000</span>
+                                <span className="text-xs font-black text-gray-900">$ 28.000</span>
                                 
                                 {/* Botón con estilo seleccionado */}
                                 {designData.button_style === 'outline' ? (
@@ -1242,12 +1365,20 @@ export default function SettingsView(props) {
                       </div>
 
                       {/* Vista previa del pie del catálogo */}
-                      <div className="px-2.5 pb-14 pt-1">
+                      <div
+                        style={{ backgroundColor: `color-mix(in srgb, ${formData.color_secundario || '#F0F9FF'} 50%, white)` }}
+                        className="px-2.5 pb-14 pt-1"
+                      >
                         <div
                           className="flex items-center gap-2 rounded-xl border p-2"
                           style={designData.footer_style === 'minimal'
                             ? { backgroundColor: '#fff', borderColor: '#e5e7eb' }
-                            : { backgroundColor: `color-mix(in srgb, ${formData.theme_color || '#0284C7'} 9%, white)`, borderColor: `color-mix(in srgb, ${formData.theme_color || '#0284C7'} 24%, white)` }}
+                            : {
+                                backgroundColor: formData.color_secundario
+                                  ? `color-mix(in srgb, ${formData.color_secundario} 75%, white)`
+                                  : `color-mix(in srgb, ${formData.theme_color || '#0284C7'} 9%, white)`,
+                                borderColor: `color-mix(in srgb, ${formData.theme_color || '#0284C7'} 24%, white)`,
+                              }}
                         >
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white bg-white">
                             {formData.logo_url
@@ -1274,7 +1405,7 @@ export default function SettingsView(props) {
                             </span>
                             <span>Ver mi pedido</span>
                           </div>
-                          <span className="tabular-nums font-black">$ 24.000</span>
+                          <span className="tabular-nums font-black">$ 28.000</span>
                         </div>
                       </div>
 
@@ -1291,7 +1422,7 @@ export default function SettingsView(props) {
               <div className="border-b border-gray-100 pb-4">
                 <div className="flex items-center gap-2.5">
                   <div 
-                    style={{ backgroundColor: `${formData.theme_color || '#EA580C'}18`, color: formData.theme_color || '#EA580C' }}
+                    style={{ backgroundColor: `${formData.theme_color || '#0284C7'}18`, color: formData.theme_color || '#0284C7' }}
                     className="w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-2xs"
                   >
                     <QrCode size={19} />
@@ -1319,17 +1450,17 @@ export default function SettingsView(props) {
                         onClick={() => setQrMode('general')}
                         className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
                           qrMode === 'general'
-                            ? 'border-gray-950 bg-gray-950 text-white shadow-xs'
-                            : 'border-gray-200 bg-gray-50/70 text-gray-700 hover:bg-gray-100'
+                            ? 'border-brand bg-brand/5 text-slate-900 shadow-xs ring-1 ring-brand/20'
+                            : 'border-slate-200 bg-slate-50/70 text-slate-700 hover:bg-slate-100'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <Smartphone size={16} className={qrMode === 'general' ? 'text-white' : 'text-gray-500'} />
-                          {qrMode === 'general' && <Check size={14} className="text-emerald-400" />}
+                          <Smartphone size={16} className={qrMode === 'general' ? 'text-brand' : 'text-slate-500'} />
+                          {qrMode === 'general' && <Check size={14} className="text-brand" />}
                         </div>
                         <div>
                           <p className="text-xs font-bold">Catálogo General</p>
-                          <p className={`text-[10px] ${qrMode === 'general' ? 'text-gray-300' : 'text-gray-500'}`}>
+                          <p className={`text-[10px] ${qrMode === 'general' ? 'text-slate-600' : 'text-slate-500'}`}>
                             Para volantes, stickers de empaque, Instagram y domicilio.
                           </p>
                         </div>
@@ -1340,17 +1471,17 @@ export default function SettingsView(props) {
                         onClick={() => setQrMode('mesa')}
                         className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
                           qrMode === 'mesa'
-                            ? 'border-gray-950 bg-gray-950 text-white shadow-xs'
-                            : 'border-gray-200 bg-gray-50/70 text-gray-700 hover:bg-gray-100'
+                            ? 'border-brand bg-brand/5 text-slate-900 shadow-xs ring-1 ring-brand/20'
+                            : 'border-slate-200 bg-slate-50/70 text-slate-700 hover:bg-slate-100'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <Utensils size={16} className={qrMode === 'mesa' ? 'text-white' : 'text-gray-500'} />
-                          {qrMode === 'mesa' && <Check size={14} className="text-emerald-400" />}
+                          <Utensils size={16} className={qrMode === 'mesa' ? 'text-brand' : 'text-slate-500'} />
+                          {qrMode === 'mesa' && <Check size={14} className="text-brand" />}
                         </div>
                         <div>
                           <p className="text-xs font-bold">Mesa Específica</p>
-                          <p className={`text-[10px] ${qrMode === 'mesa' ? 'text-gray-300' : 'text-gray-500'}`}>
+                          <p className={`text-[10px] ${qrMode === 'mesa' ? 'text-slate-600' : 'text-slate-500'}`}>
                             Para acrílicos de mesa. El cliente pide con número de mesa.
                           </p>
                         </div>
@@ -1382,8 +1513,8 @@ export default function SettingsView(props) {
                               onClick={() => setTableNumber(m)}
                               className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border transition-colors cursor-pointer ${
                                 tableNumber === m
-                                  ? 'bg-gray-900 text-white border-gray-900'
-                                  : 'bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200'
+                                  ? 'bg-brand text-white border-brand'
+                                  : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
                               }`}
                             >
                               {m}
@@ -1408,12 +1539,12 @@ export default function SettingsView(props) {
                             onClick={() => setQrColorMode('brand')}
                             className={`flex-1 py-1.5 px-2.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                               qrColorMode === 'brand'
-                                ? 'border-gray-950 bg-gray-900 text-white shadow-xs'
-                                : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                                ? 'border-brand bg-brand/10 text-brand shadow-xs ring-1 ring-brand/20'
+                                : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
                             }`}
                           >
                             <span 
-                              style={{ backgroundColor: formData.theme_color || '#EA580C' }} 
+                              style={{ backgroundColor: formData.theme_color || '#0284C7' }} 
                               className="w-3.5 h-3.5 rounded-full inline-block border border-white"
                             />
                             <span>Tu Marca</span>
@@ -1424,8 +1555,8 @@ export default function SettingsView(props) {
                             onClick={() => setQrColorMode('dark')}
                             className={`flex-1 py-1.5 px-2.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                               qrColorMode === 'dark'
-                                ? 'border-gray-950 bg-gray-900 text-white shadow-xs'
-                                : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                                ? 'border-brand bg-brand/10 text-brand shadow-xs ring-1 ring-brand/20'
+                                : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
                             }`}
                           >
                             <span className="w-3.5 h-3.5 rounded-full bg-slate-900 inline-block border border-white" />
@@ -1500,7 +1631,7 @@ export default function SettingsView(props) {
                     
                     {/* Borde superior de marca */}
                     <div 
-                      style={{ backgroundColor: formData.theme_color || '#EA580C' }}
+                      style={{ backgroundColor: formData.theme_color || '#0284C7' }}
                       className="absolute top-0 left-0 right-0 h-2" 
                     />
 
@@ -1520,8 +1651,8 @@ export default function SettingsView(props) {
                     {/* Badge de Modalidad */}
                     <div 
                       style={{ 
-                        backgroundColor: `${formData.theme_color || '#EA580C'}15`, 
-                        color: formData.theme_color || '#EA580C' 
+                        backgroundColor: `${formData.theme_color || '#0284C7'}15`, 
+                        color: formData.theme_color || '#0284C7' 
                       }}
                       className="text-[11px] font-bold px-3 py-0.5 rounded-full mb-3 inline-flex items-center gap-1"
                     >
@@ -1562,7 +1693,7 @@ export default function SettingsView(props) {
                       type="button"
                       onClick={handleDownloadQr}
                       disabled={!qrDataUrl}
-                      className="flex-1 py-2.5 px-3 rounded-xl bg-gray-900 text-white hover:bg-black font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                      className="btn-primary flex-1 py-2.5 px-3 rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                     >
                       <Download size={14} />
                       <span>Descargar PNG</span>
@@ -1658,17 +1789,31 @@ export default function SettingsView(props) {
                     { id: 'automatico', label: 'Automático por GPS', desc: 'Calcula distancia en km y suma costo por km.' },
                     { id: 'fijo', label: 'Tarifa fija', desc: 'Mismo precio para todos los pedidos de la ciudad.' },
                     { id: 'manual', label: 'Por confirmar en WhatsApp', desc: 'Cotizas el domicilio con el cliente en el chat.' },
-                  ].map(m => (
-                    <button 
-                      key={m.id}
-                      type="button"
-                      onClick={() => setFormData({...formData, tipo_domicilio: m.id})}
-                      className={`p-3.5 rounded-lg border text-left transition-colors ${formData.tipo_domicilio === m.id ? 'border-orange-500 bg-orange-50/50' : 'border-border bg-white hover:bg-gray-50'}`}
-                    >
-                      <span className="block text-xs font-semibold text-gray-900">{m.label}</span>
-                      <span className="block text-xs text-gray-500 mt-1 leading-snug">{m.desc}</span>
-                    </button>
-                  ))}
+                  ].map(m => {
+                    const isSelected = formData.tipo_domicilio === m.id;
+                    return (
+                      <button 
+                        key={m.id}
+                        type="button"
+                        onClick={() => setFormData({...formData, tipo_domicilio: m.id})}
+                        className={`p-3.5 rounded-xl border text-left transition-colors cursor-pointer relative ${
+                          isSelected
+                            ? 'border-brand bg-brand/5 ring-1 ring-brand/20'
+                            : 'border-slate-200 bg-white hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="block text-xs font-bold text-slate-900">{m.label}</span>
+                          {isSelected && (
+                            <span className="w-4 h-4 rounded-full bg-brand text-white flex items-center justify-center shrink-0">
+                              <Check size={10} strokeWidth={3} />
+                            </span>
+                          )}
+                        </div>
+                        <span className="block text-xs text-slate-600 mt-1 leading-snug">{m.desc}</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {formData.tipo_domicilio === 'fijo' && (
@@ -1755,22 +1900,22 @@ export default function SettingsView(props) {
                         }}
                         className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5
                           ${active 
-                            ? 'border-gray-950 bg-gray-900 text-white shadow-xs' 
-                            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}
+                            ? 'border-brand bg-brand/5 text-slate-900 shadow-xs ring-1 ring-brand/20' 
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
                       >
                         <div className="flex items-center justify-between w-full">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${active ? 'bg-white/15 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${active ? 'bg-brand text-white' : 'bg-slate-100 text-slate-600'}`}>
                             <m.icon size={16} />
                           </div>
                           {active && (
-                            <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">
-                              ✓
+                            <span className="w-5 h-5 rounded-full bg-brand text-white flex items-center justify-center text-[10px] font-bold">
+                              <Check size={12} strokeWidth={3} />
                             </span>
                           )}
                         </div>
                         <div>
                           <p className="text-xs font-bold leading-tight">{m.label}</p>
-                          <p className={`text-[10px] mt-0.5 leading-snug ${active ? 'text-gray-300' : 'text-gray-500'}`}>{m.desc}</p>
+                          <p className={`text-[10px] mt-0.5 leading-snug ${active ? 'text-slate-600' : 'text-slate-500'}`}>{m.desc}</p>
                         </div>
                       </button>
                     );
@@ -1797,8 +1942,8 @@ export default function SettingsView(props) {
                           onClick={() => setFormData({ ...formData, pago_banco: bankName })}
                           className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
                             (formData.pago_banco || '').toLowerCase().includes(bankName.toLowerCase())
-                              ? 'bg-gray-900 text-white border-gray-900 shadow-2xs'
-                              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-100'
+                              ? 'bg-brand text-white border-brand shadow-2xs'
+                              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
                           }`}
                         >
                           {bankName}
@@ -1935,7 +2080,7 @@ export default function SettingsView(props) {
                       });
                       addToast('Horario del Lunes replicado a toda la semana', 'success');
                     }}
-                    className="text-xs text-orange-600 font-semibold hover:underline cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg text-xs text-brand bg-brand/10 hover:bg-brand/15 border border-brand/20 font-semibold transition-colors cursor-pointer"
                   >
                     Replicar Lunes a toda la semana
                   </button>
@@ -1969,7 +2114,7 @@ export default function SettingsView(props) {
                                 }
                               }));
                             }}
-                            className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 border-gray-300"
+                            className="w-4 h-4 rounded accent-brand text-brand focus:ring-brand border-slate-300"
                           />
                           <label htmlFor={`day-${day.id}`} className={`text-xs font-semibold select-none cursor-pointer ${config.activo ? 'text-gray-900' : 'text-gray-400 line-through'}`}>
                             {day.label}
@@ -2076,7 +2221,7 @@ export default function SettingsView(props) {
                     .replace(/<!--[\s\S]*?-->/g, '')
                     .trim()} 
                   onChange={e => setFormData({...formData, footer_message: e.target.value})} 
-                  placeholder="Ej: Las mejores hamburguesas artesanales de la ciudad."
+                  placeholder="Ej: Pizzas artesanales al horno de piedra, listas para tu mesa o domicilio."
                   className="input-field text-xs resize-none" 
                   rows={2}
                 />
@@ -2085,6 +2230,21 @@ export default function SettingsView(props) {
           )}
 
         </div>
+
+        {hasUnsavedChanges && activeTab !== 'qr' && (
+          <div className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 pb-safe flex items-center justify-between gap-3 shadow-lg">
+            <span className="text-xs font-semibold text-amber-700 truncate">
+              Tienes cambios sin guardar
+            </span>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary py-2 px-4 text-xs font-bold shrink-0"
+            >
+              {loading ? <LoadingSpinner size={14} /> : <><Save size={14} /> Guardar</>}
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );

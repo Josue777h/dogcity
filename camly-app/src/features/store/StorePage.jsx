@@ -140,11 +140,11 @@ export default function StorePage() {
   // Apply brand color — tenant theming (do not remove)
   useEffect(() => {
     const color = business?.theme_color || '#0284C7';
-    const secondaryColor = business?.color_secundario || '#FFF7ED';
+    const secondaryColor = business?.color_secundario || business?.catalog_design?.color_secundario || '#F0F9FF';
     document.documentElement.style.setProperty('--color-brand', color);
     document.documentElement.style.setProperty('--color-brand-dark', color);
     document.documentElement.style.setProperty('--color-brand-secondary', secondaryColor);
-  }, [business?.theme_color, business?.color_secundario]);
+  }, [business?.theme_color, business?.color_secundario, business?.catalog_design?.color_secundario]);
 
   const visibleCategories = useMemo(() => {
     if (categories?.length > 0) {
@@ -213,7 +213,7 @@ export default function StorePage() {
     ? `57${rawContactPhone}`
     : rawContactPhone;
 
-  const brandColor = business?.theme_color || '#EA580C';
+  const brandColor = business?.theme_color || '#0284C7';
 
   const designConfig = useMemo(() => {
     const base = {
@@ -248,6 +248,8 @@ export default function StorePage() {
     }
     return base;
   }, [business]);
+
+  const secondaryColor = business?.color_secundario || designConfig?.color_secundario || '#F0F9FF';
 
   const fontStyle = useMemo(() => {
     switch (designConfig.font_family) {
@@ -292,8 +294,8 @@ export default function StorePage() {
 
   return (
     <div
-      style={fontStyle}
-      className="flex min-h-dvh flex-col bg-[#f7f6f2] text-slate-900 w-full max-w-full overflow-x-hidden"
+      style={{ ...fontStyle, backgroundColor: `color-mix(in srgb, ${secondaryColor} 55%, #f8fafc)` }}
+      className="flex min-h-dvh flex-col text-slate-900 w-full max-w-full overflow-x-hidden"
     >
       <SEO
         title={`${business.nombre_visible || business.nombre} | Menú digital en NEGU`}
@@ -435,7 +437,11 @@ export default function StorePage() {
         </div>
 
         {/* Horizontal category chips */}
-        <nav aria-label="Categorías de productos" className="border-t border-[#f0ede7] bg-[#faf9f6]/60">
+        <nav
+          aria-label="Categorías de productos"
+          style={{ backgroundColor: `color-mix(in srgb, ${secondaryColor} 40%, white)` }}
+          className="border-t border-[#f0ede7]"
+        >
           <div className="fluid-container">
             <div role="tablist" className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 py-2 hide-scrollbar no-scrollbar items-center">
               {visibleCategories.map(cat => {
@@ -447,11 +453,15 @@ export default function StorePage() {
                     type="button"
                     role="tab"
                     aria-selected={isActive}
-                    style={isActive ? { backgroundColor: brandColor, borderColor: brandColor, color: '#ffffff' } : {}}
+                    style={
+                      isActive
+                        ? { backgroundColor: brandColor, borderColor: brandColor, color: '#ffffff' }
+                        : { backgroundColor: secondaryColor, borderColor: `color-mix(in srgb, ${brandColor} 22%, #cbd5e1)` }
+                    }
                     className={`min-h-8.5 shrink-0 snap-start whitespace-nowrap rounded-full border px-3.5 py-1 text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                       isActive
                         ? 'text-white shadow-xs'
-                        : 'border-[#d9d5cd] bg-white text-slate-700 hover:border-slate-400 hover:bg-[#f7f6f2]'
+                        : 'text-slate-800 hover:opacity-90'
                     }`}
                   >
                     {cat}
@@ -470,9 +480,9 @@ export default function StorePage() {
           className="border-b border-[#e7e3db] bg-white/95"
         >
           <div className="fluid-container py-2">
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
+            <div className="flex flex-nowrap sm:flex-wrap items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar text-xs">
               <span
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium ${
+                className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium ${
                   scheduleStatus.isOpen
                     ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
                     : 'border-amber-200 bg-amber-50 text-amber-900'
@@ -485,7 +495,11 @@ export default function StorePage() {
               <button
                 type="button"
                 onClick={() => setDrawerOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#e1ddd5] bg-[#faf9f6] px-2.5 py-1 font-semibold text-slate-800 hover:border-slate-400 hover:bg-[#f2f0eb] transition-colors cursor-pointer"
+                style={{
+                  backgroundColor: secondaryColor,
+                  borderColor: `color-mix(in srgb, ${brandColor} 20%, #cbd5e1)`,
+                }}
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold text-slate-800 hover:opacity-90 transition-colors cursor-pointer"
                 title="Ver detalles de envío y realizar pedido"
               >
                 <Truck size={12} className="shrink-0" style={{ color: brandColor }} />
@@ -493,7 +507,11 @@ export default function StorePage() {
               </button>
 
               <span
-                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#e1ddd5] bg-[#faf9f6] px-2.5 py-1 font-medium text-slate-700"
+                style={{
+                  backgroundColor: secondaryColor,
+                  borderColor: `color-mix(in srgb, ${brandColor} 20%, #cbd5e1)`,
+                }}
+                className="shrink-0 inline-flex max-w-[240px] sm:max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium text-slate-800"
                 title={business.direccion ? `Recogida en tienda: ${business.direccion}` : 'Recogida en tienda disponible'}
               >
                 <Store size={12} className="shrink-0 text-slate-500" />
@@ -502,7 +520,13 @@ export default function StorePage() {
                 </span>
               </span>
 
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e1ddd5] bg-[#faf9f6] px-2.5 py-1 font-medium text-slate-700">
+              <span
+                style={{
+                  backgroundColor: secondaryColor,
+                  borderColor: `color-mix(in srgb, ${brandColor} 20%, #cbd5e1)`,
+                }}
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium text-slate-800"
+              >
                 <CreditCard size={12} className="shrink-0 text-slate-500" />
                 <span>{paymentSummary}</span>
               </span>

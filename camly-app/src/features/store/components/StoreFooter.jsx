@@ -43,6 +43,7 @@ export default function StoreFooter({ business, className = '', hasFloatingCart 
 
   const storeName = business.nombre_visible || business.nombre || 'Comercio';
   const brandColor = business.theme_color || '#0284C7';
+  const secondaryColor = business.color_secundario || business.catalog_design?.color_secundario || '';
   const isBranded = getFooterStyle(business) === 'branded';
   const description = (business.footer_message || '')
     .replace(/<!--(?:NEGU|CAMLY)_SCHEDULE:[\s\S]*?-->/g, '')
@@ -74,7 +75,9 @@ export default function StoreFooter({ business, className = '', hasFloatingCart 
     },
   ].filter(Boolean);
 
-  const brandTint = `color-mix(in srgb, ${brandColor} 2%, white)`;
+  const brandTint = secondaryColor
+    ? `color-mix(in srgb, ${secondaryColor} 75%, white)`
+    : `color-mix(in srgb, ${brandColor} 6%, white)`;
   const brandBorder = isBranded ? `color-mix(in srgb, ${brandColor} 28%, white)` : '#e7e3db';
 
   return (

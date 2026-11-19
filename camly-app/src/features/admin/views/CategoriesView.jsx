@@ -9,12 +9,12 @@ import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import { isModuleEnabled } from '../../../lib/modules';
 
 const SUGGESTED_CATEGORIES = [
+  'Pizzas',
+  'Pizzas Especiales',
+  'Lasagnas y Pastas',
   'Hamburguesas',
-  'Carnes',
-  'Perros Calientes',
-  'Salchipapas',
+  'Entradas y Pan de Ajo',
   'Bebidas',
-  'Entradas',
   'Adicionales',
   'Postres',
   'Combos'
@@ -215,7 +215,7 @@ export default function CategoriesView(props) {
                   type="text"
                   value={newCatName}
                   onChange={e => setNewCatName(e.target.value)}
-                  placeholder="Ej: Hamburguesas, Carnes, Bebidas..."
+                  placeholder="Ej: Pizzas, Pizzas Especiales, Bebidas..."
                   className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm font-medium text-slate-900 focus:outline-hidden focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10"
                   required
                 />

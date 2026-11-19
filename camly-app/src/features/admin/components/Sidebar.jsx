@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike, Sparkles, Tag, DollarSign, ExternalLink, Utensils, LayoutDashboard } from 'lucide-react';
+import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike, Zap, Tag, DollarSign, ExternalLink, Utensils, LayoutDashboard } from 'lucide-react';
 import { useBusinessStore } from '../../../stores';
 import { isModuleEnabled } from '../../../lib/modules';
 
@@ -114,7 +114,7 @@ export default function Sidebar({ business, onSignOut, isOpen, onClose }) {
               onClick={() => window.dispatchEvent(new CustomEvent('open-billing-modal'))}
               className="btn-primary w-full text-xs justify-center"
             >
-              <Sparkles size={14} aria-hidden="true" />
+              <Zap size={14} aria-hidden="true" />
               <span>Activar Plan Pro</span>
             </button>
           )}

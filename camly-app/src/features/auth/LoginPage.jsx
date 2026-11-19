@@ -86,7 +86,7 @@ export default function LoginPage() {
           </Link>
 
           <div className="mb-6">
-            <Link to="/" className="inline-block mb-5">
+            <Link to="/" className="inline-block mb-5 lg:hidden">
               <SaaSLogo className="h-10" />
             </Link>
             <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">

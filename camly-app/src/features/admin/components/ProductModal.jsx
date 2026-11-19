@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   X, Save, Upload, Image as ImageIcon, Plus,
   Trash2, Layers, AlertCircle, RotateCcw, ChevronRight 
@@ -20,7 +20,6 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
   const [dragOver, setDragOver] = useState(false);
   const [isToppingsModalOpen, setIsToppingsModalOpen] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
 
   const { categories, setCategories } = useBusinessStore();
   const [isAddingCat, setIsAddingCat] = useState(false);
@@ -40,34 +39,31 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
     opciones: Array.isArray(product?.opciones) ? product.opciones : []
   };
 
-  const [formData, setFormData] = useState(initialFormData);
+  const restoredDraft = useMemo(() => {
+    if (isEditing) return null;
+    try {
+      const savedDraft = readMigratedLocalStorage(draftKey, [`camly_product_draft_${businessId || 'default'}`]);
+      if (!savedDraft) return null;
+      const parsed = JSON.parse(savedDraft);
+      if (parsed && (parsed.name || parsed.price || parsed.description || parsed.image || (parsed.opciones && parsed.opciones.length > 0))) {
+        return parsed;
+      }
+    } catch (err) {
+      console.warn('Error leyendo borrador:', err);
+    }
+    return null;
+  }, [isEditing, draftKey, businessId]);
+
+  const [hasRestoredDraft, setHasRestoredDraft] = useState(() => Boolean(restoredDraft));
+  const [formData, setFormData] = useState(() => (
+    restoredDraft
+      ? { ...initialFormData, ...restoredDraft, id: null, negocio_id: businessId }
+      : initialFormData
+  ));
   const addToast = useToastStore(s => s.addToast);
   const fileInputRef = useRef(null);
 
-  // 1. Recuperar borrador si es creación nueva
-  useEffect(() => {
-    if (!isEditing) {
-      try {
-        const savedDraft = readMigratedLocalStorage(draftKey, [`camly_product_draft_${businessId || 'default'}`]);
-        if (savedDraft) {
-          const parsed = JSON.parse(savedDraft);
-          if (parsed && (parsed.name || parsed.price || parsed.description || parsed.image || (parsed.opciones && parsed.opciones.length > 0))) {
-            setFormData(prev => ({
-              ...prev,
-              ...parsed,
-              id: null,
-              negocio_id: businessId
-            }));
-            setHasRestoredDraft(true);
-          }
-        }
-      } catch (err) {
-        console.warn('Error leyendo borrador:', err);
-      }
-    }
-  }, [isEditing, draftKey, businessId]);
-
-  // 2. Auto-guardar borrador al cambiar datos (solo en creación nueva)
+  // Auto-guardar borrador al cambiar datos (solo en creación nueva)
   useEffect(() => {
     if (!isEditing) {
       const hasContent = Boolean(
@@ -92,7 +88,9 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
   const handleClearDraft = () => {
     try {
       localStorage.removeItem(draftKey);
-    } catch {}
+    } catch (err) {
+      console.debug('localStorage no disponible:', err);
+    }
     setFormData({
       id: null,
       name: '',
@@ -152,19 +150,24 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
 
   const processFile = async (file) => {
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      addToast('La imagen es muy pesada (máx 2MB)', 'error');
+    if (!file.type?.startsWith('image/')) {
+      addToast('Selecciona un archivo de imagen válido', 'error');
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      addToast('La imagen supera el máximo de 12MB', 'error');
       return;
     }
     setUploading(true);
     try {
-      const fileName = `${businessId}/${Date.now()}-${file.name}`;
+      const baseName = (file.name || 'producto').replace(/\.[^.]+$/, '') || 'producto';
+      const fileName = `${businessId}/${Date.now()}-${baseName}.webp`;
       const url = await uploadImage(file, fileName);
       setFormData(prev => ({ ...prev, image: url }));
-      addToast('Imagen subida correctamente', 'success');
+      addToast('Imagen optimizada en WebP y subida', 'success');
     } catch (err) {
       console.error(err);
-      addToast('Error al subir imagen', 'error');
+      addToast(err?.message || 'Error al subir imagen', 'error');
     } finally {
       setUploading(false);
     }
@@ -208,7 +211,9 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
       // Borrar borrador al guardar con éxito
       try {
         localStorage.removeItem(draftKey);
-      } catch {}
+      } catch (err) {
+        console.debug('localStorage no disponible:', err);
+      }
       onClose();
     } catch (err) {
       console.error(err);
@@ -269,8 +274,9 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
             </div>
           )}
 
-          {/* Scrollable Form Body Compacto */}
-          <form onSubmit={handleSubmit} className="p-3.5 sm:p-4 space-y-3 overflow-y-auto flex-1 text-xs">
+          {/* Scrollable Form Body Compacto + Footer fijo */}
+          <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="p-3.5 sm:p-4 space-y-3 overflow-y-auto flex-1 min-h-0 text-xs">
             
             {/* Fila compacta: Imagen en miniatura a la izquierda + Nombre y Categoría a la derecha */}
             <div className="flex flex-col sm:flex-row gap-3">
@@ -314,7 +320,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
                       <>
                         <ImageIcon size={18} className="text-gray-400 mb-1" />
                         <span className="text-[10px] font-bold text-gray-600 leading-tight">Subir foto</span>
-                        <span className="text-[9px] text-gray-400">Máx 2MB</span>
+                        <span className="text-[9px] text-gray-400">WebP automático</span>
                       </>
                     )}
                   </div>
@@ -331,7 +337,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
                     type="text" 
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
-                    placeholder="Ej: Hamburguesa Doble Queso"
+                    placeholder="Ej: Pizza Pepperoni Familiar"
                     className="input-field text-xs font-medium"
                     required
                   />
@@ -435,27 +441,27 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
               <textarea 
                 value={formData.description}
                 onChange={e => setFormData({...formData, description: e.target.value})}
-                placeholder="Ej: Carne 150g, queso cheddar fundido, tocineta y salsa de la casa."
+                placeholder="Ej: Masa artesanal, salsa napolitana de la casa, queso mozzarella gratinado y pepperoni."
                 className="input-field text-xs resize-none" 
                 rows={2}
               />
             </div>
 
             {/* ══════════ SECCIÓN: OPCIONES Y MODIFICADORES ══════════ */}
-            <div className="p-3 rounded-xl bg-gray-100 border border-gray-300 flex items-center justify-between gap-3">
+            <div className="p-3 rounded-xl bg-sky-50/70 border border-sky-200/90 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-white border border-gray-300 text-gray-950 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-white border border-sky-200 text-brand flex items-center justify-center shrink-0">
                   <Layers size={16} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-gray-950 truncate">Opciones y Modificadores</p>
-                  <p className="text-xs text-gray-700 font-medium truncate">
+                  <p className="text-xs font-bold text-slate-900 truncate">Opciones y Modificadores</p>
+                  <p className="text-xs text-slate-600 font-medium truncate">
                     {formData.opciones?.length > 0 
                       ? (formData.opciones.length === 1 
                           ? `${formData.opciones[0].titulo || 'Opciones'} · ${totalOptionsCount} ${totalOptionsCount === 1 ? 'opción' : 'opciones'}`
                           : `${formData.opciones.map(g => g.titulo).filter(Boolean).slice(0, 3).join(', ')}${formData.opciones.length > 3 ? '...' : ''} · ${totalOptionsCount} opciones`
                         )
-                      : 'Sabores, tamaños, salsas o adicionales'}
+                      : 'Tamaños, bordes, sabores o adicionales'}
                   </p>
                 </div>
               </div>
@@ -463,19 +469,20 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
               <button
                 type="button"
                 onClick={() => setIsToppingsModalOpen(true)}
-                className="h-8 px-3 text-xs font-bold rounded-lg bg-white border border-gray-300 hover:border-black text-gray-950 hover:bg-gray-50 flex items-center gap-1 shrink-0 transition-colors cursor-pointer shadow-2xs"
+                className="h-8 px-3 text-xs font-bold rounded-lg bg-white border border-brand/30 hover:border-brand text-brand hover:bg-brand/5 flex items-center gap-1 shrink-0 transition-colors cursor-pointer shadow-2xs"
               >
                 <span>{formData.opciones?.length > 0 ? 'Configurar opciones' : '+ Agregar opciones'}</span>
                 <ChevronRight size={14} />
               </button>
             </div>
+            </div>
 
-            {/* Botones de acción del formulario */}
-            <div className="flex gap-2 pt-2 border-t border-gray-100">
+            {/* Footer fijo con botones de acción siempre accesibles en móvil */}
+            <div className="shrink-0 px-3.5 py-3 sm:px-4 border-t border-slate-200 bg-white flex gap-2 pb-safe">
               <button 
                 type="submit"
                 disabled={loading || uploading}
-                className="btn-primary py-2 px-4 text-xs font-bold flex-1 justify-center disabled:opacity-50 cursor-pointer shadow-glow-blue"
+                className="btn-primary py-2.5 px-4 text-xs font-bold flex-1 justify-center disabled:opacity-50 cursor-pointer"
               >
                 {loading ? (
                   <LoadingSpinner size={14} />
@@ -489,12 +496,11 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
               <button 
                 type="button"
                 onClick={handleRequestClose} 
-                className="btn-secondary py-2 px-3 text-xs font-semibold cursor-pointer"
+                className="btn-secondary py-2.5 px-3.5 text-xs font-semibold cursor-pointer"
               >
                 Cancelar
               </button>
             </div>
-
           </form>
         </div>
       </div>
@@ -546,7 +552,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
                   setShowExitConfirm(false);
                   onClose();
                 }}
-                className="btn-primary flex-1 py-2 text-xs font-semibold bg-gray-900 hover:bg-black cursor-pointer text-white"
+                className="flex-1 py-2 px-3 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 cursor-pointer text-white transition-colors"
               >
                 Salir
               </button>

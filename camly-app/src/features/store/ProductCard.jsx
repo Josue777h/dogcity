@@ -70,6 +70,7 @@ const ProductCard = memo(function ProductCard({
   }, [business?.catalog_design, business?.footer_message]);
 
   const buttonStyle = designConfig.button_style || 'pill';
+  const secondaryColor = business?.color_secundario || designConfig?.color_secundario || '#F0F9FF';
 
   if (!bid) return null;
 
@@ -263,7 +264,8 @@ const ProductCard = memo(function ProductCard({
       >
         {/* Product Image */}
         <div
-          className="group relative aspect-[8/5] cursor-pointer overflow-hidden bg-[#e8dfd1]"
+          style={{ backgroundColor: secondaryColor }}
+          className="group relative aspect-[8/5] cursor-pointer overflow-hidden"
           onClick={openCustomizationModal}
         >
           {!imgError && product.image ? (
@@ -278,7 +280,7 @@ const ProductCard = memo(function ProductCard({
               onError={() => setImgError(true)}
             />
           ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-[#e8dfd1] p-4 text-slate-600">
+            <div className="flex h-full w-full flex-col items-center justify-center gap-1 p-4 text-slate-600">
               <PackageCheck size={21} strokeWidth={1.5} />
               <span className="text-xs font-medium">Foto no disponible</span>
             </div>
@@ -363,7 +365,13 @@ const ProductCard = memo(function ProductCard({
                 <span>{hasOptions ? 'Elegir' : 'Agregar'}</span>
               </button>
             ) : (
-              <div className="flex h-10 min-h-[40px] w-full items-center justify-between overflow-hidden rounded-xl border border-[#e1ddd5] bg-[#f7f6f2]">
+              <div
+                style={{
+                  backgroundColor: secondaryColor,
+                  borderColor: `color-mix(in srgb, ${brandColor} 25%, #cbd5e1)`,
+                }}
+                className="flex h-10 min-h-[40px] w-full items-center justify-between overflow-hidden rounded-xl border"
+              >
                 <button
                   onClick={() => decrement(bid, product.id)}
                   className="flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-black/5 active:scale-95"
@@ -466,12 +474,13 @@ const ProductCard = memo(function ProductCard({
                     return (
                       <div 
                         key={group.id} 
+                        style={!isOpen && !isRequiredPending ? { backgroundColor: secondaryColor, borderColor: `color-mix(in srgb, ${brandColor} 25%, #cbd5e1)` } : undefined}
                         className={`rounded-xl border transition-all duration-200 overflow-hidden ${
                           isOpen 
                             ? 'border-slate-300 bg-white shadow-2xs ring-1 ring-black/[0.03]' 
                             : isRequiredPending
                               ? 'border-amber-200/90 bg-amber-50/20'
-                              : 'border-[#e7e3db] bg-[#fbfaf8] hover:border-slate-300'
+                              : 'hover:opacity-95'
                         }`}
                       >
                         {/* Cabecera interactiva del grupo */}
@@ -540,7 +549,7 @@ const ProductCard = memo(function ProductCard({
                         {/* Opciones dentro del grupo (se despliega si está abierto) */}
                         {isOpen && (
                           <div className="p-2.5 sm:p-3 pt-0 border-t border-slate-100/80 animate-fade-in">
-                            <div className="pt-2 grid grid-cols-2 gap-1.5">
+                            <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {group.opciones?.map(opt => {
                                 const isChecked = currentSelected.some(o => o.id === opt.id);
                                 const isMaxReached = !isRadio && maxLimit && currentSelected.length >= maxLimit && !isChecked;

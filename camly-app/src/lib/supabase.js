@@ -197,7 +197,7 @@ export async function fetchBusiness(slug) {
   }
 }
 
-const OPTIONAL_BUSINESS_COLUMNS = new Set(['business_type', 'catalog_design', 'horario', 'timezone']);
+const OPTIONAL_BUSINESS_COLUMNS = new Set(['business_type', 'catalog_design', 'horario', 'timezone', 'color_secundario']);
 
 export async function updateBusiness(id, updates) {
   const payload = { ...updates };
@@ -651,17 +651,107 @@ export async function registerBusiness({
 }
 
 // ── Storage ──
+async function convertImageFileToWebp(file, { maxDimension = 1200, quality = 0.85 } = {}) {
+  if (
+    typeof document === 'undefined' ||
+    !file?.type?.startsWith('image/') ||
+    file.type === 'image/svg+xml' ||
+    file.type === 'image/gif'
+  ) {
+    return { file, ext: null };
+  }
+
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      try {
+        const srcWidth = img.naturalWidth || img.width;
+        const srcHeight = img.naturalHeight || img.height;
+        if (!srcWidth || !srcHeight) {
+          URL.revokeObjectURL(objectUrl);
+          resolve({ file, ext: null });
+          return;
+        }
+
+        const scale = Math.min(1, maxDimension / Math.max(srcWidth, srcHeight));
+        const targetWidth = Math.max(1, Math.round(srcWidth * scale));
+        const targetHeight = Math.max(1, Math.round(srcHeight * scale));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          URL.revokeObjectURL(objectUrl);
+          resolve({ file, ext: null });
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        canvas.toBlob(
+          (blob) => {
+            URL.revokeObjectURL(objectUrl);
+            if (!blob || blob.type !== 'image/webp') {
+              resolve({ file, ext: null });
+              return;
+            }
+            const baseName = String(file.name || 'imagen').replace(/\.[^.]+$/, '') || 'imagen';
+            const webpFile = new File([blob], `${baseName}.webp`, {
+              type: 'image/webp',
+              lastModified: Date.now(),
+            });
+            resolve({ file: webpFile, ext: 'webp' });
+          },
+          'image/webp',
+          quality
+        );
+      } catch {
+        URL.revokeObjectURL(objectUrl);
+        resolve({ file, ext: null });
+      }
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve({ file, ext: null });
+    };
+
+    img.src = objectUrl;
+  });
+}
+
 export async function uploadImage(file, path) {
   // Sanitize path to prevent 'Invalid Key' 400 errors from Supabase
-  const sanitizedPath = path.split('/').map(segment => 
+  let sanitizedPath = path.split('/').map(segment => 
     segment.normalize('NFD') // Decompose accented characters
            .replace(/[\u0300-\u036f]/g, '') // Remove accents
            .replace(/[^a-zA-Z0-9.\-_]/g, '_') // Replace spaces/special chars with underscore
   ).join('/');
 
+  const maxDimension = String(path || '').startsWith('logos/') ? 600 : 1200;
+  const { file: convertedFile, ext } = await convertImageFileToWebp(file, { maxDimension, quality: 0.85 });
+  const processedFile = convertedFile || file;
+
+  if (ext === 'webp') {
+    sanitizedPath = /\.[a-zA-Z0-9]+$/.test(sanitizedPath)
+      ? sanitizedPath.replace(/\.[a-zA-Z0-9]+$/, '.webp')
+      : `${sanitizedPath}.webp`;
+  }
+
+  if (processedFile.size > 2 * 1024 * 1024) {
+    throw new Error('La imagen optimizada supera el límite de 2MB. Intenta con otra imagen más pequeña.');
+  }
+
   const { error } = await getSupabase().storage
     .from(SUPABASE_PRODUCT_BUCKET)
-    .upload(sanitizedPath, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+    .upload(sanitizedPath, processedFile, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: processedFile.type || 'image/webp',
+    });
   if (error) throw error;
   
   const { data } = getSupabase().storage.from(SUPABASE_PRODUCT_BUCKET).getPublicUrl(sanitizedPath);

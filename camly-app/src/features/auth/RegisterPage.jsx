@@ -152,7 +152,7 @@ export default function RegisterPage() {
         </Link>
 
         <div className="mb-6">
-          <Link to="/" className="inline-block mb-5">
+          <Link to="/" className="inline-block mb-5 lg:hidden">
             <SaaSLogo className="h-10" />
           </Link>
           <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
@@ -203,7 +203,7 @@ export default function RegisterPage() {
               <span className="block text-sm font-medium text-slate-700 mb-1.5">
                 Tipo de negocio
               </span>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {BUSINESS_VERTICALS.map((v) => {
                   const VIcon = VERTICAL_ICONS[v.id] || Package;
                   const isSelected = form.verticalId === v.id;
@@ -220,7 +220,7 @@ export default function RegisterPage() {
                       }`}
                     >
                       <VIcon size={15} className={`shrink-0 ${isSelected ? 'text-[#0284C7]' : 'text-slate-400'}`} />
-                      <span className="truncate">{v.label}</span>
+                      <span className="leading-tight">{v.label}</span>
                     </button>
                   );
                 })}

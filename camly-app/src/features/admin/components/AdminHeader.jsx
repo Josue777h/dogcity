@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, ExternalLink, Menu, Zap, AlertTriangle, Sparkles, Check } from 'lucide-react';
+import { Copy, ExternalLink, Menu, Zap, AlertTriangle, Check } from 'lucide-react';
 import { useToastStore, useBusinessStore, useAuthStore } from '../../../stores';
 
 const TAB_LABELS = {
@@ -103,7 +103,7 @@ export default function AdminHeader({ title, business, onOpenMenu }) {
             </span>
           ) : isPro ? (
             <span className="hidden md:inline-flex items-center gap-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[11px] font-semibold px-2 py-0.5 shrink-0">
-              <Sparkles size={11} className="shrink-0 text-emerald-600" />
+              <Zap size={11} className="shrink-0 text-emerald-600" />
               <span>Pro</span>
             </span>
           ) : null}
