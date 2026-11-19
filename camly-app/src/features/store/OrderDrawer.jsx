@@ -4,7 +4,7 @@ import {
   CheckCircle2, Minus, Plus, CreditCard, AlertCircle, Smartphone, Utensils, Store
 } from 'lucide-react';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
-import { formatMoney, openWhatsApp, reverseGeocode, formatWhatsAppMessage } from '../../lib/utils';
+import { formatMoney, formatThousandsInput, openWhatsApp, reverseGeocode, formatWhatsAppMessage } from '../../lib/utils';
 import { saveOrder } from '../../lib/supabase';
 import { WHATSAPP_FALLBACK_PHONE } from '../../lib/constants';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -148,19 +148,22 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
 
   function buildMessage(orderId, token) {
     const bizName    = (business?.nombre_visible || 'la tienda').trim();
+    const quotePending = tipoDom === 'manual' && deliveryMethod === 'envio';
     const itemsLines = selectedItems.flatMap(i => {
       const note = (i.note || cart.notes?.[i.id] || '').trim();
       const opts = (i.opciones_texto || '').trim();
-      const extra = [opts, note].filter(Boolean).join(' · ');
-      return [`${i.quantity} x ${i.name}`, ...(extra ? [`  Opciones: ${extra}`] : []), `  ${formatMoney(i.price * i.quantity)}`];
+      return [
+        `• *${i.quantity} × ${i.name}* — ${formatMoney(i.price * i.quantity)}`,
+        ...(opts ? [`  _Opciones: ${opts}_`] : []),
+        ...(note ? [`  _Nota: ${note}_`] : []),
+      ];
     });
 
-    const trackingUrl  = `${window.location.origin}/tracking/${orderId}?token=${encodeURIComponent(token)}`;
-    const addressLine  = customerAddress?.trim() || (locationLink ? 'Ver ubicación GPS en el mapa' : 'No especificada');
-    const quotePending = tipoDom === 'manual' && deliveryMethod === 'envio';
+    const trackingUrl = `${window.location.origin}/tracking/${orderId}?token=${encodeURIComponent(token)}`;
+    const addressLine = customerAddress?.trim() || (locationLink ? 'Ver ubicación GPS en el mapa' : 'No especificada');
 
     const sections = [
-      { title: 'Productos', lines: itemsLines },
+      { title: 'Detalle del pedido', lines: itemsLines },
     ];
 
     const isMesa = Boolean((tableNumber && String(tableNumber).trim()) || deliveryMethod === 'mesa');
@@ -168,24 +171,24 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
 
     if (isMesa) {
       sections.push({
-        title: 'Servicio en el restaurante',
-        lines: [`Modalidad: Mesa #${tableVal}`]
+        title: 'Servicio en el local',
+        lines: [`• Modalidad: Mesa #${tableVal}`]
       });
     } else if (deliveryMethod === 'envio') {
       sections.push({
         title: 'Entrega a domicilio',
         lines: [
-          `Dirección: ${addressLine}`,
-          locationLink ? `Mapa: ${locationLink}` : '',
-          `Domicilio: ${quotePending ? 'Pendiente de cotización' : formatMoney(effectiveDeliveryFee)}`
+          `• Dirección: ${addressLine}`,
+          locationLink ? `• Mapa GPS: ${locationLink}` : '',
+          `• Domicilio: ${quotePending ? 'Pendiente por cotizar' : (effectiveDeliveryFee === 0 ? 'Gratis' : formatMoney(effectiveDeliveryFee))}`
         ].filter(Boolean)
       });
     } else {
       sections.push({
-        title: 'Modalidad',
+        title: 'Recogida en tienda',
         lines: [
-          'Retiro / Recoger en tienda',
-          business?.direccion?.trim() ? `Dirección del local: ${business.direccion.trim()}` : '',
+          '• Modalidad: Paso a recoger en el local',
+          business?.direccion?.trim() ? `• Dirección del local: ${business.direccion.trim()}` : '',
         ].filter(Boolean)
       });
     }
@@ -200,28 +203,37 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
     sections.push({
       title: 'Resumen y pago',
       lines: [
-        `Subtotal: ${formatMoney(subtotal)}`,
-        deliveryMethod === 'envio' && !quotePending ? `Domicilio: ${formatMoney(effectiveDeliveryFee)}` : '',
-        quotePending ? 'Total: Pendiente de cotización del envío' : `Total: ${formatMoney(total)}`,
-        `Pago: ${paymentMethod === 'transferencia' ? `Transferencia (${business?.pago_banco || 'Nequi'})` : paymentMethod === 'datafono' ? 'Datáfono' : cashPaymentLabel}`,
+        `• Subtotal productos: ${formatMoney(subtotal)}`,
+        deliveryMethod === 'envio' && !quotePending ? `• Domicilio: ${effectiveDeliveryFee === 0 ? 'Gratis' : formatMoney(effectiveDeliveryFee)}` : '',
+        quotePending
+          ? `• *Total productos:* ${formatMoney(subtotal)} (+ envío por confirmar)`
+          : `• *Total a pagar:* ${formatMoney(total)}`,
+        `• Forma de pago: ${paymentMethod === 'transferencia' ? `Transferencia (${business?.pago_banco || 'Cuenta del comercio'})` : paymentMethod === 'datafono' ? 'Datáfono' : cashPaymentLabel}`,
       ].filter(Boolean)
     });
 
     sections.push({
-      title: 'Cliente',
+      title: 'Datos del cliente',
       lines: [
-        `Nombre: ${customerName}`,
-        customerPhone?.trim() ? `Contacto: ${customerPhone}` : (tableNumber ? 'Contacto: En mesa' : ''),
-        cart.comment ? `Nota: ${cart.comment}` : ''
+        `• Nombre: ${customerName}`,
+        customerPhone?.trim() ? `• Teléfono: ${customerPhone}` : (tableNumber ? '• Contacto: En mesa' : ''),
+        cart.comment ? `• Comentario: ${cart.comment}` : ''
       ].filter(Boolean)
     });
 
-    sections.push({
-      title: 'Seguimiento',
-      lines: [trackingUrl]
-    });
+    if (!quotePending) {
+      sections.push({
+        title: 'Seguimiento en línea',
+        lines: ['Sigue el estado de tu pedido aquí:', trackingUrl]
+      });
+    }
 
-    return formatWhatsAppMessage(`PEDIDO #${orderId} | ${bizName}`, sections);
+    const shortCode = String(orderId).slice(-6).toUpperCase();
+    return formatWhatsAppMessage(
+      `Pedido #${shortCode} · ${bizName}`,
+      sections,
+      `Hola *${bizName}*, quiero realizar el siguiente pedido:`
+    );
   }
 
   function updateLocationFromCoords(lat, lng, label = 'Ubicación ajustada') {
@@ -1041,9 +1053,17 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                       id="cash-paid-with"
                       type="text"
                       value={cashPaidWith}
-                      onChange={e => setCashPaidWith(e.target.value)}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        if (/[a-zA-Z]/.test(raw)) {
+                          setCashPaidWith(raw);
+                        } else {
+                          const formatted = formatThousandsInput(raw);
+                          setCashPaidWith(formatted ? `$${formatted}` : '');
+                        }
+                      }}
                       placeholder="O escribe otro monto (ej: $30.000)"
-                      className="input-field py-2 text-xs"
+                      className="input-field py-2 text-xs tabular-nums"
                     />
                   </div>
                 )}
@@ -1057,13 +1077,14 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-xs mb-0.5" style={{ color: 'var(--color-text-3)' }}>
-                          {business?.pago_banco || 'Nequi'} — Número para transferir:
+                          {business?.pago_banco || 'Nequi / Llave'} — Datos para transferir:
                         </p>
                         <p className="text-base font-semibold tabular-nums truncate" style={{ color: 'var(--color-text-1)' }}>
                           {business?.pago_alias || 'Consultar en chat'}
                         </p>
                       </div>
                       <button
+                        type="button"
                         onClick={handleCopyAccount}
                         className={`btn-primary py-1.5 px-3 text-xs shrink-0 ${hasCopiedAccount ? '!bg-green-600' : ''}`}
                       >
@@ -1071,23 +1092,30 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                         {hasCopiedAccount ? 'Copiado' : 'Copiar'}
                       </button>
                     </div>
-                    <ol className="space-y-1.5">
-                      {[
-                        'Copia el número con el botón de arriba.',
-                        `Transfiere ${formatMoney(total)} desde tu banco o app.`,
-                        'Adjunta el comprobante al confirmar por WhatsApp.',
-                      ].map((step, i) => (
-                        <li key={i} className="flex items-start gap-2 text-xs" style={{ color: 'var(--color-text-2)' }}>
-                          <span
-                            className="w-4 h-4 rounded-full flex items-center justify-center text-white font-semibold shrink-0 mt-0.5"
-                            style={{ backgroundColor: 'var(--color-brand)', fontSize: '10px' }}
-                          >
-                            {i + 1}
-                          </span>
-                          {step}
-                        </li>
-                      ))}
-                    </ol>
+
+                    {deliveryMethod === 'envio' && tipoDom === 'manual' ? (
+                      <div className="p-2.5 rounded-lg bg-amber-50/90 border border-amber-200 text-xs text-amber-950 leading-relaxed">
+                        Envía tu pedido primero para que el comercio cotice tu domicilio. Cuando te confirmen el total final, podrás transferir el valor completo y enviar tu comprobante.
+                      </div>
+                    ) : (
+                      <ol className="space-y-1.5">
+                        {[
+                          'Copia el número o llave con el botón de arriba.',
+                          'Realiza la transferencia desde tu banco o billetera.',
+                          'Adjunta el comprobante al confirmar tu pedido por WhatsApp.',
+                        ].map((step, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs" style={{ color: 'var(--color-text-2)' }}>
+                            <span
+                              className="w-4 h-4 rounded-full flex items-center justify-center text-white font-semibold shrink-0 mt-0.5"
+                              style={{ backgroundColor: 'var(--color-brand)', fontSize: '10px' }}
+                            >
+                              {i + 1}
+                            </span>
+                            {step}
+                          </li>
+                        ))}
+                      </ol>
+                    )}
                   </div>
                 )}
               </div>

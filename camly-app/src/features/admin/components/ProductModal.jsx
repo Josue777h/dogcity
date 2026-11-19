@@ -7,6 +7,7 @@ import { uploadImage, createCategory } from '../../../lib/supabase';
 import { useToastStore, useBusinessStore } from '../../../stores';
 import ToppingsManagerModal from './ToppingsManagerModal';
 import { readMigratedLocalStorage } from '../../../lib/localStorage';
+import { formatThousandsInput, parseThousandsInput } from '../../../lib/utils';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 
 const DRAFT_STORAGE_PREFIX = 'negu_product_draft_';
@@ -183,7 +184,8 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.price) {
+    const cleanPriceDigits = String(formData.price ?? '').replace(/\D/g, '');
+    if (!formData.name || cleanPriceDigits === '') {
       addToast('Nombre y precio son requeridos', 'error');
       return;
     }
@@ -205,7 +207,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
     try {
       await onSave({
         ...formData,
-        price: Number(formData.price),
+        price: parseThousandsInput(cleanPriceDigits),
         opciones: cleanedOpciones
       });
       // Borrar borrador al guardar con éxito
@@ -337,7 +339,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
                     type="text" 
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
-                    placeholder="Ej: Pizza Pepperoni Familiar"
+                    placeholder="Ej: Pizza Familiar, Combo Especial, Producto..."
                     className="input-field text-xs font-medium"
                     required
                   />
@@ -413,9 +415,10 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
               <div>
                 <label className="block text-xs font-bold text-gray-900 mb-1">Precio base ($) *</label>
                 <input 
-                  type="number" 
-                  value={formData.price}
-                  onChange={e => setFormData({...formData, price: e.target.value})}
+                  type="text"
+                  inputMode="numeric"
+                  value={formatThousandsInput(formData.price)}
+                  onChange={e => setFormData({...formData, price: e.target.value.replace(/\D/g, '')})}
                   placeholder="0"
                   className="input-field text-xs font-semibold tabular-nums"
                   required
@@ -441,7 +444,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
               <textarea 
                 value={formData.description}
                 onChange={e => setFormData({...formData, description: e.target.value})}
-                placeholder="Ej: Masa artesanal, salsa napolitana de la casa, queso mozzarella gratinado y pepperoni."
+                placeholder="Ej: Describe los ingredientes, características o contenido del producto."
                 className="input-field text-xs resize-none" 
                 rows={2}
               />

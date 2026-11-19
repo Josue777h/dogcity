@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { getSupabase, updateBusiness, uploadImage } from '../../../lib/supabase';
+import { formatThousandsInput } from '../../../lib/utils';
 import { isModuleEnabled } from '../../../lib/modules';
 import { useToastStore, useAuthStore } from '../../../stores';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
@@ -510,7 +511,9 @@ export default function SettingsView(props) {
       const methods = Array.isArray(formData.metodos_pago) ? formData.metodos_pago : [];
       const lat = formData.lat === '' ? null : Number(formData.lat);
       const lng = formData.lng === '' ? null : Number(formData.lng);
-      const deliveryPrices = [formData.precio_domicilio, formData.costo_por_km, formData.domicilio_minimo].map(Number);
+      const deliveryPrices = [formData.precio_domicilio, formData.costo_por_km, formData.domicilio_minimo].map(
+        v => Number(String(v ?? '').replace(/\D/g, '') || 0)
+      );
       if (!name) throw new Error('Escribe el nombre comercial que verán tus clientes.');
       if (!whatsapp || !/^[+\d\s()-]{7,20}$/.test(whatsapp)) throw new Error('Ingresa un número de WhatsApp válido.');
       if (!methods.length) throw new Error('Selecciona al menos una forma de pago.');
@@ -543,9 +546,9 @@ export default function SettingsView(props) {
         lat,
         lng,
         tipo_domicilio: formData.tipo_domicilio || 'automatico',
-        precio_domicilio: Number(formData.precio_domicilio ?? 0),
-        costo_por_km: Number(formData.costo_por_km ?? 0),
-        domicilio_minimo: Number(formData.domicilio_minimo ?? 0),
+        precio_domicilio: Number(String(formData.precio_domicilio ?? '').replace(/\D/g, '') || 0),
+        costo_por_km: Number(String(formData.costo_por_km ?? '').replace(/\D/g, '') || 0),
+        domicilio_minimo: Number(String(formData.domicilio_minimo ?? '').replace(/\D/g, '') || 0),
       };
 
       const data = await updateBusiness(business.id, payload);
@@ -1822,11 +1825,12 @@ export default function SettingsView(props) {
                       Tarifa fija de entrega ($)
                     </label>
                     <input 
-                      type="number" 
-                      value={formData.precio_domicilio}
-                      onChange={e => setFormData({...formData, precio_domicilio: e.target.value})}
-                      placeholder="Ej: 5000"
-                      className="input-field text-sm font-semibold" 
+                      type="text"
+                      inputMode="numeric"
+                      value={formData.precio_domicilio === '' ? '' : formatThousandsInput(formData.precio_domicilio)}
+                      onChange={e => setFormData({...formData, precio_domicilio: e.target.value.replace(/\D/g, '')})}
+                      placeholder="Ej: 5.000"
+                      className="input-field text-sm font-semibold tabular-nums" 
                     />
                   </div>
                 )}
@@ -1838,11 +1842,12 @@ export default function SettingsView(props) {
                         Tarifa mínima de entrega ($)
                       </label>
                       <input 
-                        type="number" 
-                        value={formData.domicilio_minimo}
-                        onChange={e => setFormData({...formData, domicilio_minimo: e.target.value})}
-                        placeholder="Ej: 3000"
-                        className="input-field text-sm font-semibold" 
+                        type="text"
+                        inputMode="numeric"
+                        value={formData.domicilio_minimo === '' ? '' : formatThousandsInput(formData.domicilio_minimo)}
+                        onChange={e => setFormData({...formData, domicilio_minimo: e.target.value.replace(/\D/g, '')})}
+                        placeholder="Ej: 3.000"
+                        className="input-field text-sm font-semibold tabular-nums" 
                       />
                       <p className="text-[10px] text-gray-500 mt-1">Cobro base sin importar qué tan cerca esté.</p>
                     </div>
@@ -1851,11 +1856,12 @@ export default function SettingsView(props) {
                         Costo por kilómetro extra ($)
                       </label>
                       <input 
-                        type="number" 
-                        value={formData.costo_por_km}
-                        onChange={e => setFormData({...formData, costo_por_km: e.target.value})}
-                        placeholder="Ej: 1200"
-                        className="input-field text-sm font-semibold" 
+                        type="text"
+                        inputMode="numeric"
+                        value={formData.costo_por_km === '' ? '' : formatThousandsInput(formData.costo_por_km)}
+                        onChange={e => setFormData({...formData, costo_por_km: e.target.value.replace(/\D/g, '')})}
+                        placeholder="Ej: 1.200"
+                        className="input-field text-sm font-semibold tabular-nums" 
                       />
                       <p className="text-[10px] text-gray-500 mt-1">Multiplica la distancia GPS del cliente.</p>
                     </div>

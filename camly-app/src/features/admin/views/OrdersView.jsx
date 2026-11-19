@@ -7,7 +7,7 @@ import {
   Ban, FileText, ExternalLink, Clock, ChefHat
 } from 'lucide-react';
 import {
-  formatMoney, getOrderSubtotal, isDeliveryPending, formatWhatsAppMessage,
+  formatMoney, formatThousandsInput, getOrderSubtotal, isDeliveryPending, formatWhatsAppMessage,
   printThermalReceipt, playNewOrderSound
 } from '../../../lib/utils';
 import { isWebBluetoothSupported, printOrderViaBluetooth } from '../../../lib/bluetoothPrinter';
@@ -271,7 +271,7 @@ function OrderTimeline({
         )}
       </div>
 
-      <div className="flex items-center justify-between relative pt-0.5">
+      <div className="flex items-start justify-between relative pt-0.5">
         {steps.map((step, i) => {
           const isPassed = i <= currentIdx;
           const isCurrent = i === currentIdx;
@@ -470,12 +470,15 @@ function WhatsAppIcon({ size = 14 }) {
 }
 
 function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
-  const [fee, setFee] = useState(order.delivery_fee || order.domicilio_costo || '');
+  const [fee, setFee] = useState(() => {
+    const raw = order.delivery_fee || order.domicilio_costo || '';
+    return raw ? String(raw).replace(/\D/g, '') : '';
+  });
   const [loading, setLoading] = useState(false);
   const addToast = useToastStore(s => s.addToast);
 
   const subtotal = getOrderSubtotal(order);
-  const feeNum = Number(fee) || 0;
+  const feeNum = Number(String(fee ?? '').replace(/\D/g, '')) || 0;
   const newTotal = subtotal + feeNum;
   const mapsUrl = order.ubicacion_link || (order.direccion
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion)}`
@@ -495,11 +498,32 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
       const storeName = businessName || 'la tienda';
       const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://negu.pro';
       const trackingUrl = `${origin}/tracking/${order.id}${order.token ? `?token=${encodeURIComponent(order.token)}` : ''}`;
+      const isTransferOrder = (order.payment_method || '').includes('transfer') || order.pago_metodo === 'transferencia';
+      const customerFirst = (order.nombre || '').trim().split(' ')[0] || 'Hola';
 
-      const whatsappText = formatWhatsAppMessage(`ACTUALIZACIÓN DEL PEDIDO #${order.id} | ${storeName}`, [
-        { title: 'Envío', lines: [`Costo de domicilio: ${formatMoney(feeNum)}`, `Subtotal: ${formatMoney(subtotal)}`, `Total: ${formatMoney(newTotal)}`] },
-        { title: 'Confirmación', lines: ['Revisa el detalle y confirma el pedido desde este enlace:', trackingUrl] },
-      ]);
+      const whatsappText = formatWhatsAppMessage(
+        `Cotización de envío · Pedido #${String(order.id).slice(-6).toUpperCase()}`,
+        [
+          {
+            title: 'Resumen del pedido',
+            lines: [
+              `• Subtotal productos: ${formatMoney(subtotal)}`,
+              `• Costo de domicilio: ${formatMoney(feeNum)}`,
+              `• *Total con envío:* ${formatMoney(newTotal)}`,
+            ],
+          },
+          {
+            title: 'Confirmar y seguir pedido',
+            lines: [
+              isTransferOrder
+                ? 'Confirma el pedido en este enlace para ver los datos de transferencia y enviarnos tu comprobante:'
+                : 'Revisa el detalle y confirma si deseas continuar con el pedido:',
+              trackingUrl,
+            ],
+          },
+        ],
+        `Hola *${customerFirst}*, ya calculamos el envío de tu pedido en *${storeName}*:`
+      );
 
       const waUrl = `https://wa.me/${customerPhone}?text=${encodeURIComponent(whatsappText)}`;
       if (whatsappTab) whatsappTab.location.href = waUrl;
@@ -550,13 +574,12 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">$</span>
             <input
-              type="number"
-              min="0"
-              step="500"
-              placeholder="Ej: 5000"
-              value={fee}
-              onChange={(e) => setFee(e.target.value)}
-              className="input-field pl-7 py-1.5 sm:py-2 text-xs sm:text-sm font-bold w-full bg-white border-amber-300 focus:border-amber-500 focus:ring-amber-200"
+              type="text"
+              inputMode="numeric"
+              placeholder="Ej: 5.000"
+              value={fee === '' ? '' : formatThousandsInput(fee)}
+              onChange={(e) => setFee(e.target.value.replace(/\D/g, ''))}
+              className="input-field pl-7 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tabular-nums w-full bg-white border-amber-300 focus:border-amber-500 focus:ring-amber-200"
             />
           </div>
         </div>
@@ -841,12 +864,17 @@ export default function OrdersView(props) {
         ? 'Tu pedido está listo para recoger en el local.'
         : 'El pedido salió hacia tu dirección.';
 
-    const message = formatWhatsAppMessage(`ACTUALIZACIÓN DEL PEDIDO #${order.id} | ${storeName}`, [
-      { title: 'Estado', lines: [statusMsg] },
-      ...(pickup && business?.direccion ? [{ title: 'Punto de recogida', lines: [business.direccion] }] : []),
-      ...(isMesa ? [{ title: 'Ubicación en local', lines: [`Servicio en Mesa ${tableNum ? '#' + tableNum : ''}`] }] : []),
-      { title: 'Seguimiento', lines: [trackingUrl] },
-    ]);
+    const customerFirst = (order.nombre || '').trim().split(' ')[0] || 'Hola';
+    const message = formatWhatsAppMessage(
+      `Actualización de tu pedido #${String(order.id).slice(-6).toUpperCase()}`,
+      [
+        { title: 'Estado actual', lines: [`• ${statusMsg}`] },
+        ...(pickup && business?.direccion ? [{ title: 'Punto de recogida', lines: [`• ${business.direccion}`] }] : []),
+        ...(isMesa ? [{ title: 'Ubicación en local', lines: [`• Servicio en Mesa ${tableNum ? '#' + tableNum : ''}`] }] : []),
+        { title: 'Seguimiento en vivo', lines: [trackingUrl] },
+      ],
+      `Hola *${customerFirst}*, te saludamos de *${storeName}*:`
+    );
     window.open(`https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -974,12 +1002,16 @@ export default function OrdersView(props) {
     if (!isDeliveryOrder(order)) return;
     const driver = drivers.find(d => d.id === order.domiciliario_id);
     if (!driver) return;
-    const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion || '')}`;
-    const message = formatWhatsAppMessage(`ASIGNACIÓN DE ENTREGA | PEDIDO #${order.id}`, [
-      { title: 'Cliente', lines: [`Nombre: ${order.nombre}`, `Contacto: ${order.telefono}`] },
-      { title: 'Entrega', lines: [`Dirección: ${order.direccion || 'Consultar ubicación'}`, `Mapa: ${mapsLink}`] },
-      { title: 'Pedido', lines: [`Total: ${formatMoney(order.total_amount || order.total || getOrderSubtotal(order))}`] },
-    ]);
+    const mapsLink = order.ubicacion_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion || '')}`;
+    const message = formatWhatsAppMessage(
+      `Domicilio asignado · Pedido #${String(order.id).slice(-6).toUpperCase()}`,
+      [
+        { title: 'Cliente', lines: [`• Nombre: ${order.nombre}`, `• Teléfono: ${order.telefono || 'Sin registrar'}`] },
+        { title: 'Punto de entrega', lines: [`• Dirección: ${order.direccion || 'Consultar ubicación'}`, `• Mapa GPS: ${mapsLink}`] },
+        { title: 'Cobro', lines: [`• *Total a cobrar:* ${formatMoney(order.total_amount || order.total || getOrderSubtotal(order))}`] },
+      ],
+      `Hola *${driver.nombre || 'repartidor'}*, tienes un domicilio asignado:`
+    );
     window.open(`https://wa.me/${driver.telefono}?text=${encodeURIComponent(message)}`, '_blank');
   };
 

@@ -8,7 +8,7 @@ import {
   ExternalLink, Ban, Utensils
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
-import { formatMoney, getOrderSubtotal } from '../../lib/utils';
+import { formatMoney, getOrderSubtotal, buildWhatsAppUrl } from '../../lib/utils';
 import { OrderService } from '../../services/orderService';
 import { getStatusCopy, getStepperSteps } from '../../lib/status-labels';
 import { useToastStore } from '../../stores';
@@ -43,14 +43,16 @@ const DEMO_ORDER = {
   ],
   negocios: {
     nombre: 'demo',
-    nombre_visible: 'Burger & Grill House',
+    nombre_visible: 'Pizzería La Toscana',
     telefono: '573143243707',
     whatsapp_contacto: '573143243707',
-    theme_color: '#EA580C',
+    theme_color: '#0284C7',
     direccion: 'Calle 10 # 4-20, Zona Centro',
+    pago_banco: 'Nequi / Llave Bre-B',
+    pago_alias: '314 324 3707',
     nequi_numero: '3143243707',
     daviplata_numero: '3143243707',
-    titular_cuenta: 'Juan Pérez',
+    titular_cuenta: 'Pizzería La Toscana',
     cedula_titular: '1098765432'
   }
 };
@@ -147,7 +149,7 @@ export default function TrackingPage() {
   } else {
     items = currentOrder?.items || currentOrder?.productos || [];
   }
-  const brandColor = business?.theme_color || '#EA580C';
+  const brandColor = business?.theme_color || '#0284C7';
   const supportPhone = (business?.whatsapp_contacto || business?.telefono || (isDemo ? '573143243707' : '')).replace(/\D/g, '');
 
   const subtotal = currentOrder ? getOrderSubtotal(currentOrder) : 0;
@@ -375,11 +377,23 @@ export default function TrackingPage() {
   const isTransfer = (currentOrder.payment_method || '').includes('transfer') ||
     (currentOrder.payment_method || '').includes('nequi') ||
     (currentOrder.payment_method || '').includes('daviplata') ||
+    currentOrder.pago_metodo === 'transferencia' ||
     currentOrder.metodo_pago === 'transferencia';
 
-  const nequiNumber = business?.nequi_numero || business?.telefono?.replace(/\D/g, '');
-  const daviplataNumber = business?.daviplata_numero || business?.telefono?.replace(/\D/g, '');
-  const titularName = business?.titular_cuenta || business?.nombre_visible || 'Restaurante';
+  const paymentBankLabel = business?.pago_banco?.trim() || 'Transferencia / Llave';
+  const paymentAccountValue = business?.pago_alias?.trim()
+    || business?.nequi_numero?.trim()
+    || business?.daviplata_numero?.trim()
+    || business?.telefono?.replace(/\D/g, '')
+    || '';
+  const titularName = business?.titular_cuenta || business?.nombre_visible || 'Comercio';
+  const shortOrderCode = String(currentOrder.id || '1042').slice(-6).toUpperCase();
+  const receiptWhatsappUrl = supportPhone
+    ? buildWhatsAppUrl(
+        supportPhone,
+        `Hola *${business?.nombre_visible || 'la tienda'}*, ya realicé la transferencia por *${formatMoney(totalAmount)}* para mi *Pedido #${shortOrderCode}*. Adjunto mi comprobante de pago.`
+      )
+    : '';
 
   const businessType = business?.business_type || 'general';
   const statusCopy = getStatusCopy(statusStr, businessType, deliveryMethod);
@@ -432,15 +446,65 @@ export default function TrackingPage() {
           </div>
         </div>
 
+        {/* ── 0. ESTADO COTIZACION_PENDIENTE: OCULTAR SEGUIMIENTO HASTA COTIZAR ── */}
+        {isQuotePending && !isCancelled && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4 animate-fade-in">
+            <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
+              <div className="flex items-start gap-3 min-w-0">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white"
+                  style={{ backgroundColor: brandColor }}
+                >
+                  <Clock size={19} />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-base sm:text-lg font-bold text-slate-900">
+                    Cotizando costo de domicilio
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                    El comercio está calculando el valor del envío para tu dirección. Apenas quede listo, verás aquí el total con envío para confirmar tu pedido{isTransfer ? ' y obtener los datos de transferencia' : ''}.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3.5 space-y-1.5 text-xs sm:text-sm">
+              <div className="flex justify-between text-slate-600">
+                <span>Subtotal productos</span>
+                <span className="font-bold text-slate-900 tabular-nums">{formatMoney(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Costo de envío</span>
+                <span className="font-semibold text-amber-700">Pendiente por cotizar</span>
+              </div>
+            </div>
+
+            {supportPhone && (
+              <a
+                href={buildWhatsAppUrl(
+                  supportPhone,
+                  `Hola *${business?.nombre_visible || 'la tienda'}*, acabo de enviar mi Pedido #${shortOrderCode} y quedo atento al valor del domicilio.`
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-whatsapp w-full py-2.5 text-xs sm:text-sm font-bold justify-center"
+              >
+                <MessageCircle size={16} />
+                <span>Consultar por WhatsApp</span>
+              </a>
+            )}
+          </div>
+        )}
+
         {/* ── 1. ESTADO COTIZACION_ENVIADA: PANEL DE CONFIRMACIÓN ── */}
         {isQuoteSent && (
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-xs space-y-4 animate-fade-in">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h2 className="text-sm sm:text-base font-bold text-gray-900">
+                <h2 className="text-sm sm:text-base font-bold text-slate-900">
                   {statusCopy.title}
                 </h2>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   {statusCopy.subtitle}
                 </p>
               </div>
@@ -450,20 +514,26 @@ export default function TrackingPage() {
             </div>
 
             {/* Desglose de Precios */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2 text-xs sm:text-sm">
-              <div className="flex justify-between text-gray-600">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs sm:text-sm">
+              <div className="flex justify-between text-slate-600">
                 <span>Subtotal productos</span>
-                <span className="font-semibold text-gray-900 tabular-nums">{formatMoney(subtotal)}</span>
+                <span className="font-semibold text-slate-900 tabular-nums">{formatMoney(subtotal)}</span>
               </div>
-              <div className="flex justify-between text-gray-600">
+              <div className="flex justify-between text-slate-600">
                 <span>Costo de envío</span>
-                <span className="font-semibold text-gray-900 tabular-nums">{formatMoney(deliveryFee)}</span>
+                <span className="font-semibold text-slate-900 tabular-nums">{formatMoney(deliveryFee)}</span>
               </div>
-              <div className="flex justify-between items-baseline pt-2 border-t border-gray-200 text-gray-900">
-                <span className="text-xs font-bold uppercase tracking-wider">Total a pagar</span>
-                <span className="text-base sm:text-lg tabular-nums font-extrabold text-gray-950">{formatMoney(totalAmount)}</span>
+              <div className="flex justify-between items-baseline pt-2 border-t border-slate-200 text-slate-900">
+                <span className="text-xs font-bold uppercase tracking-wider">Total con envío</span>
+                <span className="text-base sm:text-lg tabular-nums font-extrabold text-slate-950">{formatMoney(totalAmount)}</span>
               </div>
             </div>
+
+            {isTransfer && (
+              <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3 text-xs text-slate-700 leading-relaxed">
+                Al confirmar el pedido verás el número de cuenta o llave para transferir <strong>{formatMoney(totalAmount)}</strong> y enviar tu comprobante por WhatsApp.
+              </div>
+            )}
 
             {/* Botones de Confirmar y Cancelar */}
             <div className="flex flex-col sm:flex-row gap-2 pt-1">
@@ -471,10 +541,11 @@ export default function TrackingPage() {
                 type="button"
                 onClick={handleAcceptQuote}
                 disabled={actionLoading}
-                className="btn-primary py-2.5 px-4 text-xs sm:text-sm font-semibold justify-center flex-1 shadow-2xs cursor-pointer disabled:opacity-50"
+                style={{ backgroundColor: brandColor }}
+                className="py-2.5 px-4 rounded-xl text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 flex-1 shadow-xs hover:opacity-95 transition-opacity cursor-pointer disabled:opacity-50"
               >
                 {actionLoading ? <LoadingSpinner size={15} /> : <CheckCircle2 size={16} />}
-                <span>{statusCopy.acceptButton || 'Confirmar Pedido'}</span>
+                <span>Aceptar y confirmar pedido</span>
               </button>
 
               <button
@@ -484,7 +555,7 @@ export default function TrackingPage() {
                 className="btn-secondary py-2.5 px-3.5 text-xs font-semibold justify-center cursor-pointer"
               >
                 <X size={14} />
-                <span>Cancelar Pedido</span>
+                <span>Cancelar pedido</span>
               </button>
             </div>
           </div>
@@ -557,20 +628,22 @@ export default function TrackingPage() {
         )}
 
         {/* ── TARJETA PRINCIPAL DE SEGUIMIENTO (STEPPER) ── */}
-        {!isCancelled && (
-          <div className="card p-5 sm:p-6 bg-white shadow-md border-gray-200/80 space-y-5">
+        {!isCancelled && !isQuotePending && (
+          <div className="card p-5 sm:p-6 bg-white shadow-md border-slate-200/80 space-y-5">
             <div className="text-center">
-              <p className="text-[11px] font-black uppercase tracking-wider text-orange-600 mb-1">
+              <p
+                style={{ color: brandColor }}
+                className="text-[11px] font-black uppercase tracking-wider mb-1"
+              >
                 Seguimiento en vivo
               </p>
-              <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-                {isQuotePending && statusCopy.title}
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">
                 {isQuoteSent && 'Cotización Lista para Confirmar'}
-                {isGraceWindow && 'Ventana de Confirmación'}
+                {isGraceWindow && 'Pedido Confirmado'}
                 {isCookingOrLater && (statusCopy.title || 'En Proceso')}
               </h1>
-              <p className="text-xs text-gray-500 mt-0.5 font-mono">
-                Orden #{currentOrder.id ? currentOrder.id.toString().slice(-6) : '1042'}
+              <p className="text-xs text-slate-500 mt-0.5 font-mono">
+                Orden #{shortOrderCode}
               </p>
             </div>
 
@@ -583,17 +656,18 @@ export default function TrackingPage() {
                 return (
                   <div key={step.id} className="flex flex-col items-center text-center">
                     <div
+                      style={isPassed ? { backgroundColor: brandColor } : undefined}
                       className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isPassed
-                        ? 'bg-orange-600 text-white shadow-xs'
-                        : 'bg-gray-100 text-gray-400'
+                        ? 'text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-400'
                         }`}
                     >
                       <StepIcon size={18} className={isCurrent ? 'animate-pulse' : ''} />
                     </div>
-                    <span className={`text-[11px] font-bold mt-2 ${isPassed ? 'text-gray-900' : 'text-gray-400'}`}>
+                    <span className={`text-[11px] font-bold mt-2 ${isPassed ? 'text-slate-900' : 'text-slate-400'}`}>
                       {step.label}
                     </span>
-                    <span className="text-[10px] text-gray-400 hidden sm:block mt-0.5 leading-tight">
+                    <span className="text-[10px] text-slate-400 hidden sm:block mt-0.5 leading-tight">
                       {step.desc}
                     </span>
                   </div>
@@ -602,18 +676,28 @@ export default function TrackingPage() {
             </div>
 
             {/* Banner de estado dinámico por rubro */}
-            <div className="p-3.5 rounded-xl bg-orange-50/70 border border-orange-200 border-l-4 border-l-orange-500 flex items-center gap-3 text-xs">
-              <div className="w-8 h-8 rounded-lg bg-orange-600 text-white flex items-center justify-center shrink-0">
+            <div
+              style={{
+                borderColor: `color-mix(in srgb, ${brandColor} 30%, #e2e8f0)`,
+                borderLeftColor: brandColor,
+                backgroundColor: `color-mix(in srgb, ${brandColor} 7%, white)`,
+              }}
+              className="p-3.5 rounded-xl border border-l-4 flex items-center gap-3 text-xs"
+            >
+              <div
+                style={{ backgroundColor: brandColor }}
+                className="w-8 h-8 rounded-lg text-white flex items-center justify-center shrink-0"
+              >
                 {deliveryMethod === 'mesa' ? <Utensils size={16} /> : deliveryMethod === 'pickup' ? <Store size={16} /> : <Truck size={16} />}
               </div>
               <div>
-                <p className="font-bold text-gray-900 leading-snug">
+                <p className="font-bold text-slate-900 leading-snug">
                   {deliveryMethod === 'mesa'
-                    ? (currentStepIdx >= 3 ? '¡Tu orden ya fue entregada en tu mesa! Buen provecho.' : `${currentOrder.direccion || 'Servicio en Mesa'} · Preparando comanda para llevar a tu mesa.`)
+                    ? (currentStepIdx >= 2 ? '¡Tu orden ya fue entregada en tu mesa! Buen provecho.' : `${currentOrder.direccion || 'Servicio en Mesa'} · Preparando comanda para llevar a tu mesa.`)
                     : statusCopy.subtitle
                   }
                 </p>
-                <p className="text-gray-500 mt-0.5 text-[11px]">Sincronizado automáticamente en tiempo real.</p>
+                <p className="text-slate-500 mt-0.5 text-[11px]">Sincronizado automáticamente en tiempo real.</p>
               </div>
             </div>
 
@@ -629,14 +713,14 @@ export default function TrackingPage() {
 
             {/* ── 3. BLINDAJE CONTRA CANCELACIONES TARDÍAS (EN_PREPARACION O POSTERIOR) ── */}
             {isCookingOrLater && (
-              <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-700 space-y-2">
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 space-y-2">
                 <p className="leading-snug flex items-start gap-1.5">
-                  <Lock size={14} className="text-gray-500 shrink-0 mt-0.5" />
+                  <Lock size={14} className="text-slate-500 shrink-0 mt-0.5" />
                   <span>{statusCopy.cancelLockedNotice}</span>
                 </p>
                 {supportPhone && (
                   <a
-                    href={`https://wa.me/${supportPhone}?text=${encodeURIComponent(`Hola, tengo una consulta sobre mi orden #${currentOrder.id}`)}`}
+                    href={buildWhatsAppUrl(supportPhone, `Hola, tengo una consulta sobre mi Pedido #${shortOrderCode}.`)}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-2xs transition-colors"
@@ -650,70 +734,84 @@ export default function TrackingPage() {
           </div>
         )}
 
-        {/* ── 4. SOPORTE DE PAGO POR TRANSFERENCIA (NEQUI / DAVIPLATA) ── */}
-        {isTransfer && !isCancelled && (
-          <div className="card p-5 bg-white shadow-sm border-gray-200/80 space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
-                  <CreditCard size={15} />
+        {/* ── 4. PAGO POR TRANSFERENCIA (COPIAR LLAVE / CUENTA Y ENVIAR COMPROBANTE POR WHATSAPP) ── */}
+        {isTransfer && !isCancelled && !isQuotePending && !isQuoteSent && (
+          <div className="card p-5 bg-white shadow-sm border-slate-200/80 space-y-4">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  style={{ backgroundColor: `${brandColor}15`, color: brandColor }}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                >
+                  <CreditCard size={16} />
                 </div>
-                <div>
-                  <h3 className="text-xs sm:text-sm font-black text-gray-900 uppercase tracking-wide">
+                <div className="min-w-0">
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wide truncate">
                     Pago por Transferencia
                   </h3>
-                  <p className="text-[11px] text-gray-500">Transfiere y sube tu comprobante para verificar</p>
+                  <p className="text-[11px] text-slate-500 truncate">
+                    Transfiere el total y envía tu comprobante
+                  </p>
                 </div>
               </div>
-              <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${currentOrder.payment_status === 'verified'
+              <span className={`shrink-0 text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${currentOrder.payment_status === 'verified'
                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                 : 'bg-amber-100 text-amber-800 border border-amber-200'
                 }`}>
-                {currentOrder.payment_status === 'verified' ? 'Verificado' : 'Pendiente Verificación'}
+                {currentOrder.payment_status === 'verified' ? 'Verificado' : 'Pendiente'}
               </span>
             </div>
 
-            {/* Tarjetas de Cuentas para Copiar */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-              {nequiNumber && (
-                <div className="p-3 rounded-xl border border-purple-200 bg-purple-50/50 flex flex-col justify-between space-y-2">
-                  <div>
-                    <span className="font-black text-[11px] text-purple-900 uppercase">Nequi</span>
-                    <p className="text-sm font-mono font-black text-gray-900 mt-0.5">{nequiNumber}</p>
-                    <p className="text-[10px] text-gray-500 truncate mt-0.5">Titular: {titularName}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyAccount(nequiNumber, 'nequi')}
-                    className="w-full py-1.5 px-2 bg-white hover:bg-purple-100 text-purple-800 border border-purple-300 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 transition-all cursor-pointer"
-                  >
-                    {copyFeedback === 'nequi' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
-                    <span>{copyFeedback === 'nequi' ? '¡Número Copiado!' : 'Copiar Nequi'}</span>
-                  </button>
-                </div>
-              )}
+            {/* Resumen de cuenta o llave Bre-B */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-slate-600">Total a transferir</span>
+                <span className="text-base sm:text-lg font-extrabold text-slate-950 tabular-nums">
+                  {formatMoney(totalAmount)}
+                </span>
+              </div>
 
-              {daviplataNumber && (
-                <div className="p-3 rounded-xl border border-rose-200 bg-rose-50/50 flex flex-col justify-between space-y-2">
-                  <div>
-                    <span className="font-black text-[11px] text-rose-900 uppercase">Daviplata</span>
-                    <p className="text-sm font-mono font-black text-gray-900 mt-0.5">{daviplataNumber}</p>
-                    <p className="text-[10px] text-gray-500 truncate mt-0.5">Titular: {titularName}</p>
-                  </div>
+              <div className="border-t border-slate-200/80 pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    {paymentBankLabel}
+                  </p>
+                  <p className="text-base font-mono font-black text-slate-950 mt-0.5 break-all">
+                    {paymentAccountValue || 'Consultar por WhatsApp'}
+                  </p>
+                  <p className="text-[11px] text-slate-500 truncate">
+                    A nombre de: {titularName}
+                  </p>
+                </div>
+
+                {paymentAccountValue && (
                   <button
                     type="button"
-                    onClick={() => handleCopyAccount(daviplataNumber, 'daviplata')}
-                    className="w-full py-1.5 px-2 bg-white hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 transition-all cursor-pointer"
+                    onClick={() => handleCopyAccount(paymentAccountValue, 'account')}
+                    className="w-full sm:w-auto py-2 px-3.5 bg-white hover:bg-slate-100 text-slate-900 border border-slate-300 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-2xs"
                   >
-                    {copyFeedback === 'daviplata' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
-                    <span>{copyFeedback === 'daviplata' ? '¡Número Copiado!' : 'Copiar Daviplata'}</span>
+                    {copyFeedback === 'account' ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                    <span>{copyFeedback === 'account' ? '¡Copiado!' : 'Copiar número o llave'}</span>
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* Sección de Carga de Comprobante */}
-            <div className="pt-2">
+            {/* Botón principal: Enviar comprobante por WhatsApp */}
+            {receiptWhatsappUrl && (
+              <a
+                href={receiptWhatsappUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-whatsapp w-full py-3 px-4 text-xs sm:text-sm font-bold justify-center shadow-xs"
+              >
+                <MessageCircle size={17} />
+                <span>Enviar comprobante por WhatsApp</span>
+              </a>
+            )}
+
+            {/* Opción adicional: subir foto al pedido */}
+            <div className="pt-1">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -727,7 +825,7 @@ export default function TrackingPage() {
                   <div className="flex items-center gap-2 min-w-0">
                     <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
                     <div className="min-w-0">
-                      <p className="font-bold text-emerald-950 truncate">Comprobante subido</p>
+                      <p className="font-bold text-emerald-950 truncate">Comprobante adjuntado en la orden</p>
                       <p className="text-[10px] text-emerald-800">En revisión por el comercio</p>
                     </div>
                   </div>
@@ -755,17 +853,16 @@ export default function TrackingPage() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={receiptUploading}
-                  className="w-full py-3 px-4 border-2 border-dashed border-gray-300 hover:border-orange-500 rounded-xl bg-gray-50/70 hover:bg-orange-50/30 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5"
+                  className="w-full py-2.5 px-4 border border-dashed border-slate-300 hover:border-slate-400 rounded-xl bg-slate-50/70 hover:bg-slate-100/70 text-center transition-all cursor-pointer flex items-center justify-center gap-2 text-xs font-semibold text-slate-700"
                 >
                   {receiptUploading ? (
-                    <LoadingSpinner size={20} className="text-orange-600" />
+                    <LoadingSpinner size={15} />
                   ) : (
-                    <Upload size={20} className="text-gray-400 group-hover:text-orange-600" />
+                    <Upload size={15} className="text-slate-500" />
                   )}
-                  <span className="text-xs font-bold text-gray-800">
-                    {receiptUploading ? 'Subiendo comprobante a Supabase Storage...' : 'Toca aquí para subir foto del comprobante'}
+                  <span>
+                    {receiptUploading ? 'Subiendo comprobante...' : 'O adjuntar comprobante aquí (opcional)'}
                   </span>
-                  <span className="text-[10px] text-gray-500">JPG, PNG o PDF (hasta 10MB)</span>
                 </button>
               )}
             </div>
@@ -826,10 +923,15 @@ export default function TrackingPage() {
                 </div>
               )}
 
-              <div className="pt-2 border-t border-gray-100 flex justify-between items-baseline text-sm">
-                <span className="font-bold text-gray-900">Total</span>
-                <span className="text-lg font-black text-orange-600 tabular-nums">
-                  {formatMoney(totalAmount)}
+              <div className="pt-2 border-t border-slate-100 flex justify-between items-baseline text-sm">
+                <span className="font-bold text-slate-900">
+                  {isQuotePending ? 'Subtotal productos' : 'Total'}
+                </span>
+                <span
+                  style={{ color: brandColor }}
+                  className="text-lg font-black tabular-nums"
+                >
+                  {isQuotePending ? formatMoney(subtotal) : formatMoney(totalAmount)}
                 </span>
               </div>
             </div>
@@ -837,14 +939,14 @@ export default function TrackingPage() {
         </div>
 
         {/* ── SOPORTE POR WHATSAPP ── */}
-        {supportPhone && (
+        {supportPhone && !isQuotePending && (
           <div className="card p-4 bg-white shadow-xs border-gray-200/80 flex items-center justify-between gap-3">
             <div className="text-xs">
               <p className="font-bold text-gray-900">¿Tienes dudas o necesitas ayuda?</p>
               <p className="text-gray-500">Contacta a la tienda directamente.</p>
             </div>
             <a
-              href={`https://wa.me/${supportPhone}?text=${encodeURIComponent(`Hola, estoy siguiendo mi orden #${currentOrder.id} y tengo una duda.`)}`}
+              href={buildWhatsAppUrl(supportPhone, `Hola, estoy siguiendo mi Pedido #${shortOrderCode} y tengo una duda.`)}
               target="_blank"
               rel="noreferrer"
               className="btn-whatsapp py-2 px-3 text-xs font-semibold shrink-0"

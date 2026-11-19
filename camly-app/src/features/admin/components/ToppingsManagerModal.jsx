@@ -2,73 +2,65 @@ import { useState, useMemo, useEffect } from 'react';
 import { X, Plus, Trash2, Bookmark, Check, Layers } from 'lucide-react';
 import { useBusinessStore, useToastStore } from '../../../stores';
 import { readMigratedLocalStorage } from '../../../lib/localStorage';
+import { formatThousandsInput, parseThousandsInput } from '../../../lib/utils';
 
 const OPTIONS_LIBRARY_STORAGE_PREFIX = 'negu_options_lib_';
-const MULTIPLE_TITLE_HINT_RE = /(adicional|salsa|topping|extra|\bsin\b|agrega|complemento)/i;
+const MULTIPLE_TITLE_HINT_RE = /(adicional|salsa|topping|extra|\bsin\b|agrega|complemento|mitad|combin)/i;
 
 const FOOD_QUICK_TEMPLATES = [
   {
     id: 'tpl_tamano',
-    label: 'Tamaño / Porciones',
-    titulo: 'Tamaño',
+    label: 'Tamaño / Presentación',
+    titulo: 'Tamaño o presentación',
     tipo: 'unica',
     requerido: true,
     max_opciones: null,
-    opciones: ['Personal (4 porciones)', 'Mediana (6 porciones)', 'Familiar (8 porciones)'],
+    opciones: ['Pequeño / Personal', 'Mediano', 'Grande / Familiar'],
   },
   {
-    id: 'tpl_borde',
-    label: 'Borde / Masa',
-    titulo: 'Borde o tipo de masa',
+    id: 'tpl_variedad',
+    label: 'Sabor / Variedad',
+    titulo: 'Sabor o variedad',
     tipo: 'unica',
-    requerido: false,
+    requerido: true,
     max_opciones: null,
-    opciones: ['Masa tradicional', 'Masa delgada', 'Borde relleno de queso'],
+    opciones: ['Opción 1', 'Opción 2', 'Opción 3'],
   },
   {
     id: 'tpl_mitad',
-    label: 'Mitad y Mitad (2 sabores)',
-    titulo: 'Sabores (Mitad y Mitad)',
+    label: 'Mitad y Mitad / Combinar (hasta 2)',
+    titulo: 'Elige 1 sabor (entera) o 2 sabores (mitad y mitad)',
     tipo: 'multiple',
     requerido: true,
     max_opciones: 2,
-    opciones: ['Pepperoni', 'Hawaiana', 'Pollo con champiñones', 'Carnes'],
-  },
-  {
-    id: 'tpl_proteina',
-    label: 'Proteína / Sabor',
-    titulo: 'Proteína o sabor',
-    tipo: 'unica',
-    requerido: true,
-    max_opciones: null,
-    opciones: ['Res', 'Pollo', 'Cerdo'],
+    opciones: ['Sabor 1', 'Sabor 2', 'Sabor 3', 'Sabor 4'],
   },
   {
     id: 'tpl_adicionales',
-    label: 'Adicionales',
+    label: 'Adicionales / Extras',
     titulo: 'Adicionales',
     tipo: 'multiple',
     requerido: false,
     max_opciones: null,
-    opciones: ['Queso mozzarella extra', 'Pepperoni extra', 'Tocineta', 'Champiñones', 'Maíz tierno'],
+    opciones: ['Adicional 1', 'Adicional 2', 'Adicional 3'],
   },
   {
-    id: 'tpl_salsas',
-    label: 'Salsas',
-    titulo: 'Salsas',
+    id: 'tpl_acompanamientos',
+    label: 'Salsas / Acompañamientos',
+    titulo: 'Salsas o acompañamientos',
     tipo: 'multiple',
     requerido: false,
     max_opciones: 3,
-    opciones: ['Ajo de la casa', 'Napolitana', 'Picante', 'Piña'],
+    opciones: ['Opción 1', 'Opción 2', 'Opción 3'],
   },
   {
-    id: 'tpl_quitar',
-    label: 'Quitar ingredientes',
-    titulo: 'Quitar ingredientes',
+    id: 'tpl_preferencias',
+    label: 'Preferencias / Quitar',
+    titulo: 'Preferencias',
     tipo: 'multiple',
     requerido: false,
     max_opciones: null,
-    opciones: ['Sin cebolla', 'Sin pimentón', 'Sin aceitunas', 'Sin salsas'],
+    opciones: ['Sin cebolla', 'Sin salsas', 'Para llevar'],
   },
 ];
 
@@ -504,7 +496,7 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
                           type="text"
                           value={group.titulo}
                           onChange={(e) => handleUpdateGroup(group.id, 'titulo', e.target.value)}
-                          placeholder="Ej: Tamaño, Borde o tipo de masa, Adicionales..."
+                          placeholder="Ej: Tamaño o presentación, Mitad y mitad, Adicionales..."
                           className="w-full text-xs sm:text-sm font-semibold text-slate-950 bg-slate-50 focus:bg-white px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-brand placeholder:text-slate-400 placeholder:font-normal"
                         />
                       </div>
@@ -572,10 +564,10 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
                             className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-800 focus:border-brand focus:outline-none cursor-pointer"
                           >
                             <option value="">Sin límite</option>
-                            <option value="2">Máx. 2</option>
-                            <option value="3">Máx. 3</option>
-                            <option value="4">Máx. 4</option>
-                            <option value="5">Máx. 5</option>
+                            <option value="2">Máx. 2 (Mitad y mitad / 2 opciones)</option>
+                            <option value="3">Máx. 3 opciones</option>
+                            <option value="4">Máx. 4 opciones</option>
+                            <option value="5">Máx. 5 opciones</option>
                           </select>
                         )}
                       </div>
@@ -613,7 +605,7 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
                                   handleAddItem(group.id);
                                 }
                               }}
-                              placeholder="Ej: Queso extra, Sin cebolla..."
+                              placeholder="Ej: Sabor, talla, adicional, preferencia..."
                               className="w-full text-xs sm:text-sm font-medium text-slate-950 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-slate-900 placeholder:text-slate-400"
                             />
                           </div>
@@ -621,11 +613,10 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
                           <div className="col-span-4 flex items-center gap-1 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 focus-within:border-slate-900">
                             <span className="text-xs text-slate-400 font-semibold shrink-0">+$</span>
                             <input
-                              type="number"
-                              min="0"
-                              step="100"
-                              value={opt.precio === 0 ? '' : opt.precio}
-                              onChange={(e) => handleUpdateItem(group.id, opt.id, 'precio', Number(e.target.value) || 0)}
+                              type="text"
+                              inputMode="numeric"
+                              value={opt.precio === 0 ? '' : formatThousandsInput(opt.precio)}
+                              onChange={(e) => handleUpdateItem(group.id, opt.id, 'precio', parseThousandsInput(e.target.value))}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();

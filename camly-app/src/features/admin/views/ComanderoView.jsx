@@ -5,7 +5,7 @@ import {
   X, ChefHat, Clock, RefreshCw, PenLine, Lock, Unlock, Bluetooth, FileText, CheckCircle2
 } from 'lucide-react';
 import { formatMoney, playNewOrderSound, printThermalReceipt, playTableCallSound } from '../../../lib/utils';
-import { saveOrder, updateOrderRecord, updateOrderStatus, emitTableCallEvent, subscribeToTableCalls } from '../../../lib/supabase';
+import { saveOrder, updateOrderRecord, emitTableCallEvent, subscribeToTableCalls } from '../../../lib/supabase';
 import { printOrderViaBluetooth, isWebBluetoothSupported } from '../../../lib/bluetoothPrinter';
 import { useToastStore, useBusinessStore } from '../../../stores';
 
@@ -75,7 +75,9 @@ export default function ComanderoView() {
       try {
         localStorage.setItem(pinStorageKey, cleanPin);
         localStorage.setItem('negu_waiter_lock_active', 'true');
-      } catch {}
+      } catch (err) {
+        console.debug('localStorage no disponible:', err);
+      }
       setIsWaiterLocked(true);
       setPinModalMode(null);
       setPinInput('');
@@ -85,7 +87,9 @@ export default function ComanderoView() {
       if (cleanPin === savedPin) {
         try {
           localStorage.setItem('negu_waiter_lock_active', 'false');
-        } catch {}
+        } catch (err) {
+          console.debug('localStorage no disponible:', err);
+        }
         setIsWaiterLocked(false);
         setPinModalMode(null);
         setPinInput('');
@@ -149,7 +153,9 @@ export default function ComanderoView() {
         });
         return valid;
       }
-    } catch (_) {}
+    } catch (err) {
+      console.debug('localStorage no disponible:', err);
+    }
     return {};
   });
 
@@ -833,11 +839,15 @@ export default function ComanderoView() {
         const bc = new BroadcastChannel('negu_orders_channel');
         bc.postMessage({ type: 'NEW_ORDER', negocioId: business.id, orderId: finalOrderId, mesa: selectedTable });
         setTimeout(() => bc.close(), 1000);
-      } catch (_) {}
+      } catch (err) {
+      console.debug('localStorage no disponible:', err);
+    }
 
       try {
         localStorage.setItem('negu_latest_order_event', JSON.stringify({ bid: business.id, orderId: finalOrderId, ts: Date.now() }));
-      } catch (_) {}
+      } catch (err) {
+      console.debug('localStorage no disponible:', err);
+    }
 
       // Limpiar ticket y llamado activo
       clearCurrentTicket();
@@ -956,36 +966,36 @@ export default function ComanderoView() {
         </div>
       )}
 
-      {/* Salón y Comandero Unificado (Ágil en móvil, cero espacios vacíos) */}
+      {/* Salón y Comandero Unificado (Una sola fila en móvil y PC, sin espacios vacíos) */}
       <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
-        <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100 flex-wrap sm:flex-nowrap">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center justify-between gap-1.5 pb-2 border-b border-slate-100 flex-nowrap min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 overflow-hidden">
             <h1 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-1.5 shrink-0">
-              <Utensils className="text-slate-700 shrink-0" size={17} />
-              <span>Comandero</span>
+              <Utensils className="text-slate-700 shrink-0" size={16} />
+              <span className="hidden sm:inline">Comandero</span>
             </h1>
-            <span className="text-xs font-black px-2.5 py-0.5 rounded-lg bg-brand text-white shadow-2xs shrink-0">
+            <span className="text-xs font-black px-2 sm:px-2.5 py-0.5 rounded-lg bg-brand text-white shadow-2xs shrink-0 whitespace-nowrap">
               Mesa #{selectedTable}
             </span>
             {primaryActiveOrder && (
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${getMesaStatusInfo(primaryActiveOrder).badgeClass}`}>
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border truncate max-w-[110px] sm:max-w-none ${getMesaStatusInfo(primaryActiveOrder).badgeClass}`}>
                 {getMesaStatusInfo(primaryActiveOrder).label} · #{String(primaryActiveOrder.id).slice(-4).toUpperCase()}
               </span>
             )}
             {Object.keys(tableCalls).length > 0 && (
-              <span className="flex items-center gap-1 font-bold text-[11px] text-rose-600 animate-pulse bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 truncate">
+              <span className="hidden sm:flex items-center gap-1 font-bold text-[11px] text-rose-600 animate-pulse bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 truncate">
                 <Bell size={11} className="shrink-0" /> {Object.keys(tableCalls).length} llamado(s)
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             <button
               type="button"
               onClick={handleToggleWaiterLock}
               title={isWaiterLocked ? 'Ingresar PIN de administrador para desbloquear todo el panel' : 'Bloquear pantalla en Modo Mesero'}
               aria-label={isWaiterLocked ? 'Desbloquear panel con PIN' : 'Activar Modo Mesero con PIN'}
-              className={`h-9 px-2.5 sm:px-3 rounded-xl transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer border shrink-0 ${
+              className={`h-8 px-2 sm:px-2.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer border shrink-0 ${
                 isWaiterLocked
                   ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300'
                   : 'bg-slate-900 hover:bg-black text-white border-slate-900'
@@ -1000,7 +1010,7 @@ export default function ComanderoView() {
                 type="button"
                 onClick={() => { setPinInput(''); setPinModalMode('setup'); }}
                 title="Cambiar el PIN de 4 dígitos"
-                className="h-9 px-2 sm:px-2.5 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold cursor-pointer transition-colors shrink-0"
+                className="h-8 px-2 sm:px-2.5 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold cursor-pointer transition-colors shrink-0"
               >
                 PIN
               </button>
@@ -1011,7 +1021,7 @@ export default function ComanderoView() {
               onClick={() => reloadOrders()}
               title="Refrescar comandas y mesas"
               aria-label="Refrescar comandas y mesas"
-              className="h-9 w-9 sm:w-auto sm:px-2.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer shrink-0"
+              className="h-8 w-8 sm:w-auto sm:px-2.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer shrink-0"
             >
               <RefreshCw size={14} />
               <span className="hidden sm:inline">Actualizar</span>
@@ -1020,7 +1030,7 @@ export default function ComanderoView() {
             <button
               type="button"
               onClick={() => setShowAllTablesMobile((v) => !v)}
-              className="lg:hidden h-9 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 rounded-xl transition-colors cursor-pointer shrink-0"
+              className="lg:hidden h-8 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 rounded-lg transition-colors cursor-pointer shrink-0"
             >
               {showAllTablesMobile ? 'Fila' : 'Mesas ▾'}
             </button>

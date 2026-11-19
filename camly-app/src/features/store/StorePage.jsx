@@ -186,7 +186,7 @@ export default function StorePage() {
       return fixedFee === 0 ? 'Envío gratis' : `Envío: ${formatMoney(fixedFee)}`;
     }
     if (tipoDom === 'manual') {
-      return 'Envío por cotizar';
+      return 'Servicio a domicilio';
     }
     const minFee = Math.max(0, Number(business?.domicilio_minimo ?? 3000));
     return minFee === 0 ? 'Envío por distancia' : `Envío desde ${formatMoney(minFee)}`;
@@ -492,19 +492,16 @@ export default function StorePage() {
                 <span>{scheduleStatus.message}</span>
               </span>
 
-              <button
-                type="button"
-                onClick={() => setDrawerOpen(true)}
+              <span
                 style={{
                   backgroundColor: secondaryColor,
                   borderColor: `color-mix(in srgb, ${brandColor} 20%, #cbd5e1)`,
                 }}
-                className="shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold text-slate-800 hover:opacity-90 transition-colors cursor-pointer"
-                title="Ver detalles de envío y realizar pedido"
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium text-slate-800"
               >
                 <Truck size={12} className="shrink-0" style={{ color: brandColor }} />
                 <span>{deliverySummary}</span>
-              </button>
+              </span>
 
               <span
                 style={{

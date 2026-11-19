@@ -191,7 +191,6 @@ const ProductCard = memo(function ProductCard({
       openCustomizationModal();
     } else {
       addItem(bid, product, { options: [], note: '', quantity: 1 });
-      addToast(`¡${product.name} agregado al pedido!`, 'success');
     }
   };
 
@@ -224,7 +223,6 @@ const ProductCard = memo(function ProductCard({
       quantity: modalQty 
     });
     setShowModal(false);
-    addToast(modalQty > 1 ? `¡${modalQty}x ${product.name} agregados!` : `¡${product.name} agregado al pedido!`, 'success');
   };
 
   const getAddButtonProps = () => {
@@ -516,16 +514,24 @@ const ProductCard = memo(function ProductCard({
                             {!isOpen && currentSelected.length > 0 ? (
                               <p className="mt-1 text-xs font-semibold text-emerald-700 flex items-center gap-1 truncate">
                                 <span className="truncate">
-                                  {currentSelected.map(o => o.nombre).join(', ')}
+                                  {/mitad/i.test(group.titulo || '') && currentSelected.length === 2
+                                    ? `1/2 ${currentSelected[0].nombre} + 1/2 ${currentSelected[1].nombre}`
+                                    : currentSelected.map(o => o.nombre).join(', ')}
                                 </span>
                               </p>
                             ) : (
                               <p className="mt-0.5 text-xs text-slate-500">
-                                {isRadio 
-                                  ? 'Elige 1 opción' 
-                                  : maxLimit 
-                                    ? `Hasta ${maxLimit} opciones (${currentSelected.length}/${maxLimit})` 
-                                    : 'Elige las que desees'}
+                                {isRadio
+                                  ? 'Elige 1 opción'
+                                  : !isRadio && maxLimit === 2 && (group.requerido || /(mitad|combin)/i.test(group.titulo || ''))
+                                    ? (currentSelected.length === 0
+                                        ? 'Elige 1 opción (entera) o 2 opciones (mitad y mitad)'
+                                        : currentSelected.length === 1
+                                          ? '1 elegido (Entera) · Puedes marcar 1 más para Mitad y Mitad'
+                                          : 'Mitad y Mitad: 2/2 seleccionados')
+                                    : maxLimit
+                                      ? `Hasta ${maxLimit} opciones (${currentSelected.length}/${maxLimit})`
+                                      : 'Elige las que desees'}
                               </p>
                             )}
                           </div>

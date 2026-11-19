@@ -95,6 +95,19 @@ export function formatMoney(value) {
   }).format(value || 0);
 }
 
+/** Formatea dígitos en tiempo real usando separador de miles con punto (es-CO). */
+export function formatThousandsInput(value) {
+  const digits = String(value ?? '').replace(/\D/g, '');
+  if (!digits) return '';
+  return Number(digits).toLocaleString('es-CO');
+}
+
+/** Convierte una cadena formateada con puntos de miles a número entero. */
+export function parseThousandsInput(value) {
+  const digits = String(value ?? '').replace(/\D/g, '');
+  return digits ? Number(digits) : 0;
+}
+
 /**
  * WhatsApp URL builder — FIX CRÍTICO para iOS/Mac/Desktop.
  * - Mobile (iOS/Android): usa wa.me (abre la app nativa)
@@ -117,13 +130,16 @@ export function buildWhatsAppUrl(phone, message) {
   return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encoded}`;
 }
 
-/** Render WhatsApp text using a consistent, readable template without emoji characters. */
-export function formatWhatsAppMessage(title, sections = []) {
-  const lines = [`*${title.trim()}*`, '────────────────────────'];
+/** Renderiza mensajes de WhatsApp amigables y fáciles de leer en pantalla móvil. */
+export function formatWhatsAppMessage(title, sections = [], intro = '') {
+  const lines = [`*${String(title || '').trim()}*`];
+  if (String(intro || '').trim()) {
+    lines.push('', String(intro).trim());
+  }
   sections.forEach(section => {
     const rows = (section.lines || []).filter(Boolean).map(line => String(line));
     if (!rows.length) return;
-    lines.push('', `*${section.title.toUpperCase()}*`, ...rows);
+    lines.push('', `*${String(section.title || '').trim()}*`, ...rows);
   });
   return lines.join('\n');
 }
