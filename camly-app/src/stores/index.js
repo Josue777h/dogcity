@@ -214,6 +214,7 @@ export const useCartStore = create(
             const unitPrice = Number(p.price) + optionsCost;
 
             const opciones_texto = formatGroupedOptionsText(options);
+            const opciones_cliente = formatGroupedOptionsText(options, '', { includePrice: true, includeGroupTitle: false });
             return {
               ...p,
               cartItemId: item.cartItemId,
@@ -223,6 +224,7 @@ export const useCartStore = create(
               base_price: p.price,
               options,
               opciones_texto,
+              opciones_cliente,
               note: item.note || '',
             };
           })

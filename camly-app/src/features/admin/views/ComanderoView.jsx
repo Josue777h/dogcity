@@ -4,7 +4,7 @@ import {
   Utensils, Plus, Minus, Trash2, Search, Bell, Check, Printer, 
   X, ChefHat, Clock, RefreshCw, PenLine, Lock, Unlock, Bluetooth, FileText, CheckCircle2
 } from 'lucide-react';
-import { formatMoney, formatGroupedOptionsText, playNewOrderSound, printThermalReceipt, playTableCallSound } from '../../../lib/utils';
+import { formatMoney, formatGroupedOptionsText, getGroupedOptionsList, playNewOrderSound, printThermalReceipt, playTableCallSound } from '../../../lib/utils';
 import { saveOrder, updateOrderRecord, emitTableCallEvent, subscribeToTableCalls } from '../../../lib/supabase';
 import { printOrderViaBluetooth, isWebBluetoothSupported } from '../../../lib/bluetoothPrinter';
 import { useToastStore, useBusinessStore } from '../../../stores';
@@ -1482,11 +1482,26 @@ export default function ComanderoView() {
                           </span>
                         </div>
 
-                        {((item.options && item.options.length > 0) || item.opciones_texto) && (
-                          <div className="ml-6 mt-1 text-xs text-slate-600 bg-slate-50 border border-slate-200/70 px-2 py-0.5 rounded-md inline-block break-words">
-                            + {formatGroupedOptionsText(item.options, item.opciones_texto || '', { includePrice: false })}
-                          </div>
-                        )}
+                        {(() => {
+                          const ticketOptGroups = getGroupedOptionsList(item.options, item.opciones_texto || '', { includePrice: false });
+                          if (ticketOptGroups.length === 0) return null;
+                          return (
+                            <div className="ml-6 mt-1.5 space-y-0.5 border-l-2 border-slate-200 pl-2 text-xs text-slate-600">
+                              {ticketOptGroups.map((g, gIdx) => (
+                                <div key={gIdx} className="leading-snug break-words">
+                                  {g.title ? (
+                                    <>
+                                      <span className="font-bold text-slate-800">{g.title}:</span>{' '}
+                                      <span>{g.value}</span>
+                                    </>
+                                  ) : (
+                                    <span>+ {g.value}</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       <div className="text-right shrink-0">
@@ -1719,7 +1734,7 @@ export default function ComanderoView() {
                             const qty = it.cantidad ?? it.quantity ?? 1;
                             const name = it.nombre ?? it.name ?? 'Plato';
                             const note = it.nota || it.note || '';
-                            const optText = formatGroupedOptionsText(it.opciones || it.options, it.opciones_texto || '', { includePrice: false });
+                            const optGroups = getGroupedOptionsList(it.opciones || it.options, it.opciones_texto || '', { includePrice: false });
                             return (
                               <div
                                 key={idx}
@@ -1736,9 +1751,20 @@ export default function ComanderoView() {
                                     {formatMoney(Number(it.precio ?? it.price ?? 0) * Number(qty))}
                                   </span>
                                 </div>
-                                {optText && (
-                                  <div className="ml-6 mt-1 text-[11px] text-slate-500 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded inline-block break-words">
-                                    + {optText}
+                                {optGroups.length > 0 && (
+                                  <div className="ml-6 mt-1.5 space-y-0.5 border-l-2 border-slate-200 pl-2 text-[11px] text-slate-600">
+                                    {optGroups.map((g, gIdx) => (
+                                      <div key={gIdx} className="leading-snug break-words">
+                                        {g.title ? (
+                                          <>
+                                            <span className="font-bold text-slate-800">{g.title}:</span>{' '}
+                                            <span>{g.value}</span>
+                                          </>
+                                        ) : (
+                                          <span>+ {g.value}</span>
+                                        )}
+                                      </div>
+                                    ))}
                                   </div>
                                 )}
                                 {note && (

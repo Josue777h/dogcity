@@ -894,7 +894,7 @@ export default function TrackingPage() {
                     <span className="font-bold text-gray-900">{qty}× {name}</span>
                     {(item.opciones_texto || (Array.isArray(item.opciones) && item.opciones.length > 0)) && (
                       <p className="text-[11px] font-medium text-blue-800 mt-0.5">
-                        ▸ {formatGroupedOptionsText(item.opciones || item.options, item.opciones_texto || '')}
+                        ▸ {formatGroupedOptionsText(item.opciones || item.options, item.opciones_texto || '', { includePrice: false, includeGroupTitle: false })}
                       </p>
                     )}
                     {item.nota && (

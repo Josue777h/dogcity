@@ -11,18 +11,38 @@ export function escapeHtml(value) {
 }
 
 /**
- * Formatea un arreglo de opciones seleccionadas incluyendo el título de su grupo
- * para que en carrito, tickets, comandero y WhatsApp siempre se distinga de qué
- * grupo proviene cada elección (ej. "Adicional de carne: Cerdo · Adicional salsa: Queso").
+ * Parsea un arreglo de opciones o un texto guardado y devuelve la lista
+ * estructurada por grupo ({ title, value, text }) para ordenar comandas,
+ * cocina, tickets y WhatsApp sin duplicar lógica.
  */
-export function formatGroupedOptionsText(options = [], fallbackText = '', { includePrice = true } = {}) {
+export function getGroupedOptionsList(options = [], fallbackText = '', { includePrice = true } = {}) {
   const cleanFallback = String(fallbackText || '').trim();
   const optsList = Array.isArray(options) ? options.filter(Boolean) : [];
-  if (optsList.length === 0) return cleanFallback;
+
+  const parseFallbackSegments = (raw) => {
+    if (!raw) return [];
+    return raw
+      .split(/\s*·\s*/)
+      .map((seg) => seg.trim())
+      .filter(Boolean)
+      .map((seg) => {
+        const colonIdx = seg.indexOf(':');
+        if (colonIdx > 0 && colonIdx < seg.length - 1) {
+          const title = seg.slice(0, colonIdx).trim();
+          const value = seg.slice(colonIdx + 1).trim();
+          return { title, value, text: `${title}: ${value}` };
+        }
+        return { title: '', value: seg, text: seg };
+      });
+  };
+
+  if (optsList.length === 0) {
+    return parseFallbackSegments(cleanFallback);
+  }
 
   const hasGroupMetadata = optsList.some((o) => String(o?.grupo_titulo || o?.groupTitle || '').trim() !== '');
   if (!hasGroupMetadata && cleanFallback.includes(':')) {
-    return cleanFallback;
+    return parseFallbackSegments(cleanFallback);
   }
 
   const groupedOptions = [];
@@ -58,18 +78,40 @@ export function formatGroupedOptionsText(options = [], fallbackText = '', { incl
     return includePrice && price > 0 ? `${label} (+$${price.toLocaleString('es-CO')})` : label;
   };
 
-  const parts = groupedOptions
+  const list = groupedOptions
     .map(({ title, items: gItems }) => {
       const cleanItems = gItems.map(formatOpt).filter(Boolean);
-      if (cleanItems.length === 0) return '';
-      const choicesText = (/mitad/i.test(title) && cleanItems.length === 2)
+      if (cleanItems.length === 0) return null;
+      const value = (/mitad/i.test(title) && cleanItems.length === 2)
         ? `1/2 ${cleanItems[0]} + 1/2 ${cleanItems[1]}`
         : cleanItems.join(', ');
-      return title ? `${title}: ${choicesText}` : choicesText;
+      return {
+        title,
+        value,
+        text: title ? `${title}: ${value}` : value,
+      };
     })
     .filter(Boolean);
 
-  return parts.length > 0 ? parts.join(' · ') : cleanFallback;
+  return list.length > 0 ? list : parseFallbackSegments(cleanFallback);
+}
+
+/**
+ * Formatea un arreglo de opciones seleccionadas.
+ * - `includeGroupTitle: true` (cocina/BD): incluye el título del grupo delante de cada elección.
+ * - `includeGroupTitle: false` (vista cliente): simplifica mostrando solo las elecciones elegidas.
+ */
+export function formatGroupedOptionsText(
+  options = [],
+  fallbackText = '',
+  { includePrice = true, includeGroupTitle = true, separator } = {}
+) {
+  const list = getGroupedOptionsList(options, fallbackText, { includePrice });
+  if (list.length === 0) return '';
+  if (includeGroupTitle) {
+    return list.map((g) => g.text).join(separator ?? ' · ');
+  }
+  return list.map((g) => g.value).join(separator ?? ', ');
 }
 
 /** Celda CSV entre comillas que neutraliza fórmulas (=, +, -, @) para evitar CSV injection. */
@@ -481,13 +523,20 @@ export function printThermalReceipt(order, business, options = {}) {
   const tableNum = order.mesa || order.table_number || (order.direccion || '').match(/mesa\s*#?\s*([a-zA-Z0-9_-]+)/i)?.[1] || '1';
   const isEnvio = !isMesa && (order.entrega_metodo === 'envio' || order.delivery_type === 'delivery');
 
+  const renderReceiptOptionsHtml = (optGroups, styleAttr) => optGroups
+    .map((g) => g.title
+      ? `<div style="${styleAttr}">• <strong>${escapeHtml(g.title)}:</strong> ${escapeHtml(g.value)}</div>`
+      : `<div style="${styleAttr}">+ ${escapeHtml(g.value)}</div>`
+    )
+    .join('');
+
   const itemsKitchenHtml = items.map(p => {
     const qty = p.cantidad ?? p.quantity ?? 1;
     const name = p.nombre ?? p.name ?? 'Producto';
     const toppingFallback = Array.isArray(p.toppings)
       ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ')
       : '';
-    const optText = formatGroupedOptionsText(
+    const optGroups = getGroupedOptionsList(
       p.opciones || p.options,
       p.opciones_texto || toppingFallback,
       { includePrice: false }
@@ -499,7 +548,7 @@ export function printThermalReceipt(order, business, options = {}) {
         <div style="font-weight: 900; font-size: 15px; line-height: 1.25;">
           ${qty}x ${escapeHtml(name)}
         </div>
-        ${optText ? `<div style="font-size: 12px; margin-left: 8px; color: #000; font-weight: 700; margin-top: 3px;">+ ${escapeHtml(optText)}</div>` : ''}
+        ${renderReceiptOptionsHtml(optGroups, 'font-size: 12px; margin-left: 8px; color: #000; margin-top: 3px; line-height: 1.3;')}
         ${nota ? `<div style="font-size: 12px; margin-left: 8px; font-weight: 900; background: #e5e7eb; padding: 3px 6px; border-left: 3px solid #000; margin-top: 4px;">NOTA: ${nota.toUpperCase()}</div>` : ''}
       </div>
     `;
@@ -513,7 +562,7 @@ export function printThermalReceipt(order, business, options = {}) {
     const toppingFallback = Array.isArray(p.toppings)
       ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ')
       : '';
-    const optText = formatGroupedOptionsText(
+    const optGroups = getGroupedOptionsList(
       p.opciones || p.options,
       p.opciones_texto || toppingFallback,
       { includePrice: true }
@@ -526,7 +575,7 @@ export function printThermalReceipt(order, business, options = {}) {
           <span>${qty}x ${escapeHtml(name)}</span>
           <span style="white-space: nowrap;">$${itemTotal.toLocaleString('es-CO')}</span>
         </div>
-        ${optText ? `<div style="font-size: 11px; margin-left: 6px; color: #222; margin-top: 2px;">+ ${escapeHtml(optText)}</div>` : ''}
+        ${renderReceiptOptionsHtml(optGroups, 'font-size: 11px; margin-left: 6px; color: #222; margin-top: 2px; line-height: 1.3;')}
         ${nota ? `<div style="font-size: 10px; margin-left: 6px; color: #333; margin-top: 2px;">Nota: ${escapeHtml(nota)}</div>` : ''}
       </div>
     `;

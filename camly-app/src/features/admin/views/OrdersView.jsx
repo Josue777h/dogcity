@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import {
   formatMoney, formatThousandsInput, getOrderSubtotal, isDeliveryPending, formatWhatsAppMessage,
-  formatGroupedOptionsText, printThermalReceipt, playNewOrderSound
+  getGroupedOptionsList, printThermalReceipt, playNewOrderSound
 } from '../../../lib/utils';
 import { isWebBluetoothSupported, printOrderViaBluetooth } from '../../../lib/bluetoothPrinter';
 import { updateOrderStatus, getSupabase, deleteOrder, emitTableCallEvent } from '../../../lib/supabase';
@@ -400,9 +400,10 @@ function OrderItems({ order }) {
           const toppingsFallback = Array.isArray(p.toppings)
             ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ')
             : '';
-          const optionsText = formatGroupedOptionsText(
+          const optGroups = getGroupedOptionsList(
             p.opciones || p.options,
-            p.opciones_texto || toppingsFallback
+            p.opciones_texto || toppingsFallback,
+            { includePrice: true }
           );
 
           return (
@@ -424,9 +425,20 @@ function OrderItems({ order }) {
                 </div>
               </div>
 
-              {optionsText && (
-                <div className="ml-6 mt-1 text-xs text-slate-600 bg-slate-50 border border-slate-200/70 px-2 py-0.5 rounded-md inline-block break-words">
-                  + {optionsText}
+              {optGroups.length > 0 && (
+                <div className="ml-6 mt-1.5 space-y-0.5 border-l-2 border-slate-200 pl-2.5 text-xs text-slate-600">
+                  {optGroups.map((g, gIdx) => (
+                    <div key={gIdx} className="leading-snug break-words">
+                      {g.title ? (
+                        <>
+                          <span className="font-bold text-slate-800">{g.title}:</span>{' '}
+                          <span>{g.value}</span>
+                        </>
+                      ) : (
+                        <span>+ {g.value}</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
 

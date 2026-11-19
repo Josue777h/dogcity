@@ -3,7 +3,7 @@
  * Soporta impresoras térmicas portátiles POS-58 / POS-80 (Goojprt, MPT-II, etc.)
  */
 
-import { getOrderSubtotal, formatGroupedOptionsText } from './utils';
+import { getOrderSubtotal, getGroupedOptionsList } from './utils';
 
 // UUIDs comunes de impresoras térmicas BLE
 const PRINTER_SERVICES = [
@@ -225,7 +225,7 @@ export function buildEscPosCommands(order, business, options = {}) {
     const price = p.precio ?? p.price ?? 0;
     const itemTotal = price * qty;
     const toppingsFallback = Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '';
-    const optText = formatGroupedOptionsText(
+    const optGroups = getGroupedOptionsList(
       p.opciones || p.options,
       p.opciones_texto || toppingsFallback,
       { includePrice: !isKitchen }
@@ -240,9 +240,9 @@ export function buildEscPosCommands(order, business, options = {}) {
     }
     addRaw(boldOff);
 
-    if (optText) {
-      addText(`  + ${optText}\n`);
-    }
+    optGroups.forEach(g => {
+      addText(`  + ${g.text}\n`);
+    });
     if (nota) {
       addRaw(boldOn);
       addText(`  NOTA: ${nota}\n`);

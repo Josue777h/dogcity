@@ -4,7 +4,7 @@ import {
   CheckCircle2, Minus, Plus, CreditCard, AlertCircle, Smartphone, Utensils, Store
 } from 'lucide-react';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
-import { formatMoney, formatThousandsInput, openWhatsApp, reverseGeocode, formatWhatsAppMessage } from '../../lib/utils';
+import { formatMoney, formatThousandsInput, openWhatsApp, reverseGeocode, formatWhatsAppMessage, formatGroupedOptionsText, getGroupedOptionsList } from '../../lib/utils';
 import { saveOrder } from '../../lib/supabase';
 import { WHATSAPP_FALLBACK_PHONE } from '../../lib/constants';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -151,10 +151,11 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
     const quotePending = tipoDom === 'manual' && deliveryMethod === 'envio';
     const itemsLines = selectedItems.flatMap(i => {
       const note = (i.note || cart.notes?.[i.id] || '').trim();
-      const opts = (i.opciones_texto || '').trim();
+      const optGroups = getGroupedOptionsList(i.options, i.opciones_texto || '', { includePrice: true });
+      const optLines = optGroups.map(g => (g.title ? `  ◦ *${g.title}:* ${g.value}` : `  ◦ _${g.value}_`));
       return [
         `• *${i.quantity} × ${i.name}* — ${formatMoney(i.price * i.quantity)}`,
-        ...(opts ? [`  _Opciones: ${opts}_`] : []),
+        ...optLines,
         ...(note ? [`  _Nota: ${note}_`] : []),
       ];
     });
@@ -604,9 +605,9 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                               <p className="line-clamp-2 break-words text-sm font-bold leading-snug text-slate-900">
                                 {item.name}
                               </p>
-                              {item.opciones_texto && (
+                              {(item.opciones_cliente || item.opciones_texto) && (
                                 <p className="mt-1 break-words text-xs font-medium text-slate-600 bg-slate-50 px-2 py-0.5 rounded-md inline-block">
-                                  {item.opciones_texto}
+                                  {item.opciones_cliente || formatGroupedOptionsText(item.options, item.opciones_texto || '', { includePrice: true, includeGroupTitle: false })}
                                 </p>
                               )}
                               {(item.note || cart.notes?.[item.id]) && (
