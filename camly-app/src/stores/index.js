@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { migratePersistedStorage } from '../lib/localStorage';
+import { formatGroupedOptionsText } from '../lib/utils';
 
 // ══════════════════════════════════════════════
 // Cart Store — Multi-tenant (isolated by business)
@@ -212,27 +213,7 @@ export const useCartStore = create(
             const optionsCost = options.reduce((acc, opt) => acc + (Number(opt.precio) || 0), 0);
             const unitPrice = Number(p.price) + optionsCost;
 
-            const groupedOptions = [];
-            const groupMap = new Map();
-            options.forEach((opt) => {
-              const gKey = opt.grupo_id || opt.grupo_titulo || '_default';
-              if (!groupMap.has(gKey)) {
-                const entry = { title: opt.grupo_titulo || '', items: [] };
-                groupMap.set(gKey, entry);
-                groupedOptions.push(entry);
-              }
-              groupMap.get(gKey).items.push(opt);
-            });
-
-            const opciones_texto = groupedOptions
-              .map(({ title, items: gItems }) => {
-                const formatOpt = (o) => o.nombre + (Number(o.precio) > 0 ? ` (+$${Number(o.precio).toLocaleString('es-CO')})` : '');
-                if (/mitad/i.test(title) && gItems.length === 2) {
-                  return `1/2 ${formatOpt(gItems[0])} + 1/2 ${formatOpt(gItems[1])}`;
-                }
-                return gItems.map(formatOpt).join(', ');
-              })
-              .join(', ');
+            const opciones_texto = formatGroupedOptionsText(options);
             return {
               ...p,
               cartItemId: item.cartItemId,

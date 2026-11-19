@@ -8,7 +8,7 @@ import {
   ExternalLink, Ban, Utensils
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
-import { formatMoney, getOrderSubtotal, buildWhatsAppUrl } from '../../lib/utils';
+import { formatMoney, getOrderSubtotal, buildWhatsAppUrl, formatGroupedOptionsText } from '../../lib/utils';
 import { OrderService } from '../../services/orderService';
 import { getStatusCopy, getStepperSteps } from '../../lib/status-labels';
 import { useToastStore } from '../../stores';
@@ -894,7 +894,7 @@ export default function TrackingPage() {
                     <span className="font-bold text-gray-900">{qty}× {name}</span>
                     {(item.opciones_texto || (Array.isArray(item.opciones) && item.opciones.length > 0)) && (
                       <p className="text-[11px] font-medium text-blue-800 mt-0.5">
-                        ▸ {item.opciones_texto || item.opciones.map(o => o.nombre).join(', ')}
+                        ▸ {formatGroupedOptionsText(item.opciones || item.options, item.opciones_texto || '')}
                       </p>
                     )}
                     {item.nota && (

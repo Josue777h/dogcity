@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import {
   formatMoney, formatThousandsInput, getOrderSubtotal, isDeliveryPending, formatWhatsAppMessage,
-  printThermalReceipt, playNewOrderSound
+  formatGroupedOptionsText, printThermalReceipt, playNewOrderSound
 } from '../../../lib/utils';
 import { isWebBluetoothSupported, printOrderViaBluetooth } from '../../../lib/bluetoothPrinter';
 import { updateOrderStatus, getSupabase, deleteOrder, emitTableCallEvent } from '../../../lib/supabase';
@@ -397,9 +397,13 @@ function OrderItems({ order }) {
           const qty = p.cantidad ?? p.quantity ?? 1;
           const name = p.nombre ?? p.name ?? 'Producto';
           const price = p.precio ?? p.price ?? 0;
-          const optionsText = p.opciones_texto ||
-            (Array.isArray(p.opciones) ? p.opciones.map(o => o.nombre).join(', ') : '') ||
-            (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
+          const toppingsFallback = Array.isArray(p.toppings)
+            ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ')
+            : '';
+          const optionsText = formatGroupedOptionsText(
+            p.opciones || p.options,
+            p.opciones_texto || toppingsFallback
+          );
 
           return (
             <div key={idx} className="border-b border-slate-100 pb-2.5 mb-2.5 last:border-b-0 last:pb-0 last:mb-0">

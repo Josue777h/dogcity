@@ -10,6 +10,68 @@ export function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+/**
+ * Formatea un arreglo de opciones seleccionadas incluyendo el título de su grupo
+ * para que en carrito, tickets, comandero y WhatsApp siempre se distinga de qué
+ * grupo proviene cada elección (ej. "Adicional de carne: Cerdo · Adicional salsa: Queso").
+ */
+export function formatGroupedOptionsText(options = [], fallbackText = '', { includePrice = true } = {}) {
+  const cleanFallback = String(fallbackText || '').trim();
+  const optsList = Array.isArray(options) ? options.filter(Boolean) : [];
+  if (optsList.length === 0) return cleanFallback;
+
+  const hasGroupMetadata = optsList.some((o) => String(o?.grupo_titulo || o?.groupTitle || '').trim() !== '');
+  if (!hasGroupMetadata && cleanFallback.includes(':')) {
+    return cleanFallback;
+  }
+
+  const groupedOptions = [];
+  const groupMap = new Map();
+
+  optsList.forEach((opt) => {
+    if (typeof opt === 'string') {
+      const text = opt.trim();
+      if (!text) return;
+      if (!groupMap.has('_default')) {
+        const entry = { title: '', items: [] };
+        groupMap.set('_default', entry);
+        groupedOptions.push(entry);
+      }
+      groupMap.get('_default').items.push({ nombre: text, precio: 0 });
+      return;
+    }
+
+    const title = String(opt.grupo_titulo || opt.groupTitle || '').trim();
+    const gKey = opt.grupo_id || title || '_default';
+    if (!groupMap.has(gKey)) {
+      const entry = { title, items: [] };
+      groupMap.set(gKey, entry);
+      groupedOptions.push(entry);
+    }
+    groupMap.get(gKey).items.push(opt);
+  });
+
+  const formatOpt = (o) => {
+    const label = String(o?.nombre || o?.label || o?.name || '').trim();
+    if (!label) return '';
+    const price = Number(o?.precio ?? o?.price ?? 0);
+    return includePrice && price > 0 ? `${label} (+$${price.toLocaleString('es-CO')})` : label;
+  };
+
+  const parts = groupedOptions
+    .map(({ title, items: gItems }) => {
+      const cleanItems = gItems.map(formatOpt).filter(Boolean);
+      if (cleanItems.length === 0) return '';
+      const choicesText = (/mitad/i.test(title) && cleanItems.length === 2)
+        ? `1/2 ${cleanItems[0]} + 1/2 ${cleanItems[1]}`
+        : cleanItems.join(', ');
+      return title ? `${title}: ${choicesText}` : choicesText;
+    })
+    .filter(Boolean);
+
+  return parts.length > 0 ? parts.join(' · ') : cleanFallback;
+}
+
 /** Celda CSV entre comillas que neutraliza fórmulas (=, +, -, @) para evitar CSV injection. */
 function csvCell(value) {
   let text = String(value ?? '');
@@ -300,7 +362,8 @@ export function exportOrdersToCSV(orders, businessName = 'Negu') {
     const itemsSummary = (Array.isArray(items) ? items : []).map(i => {
       const qty = i.cantidad ?? i.quantity ?? 1;
       const name = i.nombre ?? i.name ?? 'Item';
-      const optStr = i.opciones_texto ? ` [${i.opciones_texto}]` : '';
+      const resolvedOpts = formatGroupedOptionsText(i.opciones || i.options, i.opciones_texto || '');
+      const optStr = resolvedOpts ? ` [${resolvedOpts}]` : '';
       const notaStr = i.nota ? ` (${i.nota})` : '';
       return `${qty}x ${name}${optStr}${notaStr}`;
     }).join('; ');
@@ -421,9 +484,14 @@ export function printThermalReceipt(order, business, options = {}) {
   const itemsKitchenHtml = items.map(p => {
     const qty = p.cantidad ?? p.quantity ?? 1;
     const name = p.nombre ?? p.name ?? 'Producto';
-    const optText = p.opciones_texto || 
-      (Array.isArray(p.opciones) ? p.opciones.map(o => o.nombre || o.label || o.name).join(', ') : '') ||
-      (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
+    const toppingFallback = Array.isArray(p.toppings)
+      ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ')
+      : '';
+    const optText = formatGroupedOptionsText(
+      p.opciones || p.options,
+      p.opciones_texto || toppingFallback,
+      { includePrice: false }
+    );
     const nota = (p.nota || '').trim();
 
     return `
@@ -442,9 +510,14 @@ export function printThermalReceipt(order, business, options = {}) {
     const name = p.nombre ?? p.name ?? 'Producto';
     const price = p.precio ?? p.price ?? 0;
     const itemTotal = price * qty;
-    const optText = p.opciones_texto || 
-      (Array.isArray(p.opciones) ? p.opciones.map(o => o.nombre || o.label || o.name).join(', ') : '') ||
-      (Array.isArray(p.toppings) ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ') : '');
+    const toppingFallback = Array.isArray(p.toppings)
+      ? p.toppings.map(t => typeof t === 'string' ? t : t.nombre).join(', ')
+      : '';
+    const optText = formatGroupedOptionsText(
+      p.opciones || p.options,
+      p.opciones_texto || toppingFallback,
+      { includePrice: true }
+    );
     const nota = (p.nota || '').trim();
 
     return `

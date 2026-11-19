@@ -41,9 +41,43 @@ export default function ResetPasswordPage() {
     const cleanRecoveryFragment = () => {
       window.history.replaceState({}, document.title, window.location.pathname);
     };
-    const { data: { subscription } } = getSupabase().auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' && session) {
+
+    const initialHashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const initialQueryParams = new URLSearchParams(window.location.search);
+    const hasUrlAuthError = Boolean(
+      initialHashParams.get('error') ||
+      initialHashParams.get('error_code') ||
+      initialQueryParams.get('error') ||
+      initialQueryParams.get('error_code')
+    );
+    const tokenHash = initialQueryParams.get('token_hash');
+    const hasInitialRecoveryParams = !hasUrlAuthError && (
+      initialHashParams.get('type') === 'recovery' ||
+      initialQueryParams.get('type') === 'recovery' ||
+      initialHashParams.has('access_token') ||
+      initialQueryParams.has('code') ||
+      Boolean(tokenHash)
+    );
+
+    if (hasInitialRecoveryParams) {
+      try {
         sessionStorage.setItem(RECOVERY_SESSION_KEY, String(Date.now()));
+      } catch {
+        // ignore storage access issues
+      }
+    }
+
+    const { data: { subscription } } = getSupabase().auth.onAuthStateChange((event, session) => {
+      const recoveryAuthorized =
+        event === 'PASSWORD_RECOVERY' ||
+        ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && (hasInitialRecoveryParams || isRecentRecoverySession()));
+
+      if (recoveryAuthorized && session) {
+        try {
+          sessionStorage.setItem(RECOVERY_SESSION_KEY, String(Date.now()));
+        } catch {
+          // ignore storage access issues
+        }
         cleanRecoveryFragment();
         if (active) {
           setHasRecoverySession(true);
@@ -54,12 +88,32 @@ export default function ResetPasswordPage() {
 
     const verifyRecoverySession = async () => {
       try {
-        const { data: { session }, error: sessionError } = await getSupabase().auth.getSession();
+        const supabase = getSupabase();
+        if (tokenHash && !hasUrlAuthError) {
+          const { error: otpError } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'recovery',
+          });
+          if (otpError) throw otpError;
+        }
+
+        let { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
-        const hashType = new URLSearchParams(window.location.hash.slice(1)).get('type');
-        const validRecovery = Boolean(session && (hashType === 'recovery' || isRecentRecoverySession()));
-        if (validRecovery && hashType === 'recovery') {
-          sessionStorage.setItem(RECOVERY_SESSION_KEY, String(Date.now()));
+
+        if (!session && hasInitialRecoveryParams) {
+          await new Promise(resolve => window.setTimeout(resolve, 400));
+          const retryRes = await supabase.auth.getSession();
+          if (retryRes.error) throw retryRes.error;
+          session = retryRes.data?.session || null;
+        }
+
+        const validRecovery = Boolean(session && (hasInitialRecoveryParams || isRecentRecoverySession()));
+        if (validRecovery) {
+          try {
+            sessionStorage.setItem(RECOVERY_SESSION_KEY, String(Date.now()));
+          } catch {
+            // ignore storage access issues
+          }
           cleanRecoveryFragment();
         }
         if (active) setHasRecoverySession(validRecovery);

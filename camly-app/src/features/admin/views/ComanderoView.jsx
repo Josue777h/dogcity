@@ -4,7 +4,7 @@ import {
   Utensils, Plus, Minus, Trash2, Search, Bell, Check, Printer, 
   X, ChefHat, Clock, RefreshCw, PenLine, Lock, Unlock, Bluetooth, FileText, CheckCircle2
 } from 'lucide-react';
-import { formatMoney, playNewOrderSound, printThermalReceipt, playTableCallSound } from '../../../lib/utils';
+import { formatMoney, formatGroupedOptionsText, playNewOrderSound, printThermalReceipt, playTableCallSound } from '../../../lib/utils';
 import { saveOrder, updateOrderRecord, emitTableCallEvent, subscribeToTableCalls } from '../../../lib/supabase';
 import { printOrderViaBluetooth, isWebBluetoothSupported } from '../../../lib/bluetoothPrinter';
 import { useToastStore, useBusinessStore } from '../../../stores';
@@ -566,7 +566,7 @@ export default function ComanderoView() {
     const mappedItems = rawItems.map((it, idx) => {
       const qty = Number(it.cantidad ?? it.quantity ?? 1);
       const unitPrice = Number(it.precio ?? it.price ?? 0);
-      const opts = Array.isArray(it.opciones)
+      const opts = Array.isArray(it.opciones) && it.opciones.length > 0
         ? it.opciones
         : it.opciones_texto
           ? it.opciones_texto.split(',').map((s, i) => ({ id: `opt_${i}`, nombre: s.trim(), precio: 0 })).filter(o => o.nombre)
@@ -579,6 +579,7 @@ export default function ComanderoView() {
         price: unitPrice,
         quantity: qty,
         options: opts,
+        opciones_texto: it.opciones_texto || '',
         note: it.nota || it.note || ''
       };
     });
@@ -623,6 +624,11 @@ export default function ComanderoView() {
 
   // Alternar selección de opciones con estricta distinción entre selección única (radio) y múltiple (checkbox)
   const toggleOption = (group, option) => {
+    const enrichedOption = {
+      ...option,
+      grupo_id: group.id,
+      grupo_titulo: group.titulo || '',
+    };
     setSelectedOptions(prev => {
       const current = prev[group.id] || [];
       const isSingle = group.tipo === 'unica' || Number(group.max_opciones) === 1;
@@ -632,7 +638,7 @@ export default function ComanderoView() {
         if (isSame && !group.requerido) {
           return { ...prev, [group.id]: [] };
         }
-        return { ...prev, [group.id]: [option] };
+        return { ...prev, [group.id]: [enrichedOption] };
       }
 
       // Selección múltiple
@@ -645,7 +651,7 @@ export default function ComanderoView() {
           addToast(`Máximo ${maxLimit} opciones en "${group.titulo}"`, 'warning');
           return prev;
         }
-        return { ...prev, [group.id]: [...current, option] };
+        return { ...prev, [group.id]: [...current, enrichedOption] };
       }
     });
   };
@@ -682,7 +688,7 @@ export default function ComanderoView() {
         cantidad: i.quantity,
         precio: i.price,
         nota: i.note || '',
-        opciones_texto: (i.options || []).map(o => o.nombre || o.label || o.name).join(', '),
+        opciones_texto: formatGroupedOptionsText(i.options, i.opciones_texto || '', { includePrice: false }),
         opciones: i.options || []
       }));
 
@@ -1476,9 +1482,9 @@ export default function ComanderoView() {
                           </span>
                         </div>
 
-                        {item.options && item.options.length > 0 && (
+                        {((item.options && item.options.length > 0) || item.opciones_texto) && (
                           <div className="ml-6 mt-1 text-xs text-slate-600 bg-slate-50 border border-slate-200/70 px-2 py-0.5 rounded-md inline-block break-words">
-                            + {item.options.map(o => o.nombre || o.label || o.name).join(', ')}
+                            + {formatGroupedOptionsText(item.options, item.opciones_texto || '', { includePrice: false })}
                           </div>
                         )}
                       </div>
@@ -1713,7 +1719,7 @@ export default function ComanderoView() {
                             const qty = it.cantidad ?? it.quantity ?? 1;
                             const name = it.nombre ?? it.name ?? 'Plato';
                             const note = it.nota || it.note || '';
-                            const optText = it.opciones_texto || '';
+                            const optText = formatGroupedOptionsText(it.opciones || it.options, it.opciones_texto || '', { includePrice: false });
                             return (
                               <div
                                 key={idx}

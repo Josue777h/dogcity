@@ -605,7 +605,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                                 {item.name}
                               </p>
                               {item.opciones_texto && (
-                                <p className="mt-1 line-clamp-2 break-words text-xs font-medium text-slate-600 bg-slate-50 px-2 py-0.5 rounded-md inline-block">
+                                <p className="mt-1 break-words text-xs font-medium text-slate-600 bg-slate-50 px-2 py-0.5 rounded-md inline-block">
                                   {item.opciones_texto}
                                 </p>
                               )}

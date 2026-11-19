@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Store, Mail, Lock, Eye, EyeOff, ArrowLeft, CheckCircle2,
   Utensils, ShoppingBag, Sparkles, CakeSlice, Package
@@ -25,6 +25,7 @@ const VERTICAL_ICONS = {
 };
 
 export default function RegisterPage() {
+  const location   = useLocation();
   const navigate   = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedSlug = searchParams.get('tienda') || '';
@@ -32,19 +33,23 @@ export default function RegisterPage() {
   const setSession = useAuthStore(s => s.setSession);
   const setBusiness = useBusinessStore(s => s.setBusiness);
 
+  const restored = location.state?.restoreRegistration || null;
+  const restoredPhone = restored?.rawPhone || String(restored?.phone || '').replace(/^57/, '').slice(0, 10);
+  const hasCompleteStep1 = Boolean(restored?.ownerName && restored?.businessName && /^3\d{9}$/.test(restoredPhone));
+
   const [loading,      setLoading]      = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [step, setStep] = useState(1);
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [step, setStep] = useState(hasCompleteStep1 ? 2 : 1);
+  const [termsAccepted, setTermsAccepted] = useState(hasCompleteStep1);
+  const [privacyAccepted, setPrivacyAccepted] = useState(hasCompleteStep1);
   const [form, setForm] = useState({
-    ownerName: '',
-    businessName: '',
-    storeSlug: requestedSlug,
-    phone: '',
-    verticalId: 'food',
-    email: '',
-    password: '',
+    ownerName: restored?.ownerName || '',
+    businessName: restored?.businessName || '',
+    storeSlug: restored?.storeSlug || requestedSlug,
+    phone: restoredPhone,
+    verticalId: restored?.verticalId || 'food',
+    email: restored?.email || '',
+    password: restored?.password || '',
   });
 
   const slugify = (value) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -91,9 +96,11 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const acceptedAt = new Date().toISOString();
-      const res = await registerBusiness({
+      const registrationPayload = {
         ...form,
+        email: form.email.trim(),
         ownerName: form.ownerName.trim(),
+        rawPhone: form.phone,
         phone: `57${form.phone}`,
         storeSlug: normalizedSlug,
         verticalId: form.verticalId,
@@ -103,16 +110,30 @@ export default function RegisterPage() {
           termsVersion: '2026-10-20-v1.1',
           privacyVersion: '2026-10-20-v1.0',
         },
-      });
+      };
+      const res = await registerBusiness(registrationPayload);
       if (res?.session) {
+        try {
+          sessionStorage.removeItem('negu_pending_registration');
+        } catch {
+          // ignore storage access issues
+        }
         setSession(res?.session);
         setBusiness(res?.negocio);
         addToast('¡Cuenta y negocio creados con éxito!', 'success');
         navigate('/bienvenido');
       } else {
+        try {
+          sessionStorage.setItem('negu_pending_registration', JSON.stringify(registrationPayload));
+        } catch {
+          // ignore storage access issues
+        }
         setSession(null);
         addToast('Te enviamos un enlace para confirmar tu correo.', 'success');
-        navigate('/verificar-correo', { replace: true, state: { email: form.email } });
+        navigate('/verificar-correo', {
+          replace: true,
+          state: { email: registrationPayload.email, registrationPayload },
+        });
       }
     } catch (err) {
       addToast(err.message || 'Error al crear la tienda', 'error');

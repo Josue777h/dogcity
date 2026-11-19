@@ -23,7 +23,12 @@ export default function PasswordRecoveryPage() {
       setSent(true);
     } catch (requestError) {
       const message = String(requestError?.message || '');
-      if (/rate limit|too many requests/i.test(message)) {
+      const cooldown = message.match(/only request this after\s+(\d+)\s+seconds?/i);
+
+      if (cooldown) {
+        const seconds = Number(cooldown[1]);
+        setError(`Por seguridad, podrás solicitar otro enlace en ${seconds} ${seconds === 1 ? 'segundo' : 'segundos'}.`);
+      } else if (/rate limit|too many requests/i.test(message)) {
         setError('Has solicitado varios enlaces. Espera un momento antes de intentarlo de nuevo.');
       } else {
         setError('No pudimos enviar la solicitud. Revisa tu conexión e inténtalo de nuevo.');
