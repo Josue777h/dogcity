@@ -53,7 +53,7 @@ export const RETAIL_TEMPLATE_MODULES: BusinessModules = {
 
 export interface BusinessVertical {
   id: string;
-  businessType: 'food' | 'retail';
+  businessType: 'food' | 'retail' | 'pharmacy' | 'stationery' | 'general';
   label: string;
   subtitle: string;
   modules: BusinessModules;
@@ -65,8 +65,8 @@ export const BUSINESS_VERTICALS: BusinessVertical[] = [
   {
     id: 'food',
     businessType: 'food',
-    label: 'Restaurante / Comida',
-    subtitle: '',
+    label: 'Restaurante y comida',
+    subtitle: 'Menú, mesas, cocina y domicilios',
     modules: FOOD_TEMPLATE_MODULES,
     defaultThemeColor: '#0284C7',
     defaultSecondaryColor: '#F0F9FF',
@@ -74,8 +74,8 @@ export const BUSINESS_VERTICALS: BusinessVertical[] = [
   {
     id: 'desserts',
     businessType: 'food',
-    label: 'Postres / Cafetería',
-    subtitle: '',
+    label: 'Cafetería y repostería',
+    subtitle: 'Carta, pedidos rápidos y atención en local',
     modules: FOOD_TEMPLATE_MODULES,
     defaultThemeColor: '#0284C7',
     defaultSecondaryColor: '#F0F9FF',
@@ -83,8 +83,8 @@ export const BUSINESS_VERTICALS: BusinessVertical[] = [
   {
     id: 'fashion',
     businessType: 'retail',
-    label: 'Ropa y Accesorios',
-    subtitle: '',
+    label: 'Moda, ropa y calzado',
+    subtitle: 'Catálogo, tallas, colores y envíos',
     modules: RETAIL_TEMPLATE_MODULES,
     defaultThemeColor: '#0284C7',
     defaultSecondaryColor: '#F0F9FF',
@@ -92,8 +92,26 @@ export const BUSINESS_VERTICALS: BusinessVertical[] = [
   {
     id: 'perfumes',
     businessType: 'retail',
-    label: 'Perfumería y Belleza',
-    subtitle: '',
+    label: 'Perfumería y belleza',
+    subtitle: 'Catálogo, presentaciones y envíos',
+    modules: RETAIL_TEMPLATE_MODULES,
+    defaultThemeColor: '#0284C7',
+    defaultSecondaryColor: '#F0F9FF',
+  },
+  {
+    id: 'pharmacy',
+    businessType: 'pharmacy',
+    label: 'Farmacia y salud',
+    subtitle: 'Productos, despacho rápido y domicilios',
+    modules: RETAIL_TEMPLATE_MODULES,
+    defaultThemeColor: '#0284C7',
+    defaultSecondaryColor: '#F0F9FF',
+  },
+  {
+    id: 'electronics',
+    businessType: 'retail',
+    label: 'Tecnología y hogar',
+    subtitle: 'Catálogo, variantes y envíos',
     modules: RETAIL_TEMPLATE_MODULES,
     defaultThemeColor: '#0284C7',
     defaultSecondaryColor: '#F0F9FF',
@@ -101,17 +119,17 @@ export const BUSINESS_VERTICALS: BusinessVertical[] = [
   {
     id: 'retail',
     businessType: 'retail',
-    label: 'Juguetes y Regalos',
-    subtitle: '',
+    label: 'Regalos, mascotas y tienda',
+    subtitle: 'Catálogo general y pedidos a WhatsApp',
     modules: RETAIL_TEMPLATE_MODULES,
     defaultThemeColor: '#0284C7',
     defaultSecondaryColor: '#F0F9FF',
   },
   {
     id: 'other',
-    businessType: 'retail',
-    label: 'Otro comercio',
-    subtitle: '',
+    businessType: 'general',
+    label: 'Otro tipo de negocio',
+    subtitle: 'Catálogo flexible adaptable a cualquier rubro',
     modules: RETAIL_TEMPLATE_MODULES,
     defaultThemeColor: '#0284C7',
     defaultSecondaryColor: '#F0F9FF',
@@ -125,10 +143,25 @@ export function getVerticalById(id?: string | null): BusinessVertical {
   if (normalized === 'restaurant' || normalized === 'comida') {
     return BUSINESS_VERTICALS[0];
   }
-  if (normalized === 'pharmacy' || normalized === 'stationery') {
+  if (normalized === 'stationery') {
     return BUSINESS_VERTICALS.find(v => v.id === 'retail') || BUSINESS_VERTICALS[0];
   }
+  if (normalized === 'general') {
+    return BUSINESS_VERTICALS.find(v => v.id === 'other') || BUSINESS_VERTICALS[0];
+  }
   return BUSINESS_VERTICALS[0];
+}
+
+export function getVerticalForBusiness(business: any): BusinessVertical {
+  if (!business) return BUSINESS_VERTICALS[0];
+  if (business.catalog_design?.vertical_id) {
+    return getVerticalById(business.catalog_design.vertical_id);
+  }
+  const type = String(business.business_type || 'food').toLowerCase();
+  if (type === 'food') return BUSINESS_VERTICALS[0];
+  if (type === 'pharmacy') return getVerticalById('pharmacy');
+  if (type === 'retail' || type === 'stationery') return getVerticalById('retail');
+  return getVerticalById('other');
 }
 
 /**
@@ -163,7 +196,7 @@ export function getEnabledModules(business: any): BusinessModules {
   // 4. Si tiene business_template o business_type
   const template = String(business.business_template || business.business_type || 'food').toLowerCase();
 
-  if (template === 'retail' || template === 'pharmacy' || template === 'stationery' || template === 'fashion' || template === 'perfumes' || template === 'other') {
+  if (template === 'retail' || template === 'pharmacy' || template === 'stationery' || template === 'fashion' || template === 'perfumes' || template === 'electronics' || template === 'general' || template === 'other') {
     return { ...RETAIL_TEMPLATE_MODULES };
   }
 

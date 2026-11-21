@@ -11,7 +11,7 @@ import {
   getGroupedOptionsList, printThermalReceipt, playNewOrderSound
 } from '../../../lib/utils';
 import { isWebBluetoothSupported, printOrderViaBluetooth } from '../../../lib/bluetoothPrinter';
-import { updateOrderStatus, getSupabase, deleteOrder, emitTableCallEvent } from '../../../lib/supabase';
+import { updateOrderStatus, getSupabase, deleteOrder, emitTableCallEvent, adjustStockForOrder } from '../../../lib/supabase';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import { OrderService } from '../../../services/orderService';
 import { getStatusCopy } from '../../../lib/status-labels';
@@ -627,6 +627,7 @@ export default function OrdersView(props) {
   const outletCtx = useOutletContext() || {};
   const ordersSource = props.orders ?? outletCtx.orders;
   const orders = useMemo(() => ordersSource || [], [ordersSource]);
+  const products = useMemo(() => props.products ?? outletCtx.products ?? [], [props.products, outletCtx.products]);
   const onUpdate = props.onUpdate ?? outletCtx.reloadOrders ?? (() => { });
 
   const business = useBusinessStore(s => s.business);
@@ -933,6 +934,20 @@ export default function OrdersView(props) {
     try {
       await updateOrderStatus(orderId, newStatus);
 
+      // Descuento automático e idempotente de stock al confirmar / despachar el pedido (si está activado)
+      const autoDeductEnabled = business?.catalog_design?.inventory_config?.autoDeductStock !== false;
+      const normalizedNext = String(newStatus || '').toLowerCase();
+      if (autoDeductEnabled && ['en_preparacion', 'listo_para_recoger', 'en_camino', 'entregado'].includes(normalizedNext)) {
+        try {
+          const stockRes = await adjustStockForOrder(targetOrder, products, business?.id, 'deduct');
+          if (stockRes.changedCount > 0) {
+            addToast(`Inventario actualizado (-${stockRes.totalUnits} ${stockRes.totalUnits === 1 ? 'ud.' : 'uds.'})`, 'info');
+          }
+        } catch (stockErr) {
+          console.warn('No se pudo descontar stock automáticamente:', stockErr);
+        }
+      }
+
       if (isMesaOrder(targetOrder)) {
         const tbl = getTableNumber(targetOrder);
         if (tbl) {
@@ -1170,6 +1185,10 @@ export default function OrdersView(props) {
           const pickupReady = ['LISTO_PARA_RECOGER', 'EN_CAMINO', 'ENVIADO'].includes(normalizedStatus);
           const cleanCustomerPhone = (order.telefono || '').replace(/\D/g, '');
           const hasValidPhone = cleanCustomerPhone.length >= 7;
+          const hasCustomMesaClientName = Boolean(
+            order.nombre && !/^mesa\s*#?\s*\d+$/i.test(String(order.nombre).trim())
+          );
+          const showMesaCustomerRow = hasCustomMesaClientName || hasValidPhone;
           // Nunca mostrar "Avisar a la mesa" por WhatsApp: en salón el mesero entrega en persona
           const canNotifyCustomer = hasValidPhone && !isMesa && (isPickup ? pickupReady : ['EN_CAMINO', 'ENVIADO'].includes(normalizedStatus));
           const deliveryPending = isDeliveryPending(order);
@@ -1384,112 +1403,105 @@ export default function OrdersView(props) {
                     {/* Columna 1: Cliente, Entrega y Repartidor */}
                     <div className="space-y-2.5 min-w-0">
                       <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-gray-200 shadow-2xs space-y-2.5">
-                        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                        <div className={`flex items-center justify-between gap-2 ${(!isMesa || showMesaCustomerRow) ? 'border-b border-gray-100 pb-2' : ''}`}>
                           <p className="text-xs font-bold text-gray-900 uppercase tracking-wider">
                             {isMesa ? 'Ubicación de consumo' : 'Datos de entrega'}
                           </p>
                           {isMesa ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200 whitespace-nowrap shrink-0">
                               <Utensils size={12} /> Servicio en Mesa #{tableNum || '1'}
                             </span>
                           ) : isPickup ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 whitespace-nowrap shrink-0">
                               <Store size={12} /> Recogida en local
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200 whitespace-nowrap shrink-0">
                               <Bike size={12} /> Domicilio
                             </span>
                           )}
                         </div>
 
-                        {/* Cliente y Teléfono / WhatsApp */}
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex min-w-0 flex-1 items-center gap-2">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${isMesa ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700'
-                              }`}>
-                              {isMesa ? <Utensils size={14} /> : <User size={15} />}
+                        {/* Cliente y Teléfono / WhatsApp (en pedidos de mesa solo si hay nombre real o teléfono) */}
+                        {(!isMesa || showMesaCustomerRow) && (
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex min-w-0 flex-1 items-center gap-2">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${isMesa ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700'
+                                }`}>
+                                {isMesa ? <Utensils size={14} /> : <User size={15} />}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="line-clamp-2 text-xs sm:text-sm font-bold text-gray-950 leading-tight break-words">{order.nombre}</p>
+                                {hasValidPhone ? (
+                                  <a href={`tel:${cleanCustomerPhone}`} className="text-[11px] sm:text-xs font-semibold text-slate-600 hover:text-slate-950 hover:underline leading-tight block mt-0.5 whitespace-nowrap">
+                                    {order.telefono}
+                                  </a>
+                                ) : (
+                                  <span className="text-[11px] text-gray-500 font-medium block mt-0.5">
+                                    {isMesa ? 'Atención directa en salón' : 'Sin teléfono registrado'}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="line-clamp-2 text-xs sm:text-sm font-bold text-gray-950 leading-tight break-words">{order.nombre}</p>
-                              {hasValidPhone ? (
-                                <a href={`tel:${cleanCustomerPhone}`} className="text-[11px] sm:text-xs font-semibold text-slate-600 hover:text-slate-950 hover:underline leading-tight block mt-0.5 whitespace-nowrap">
-                                  {order.telefono}
-                                </a>
-                              ) : (
-                                <span className="text-[11px] text-gray-500 font-medium block mt-0.5">
-                                  {isMesa ? 'Atención directa en salón (Mesero)' : 'Sin teléfono registrado'}
-                                </span>
-                              )}
-                            </div>
-                          </div>
 
-                          {hasValidPhone && (
-                            <div className="flex shrink-0 items-center gap-1.5">
-                              {canNotifyCustomer && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleNotifyCustomerDispatch(order)}
-                                  className="inline-flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 sm:px-2.5 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200"
-                                  title={isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
-                                  aria-label={isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
+                            {hasValidPhone && (
+                              <div className="flex shrink-0 items-center gap-1.5">
+                                {canNotifyCustomer && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleNotifyCustomerDispatch(order)}
+                                    className="inline-flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 sm:px-2.5 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200"
+                                    title={isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
+                                    aria-label={isPickup ? 'Avisar al cliente que puede recoger su pedido' : 'Avisar al cliente que el pedido va en camino'}
+                                  >
+                                    {isPickup ? <Store size={13} /> : <Bike size={13} />}
+                                    <span className="hidden sm:inline">{isPickup ? 'Avisar recogida' : 'Avisar envío'}</span>
+                                  </button>
+                                )}
+                                <a
+                                  href={`https://wa.me/${cleanCustomerPhone}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors shrink-0"
+                                  title="Abrir chat en WhatsApp"
+                                  aria-label={`Abrir WhatsApp para ${order.nombre || 'el cliente'}`}
                                 >
-                                  {isPickup ? <Store size={13} /> : <Bike size={13} />}
-                                  <span className="hidden sm:inline">{isPickup ? 'Avisar recogida' : 'Avisar envío'}</span>
-                                </button>
-                              )}
-                              <a
-                                href={`https://wa.me/${cleanCustomerPhone}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors shrink-0"
-                                title="Abrir chat en WhatsApp"
-                                aria-label={`Abrir WhatsApp para ${order.nombre || 'el cliente'}`}
-                              >
-                                <WhatsAppIcon size={17} />
-                                <span className="hidden sm:inline">WhatsApp</span>
-                              </a>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Dirección y Ubicación */}
-                        <div className="pt-2 border-t border-gray-100">
-                          <div className="flex items-start gap-1.5 text-xs text-gray-800">
-                            {isMesa ? (
-                              <Utensils size={15} className="text-purple-600 mt-0.5 shrink-0" />
-                            ) : (
-                              <MapPin size={15} className="text-slate-500 mt-0.5 shrink-0" />
+                                  <WhatsAppIcon size={17} />
+                                  <span className="hidden sm:inline">WhatsApp</span>
+                                </a>
+                              </div>
                             )}
-                            <div className="leading-snug break-words">
-                              {isMesa ? (
-                                <div>
-                                  <span className="font-bold text-purple-950 text-sm">Mesa #{tableNum || '1'}</span>
-                                  <span className="block text-[11px] text-gray-500 font-normal">Consumo en restaurante / establecimiento</span>
-                                </div>
-                              ) : (
+                          </div>
+                        )}
+
+                        {/* Dirección y Ubicación (solo envíos y recogida en tienda; en mesa ya se indica arriba) */}
+                        {!isMesa && (
+                          <div className="pt-2 border-t border-gray-100">
+                            <div className="flex items-start gap-1.5 text-xs text-gray-800">
+                              <MapPin size={15} className="text-slate-500 mt-0.5 shrink-0" />
+                              <div className="leading-snug break-words">
                                 <p className="font-semibold text-gray-950">
                                   {isPickup ? (business?.direccion || 'Recogida en tienda física') : (order.direccion || 'Dirección pendiente')}
                                 </p>
-                              )}
-                            </div>
-                          </div>
-
-                          {isDelivery && (order.ubicacion_link || order.direccion) && (
-                            <a
-                              href={order.ubicacion_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion)}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all text-xs text-slate-900 font-bold group"
-                            >
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <Map size={14} className="text-slate-600 shrink-0 group-hover:scale-110 transition-transform" />
-                                <span className="truncate">Ver ubicación en Google Maps</span>
                               </div>
-                              <span className="text-[11px] text-slate-700 font-bold shrink-0">Abrir ↗</span>
-                            </a>
-                          )}
-                        </div>
+                            </div>
+
+                            {isDelivery && (order.ubicacion_link || order.direccion) && (
+                              <a
+                                href={order.ubicacion_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion)}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all text-xs text-slate-900 font-bold group"
+                              >
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <Map size={14} className="text-slate-600 shrink-0 group-hover:scale-110 transition-transform" />
+                                  <span className="truncate">Ver ubicación en Google Maps</span>
+                                </div>
+                                <span className="text-[11px] text-slate-700 font-bold shrink-0">Abrir ↗</span>
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Repartidor asignado solo para pedidos a domicilio */}
@@ -1548,7 +1560,8 @@ export default function OrdersView(props) {
                             title="Imprimir comanda de cocina (solo platos y notas, sin precios)"
                           >
                             <ChefHat size={14} className="shrink-0" />
-                            <span className="truncate">Comanda Cocina</span>
+                            <span className="sm:hidden">Cocina</span>
+                            <span className="hidden sm:inline truncate">Comanda Cocina</span>
                           </button>
 
                           <button
@@ -1558,7 +1571,8 @@ export default function OrdersView(props) {
                             title="Imprimir cuenta / recibo para el cliente (con precios y total)"
                           >
                             <Printer size={14} className="shrink-0" />
-                            <span className="truncate">Cuenta / Cobro</span>
+                            <span className="sm:hidden">Cuenta</span>
+                            <span className="hidden sm:inline truncate">Cuenta / Cobro</span>
                           </button>
 
                           <button
@@ -1643,7 +1657,19 @@ export default function OrdersView(props) {
         isOpen={!!orderToCancel}
         order={orderToCancel}
         onClose={() => setOrderToCancel(null)}
-        onConfirmed={onUpdate}
+        onConfirmed={async () => {
+          if (orderToCancel) {
+            try {
+              const restored = await adjustStockForOrder(orderToCancel, products, business?.id, 'restore');
+              if (restored.changedCount > 0) {
+                addToast(`Stock devuelto al inventario (+${restored.totalUnits} ${restored.totalUnits === 1 ? 'ud.' : 'uds.'})`, 'info');
+              }
+            } catch (stockErr) {
+              console.warn('No se pudo reponer stock al cancelar:', stockErr);
+            }
+          }
+          onUpdate();
+        }}
       />
 
       <DriverSelectModal

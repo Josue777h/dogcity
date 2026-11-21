@@ -18,7 +18,7 @@ export default function ParaRestaurantesPage() {
           eyebrow="Gastronomía & comida · Diseñado para el ritmo de la cocina"
           title="Software para restaurantes y"
           highlight="negocios gastronómicos"
-          description="El sistema todo en uno para pizzerías, hamburgueserías, restaurantes y cafeterías. Menú digital interactivo en mesa o redes, comandas organizadas para cocina y ruta GPS para repartidores con 0% de comisiones."
+          description="El sistema todo en uno para restaurantes, cafeterías, comidas rápidas y negocios gastronómicos. Menú digital interactivo en mesa o redes, comandas organizadas para cocina y ruta GPS para repartidores con 0% de comisiones."
           ctaTo="/registro"
           ctaLabel="Digitalizar mi restaurante gratis"
           note="Prueba 7 días gratis · Sin comisiones por plato vendido"

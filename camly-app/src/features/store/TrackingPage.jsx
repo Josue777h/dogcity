@@ -43,7 +43,7 @@ const DEMO_ORDER = {
   ],
   negocios: {
     nombre: 'demo',
-    nombre_visible: 'Pizzería La Toscana',
+    nombre_visible: 'Tienda Demo NEGU',
     telefono: '573143243707',
     whatsapp_contacto: '573143243707',
     theme_color: '#0284C7',
@@ -52,7 +52,7 @@ const DEMO_ORDER = {
     pago_alias: '314 324 3707',
     nequi_numero: '3143243707',
     daviplata_numero: '3143243707',
-    titular_cuenta: 'Pizzería La Toscana',
+    titular_cuenta: 'Tienda Demo NEGU',
     cedula_titular: '1098765432'
   }
 };

@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Store, Mail, Lock, Eye, EyeOff, ArrowLeft, CheckCircle2,
-  Utensils, ShoppingBag, Sparkles, CakeSlice, Package
+  Store, Mail, Lock, Eye, EyeOff, ArrowLeft, CheckCircle2, ChevronDown
 } from 'lucide-react';
 import { registerBusiness } from '../../lib/supabase';
 import { BUSINESS_VERTICALS, getVerticalById } from '../../lib/modules';
@@ -14,15 +13,6 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-
-const VERTICAL_ICONS = {
-  food: Utensils,
-  desserts: CakeSlice,
-  fashion: ShoppingBag,
-  perfumes: Sparkles,
-  retail: Package,
-  other: Store,
-};
 
 export default function RegisterPage() {
   const location   = useLocation();
@@ -221,31 +211,29 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <span className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label htmlFor="reg-vertical" className="block text-sm font-medium text-slate-700 mb-1.5">
                 Tipo de negocio
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {BUSINESS_VERTICALS.map((v) => {
-                  const VIcon = VERTICAL_ICONS[v.id] || Package;
-                  const isSelected = form.verticalId === v.id;
-                  return (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onClick={() => setForm(current => ({ ...current, verticalId: v.id }))}
-                      aria-pressed={isSelected}
-                      className={`min-h-11 px-3 py-2 rounded-lg border text-left text-xs sm:text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                        isSelected
-                          ? 'border-[#0284C7] bg-sky-50/70 text-[#0369A1] ring-1 ring-[#0284C7]/20'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      <VIcon size={15} className={`shrink-0 ${isSelected ? 'text-[#0284C7]' : 'text-slate-400'}`} />
-                      <span className="leading-tight">{v.label}</span>
-                    </button>
-                  );
-                })}
+              </label>
+              <div className="relative">
+                <select
+                  id="reg-vertical"
+                  value={form.verticalId}
+                  onChange={e => setForm(current => ({ ...current, verticalId: e.target.value }))}
+                  className="w-full min-h-12 appearance-none rounded-lg border border-slate-200 bg-white pl-3.5 pr-10 py-3 text-sm font-medium text-slate-900 transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/5 cursor-pointer"
+                >
+                  {BUSINESS_VERTICALS.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
+              <p className="mt-1.5 text-xs text-slate-500">
+                {selectedVertical.modules.kitchen
+                  ? 'Incluye catálogo, pedidos, domicilios y comandero de mesas.'
+                  : 'Incluye catálogo, variantes, pedidos y envíos (sin comandero).'}
+              </p>
             </div>
 
             <div>

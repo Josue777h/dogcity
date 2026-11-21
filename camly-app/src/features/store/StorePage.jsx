@@ -160,8 +160,10 @@ export default function StorePage() {
 
   const visible = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
+    const hideOutOfStock = business?.catalog_design?.inventory_config?.hideOutOfStock !== false;
     return products.filter(p => {
-      if (!p.disponible) return false;
+      const isZeroStock = p.stock !== null && p.stock !== undefined && Number(p.stock) <= 0;
+      if (hideOutOfStock && (!p.disponible || isZeroStock)) return false;
       let pCatName = p.categoria;
       if (p.categoria_id && categories?.length > 0) {
         const found = categories.find(c => c.id === p.categoria_id);
@@ -177,7 +179,7 @@ export default function StorePage() {
         ));
       return matchesCat && matchesSearch;
     });
-  }, [products, currentCategory, searchTerm, categories]);
+  }, [products, currentCategory, searchTerm, categories, business?.catalog_design?.inventory_config?.hideOutOfStock]);
 
   const deliverySummary = useMemo(() => {
     const tipoDom = business?.tipo_domicilio || 'automatico';

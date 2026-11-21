@@ -976,20 +976,26 @@ export default function ComanderoView() {
       <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
         <div className="flex items-center justify-between gap-1.5 pb-2 border-b border-slate-100 flex-nowrap min-w-0">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 overflow-hidden">
-            <h1 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-1.5 shrink-0">
+            <h1 className="hidden sm:flex text-base font-bold text-slate-900 items-center gap-1.5 shrink-0">
               <Utensils className="text-slate-700 shrink-0" size={16} />
-              <span className="hidden sm:inline">Comandero</span>
+              <span>Comandero</span>
             </h1>
             <span className="text-xs font-black px-2 sm:px-2.5 py-0.5 rounded-lg bg-brand text-white shadow-2xs shrink-0 whitespace-nowrap">
               Mesa #{selectedTable}
             </span>
-            {primaryActiveOrder && (
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border truncate max-w-[110px] sm:max-w-none ${getMesaStatusInfo(primaryActiveOrder).badgeClass}`}>
-                {getMesaStatusInfo(primaryActiveOrder).label} · #{String(primaryActiveOrder.id).slice(-4).toUpperCase()}
-              </span>
-            )}
+            {primaryActiveOrder && (() => {
+              const statusInfo = getMesaStatusInfo(primaryActiveOrder);
+              const shortMobileLabel = statusInfo.isServed ? 'En Mesa' : 'En Cocina';
+              const shortOrderNum = String(primaryActiveOrder.id).slice(-4).toUpperCase();
+              return (
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border whitespace-nowrap shrink-0 ${statusInfo.badgeClass}`}>
+                  <span className="sm:hidden">{shortMobileLabel}</span>
+                  <span className="hidden sm:inline">{statusInfo.label} · #{shortOrderNum}</span>
+                </span>
+              );
+            })()}
             {Object.keys(tableCalls).length > 0 && (
-              <span className="hidden sm:flex items-center gap-1 font-bold text-[11px] text-rose-600 animate-pulse bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 truncate">
+              <span className="hidden md:flex items-center gap-1 font-bold text-[11px] text-amber-800 animate-pulse bg-amber-50 px-2 py-0.5 rounded-full border border-amber-300 shrink-0 whitespace-nowrap">
                 <Bell size={11} className="shrink-0" /> {Object.keys(tableCalls).length} llamado(s)
               </span>
             )}
@@ -1047,8 +1053,8 @@ export default function ComanderoView() {
         <div
           className={
             showAllTablesMobile
-              ? 'grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-1.5 sm:gap-2'
-              : 'flex lg:grid lg:grid-cols-12 items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-0.5'
+              ? 'grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-1.5 sm:gap-2 pt-2 pb-1 px-1 -mx-1'
+              : 'flex lg:grid lg:grid-cols-12 items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pt-2 pb-1 px-1 -mx-1'
           }
         >
           {PRESET_TABLES.map(num => {
@@ -1070,7 +1076,7 @@ export default function ComanderoView() {
                   isSelected
                     ? 'bg-brand text-white shadow-sm ring-2 ring-slate-900/15'
                     : hasCall
-                      ? 'bg-rose-50 text-rose-900 border-2 border-rose-500 shadow-2xs animate-pulse'
+                      ? 'bg-amber-50 text-amber-950 border-2 border-amber-500 shadow-2xs animate-pulse'
                       : isOccupied
                         ? tableStatusInfo?.isServed
                           ? 'bg-indigo-50 border border-indigo-300 text-indigo-950 hover:bg-indigo-100/80'
@@ -1081,16 +1087,16 @@ export default function ComanderoView() {
                 }`}
               >
                 {hasCall && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[9px] text-white shadow-xs">
-                    <Bell size={8} />
+                  <span className="absolute -top-1.5 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-slate-950 ring-2 ring-white shadow-md">
+                    <Bell size={11} strokeWidth={2.5} />
                   </span>
                 )}
                 <span className="text-xs font-black leading-tight whitespace-nowrap">Mesa {num}</span>
                 <span className={`text-[10px] font-medium leading-tight mt-0.5 truncate max-w-full ${
                   isSelected
-                    ? 'text-white/90 font-semibold'
+                    ? 'text-white/95 font-semibold'
                     : hasCall
-                      ? 'text-rose-700 font-bold'
+                      ? 'text-amber-800 font-bold'
                       : isOccupied
                         ? tableStatusInfo?.isServed
                           ? 'text-indigo-700 font-semibold'
@@ -1127,20 +1133,20 @@ export default function ComanderoView() {
         <button
           type="button"
           onClick={() => setMobileSection('menu')}
-          className={`min-h-10 py-2 px-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer min-w-0 ${
+          className={`min-h-10 py-2 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer min-w-0 ${
             mobileSection === 'menu'
               ? 'bg-brand text-white shadow-2xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
           }`}
         >
-          <Utensils size={13} className="shrink-0" />
-          <span className="truncate">Carta ({filteredProducts.length})</span>
+          <Utensils size={12} className="shrink-0" />
+          <span className="whitespace-nowrap">Carta ({filteredProducts.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setMobileSection('ticket')}
-          className={`min-h-10 py-2 px-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer min-w-0 ${
+          className={`min-h-10 py-2 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer min-w-0 ${
             mobileSection === 'ticket'
               ? 'bg-brand text-white shadow-2xs'
               : activeTicketQty > 0
@@ -1148,14 +1154,16 @@ export default function ComanderoView() {
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
           }`}
         >
-          <ChefHat size={13} className="shrink-0" />
-          <span className="truncate">Comanda ({activeTicketQty})</span>
+          <ChefHat size={12} className="shrink-0" />
+          <span className="whitespace-nowrap">
+            {activeTicketQty > 0 ? `Comanda (${activeTicketQty})` : 'Comanda'}
+          </span>
         </button>
 
         <button
           type="button"
           onClick={() => setMobileSection('active')}
-          className={`min-h-10 py-2 px-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer min-w-0 ${
+          className={`min-h-10 py-2 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer min-w-0 ${
             mobileSection === 'active'
               ? 'bg-brand text-white shadow-2xs'
               : currentTableActiveOrders.length > 0
@@ -1163,8 +1171,10 @@ export default function ComanderoView() {
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
           }`}
         >
-          <Clock size={13} className="shrink-0" />
-          <span className="truncate">Activa ({currentTableActiveOrders.length})</span>
+          <Clock size={12} className="shrink-0" />
+          <span className="whitespace-nowrap">
+            {currentTableActiveOrders.length > 0 ? `Activa (${currentTableActiveOrders.length})` : 'Activa'}
+          </span>
         </button>
       </div>
 
@@ -1228,7 +1238,7 @@ export default function ComanderoView() {
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
               <input
                 type="text"
-                placeholder="Buscar plato, bebida, ingrediente..."
+                placeholder="Buscar plato o ingrediente..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-9 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:outline-hidden focus:border-slate-500 focus:ring-1 focus:ring-slate-500"

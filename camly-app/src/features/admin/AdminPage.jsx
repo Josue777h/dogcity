@@ -15,6 +15,7 @@ import {
 import { playNewOrderSound, playTableCallSound } from '../../lib/utils';
 import { useAuthStore, useToastStore, useBusinessStore } from '../../stores';
 import { readMigratedLocalStorage } from '../../lib/localStorage';
+import { isModuleEnabled } from '../../lib/modules';
 
 // Modular Components
 import Sidebar from './components/Sidebar';
@@ -51,6 +52,16 @@ export default function AdminPage() {
       navigate('/admin/comandero', { replace: true });
     }
   }, [isWaiterLocked, currentPathSegment, navigate]);
+
+  // Proteger rutas de módulos desactivados (ej. Comandero o Domiciliarios)
+  useEffect(() => {
+    if (!business) return;
+    if ((currentPathSegment === 'comandero' || currentPathSegment === 'mesas') && !isModuleEnabled(business, 'kitchen')) {
+      navigate('/admin/dashboard', { replace: true });
+    } else if (currentPathSegment === 'domiciliarios' && !isModuleEnabled(business, 'delivery')) {
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [business, currentPathSegment, navigate]);
 
   // Data States
   const [products, setProducts] = useState([]);

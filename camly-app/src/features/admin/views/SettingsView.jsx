@@ -8,10 +8,9 @@ import {
   ShoppingCart, Eye, Store, Utensils, Plus,
   QrCode, Printer, Download, ExternalLink, Copy
 } from 'lucide-react';
-import QRCode from 'qrcode';
-import { getSupabase, updateBusiness, uploadImage } from '../../../lib/supabase';
+import { updateBusiness, uploadImage } from '../../../lib/supabase';
 import { formatThousandsInput } from '../../../lib/utils';
-import { isModuleEnabled } from '../../../lib/modules';
+import { BUSINESS_VERTICALS, getEnabledModules, getVerticalById, getVerticalForBusiness } from '../../../lib/modules';
 import { useToastStore, useAuthStore } from '../../../stores';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 
@@ -59,10 +58,6 @@ const FOOTER_STYLES = [
   { id: 'branded', name: 'Con identidad', desc: 'Color y acentos de tu marca' },
   { id: 'minimal', name: 'Esencial', desc: 'Blanco y discreto' },
 ];
-const BUSINESS_TYPES = [
-  { id: 'food', label: 'Gastronomía' }, { id: 'retail', label: 'Moda y comercio' },
-  { id: 'pharmacy', label: 'Farmacia' }, { id: 'stationery', label: 'Papelería' }, { id: 'general', label: 'General' },
-];
 const DEFAULT_DESIGN = { button_style: 'pill', font_family: 'sans', footer_style: 'branded' };
 const cleanFooterMessage = value => String(value || '').replace(/<!--(?:NEGU|CAMLY)_SCHEDULE:[\s\S]*?-->/g, '').replace(/<!--(?:NEGU|CAMLY)_DESIGN:[\s\S]*?-->/g, '').trim();
 
@@ -94,15 +89,18 @@ function buildInitialFormData(business) {
 }
 
 function buildInitialDesignData(business) {
-  const base = DEFAULT_DESIGN;
+  const vertical = getVerticalForBusiness(business);
+  const resolvedModules = getEnabledModules(business);
+  const base = { ...DEFAULT_DESIGN, vertical_id: vertical.id, modules: resolvedModules };
   if (business?.catalog_design && typeof business.catalog_design === 'object' && Object.keys(business.catalog_design).length) {
-    return { ...base, ...business.catalog_design };
+    return { ...base, ...business.catalog_design, vertical_id: business.catalog_design.vertical_id || vertical.id, modules: resolvedModules };
   }
   if (typeof business?.footer_message === 'string' && /<!--(?:NEGU|CAMLY)_DESIGN:/.test(business.footer_message)) {
     try {
       const match = business.footer_message.match(/<!--(?:NEGU|CAMLY)_DESIGN:(.*?)-->/);
       if (match && match[1]) {
-        return { ...base, ...JSON.parse(match[1]) };
+        const parsed = JSON.parse(match[1]);
+        return { ...base, ...parsed, vertical_id: parsed.vertical_id || vertical.id, modules: parsed.modules ? { ...resolvedModules, ...parsed.modules } : resolvedModules };
       }
     } catch (err) {
       console.warn('Error parsing design config:', err);
@@ -174,6 +172,37 @@ export default function SettingsView(props) {
   })();
 
   const [designData, setDesignData] = useState(() => buildInitialDesignData(business));
+  const activeModules = designData.modules || getEnabledModules(business);
+  const kitchenEnabled = Boolean(activeModules.kitchen);
+  const deliveryEnabled = activeModules.delivery !== false;
+  const activeVerticalId = designData.vertical_id || getVerticalForBusiness(business).id;
+
+  const handleVerticalChange = (nextVerticalId) => {
+    const vertical = getVerticalById(nextVerticalId);
+    setFormData(prev => ({ ...prev, business_type: vertical.businessType }));
+    setDesignData(prev => ({
+      ...prev,
+      vertical_id: vertical.id,
+      modules: { ...vertical.modules },
+    }));
+    if (!vertical.modules.kitchen && qrMode === 'mesa') {
+      setQrMode('general');
+    }
+  };
+
+  const handleToggleModule = (moduleKey) => {
+    setDesignData(prev => {
+      const current = prev.modules || getEnabledModules(business);
+      const nextVal = !current[moduleKey];
+      if (moduleKey === 'kitchen' && !nextVal && qrMode === 'mesa') {
+        setQrMode('general');
+      }
+      return {
+        ...prev,
+        modules: { ...current, [moduleKey]: nextVal },
+      };
+    });
+  };
 
   const [scheduleData, setScheduleData] = useState(() => buildInitialScheduleData(business));
   const currentSnapshot = JSON.stringify({ formData, designData, scheduleData });
@@ -219,7 +248,8 @@ export default function SettingsView(props) {
         const url = getFullQrUrl();
         const activeColor = qrColorMode === 'brand' ? (formData.theme_color || '#0F172A') : '#0F172A';
         
-        const baseQr = await QRCode.toDataURL(url, {
+        const { generateQrDataUrl } = await import('../../../lib/qrCode');
+        const baseQr = await generateQrDataUrl(url, {
           width: 700,
           margin: 2,
           color: {
@@ -326,9 +356,15 @@ export default function SettingsView(props) {
       addToast('Permite ventanas emergentes para imprimir el hablador.', 'warning');
       return;
     }
-    const storeName = formData.nombre_visible || business?.nombre || 'Menú Digital';
-    const isMesa = qrMode === 'mesa';
+    const storeName = formData.nombre_visible || business?.nombre || (kitchenEnabled ? 'Menú Digital' : 'Catálogo Digital');
+    const isMesa = kitchenEnabled && qrMode === 'mesa';
     const color = formData.theme_color || '#0284C7';
+    const standTag = isMesa
+      ? `Mesa ${tableNumber} · Carta Digital`
+      : (kitchenEnabled ? 'Menú Digital Interactivo' : 'Catálogo Digital Interactivo');
+    const standInstruction = kitchenEnabled
+      ? 'Escanea con la cámara de tu celular<br/>para ver nuestra carta y realizar tu pedido'
+      : 'Escanea con la cámara de tu celular<br/>para ver nuestro catálogo y realizar tu pedido';
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -355,11 +391,11 @@ export default function SettingsView(props) {
           <div class="stand">
             ${formData.logo_url ? `<div class="logo-wrap"><img src="${formData.logo_url}" alt="Logo" /></div>` : ''}
             <h1>${storeName}</h1>
-            <div class="tag">${isMesa ? `Mesa ${tableNumber} · Carta Digital` : 'Menú Digital Interactivo'}</div>
+            <div class="tag">${standTag}</div>
             <div class="qr-frame">
-              <img src="${qrDataUrl}" alt="QR Menú" />
+              <img src="${qrDataUrl}" alt="Código QR" />
             </div>
-            <p class="instruction">📱 Escanea con la cámara de tu celular<br/>para ver nuestra carta y realizar tu pedido</p>
+            <p class="instruction">📱 ${standInstruction}</p>
             <p class="hint">Sin descargar apps · Abre al instante en tu navegador</p>
             <p class="brand-footer">Powered by NEGU</p>
           </div>
@@ -470,17 +506,10 @@ export default function SettingsView(props) {
     setScheduleData(updatedSchedule);
 
     try {
-      const { data, error } = await getSupabase()
-        .from('negocios')
-        .update({ horario: updatedSchedule })
-        .eq('id', business.id)
-        .select('id')
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) throw new Error('No se pudo actualizar el estado del negocio.');
-
-      // Actualizar formData local
+      await updateBusiness(business.id, {
+        horario: updatedSchedule,
+        footer_message: formData.footer_message,
+      });
 
       if (nextManualState) {
         addToast('¡Tienda reanudada! El catálogo ahora acepta pedidos.', 'success');
@@ -506,8 +535,11 @@ export default function SettingsView(props) {
     e.preventDefault();
     setLoading(true);
     try {
+      if (!business?.id) {
+        throw new Error('No se encontró el identificador del negocio para guardar los cambios.');
+      }
       const name = formData.nombre_visible.trim();
-      const whatsapp = formData.whatsapp_contacto.trim();
+      const whatsapp = (formData.whatsapp_contacto || formData.telefono || business?.whatsapp_contacto || business?.telefono || '').trim();
       const methods = Array.isArray(formData.metodos_pago) ? formData.metodos_pago : [];
       const lat = formData.lat === '' ? null : Number(formData.lat);
       const lng = formData.lng === '' ? null : Number(formData.lng);
@@ -517,7 +549,9 @@ export default function SettingsView(props) {
       if (!name) throw new Error('Escribe el nombre comercial que verán tus clientes.');
       if (!whatsapp || !/^[+\d\s()-]{7,20}$/.test(whatsapp)) throw new Error('Ingresa un número de WhatsApp válido.');
       if (!methods.length) throw new Error('Selecciona al menos una forma de pago.');
-      if (methods.includes('transferencia') && (!formData.pago_banco.trim() || !formData.pago_alias.trim())) throw new Error('Completa el banco y los datos de la cuenta para recibir transferencias.');
+      if (activeTab === 'pagos' && methods.includes('transferencia') && (!formData.pago_banco.trim() || !formData.pago_alias.trim())) {
+        throw new Error('Completa el banco y los datos de la cuenta para recibir transferencias.');
+      }
       if ((lat === null) !== (lng === null) || (lat !== null && (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180))) throw new Error('La ubicación debe incluir coordenadas válidas.');
       if (deliveryPrices.some(value => !Number.isFinite(value) || value < 0)) throw new Error('Los costos de domicilio deben ser números mayores o iguales a cero.');
 
@@ -539,7 +573,7 @@ export default function SettingsView(props) {
           color_secundario: formData.color_secundario || '#F0F9FF',
         },
         logo_url: formData.logo_url || '',
-        whatsapp_contacto: formData.whatsapp_contacto || '',
+        whatsapp_contacto: whatsapp,
         metodos_pago: methods,
         pago_alias: formData.pago_alias || '',
         pago_banco: formData.pago_banco || '',
@@ -551,8 +585,7 @@ export default function SettingsView(props) {
         domicilio_minimo: Number(String(formData.domicilio_minimo ?? '').replace(/\D/g, '') || 0),
       };
 
-      const data = await updateBusiness(business.id, payload);
-      if (!data) throw new Error('No se encontró el negocio o no tienes permiso para actualizarlo.');
+      await updateBusiness(business.id, payload);
       
       addToast('Diseño y configuración guardados', 'success');
       hasUnsavedChangesRef.current = false;
@@ -677,6 +710,16 @@ export default function SettingsView(props) {
     };
   }, [activeTab]);
 
+  if (!business) {
+    return (
+      <div className="card p-8 bg-white border-slate-200/80 shadow-xs rounded-xl flex flex-col items-center justify-center min-h-[300px] text-center">
+        <LoadingSpinner size={28} className="text-brand mb-3" />
+        <p className="text-sm font-semibold text-slate-700">Cargando configuración...</p>
+        <p className="text-xs text-slate-400 mt-1">Obteniendo los datos de tu tienda</p>
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-3 animate-fade-in-up ${hasUnsavedChanges && activeTab !== 'qr' ? 'pb-20 sm:pb-0' : ''}`}>
       {/* Tabs Header — Deslizable en una sola fila en móvil, compacto en PC */}
@@ -737,16 +780,75 @@ export default function SettingsView(props) {
                   value={formData.nombre_visible}
                   onChange={e => setFormData({...formData, nombre_visible: e.target.value})}
                   className="input-field" 
-                  placeholder="Ej: Pizzería La Toscana"
+                  placeholder="Ej: Mi Tienda, Café Central, Moda Urbana"
                 />
               </div>
 
-              <div>
-                <label htmlFor="settings-business-type" className="block text-xs font-semibold text-gray-700 mb-1">Tipo de negocio</label>
-                <select id="settings-business-type" value={formData.business_type} onChange={e => setFormData(prev => ({ ...prev, business_type: e.target.value }))} className="input-field">
-                  {BUSINESS_TYPES.map(type => <option key={type.id} value={type.id}>{type.label}</option>)}
-                </select>
-                <p className="mt-1 text-xs text-gray-500">Ayuda a adaptar el catálogo al vocabulario de tu comercio.</p>
+              <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 sm:p-4">
+                <div>
+                  <label htmlFor="settings-business-type" className="block text-xs font-bold text-slate-900 mb-1">
+                    Rubro / Tipo de negocio
+                  </label>
+                  <select
+                    id="settings-business-type"
+                    value={activeVerticalId}
+                    onChange={e => handleVerticalChange(e.target.value)}
+                    className="input-field bg-white"
+                  >
+                    {BUSINESS_VERTICALS.map(v => (
+                      <option key={v.id} value={v.id}>
+                        {v.label}{v.subtitle ? ` — ${v.subtitle}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1.5 text-[11px] text-slate-500 leading-snug">
+                    Ajusta las herramientas y textos del panel a tu tipo de comercio. Cambiar de rubro nunca borra tus productos ni pedidos.
+                  </p>
+                </div>
+
+                <div className="pt-2.5 border-t border-slate-200/80 space-y-2.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Módulos opcionales del panel
+                  </p>
+
+                  <div className="flex items-center justify-between gap-3 rounded-lg bg-white border border-slate-200/80 px-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-slate-900">Comandero y atención en mesas</p>
+                      <p className="text-[11px] text-slate-500 leading-snug">
+                        Activa Comandero, QR por mesa, estados de cocina y PIN de mesero.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={kitchenEnabled}
+                      aria-label="Activar Comandero y atención en mesas"
+                      onClick={() => handleToggleModule('kitchen')}
+                      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer ${kitchenEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${kitchenEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 rounded-lg bg-white border border-slate-200/80 px-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-slate-900">Domicilios y repartidores</p>
+                      <p className="text-[11px] text-slate-500 leading-snug">
+                        Muestra la sección de Repartidores y las opciones de envío a domicilio.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={deliveryEnabled}
+                      aria-label="Activar domicilios y repartidores"
+                      onClick={() => handleToggleModule('delivery')}
+                      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer ${deliveryEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${deliveryEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -778,7 +880,7 @@ export default function SettingsView(props) {
                 />
               </div>
 
-              {isModuleEnabled(business, 'kitchen') && (
+              {kitchenEnabled && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2.5 min-w-0">
@@ -979,7 +1081,7 @@ export default function SettingsView(props) {
                       </div>
 
                       {/* Swatches Rápidos de 1 toque */}
-                      <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                      <div className="flex flex-wrap items-center gap-2.5 py-2 px-1">
                         {CURATED_COLORS.map(c => {
                           const isSelected = formData.theme_color?.toLowerCase() === c.hex.toLowerCase();
                           return (
@@ -987,12 +1089,14 @@ export default function SettingsView(props) {
                               key={c.hex}
                               type="button"
                               onClick={() => setFormData({ ...formData, theme_color: c.hex })}
-                              className={`w-7 h-7 rounded-full shrink-0 border-2 transition-transform active:scale-90 ${
-                                isSelected ? 'border-white ring-2 ring-brand scale-110 shadow-xs' : 'border-white shadow-2xs hover:scale-105'
+                              className={`w-7 h-7 rounded-full shrink-0 border-2 transition-all active:scale-90 flex items-center justify-center ${
+                                isSelected ? 'border-white ring-2 ring-brand ring-offset-2 ring-offset-white shadow-xs' : 'border-white shadow-2xs hover:scale-105'
                               }`}
                               style={{ backgroundColor: c.hex }}
                               title={c.label}
-                            />
+                            >
+                              {isSelected && <Check size={14} className="text-white drop-shadow-xs" strokeWidth={3} />}
+                            </button>
                           );
                         })}
                       </div>
@@ -1019,7 +1123,7 @@ export default function SettingsView(props) {
                       </div>
 
                       {/* Swatches Rápidos de Tonos Secundarios */}
-                      <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                      <div className="flex flex-wrap items-center gap-2.5 py-2 px-1">
                         {CURATED_SECONDARY_COLORS.map(c => {
                           const isSelected = (formData.color_secundario || '#F0F9FF').toLowerCase() === c.hex.toLowerCase();
                           return (
@@ -1027,13 +1131,13 @@ export default function SettingsView(props) {
                               key={c.hex}
                               type="button"
                               onClick={() => setFormData(prev => ({ ...prev, color_secundario: c.hex }))}
-                              className={`w-7 h-7 rounded-full shrink-0 border-2 transition-transform active:scale-90 flex items-center justify-center ${
-                                isSelected ? 'border-brand ring-2 ring-brand/25 scale-110 shadow-xs' : 'border-gray-200 shadow-2xs hover:scale-105'
+                              className={`w-7 h-7 rounded-full shrink-0 border-2 transition-all active:scale-90 flex items-center justify-center ${
+                                isSelected ? 'border-brand ring-2 ring-brand/30 ring-offset-2 ring-offset-white shadow-xs' : 'border-gray-200 shadow-2xs hover:scale-105'
                               }`}
                               style={{ backgroundColor: c.hex }}
                               title={c.label}
                             >
-                              {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-brand" />}
+                              {isSelected && <span className="w-2 h-2 rounded-full bg-brand" />}
                             </button>
                           );
                         })}
@@ -1432,7 +1536,11 @@ export default function SettingsView(props) {
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-gray-900">Código QR Interactivo de tu Catálogo</h3>
-                    <p className="text-xs text-gray-500">Genera, personaliza y descarga el QR de tu menú o imprime habladores acrílicos listos para tus mesas.</p>
+                    <p className="text-xs text-gray-500">
+                      {kitchenEnabled
+                        ? 'Genera, personaliza y descarga el QR de tu menú o imprime habladores acrílicos listos para tus mesas.'
+                        : 'Genera, personaliza y descarga el QR de tu catálogo para mostrador, empaques, tarjetas o redes.'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1447,28 +1555,29 @@ export default function SettingsView(props) {
                     <label className="block text-xs font-bold text-gray-900">
                       1. Modalidad del código QR
                     </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className={`grid grid-cols-1 ${kitchenEnabled ? 'sm:grid-cols-2' : ''} gap-2.5`}>
                       <button
                         type="button"
                         onClick={() => setQrMode('general')}
                         className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
-                          qrMode === 'general'
+                          qrMode === 'general' || !kitchenEnabled
                             ? 'border-brand bg-brand/5 text-slate-900 shadow-xs ring-1 ring-brand/20'
                             : 'border-slate-200 bg-slate-50/70 text-slate-700 hover:bg-slate-100'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <Smartphone size={16} className={qrMode === 'general' ? 'text-brand' : 'text-slate-500'} />
-                          {qrMode === 'general' && <Check size={14} className="text-brand" />}
+                          <Smartphone size={16} className={qrMode === 'general' || !kitchenEnabled ? 'text-brand' : 'text-slate-500'} />
+                          {(qrMode === 'general' || !kitchenEnabled) && <Check size={14} className="text-brand" />}
                         </div>
                         <div>
                           <p className="text-xs font-bold">Catálogo General</p>
-                          <p className={`text-[10px] ${qrMode === 'general' ? 'text-slate-600' : 'text-slate-500'}`}>
-                            Para volantes, stickers de empaque, Instagram y domicilio.
+                          <p className={`text-[10px] ${qrMode === 'general' || !kitchenEnabled ? 'text-slate-600' : 'text-slate-500'}`}>
+                            Para mostrador, vitrina, stickers de empaque, Instagram y envíos.
                           </p>
                         </div>
                       </button>
 
+                      {kitchenEnabled && (
                       <button
                         type="button"
                         onClick={() => setQrMode('mesa')}
@@ -1489,10 +1598,11 @@ export default function SettingsView(props) {
                           </p>
                         </div>
                       </button>
+                      )}
                     </div>
 
                     {/* Si eligió mesa, selector de número de mesa */}
-                    {qrMode === 'mesa' && (
+                    {kitchenEnabled && qrMode === 'mesa' && (
                       <div className="pt-2 border-t border-gray-100 space-y-2 animate-fade-in">
                         <label className="block text-xs font-semibold text-gray-700">
                           Número o nombre de la mesa / zona:
@@ -1659,7 +1769,9 @@ export default function SettingsView(props) {
                       }}
                       className="text-[11px] font-bold px-3 py-0.5 rounded-full mb-3 inline-flex items-center gap-1"
                     >
-                      {qrMode === 'mesa' ? `Mesa ${tableNumber} · Menú Digital` : 'Menú Digital Interactivo'}
+                      {kitchenEnabled && qrMode === 'mesa'
+                        ? `Mesa ${tableNumber} · Menú Digital`
+                        : (kitchenEnabled ? 'Menú Digital Interactivo' : 'Catálogo Digital Interactivo')}
                     </div>
 
                     {/* Código QR Generado */}
@@ -1682,7 +1794,9 @@ export default function SettingsView(props) {
                       📱 Escanea con la cámara de tu celular
                     </p>
                     <p className="text-[11px] text-gray-500 leading-tight">
-                      Consulta la carta, personaliza tus platos y haz tu pedido al instante
+                      {kitchenEnabled
+                        ? 'Consulta la carta, personaliza tus platos y haz tu pedido al instante'
+                        : 'Explora nuestro catálogo, elige tus productos y haz tu pedido al instante'}
                     </p>
 
                     <div className="mt-3 pt-2 border-t border-gray-100 w-full flex items-center justify-center gap-1 text-[9px] font-semibold text-gray-400 tracking-wider uppercase">

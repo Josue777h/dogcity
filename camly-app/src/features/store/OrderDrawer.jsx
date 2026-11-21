@@ -635,7 +635,19 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                                 </span>
                                 <button
                                   type="button"
-                                  onClick={() => increment(bid, item.cartItemId || item.id)}
+                                  onClick={() => {
+                                    const maxStock = item.stock !== null && item.stock !== undefined && Number.isFinite(Number(item.stock))
+                                      ? Math.max(0, Math.floor(Number(item.stock)))
+                                      : Infinity;
+                                    const currentTotalForProduct = selectedItems
+                                      .filter(ci => String(ci.id) === String(item.id))
+                                      .reduce((acc, ci) => acc + (ci.quantity || 0), 0);
+                                    if (currentTotalForProduct >= maxStock) {
+                                      addToast(`Solo hay ${maxStock} ${maxStock === 1 ? 'unidad disponible' : 'unidades disponibles'} de "${item.name}".`, 'warning');
+                                      return;
+                                    }
+                                    increment(bid, item.cartItemId || item.id);
+                                  }}
                                   className="h-8 w-8 flex items-center justify-center text-emerald-700 transition-colors hover:bg-slate-200/70 active:scale-95 cursor-pointer"
                                   aria-label="Sumar una unidad"
                                 >

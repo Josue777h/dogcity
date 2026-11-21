@@ -1,24 +1,43 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { ArrowRight, Menu, X } from 'lucide-react';
 import SaaSLogo from '../../../components/common/SaaSLogo';
 
+const NAV_LINKS = [
+  { to: '/menu-digital', label: 'Menú Digital', mobile: 'Menú Digital para Negocios' },
+  { to: '/pedidos-whatsapp', label: 'Pedidos WhatsApp', mobile: 'Pedidos por WhatsApp' },
+  { to: '/gestion-de-pedidos', label: 'Gestión de Pedidos', mobile: 'Gestión y Control de Pedidos' },
+  { to: '/para-restaurantes', label: 'Para Restaurantes', mobile: 'Software para Restaurantes' },
+  { to: '/para-negocios', label: 'Para Negocios', mobile: 'Software para Comercios y Negocios' },
+];
+
 export default function MarketingNavbar() {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  // El menú móvil se considera abierto solo en la ruta donde se abrió, así se cierra al navegar.
+  const [openPath, setOpenPath] = useState(null);
+  const [scrolled, setScrolled] = useState(false);
   const [menuTop, setMenuTop] = useState(0);
   const headerRef = useRef(null);
-  const location = useLocation();
-  useEffect(() => setMenuOpen(false), [location.pathname]);
+  const menuOpen = openPath === location.pathname;
+  const closeMenu = () => setOpenPath(null);
+
   useEffect(() => {
-    if (!menuOpen) return;
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
     const updateMenuPosition = () => {
       if (headerRef.current) setMenuTop(headerRef.current.getBoundingClientRect().bottom);
     };
     updateMenuPosition();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const closeOnEscape = event => { if (event.key === 'Escape') setMenuOpen(false); };
+    const closeOnEscape = event => { if (event.key === 'Escape') setOpenPath(null); };
     window.addEventListener('keydown', closeOnEscape);
     window.addEventListener('resize', updateMenuPosition);
     window.addEventListener('scroll', updateMenuPosition, { passive: true });
@@ -32,63 +51,74 @@ export default function MarketingNavbar() {
 
   return (
     <>
-      {/* ═══════════ TOP ANNOUNCEMENT BAR ═══════════ */}
-      <div className="bg-gray-950 text-white text-xs py-2 px-3 sm:px-4 border-b border-gray-800/80 relative z-50">
-        <div className="max-w-6xl mx-auto flex items-center justify-center sm:justify-between gap-2.5">
-          <div className="flex items-center gap-2 text-center sm:text-left">
-            <span className="w-2 h-2 rounded-full bg-[#11CEFC] animate-pulse shrink-0" />
-            <span className="font-medium text-gray-300 text-[11px] sm:text-xs">
-              Prueba <strong className="text-white font-bold">7 días gratis</strong> · Sin tarjeta de crédito · 0% comisiones
+      {/* ═══════════ BARRA DE ANUNCIO ═══════════ */}
+      <div className="relative z-50 overflow-hidden bg-gradient-to-r from-sky-700 via-sky-600 to-cyan-600 px-3 py-2 text-xs text-white sm:px-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-center gap-2.5 sm:justify-between">
+          <p className="flex items-center gap-2 text-center text-[11px] font-medium sm:text-left sm:text-xs">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="mk-ping-soft absolute inline-flex h-full w-full rounded-full bg-white" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
             </span>
-          </div>
-          <Link to="/registro" className="hidden sm:inline-flex items-center gap-1 text-[#11CEFC] hover:text-cyan-300 font-bold transition-colors shrink-0 text-xs">
-            <span>Crear catálogo gratis</span><ArrowRight size={12} />
+            <span>Prueba <strong className="font-extrabold">7 días gratis</strong> · Sin tarjeta · 0% comisiones</span>
+          </p>
+          <Link to="/registro" className="group hidden shrink-0 items-center gap-1 text-xs font-bold text-white/95 hover:text-white sm:inline-flex">
+            <span>Crear catálogo gratis</span>
+            <ArrowRight size={12} className="transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
       </div>
 
-      {/* ═══════════ STICKY NAVBAR ═══════════ */}
-      <header ref={headerRef} className="sticky top-0 inset-x-0 z-[60] bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-xs transition-all duration-200">
-        <div className="max-w-6xl mx-auto px-3.5 sm:px-6">
-          <nav className="h-16 sm:h-20 flex items-center justify-between" aria-label="Navegación principal">
-            
-            {/* Logo NEGU */}
-            <Link to="/" className="flex items-center gap-2 shrink-0 py-1" aria-label="Ir a la página de inicio de NEGU">
-              <SaaSLogo className="h-10 sm:h-12 md:h-14" />
+      {/* ═══════════ NAVBAR PEGAJOSA ═══════════ */}
+      <header
+        ref={headerRef}
+        className={`sticky top-0 inset-x-0 z-[60] border-b backdrop-blur-xl transition-all duration-300 ${
+          scrolled ? 'border-slate-200 bg-white/90 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.18)]' : 'border-transparent bg-white/95'
+        }`}
+      >
+        <div className="mx-auto max-w-6xl px-3.5 sm:px-6">
+          <nav className={`flex items-center justify-between transition-all duration-300 ${scrolled ? 'h-14 sm:h-16' : 'h-16 sm:h-20'}`} aria-label="Navegación principal">
+            <Link to="/" className="flex shrink-0 items-center gap-2 py-1" aria-label="Ir a la página de inicio de NEGU">
+              <SaaSLogo className={`transition-all duration-300 ${scrolled ? 'h-9 sm:h-10' : 'h-10 sm:h-12'}`} />
             </Link>
 
-            {/* Desktop Navigation Links (SEO & Commercial) */}
-            <div className="hidden lg:flex items-center gap-5 xl:gap-7 text-xs xl:text-sm font-semibold text-gray-600">
-              <Link to="/menu-digital" className="hover:text-cyan-600 transition-colors">Menú Digital</Link>
-              <Link to="/pedidos-whatsapp" className="hover:text-cyan-600 transition-colors">Pedidos WhatsApp</Link>
-              <Link to="/gestion-de-pedidos" className="hover:text-cyan-600 transition-colors">Gestión de Pedidos</Link>
-              <Link to="/para-restaurantes" className="hover:text-cyan-600 transition-colors">Para Restaurantes</Link>
-              <Link to="/para-negocios" className="hover:text-cyan-600 transition-colors">Para Negocios</Link>
+            <div className="hidden items-center gap-1 text-xs font-semibold text-slate-600 lg:flex xl:text-sm">
+              {NAV_LINKS.map(link => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  className={({ isActive }) => `group relative rounded-full px-3.5 py-2 transition-colors ${isActive ? 'text-sky-700' : 'hover:text-slate-950'}`}
+                >
+                  {({ isActive }) => (
+                    <>
+                      <span className="relative z-10">{link.label}</span>
+                      <span className={`absolute inset-0 rounded-full bg-sky-50 transition-all duration-300 ${isActive ? 'scale-100 opacity-100' : 'scale-75 opacity-0 group-hover:scale-100 group-hover:opacity-100 group-hover:bg-slate-100'}`} />
+                    </>
+                  )}
+                </NavLink>
+              ))}
             </div>
 
-            {/* Actions / CTA */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <Link 
-                to="/login" 
-                className="hidden sm:inline-flex text-xs sm:text-sm font-semibold text-gray-700 hover:text-gray-950 px-3 py-2 rounded-full transition-colors"
+              <Link
+                to="/login"
+                className="hidden rounded-full px-4 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 sm:inline-flex sm:text-sm"
               >
                 Entrar
               </Link>
 
-              <Link 
-                to="/registro" 
-                className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2.5 rounded-full border border-gray-800 shadow-sm active:scale-95 transition-all duration-150"
+              <Link
+                to="/registro"
+                className="group inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-slate-900/15 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-700 active:scale-95 sm:px-5 sm:text-sm"
               >
                 <span>Probar gratis</span>
-                <ArrowRight size={14} className="shrink-0 text-[#11CEFC]" />
+                <ArrowRight size={14} className="shrink-0 text-cyan-300 transition-transform group-hover:translate-x-0.5" />
               </Link>
 
-              {/* Hamburger Button for Mobile */}
-              <button 
-                onClick={() => setMenuOpen(!menuOpen)} 
+              <button
+                onClick={() => setOpenPath(menuOpen ? null : location.pathname)}
                 type="button"
-                className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl text-gray-700 hover:bg-gray-100 transition-colors"
-                aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition-colors hover:bg-slate-100 lg:hidden"
+                aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
                 aria-expanded={menuOpen}
                 aria-controls="marketing-mobile-menu"
               >
@@ -97,60 +127,32 @@ export default function MarketingNavbar() {
             </div>
           </nav>
 
-          {/* Mobile Menu Dropdown */}
           {menuOpen && createPortal(
-            <div id="marketing-mobile-menu" style={{ top: menuTop }} className="fixed inset-x-0 bottom-0 z-[70] overflow-y-auto overscroll-contain bg-white px-4 pb-8 pt-4 text-sm font-semibold text-gray-700 shadow-xl lg:hidden">
-              <Link 
-                to="/menu-digital" 
-                onClick={() => setMenuOpen(false)}
-                className="flex w-full items-center px-4 py-3.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
-              >
-                Menú Digital para Negocios
-              </Link>
-              <Link 
-                to="/pedidos-whatsapp" 
-                onClick={() => setMenuOpen(false)}
-                className="flex w-full items-center px-4 py-3.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
-              >
-                Pedidos por WhatsApp
-              </Link>
-              <Link 
-                to="/gestion-de-pedidos" 
-                onClick={() => setMenuOpen(false)}
-                className="flex w-full items-center px-4 py-3.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
-              >
-                Gestión y Control de Pedidos
-              </Link>
-              <Link 
-                to="/para-restaurantes" 
-                onClick={() => setMenuOpen(false)}
-                className="flex w-full items-center px-4 py-3.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
-              >
-                Software para Restaurantes
-              </Link>
-              <Link 
-                to="/para-negocios" 
-                onClick={() => setMenuOpen(false)}
-                className="flex w-full items-center px-4 py-3.5 rounded-xl hover:bg-cyan-50/70 hover:text-cyan-700 transition-colors"
-              >
-                Software para Comercios y Negocios
-              </Link>
-              
-              <div className="pt-2 border-t border-gray-100 flex flex-col gap-2">
-                <Link 
-                  to="/login" 
-                  onClick={() => setMenuOpen(false)} 
-                  className="w-full text-center py-2.5 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+            <div
+              id="marketing-mobile-menu"
+              style={{ top: menuTop }}
+              className="fixed inset-x-0 bottom-0 z-[70] overflow-y-auto overscroll-contain bg-white px-4 pb-8 pt-4 text-sm font-semibold text-slate-700 lg:hidden"
+            >
+              {NAV_LINKS.map((link, idx) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={closeMenu}
+                  style={{ '--mk-delay': `${idx * 55}ms` }}
+                  className="mk-menu-item flex w-full items-center justify-between rounded-2xl px-4 py-4 transition-colors hover:bg-sky-50 hover:text-sky-700"
                 >
+                  <span>{link.mobile}</span>
+                  <ArrowRight size={16} className="text-slate-300" />
+                </Link>
+              ))}
+
+              <div className="mk-menu-item mt-3 flex flex-col gap-2.5 border-t border-slate-100 pt-4" style={{ '--mk-delay': `${NAV_LINKS.length * 55}ms` }}>
+                <Link to="/login" onClick={closeMenu} className="w-full rounded-2xl bg-slate-100 py-3 text-center text-sm font-bold text-slate-700 transition-colors hover:bg-slate-200">
                   Iniciar sesión
                 </Link>
-                <Link 
-                  to="/registro" 
-                  onClick={() => setMenuOpen(false)} 
-                  className="w-full text-center py-2.5 text-sm font-bold text-white bg-gray-950 hover:bg-black rounded-xl border border-gray-800 transition-colors flex items-center justify-center gap-2"
-                >
+                <Link to="/registro" onClick={closeMenu} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 py-3 text-center text-sm font-bold text-white transition-colors hover:bg-sky-700">
                   <span>Crear tienda gratis</span>
-                  <ArrowRight size={14} className="text-[#11CEFC]" />
+                  <ArrowRight size={14} className="text-cyan-300" />
                 </Link>
               </div>
             </div>,

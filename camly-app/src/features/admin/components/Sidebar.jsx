@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike, Zap, Tag, DollarSign, ExternalLink, Utensils, LayoutDashboard } from 'lucide-react';
+import { Store, ShoppingBag, Package, Settings, LogOut, X, Bike, Zap, Tag, DollarSign, ExternalLink, Utensils, LayoutDashboard, Users } from 'lucide-react';
 import { useBusinessStore } from '../../../stores';
 import { isModuleEnabled } from '../../../lib/modules';
 
@@ -7,6 +7,7 @@ const MAIN_TABS = [
   { path: '/admin/dashboard',  label: 'Inicio', icon: LayoutDashboard, module: null },
   { path: '/admin/comandero',  label: 'Comandero', icon: Utensils, module: 'kitchen' },
   { path: '/admin/pedidos',    label: 'Pedidos en vivo', icon: ShoppingBag, module: 'orders' },
+  { path: '/admin/clientes',   label: 'Clientes', icon: Users, module: 'loyalty' },
   { path: '/admin/ingresos',   label: 'Ingresos y ventas', icon: DollarSign, module: null },
   { path: '/admin/productos',  label: 'Productos', icon: Package, module: 'catalog' },
 ];

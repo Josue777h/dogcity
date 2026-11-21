@@ -4,7 +4,7 @@ import SaaSLogo from '../../../components/common/SaaSLogo';
 
 export default function MarketingFooter() {
   return (
-    <footer className="bg-slate-950 text-slate-400 text-sm border-t border-slate-900 pt-14 pb-10">
+    <footer className="relative bg-slate-950 text-slate-400 text-sm pt-14 pb-10 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-cyan-400/60 before:to-transparent">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-slate-900">
           

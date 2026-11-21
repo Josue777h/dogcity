@@ -230,13 +230,13 @@ export default function RevenueView(props) {
             <table className="w-full text-left border-collapse text-xs min-w-[620px]">
               <thead>
                 <tr className="border-b border-border bg-gray-50 text-gray-500 font-medium">
-                  <th className="py-3 px-4">Pedido</th>
-                  <th className="py-3 px-4">Fecha y hora</th>
-                  <th className="py-3 px-4">Cliente</th>
-                  <th className="py-3 px-4 text-center">Entrega</th>
-                  <th className="py-3 px-4 text-center">Pago</th>
-                  <th className="py-3 px-4 text-right">Envío</th>
-                  <th className="py-3 px-4 text-right">Total</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Pedido</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Fecha y hora</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Cliente</th>
+                  <th className="py-3 px-4 text-center whitespace-nowrap">Entrega</th>
+                  <th className="py-3 px-4 text-center whitespace-nowrap">Pago</th>
+                  <th className="py-3 px-4 text-right whitespace-nowrap">Envío</th>
+                  <th className="py-3 px-4 text-right whitespace-nowrap">Total</th>
                   <th className="py-3 px-4 text-center"></th>
                 </tr>
               </thead>
@@ -245,10 +245,10 @@ export default function RevenueView(props) {
                   const isCancelled = String(o.status || o.estado || '').toLowerCase().includes('cancel');
                   return (
                     <tr key={o.id} className="hover:bg-gray-50/80 transition-colors">
-                      <td className="py-3 px-4 font-mono font-medium text-gray-700">
+                      <td className="py-3 px-4 font-mono font-medium text-gray-700 whitespace-nowrap">
                         #{o.id.toString().slice(-4).toUpperCase()}
                       </td>
-                      <td className="py-3 px-4 text-gray-500">
+                      <td className="py-3 px-4 text-gray-500 whitespace-nowrap tabular-nums">
                         {new Date(o.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })} ·{' '}
                         {new Date(o.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                       </td>
@@ -260,20 +260,20 @@ export default function RevenueView(props) {
                           )}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-4 text-center whitespace-nowrap">
                         <span className={o.entrega_metodo === 'envio' ? 'badge badge-info text-[10px]' : 'badge badge-neutral text-[10px]'}>
-                          {o.entrega_metodo === 'envio' ? 'Domicilio' : 'Local'}
+                          {o.entrega_metodo === 'envio' ? 'Domicilio' : (o.entrega_metodo === 'mesa' || o.delivery_type === 'dine_in' ? 'Mesa' : 'Local')}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-4 text-center whitespace-nowrap">
                         <span className={o.pago_metodo === 'transferencia' ? 'badge badge-success text-[10px]' : 'badge badge-neutral text-[10px]'}>
-                          {o.pago_metodo === 'transferencia' ? 'Transferencia' : 'Efectivo'}
+                          {o.pago_metodo === 'transferencia' ? 'Transferencia' : (o.pago_metodo === 'mesa' || o.payment_method === 'pending_table' ? 'Cuenta Mesa' : 'Efectivo')}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right tabular-nums text-gray-500">
+                      <td className="py-3 px-4 text-right whitespace-nowrap tabular-nums text-gray-500">
                         {o.entrega_metodo === 'envio' ? formatMoney(o.domicilio_costo || 0) : '—'}
                       </td>
-                      <td className={`py-3 px-4 text-right font-semibold tabular-nums ${isCancelled ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                      <td className={`py-3 px-4 text-right whitespace-nowrap font-semibold tabular-nums ${isCancelled ? 'line-through text-gray-400' : 'text-gray-900'}`}>
                         {formatMoney(o.total)}
                       </td>
                       <td className="py-3 px-4 text-center">

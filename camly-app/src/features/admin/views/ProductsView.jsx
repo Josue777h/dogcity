@@ -1,12 +1,30 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Search, Plus, Edit, Trash2, Tag, Package, LayoutGrid, List } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Tag, Package, LayoutGrid, List, Settings, Save, RotateCcw } from 'lucide-react';
 import { formatMoney } from '../../../lib/utils';
+import { updateBusiness } from '../../../lib/supabase';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
-import { useBusinessStore } from '../../../stores';
+import SettingsDrawer from '../../../components/ui/SettingsDrawer';
+import { useBusinessStore, useToastStore } from '../../../stores';
 import PageLoading from '../../../components/common/PageLoading';
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
 
 const PRODUCT_VIEW_MODE_KEY = 'negu_admin_products_view_mode';
+const DEFAULT_INVENTORY_CONFIG = {
+  lowStockThreshold: 5,
+  autoDeductStock: true,
+  hideOutOfStock: true,
+  showLowStockBadge: true,
+  showDiscountBadge: true,
+};
+
+function resolveInventoryConfig(business) {
+  const fromDb = business?.catalog_design?.inventory_config;
+  if (fromDb && typeof fromDb === 'object') {
+    return { ...DEFAULT_INVENTORY_CONFIG, ...fromDb };
+  }
+  return { ...DEFAULT_INVENTORY_CONFIG };
+}
 
 export default function ProductsView(props) {
   const outletCtx = useOutletContext() || {};
@@ -26,7 +44,44 @@ export default function ProductsView(props) {
     }
   });
   const [searchTerm, setSearchTerm] = useState('');
-  const { categories } = useBusinessStore();
+  const { categories, business } = useBusinessStore();
+  const addToast = useToastStore(s => s.addToast);
+  const [invConfig, setInvConfig] = useState(() => resolveInventoryConfig(business));
+  const [showInvModal, setShowInvModal] = useState(false);
+  const [invDraft, setInvDraft] = useState(() => resolveInventoryConfig(business));
+  const [savingInv, setSavingInv] = useState(false);
+
+  const lowStockThreshold = Math.max(1, Number(invConfig.lowStockThreshold) || 5);
+
+  const handleSaveInvConfig = async (e) => {
+    e.preventDefault();
+    const clean = {
+      lowStockThreshold: Math.max(1, Math.min(500, Number(invDraft.lowStockThreshold) || 5)),
+      autoDeductStock: Boolean(invDraft.autoDeductStock),
+      hideOutOfStock: Boolean(invDraft.hideOutOfStock),
+      showLowStockBadge: Boolean(invDraft.showLowStockBadge),
+      showDiscountBadge: Boolean(invDraft.showDiscountBadge),
+    };
+    setSavingInv(true);
+    try {
+      if (business?.id) {
+        const nextDesign = {
+          ...(business.catalog_design && typeof business.catalog_design === 'object' ? business.catalog_design : {}),
+          inventory_config: clean,
+        };
+        await updateBusiness(business.id, { catalog_design: nextDesign });
+        outletCtx.reloadOrders?.();
+      }
+      setInvConfig(clean);
+      setShowInvModal(false);
+      addToast('Configuración de inventario guardada', 'success');
+    } catch (err) {
+      console.error(err);
+      addToast(err?.message || 'Error al guardar configuración', 'error');
+    } finally {
+      setSavingInv(false);
+    }
+  };
 
   const changeViewMode = (mode) => {
     setViewMode(mode);
@@ -72,14 +127,26 @@ export default function ProductsView(props) {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={onAdd}
-          className="btn-primary w-full sm:w-auto py-2.5 px-4 rounded-xl text-xs font-bold shrink-0 cursor-pointer"
-        >
-          <Plus size={15} />
-          <span>Nuevo producto</span>
-        </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => { setInvDraft({ ...invConfig }); setShowInvModal(true); }}
+            className="btn-secondary py-2.5 px-3 rounded-xl text-xs font-bold shrink-0 cursor-pointer"
+            title="Configurar inventario y stock"
+            aria-label="Configurar inventario y stock"
+          >
+            <Settings size={15} />
+            <span className="sm:hidden">Configurar</span>
+          </button>
+          <button
+            type="button"
+            onClick={onAdd}
+            className="btn-primary flex-1 sm:flex-initial py-2.5 px-4 rounded-xl text-xs font-bold shrink-0 cursor-pointer"
+          >
+            <Plus size={15} />
+            <span>Nuevo producto</span>
+          </button>
+        </div>
       </div>
 
       {/* Buscador + Selector de vista */}
@@ -149,7 +216,7 @@ export default function ProductsView(props) {
                     onError={e => { e.target.src = '/images/taza.svg'; }}
                     className="w-full h-full object-cover"
                   />
-                  {!p.disponible && (
+                  {(!p.disponible || (p.stock !== null && p.stock !== undefined && Number(p.stock) <= 0)) && (
                     <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] flex items-center justify-center">
                       <span className="text-[10px] font-semibold text-white px-1.5 py-0.5 rounded bg-red-600">Agotado</span>
                     </div>
@@ -162,10 +229,21 @@ export default function ProductsView(props) {
                       <Tag size={10} className="text-slate-400" />
                       {getCategoryName(p.categoria_id, p.categoria)}
                     </span>
-                    {p.disponible ? (
+                    {p.disponible && !(p.stock !== null && p.stock !== undefined && Number(p.stock) <= 0) ? (
                       <span className="badge badge-success text-[10px]">Disponible</span>
                     ) : (
                       <span className="badge badge-error text-[10px]">Agotado</span>
+                    )}
+                    {p.stock !== null && p.stock !== undefined && (
+                      <span className={`px-1.5 py-0.5 rounded-md border text-[10px] font-semibold tabular-nums ${
+                        Number(p.stock) <= 0
+                          ? 'bg-rose-50 border-rose-200 text-rose-700'
+                          : Number(p.stock) <= lowStockThreshold
+                            ? 'bg-amber-50 border-amber-200 text-amber-800'
+                            : 'bg-slate-100 border-slate-200 text-slate-700'
+                      }`}>
+                        {Number(p.stock) <= 0 ? 'Sin stock' : `Stock: ${p.stock}`}
+                      </span>
                     )}
                     {Array.isArray(p.opciones) && p.opciones.length > 0 && (
                       <span className="px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[10px] font-semibold text-slate-700">
@@ -181,9 +259,21 @@ export default function ProductsView(props) {
                       {p.description}
                     </p>
                   )}
-                  <p className="text-sm font-bold text-slate-950 mt-1 tabular-nums">
-                    {formatMoney(p.price)}
-                  </p>
+                  <div className="flex items-baseline gap-1.5 flex-wrap mt-1">
+                    <p className="text-sm font-bold text-slate-950 tabular-nums">
+                      {formatMoney(p.price)}
+                    </p>
+                    {p.comparePrice > p.price && (
+                      <>
+                        <span className="text-xs text-slate-400 line-through tabular-nums">
+                          {formatMoney(p.comparePrice)}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+                          -{Math.round(((p.comparePrice - p.price) / p.comparePrice) * 100)}%
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -194,8 +284,8 @@ export default function ProductsView(props) {
                   aria-checked={!!p.disponible}
                   aria-label={`${p.disponible ? 'Pausar' : 'Activar'} ${p.name}`}
                   onClick={(e) => { e.stopPropagation(); onToggleAvailability(p); }}
-                  className={`relative h-6 w-11 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 ${p.disponible ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                ><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${p.disponible ? 'left-[22px]' : 'left-0.5'}`} /></button>}
+                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 ${p.disponible ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                ><span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${p.disponible ? 'translate-x-5' : 'translate-x-0'}`} /></button>}
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onEdit(p); }}
@@ -251,6 +341,168 @@ export default function ProductsView(props) {
         }}
         onCancel={() => setItemToDelete(null)}
       />
+
+      <SettingsDrawer
+        isOpen={showInvModal}
+        onClose={() => setShowInvModal(false)}
+        title="Ajustes de Productos e Inventario"
+        subtitle="Controla cómo se comporta el stock y qué ven tus clientes en el catálogo."
+        icon={Package}
+        onSubmit={handleSaveInvConfig}
+        footer={(
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setInvDraft({ ...DEFAULT_INVENTORY_CONFIG })}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 cursor-pointer"
+            >
+              <RotateCcw size={13} /> Restaurar
+            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowInvModal(false)}
+                className="btn-secondary py-2 px-3.5 text-xs font-semibold cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={savingInv}
+                className="btn-primary py-2 px-4 text-xs font-bold cursor-pointer"
+              >
+                {savingInv ? <LoadingSpinner size={14} /> : <><Save size={14} /> Guardar cambios</>}
+              </button>
+            </div>
+          </div>
+        )}
+      >
+        {/* Grupo 1: Inventario */}
+        <section className="space-y-3">
+          <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            Control de inventario
+          </h4>
+
+          <div className="rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white overflow-hidden">
+            <div className="p-3.5 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-900">Descuento automático de stock</p>
+                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                  Descuenta unidades al confirmar un pedido y las repone si se cancela.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={Boolean(invDraft.autoDeductStock)}
+                onClick={() => setInvDraft(prev => ({ ...prev, autoDeductStock: !prev.autoDeductStock }))}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer ${invDraft.autoDeductStock ? 'bg-emerald-500' : 'bg-slate-300'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${invDraft.autoDeductStock ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+
+            <div className="p-3.5 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-900">Ocultar productos agotados</p>
+                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                  Si lo desactivas, los productos sin stock seguirán visibles con etiqueta &ldquo;Agotado&rdquo;.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={Boolean(invDraft.hideOutOfStock)}
+                onClick={() => setInvDraft(prev => ({ ...prev, hideOutOfStock: !prev.hideOutOfStock }))}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer ${invDraft.hideOutOfStock ? 'bg-emerald-500' : 'bg-slate-300'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${invDraft.hideOutOfStock ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+
+            <div className="p-3.5 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label htmlFor="inv-low-threshold" className="text-xs font-bold text-slate-900">
+                  Alerta de stock bajo
+                </label>
+                <div className="flex items-center gap-1">
+                  {[3, 5, 10].map(n => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setInvDraft(prev => ({ ...prev, lowStockThreshold: n }))}
+                      className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition-colors cursor-pointer ${
+                        Number(invDraft.lowStockThreshold) === n
+                          ? 'bg-slate-900 text-white border-slate-900'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {n} uds
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <input
+                id="inv-low-threshold"
+                type="number"
+                min={1}
+                max={500}
+                value={invDraft.lowStockThreshold}
+                onChange={e => setInvDraft(prev => ({ ...prev, lowStockThreshold: e.target.value }))}
+                className="input-field text-xs font-semibold tabular-nums"
+              />
+              <p className="text-[11px] text-slate-500 leading-snug">
+                Resalta en ámbar los productos que lleguen a este nivel o menos.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Grupo 2: Presentación en tienda */}
+        <section className="space-y-3">
+          <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            Presentación en tu tienda pública
+          </h4>
+
+          <div className="rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white overflow-hidden">
+            <div className="p-3.5 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-900">Mostrar aviso &ldquo;Quedan pocas unidades&rdquo;</p>
+                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                  Muestra al cliente cuántas unidades quedan cuando un producto tiene stock bajo.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={Boolean(invDraft.showLowStockBadge)}
+                onClick={() => setInvDraft(prev => ({ ...prev, showLowStockBadge: !prev.showLowStockBadge }))}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer ${invDraft.showLowStockBadge ? 'bg-emerald-500' : 'bg-slate-300'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${invDraft.showLowStockBadge ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+
+            <div className="p-3.5 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-900">Mostrar etiqueta de descuento (-%)</p>
+                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                  Muestra el porcentaje de ahorro sobre la foto cuando el producto tiene precio anterior.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={Boolean(invDraft.showDiscountBadge)}
+                onClick={() => setInvDraft(prev => ({ ...prev, showDiscountBadge: !prev.showDiscountBadge }))}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer ${invDraft.showDiscountBadge ? 'bg-emerald-500' : 'bg-slate-300'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${invDraft.showDiscountBadge ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+          </div>
+        </section>
+      </SettingsDrawer>
     </div>
   );
 }

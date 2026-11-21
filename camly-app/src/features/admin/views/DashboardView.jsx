@@ -193,7 +193,17 @@ export default function DashboardView(props) {
           <p className="admin-page-sub">Resumen operativo y comercial de tu negocio en tiempo real.</p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <button onClick={() => handleNavigate('products')} className="btn-primary flex-1 sm:flex-initial">
+          <button
+            type="button"
+            onClick={() => {
+              if (outletCtx.setEditingProduct) {
+                outletCtx.setEditingProduct({});
+              } else {
+                handleNavigate('products');
+              }
+            }}
+            className="btn-primary flex-1 sm:flex-initial"
+          >
             <PackagePlus size={16} aria-hidden="true" />
             <span>Nuevo producto</span>
           </button>
@@ -319,7 +329,7 @@ export default function DashboardView(props) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {[
           { label: 'Pedidos en vivo', tab: 'orders', icon: ShoppingBag, desc: 'Atiende clientes' },
-          { label: 'Catálogo de menú', tab: 'products', icon: Package, desc: 'Precios e imágenes' },
+          { label: 'Catálogo y productos', tab: 'products', icon: Package, desc: 'Precios e imágenes' },
           { label: 'Reporte de ventas', tab: 'revenue', icon: DollarSign, desc: 'Historial e ingresos' },
           { label: 'Configuración', tab: 'settings', icon: Settings, desc: 'Horarios y marca' },
         ].map(a => (

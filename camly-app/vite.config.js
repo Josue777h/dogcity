@@ -49,7 +49,6 @@ export default defineConfig({
       'zustand',
       '@supabase/supabase-js',
       'lucide-react',
-      'qrcode',
       'leaflet',
       'react-leaflet',
       'recharts',

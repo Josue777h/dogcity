@@ -21,7 +21,7 @@ export const MARKETING_SEO = {
     path: 'para-restaurantes',
     canonical: 'https://negu.pro/para-restaurantes',
     title: 'Software para restaurantes | NEGU',
-    description: 'Software integral para restaurantes, pizzerías y locales gastronómicos. Menú digital QR, comanda para cocina, impresión térmica y cálculo de ruta GPS.',
+    description: 'Software integral para restaurantes, cafeterías y locales gastronómicos. Menú digital QR, comanda para cocina, impresión térmica y cálculo de ruta GPS.',
   },
   negocios: {
     path: 'para-negocios',

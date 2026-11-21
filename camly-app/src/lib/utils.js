@@ -148,7 +148,9 @@ export async function reloadWithFreshCache() {
   } catch (err) {
     console.debug('sessionStorage no disponible:', err);
   }
-  window.location.reload();
+  const url = new URL(window.location.href);
+  url.searchParams.set('_fresh', Date.now().toString());
+  window.location.replace(url.toString());
 }
 
 export function useAnimatedCounter(target, duration = 1500) {

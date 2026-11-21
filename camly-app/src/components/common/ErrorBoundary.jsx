@@ -71,7 +71,7 @@ export default class ErrorBoundary extends React.Component {
               </button>
               <button
                 type="button"
-                onClick={this.handleReset}
+                onClick={isChunkError ? this.handleReload : this.handleReset}
                 className="px-4 py-2 text-xs font-semibold rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Reintentar

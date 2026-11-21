@@ -18,6 +18,7 @@ export default function DriversView(props) {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [newDriver, setNewDriver] = useState({ nombre: '', telefono: '', activo: true });
   const addToast = useToastStore(s => s.addToast);
@@ -71,13 +72,15 @@ export default function DriversView(props) {
 
   const handleAddDriver = async (e) => {
     e.preventDefault();
-    if (!newDriver.nombre || !newDriver.telefono) return;
+    const cleanName = newDriver.nombre.trim();
+    const cleanPhone = newDriver.telefono.trim();
+    if (!cleanName || !cleanPhone) return;
 
-    setLoading(true);
+    setIsSaving(true);
     try {
       const { error } = await getSupabase()
         .from('domiciliarios')
-        .insert([{ ...newDriver, negocio_id: businessId }]);
+        .insert([{ ...newDriver, nombre: cleanName, telefono: cleanPhone, negocio_id: businessId }]);
 
       if (error) throw error;
 
@@ -89,7 +92,7 @@ export default function DriversView(props) {
       console.error(err);
       addToast('Error al registrar domiciliario', 'error');
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -194,10 +197,10 @@ export default function DriversView(props) {
                 <div className="sm:col-span-3">
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={isSaving}
                     className="btn-primary w-full py-2.5 px-4 rounded-xl text-xs font-bold h-[42px] cursor-pointer"
                   >
-                    {loading ? <LoadingSpinner size={15} /> : <><Save size={15} /> Guardar</>}
+                    {isSaving ? <LoadingSpinner size={15} /> : <><Save size={15} /> Guardar</>}
                   </button>
                 </div>
               </div>

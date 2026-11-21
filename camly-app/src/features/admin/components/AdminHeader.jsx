@@ -18,6 +18,8 @@ const TAB_LABELS = {
   configuracion:  'Configuración de la Tienda',
   revenue:        'Reportes e Ingresos',
   ingresos:       'Reportes e Ingresos',
+  clientes:       'Directorio de Clientes',
+  customers:      'Directorio de Clientes',
 };
 
 const MOBILE_TAB_LABELS = {
@@ -36,6 +38,8 @@ const MOBILE_TAB_LABELS = {
   configuracion: 'Ajustes',
   revenue: 'Ingresos',
   ingresos: 'Ingresos',
+  clientes: 'Clientes',
+  customers: 'Clientes',
 };
 
 export default function AdminHeader({ title, business, onOpenMenu }) {

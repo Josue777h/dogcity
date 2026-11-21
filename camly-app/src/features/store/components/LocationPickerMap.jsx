@@ -43,7 +43,9 @@ function MapController({ center, onLocationChange }) {
           if (map && typeof map.invalidateSize === 'function') {
             map.invalidateSize();
           }
-        } catch {}
+        } catch (err) {
+          console.debug('Invalidate size skipped:', err);
+        }
       }, 250);
       return () => clearTimeout(t);
     } catch (err) {

@@ -31,10 +31,15 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
     id: product?.id || null,
     name: product?.name || '',
     price: product?.price || '',
+    comparePrice: product?.comparePrice || '',
+    stock: product?.stock !== null && product?.stock !== undefined ? String(product.stock) : '',
     categoria_id: product?.categoria_id || '',
     categoria: product?.categoria || '',
     description: product?.description || '',
     image: product?.image || '',
+    images: Array.isArray(product?.images)
+      ? product.images.filter(u => u && u !== product?.image).slice(0, 3)
+      : [],
     disponible: product?.disponible ?? true,
     negocio_id: businessId,
     opciones: Array.isArray(product?.opciones) ? product.opciones : []
@@ -63,6 +68,8 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
   ));
   const addToast = useToastStore(s => s.addToast);
   const fileInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
 
   // Auto-guardar borrador al cambiar datos (solo en creación nueva)
   useEffect(() => {
@@ -96,10 +103,13 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
       id: null,
       name: '',
       price: '',
+      comparePrice: '',
+      stock: '',
       categoria_id: '',
       categoria: '',
       description: '',
       image: '',
+      images: [],
       disponible: true,
       negocio_id: businessId,
       opciones: []
@@ -176,6 +186,65 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
 
   const handleImageUpload = (e) => processFile(e.target.files?.[0]);
 
+  const handleGalleryUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!files.length) return;
+    const currentExtras = Array.isArray(formData.images) ? formData.images : [];
+    const remainingSlots = Math.max(0, 3 - currentExtras.length);
+    if (remainingSlots <= 0) {
+      addToast('Máximo 4 fotos por producto (1 principal + 3 adicionales).', 'warning');
+      return;
+    }
+    const toUpload = files.slice(0, remainingSlots);
+    setUploadingGallery(true);
+    try {
+      const uploadedUrls = [];
+      for (const file of toUpload) {
+        if (!file.type?.startsWith('image/') || file.size > 12 * 1024 * 1024) continue;
+        const baseName = (file.name || 'galeria').replace(/\.[^.]+$/, '') || 'galeria';
+        const fileName = `${businessId}/${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${baseName}.webp`;
+        const url = await uploadImage(file, fileName);
+        if (url) uploadedUrls.push(url);
+      }
+      if (uploadedUrls.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          image: prev.image || uploadedUrls[0],
+          images: prev.image
+            ? [...(prev.images || []), ...uploadedUrls].slice(0, 3)
+            : [...(prev.images || []), ...uploadedUrls.slice(1)].slice(0, 3),
+        }));
+        addToast(`${uploadedUrls.length === 1 ? 'Foto agregada' : `${uploadedUrls.length} fotos agregadas`} a la galería`, 'success');
+      }
+    } catch (err) {
+      console.error(err);
+      addToast(err?.message || 'Error al subir foto a la galería', 'error');
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
+  const handlePromoteGalleryImage = (imgUrl) => {
+    setFormData(prev => {
+      const prevMain = prev.image;
+      const nextExtras = (prev.images || []).filter(u => u !== imgUrl);
+      if (prevMain && prevMain !== imgUrl) nextExtras.unshift(prevMain);
+      return {
+        ...prev,
+        image: imgUrl,
+        images: nextExtras.slice(0, 3),
+      };
+    });
+  };
+
+  const handleRemoveGalleryImage = (imgUrl) => {
+    setFormData(prev => ({
+      ...prev,
+      images: (prev.images || []).filter(u => u !== imgUrl),
+    }));
+  };
+
   const handleDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
@@ -189,6 +258,17 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
       addToast('Nombre y precio son requeridos', 'error');
       return;
     }
+
+    const parsedPrice = parseThousandsInput(cleanPriceDigits);
+    const cleanCompareDigits = String(formData.comparePrice ?? '').replace(/\D/g, '');
+    const parsedCompare = cleanCompareDigits ? parseThousandsInput(cleanCompareDigits) : null;
+    if (parsedCompare !== null && parsedCompare <= parsedPrice) {
+      addToast('El precio anterior debe ser mayor al precio de venta para mostrar descuento.', 'warning');
+      return;
+    }
+
+    const cleanStockDigits = String(formData.stock ?? '').replace(/\D/g, '');
+    const parsedStock = cleanStockDigits === '' ? null : Number(cleanStockDigits);
 
     // Limpiar opciones sin nombre
     const cleanedOpciones = (formData.opciones || []).map(group => ({
@@ -207,7 +287,9 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
     try {
       await onSave({
         ...formData,
-        price: parseThousandsInput(cleanPriceDigits),
+        price: parsedPrice,
+        comparePrice: parsedCompare,
+        stock: parsedStock,
         opciones: cleanedOpciones
       });
       // Borrar borrador al guardar con éxito
@@ -226,6 +308,11 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
 
   // Contar toppings/opciones totales para resumen visual compacto
   const totalOptionsCount = (formData.opciones || []).reduce((acc, g) => acc + (g.opciones?.length || 0), 0);
+  const currentPriceNum = parseThousandsInput(String(formData.price ?? ''));
+  const currentCompareNum = parseThousandsInput(String(formData.comparePrice ?? ''));
+  const discountPercent = currentCompareNum > currentPriceNum && currentPriceNum > 0
+    ? Math.round(((currentCompareNum - currentPriceNum) / currentCompareNum) * 100)
+    : 0;
 
   return (
     <>
@@ -330,6 +417,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
               </div>
 
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+              <input type="file" ref={galleryInputRef} className="hidden" accept="image/*" multiple onChange={handleGalleryUpload} />
 
               {/* Nombre y Categoría al lado */}
               <div className="flex-1 space-y-2">
@@ -339,7 +427,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
                     type="text" 
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
-                    placeholder="Ej: Pizza Familiar, Combo Especial, Producto..."
+                    placeholder="Ej: Camiseta Oversize, Perfume 100ml, Combo Especial..."
                     className="input-field text-xs font-medium"
                     required
                   />
@@ -410,10 +498,52 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
               </div>
             </div>
 
-            {/* Precio y Disponibilidad en fila compacta */}
+            {/* Galería adicional (hasta 3 fotos extra para ropa, perfumería, calzado, etc.) */}
+            <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2">
+              <div className="flex items-center gap-2 min-w-0 overflow-x-auto no-scrollbar">
+                <span className="text-[11px] font-semibold text-slate-600 shrink-0">
+                  Galería ({(formData.image ? 1 : 0) + (formData.images?.length || 0)}/4)
+                </span>
+                {(formData.images || []).map((url, idx) => (
+                  <div key={`${url}_${idx}`} className="relative w-10 h-10 rounded-lg overflow-hidden border border-slate-200 bg-white shrink-0 group">
+                    <img src={url} alt={`Foto ${idx + 2}`} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => handlePromoteGalleryImage(url)}
+                        className="px-1 py-0.5 rounded bg-white text-[9px] font-bold text-slate-900 cursor-pointer"
+                        title="Usar como foto principal"
+                      >
+                        1ª
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveGalleryImage(url)}
+                        className="p-0.5 rounded bg-red-600 text-white cursor-pointer"
+                        title="Quitar foto"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {(formData.images?.length || 0) < 3 && (
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={uploadingGallery}
+                  className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-slate-300 text-[11px] font-bold text-slate-700 cursor-pointer transition-colors disabled:opacity-50"
+                >
+                  {uploadingGallery ? <LoadingSpinner size={12} /> : <><Plus size={12} /> Añadir foto</>}
+                </button>
+              )}
+            </div>
+
+            {/* Precios (Venta y Precio Anterior / Descuento) */}
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-bold text-gray-900 mb-1">Precio base ($) *</label>
+                <label className="block text-xs font-bold text-gray-900 mb-1">Precio de venta ($) *</label>
                 <input 
                   type="text"
                   inputMode="numeric"
@@ -426,6 +556,28 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
               </div>
 
               <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-gray-900">Precio antes ($)</label>
+                  {discountPercent > 0 && (
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+                      -{discountPercent}%
+                    </span>
+                  )}
+                </div>
+                <input 
+                  type="text"
+                  inputMode="numeric"
+                  value={formatThousandsInput(formData.comparePrice)}
+                  onChange={e => setFormData({...formData, comparePrice: e.target.value.replace(/\D/g, '')})}
+                  placeholder="Opcional (tachado)"
+                  className="input-field text-xs font-medium tabular-nums"
+                />
+              </div>
+            </div>
+
+            {/* Disponibilidad y Control de Stock */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
                 <label className="block text-xs font-bold text-gray-900 mb-1">Disponibilidad</label>
                 <select 
                   value={formData.disponible ? 'true' : 'false'}
@@ -436,15 +588,38 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
                   <option value="false">Agotado temporalmente</option>
                 </select>
               </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-gray-900">Stock (unidades)</label>
+                  {formData.stock !== '' && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, stock: '' }))}
+                      className="text-[10px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
+                    >
+                      Ilimitado
+                    </button>
+                  )}
+                </div>
+                <input 
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.stock}
+                  onChange={e => setFormData({...formData, stock: e.target.value.replace(/\D/g, '').slice(0, 6)})}
+                  placeholder="Ilimitado"
+                  className="input-field text-xs font-semibold tabular-nums"
+                />
+              </div>
             </div>
 
             {/* Descripción */}
             <div>
-              <label className="block text-xs font-bold text-gray-900 mb-1">Descripción e ingredientes</label>
+              <label className="block text-xs font-bold text-gray-900 mb-1">Descripción del producto</label>
               <textarea 
                 value={formData.description}
                 onChange={e => setFormData({...formData, description: e.target.value})}
-                placeholder="Ej: Describe los ingredientes, características o contenido del producto."
+                placeholder="Ej: Describe características, materiales, ingredientes o contenido del producto."
                 className="input-field text-xs resize-none" 
                 rows={2}
               />
@@ -464,7 +639,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
                           ? `${formData.opciones[0].titulo || 'Opciones'} · ${totalOptionsCount} ${totalOptionsCount === 1 ? 'opción' : 'opciones'}`
                           : `${formData.opciones.map(g => g.titulo).filter(Boolean).slice(0, 3).join(', ')}${formData.opciones.length > 3 ? '...' : ''} · ${totalOptionsCount} opciones`
                         )
-                      : 'Tamaños, bordes, sabores o adicionales'}
+                      : 'Tallas, colores, tamaños, sabores o adicionales'}
                   </p>
                 </div>
               </div>

@@ -37,14 +37,44 @@ async function getSchema() {
 function buildRecord(product, schema) {
   const record = {};
   if (schema.fields.name) record[schema.fields.name] = product.name;
-  if (schema.fields.price) record[schema.fields.price] = Number(product.price);
+  const numericPrice = Number(product.price) || 0;
+  if (schema.fields.price) record[schema.fields.price] = numericPrice;
 
-  // Serializar opciones limpiamente en la descripción si hay grupos configurados
-  let finalDescription = (product.description || '').trim();
+  // Limpiar cualquier tag previo antes de serializar
+  let finalDescription = String(product.description || '')
+    .replace(/<!--(?:NEGU|CAMLY)_OPTIONS:[\s\S]*?-->/g, '')
+    .replace(/<!--NEGU_META:[\s\S]*?-->/g, '')
+    .trim();
+
   const opciones = Array.isArray(product.opciones) ? product.opciones : [];
   if (opciones.length > 0) {
-    finalDescription = `${finalDescription}\n<!--NEGU_OPTIONS:${JSON.stringify(opciones)}-->`;
+    finalDescription = `${finalDescription}\n<!--NEGU_OPTIONS:${JSON.stringify(opciones)}-->`.trim();
   }
+
+  // Serializar metadatos opcionales (precio anterior / stock) con compatibilidad hacia atrás
+  const rawCompare = product.comparePrice ?? product.precio_anterior ?? null;
+  const parsedCompare = rawCompare === '' || rawCompare === null || rawCompare === undefined ? null : Number(rawCompare);
+  const validCompare = Number.isFinite(parsedCompare) && parsedCompare > numericPrice ? parsedCompare : null;
+
+  const rawStock = product.stock;
+  const parsedStock = rawStock === '' || rawStock === null || rawStock === undefined ? null : Math.max(0, Math.floor(Number(rawStock)));
+  const validStock = parsedStock !== null && Number.isFinite(parsedStock) ? parsedStock : null;
+
+  const meta = {};
+  if (validCompare !== null) meta.comparePrice = validCompare;
+  if (validStock !== null) meta.stock = validStock;
+
+  // Galería adicional (hasta 3 fotos extra además de la principal)
+  const primaryImg = product.image || DEFAULT_IMAGE;
+  const extraImages = Array.isArray(product.images)
+    ? [...new Set(product.images.filter(u => typeof u === 'string' && u.trim() && u !== primaryImg && u !== DEFAULT_IMAGE))].slice(0, 3)
+    : [];
+  if (extraImages.length > 0) meta.images = extraImages;
+
+  if (Object.keys(meta).length > 0) {
+    finalDescription = `${finalDescription}\n<!--NEGU_META:${JSON.stringify(meta)}-->`.trim();
+  }
+
   if (schema.fields.description) record[schema.fields.description] = finalDescription;
 
   if (schema.fields.unit) record[schema.fields.unit] = product.unit || 'unidad';
@@ -60,29 +90,63 @@ function buildRecord(product, schema) {
 function normalizeProduct(row) {
   let description = row.descripcion || row.description || '';
   let opciones = [];
+  let meta = {};
+
+  if (typeof description === 'string' && /<!--NEGU_META:/.test(description)) {
+    try {
+      const metaMatch = description.match(/<!--NEGU_META:(.*?)-->/s);
+      if (metaMatch && metaMatch[1]) {
+        meta = JSON.parse(metaMatch[1]) || {};
+      }
+      description = description.replace(/<!--NEGU_META:[\s\S]*?-->/g, '').trim();
+    } catch (e) {
+      console.warn('Error parsing product meta:', e);
+    }
+  }
 
   if (row.opciones && Array.isArray(row.opciones)) {
     opciones = row.opciones;
+    description = description.replace(/<!--(?:NEGU|CAMLY)_OPTIONS:[\s\S]*?-->/g, '').trim();
   } else if (typeof description === 'string' && /<!--(?:NEGU|CAMLY)_OPTIONS:/.test(description)) {
     try {
       const match = description.match(/<!--(?:NEGU|CAMLY)_OPTIONS:(.*?)-->/s);
       if (match && match[1]) {
         opciones = JSON.parse(match[1]);
-        description = description.replace(/<!--(?:NEGU|CAMLY)_OPTIONS:(.*?)-->/s, '').trim();
+        description = description.replace(/<!--(?:NEGU|CAMLY)_OPTIONS:[\s\S]*?-->/g, '').trim();
       }
     } catch (e) {
       console.warn('Error parsing product options:', e);
     }
   }
 
+  const price = Number(row.precio ?? row.price ?? 0);
+  const rawCompare = row.precio_anterior ?? meta.comparePrice ?? null;
+  const compareNum = rawCompare === null || rawCompare === '' ? null : Number(rawCompare);
+  const comparePrice = Number.isFinite(compareNum) && compareNum > price ? compareNum : null;
+
+  const rawStock = row.stock ?? meta.stock ?? null;
+  const stockNum = rawStock === null || rawStock === '' ? null : Math.max(0, Math.floor(Number(rawStock)));
+  const stock = stockNum !== null && Number.isFinite(stockNum) ? stockNum : null;
+
+  const primaryImage = row.imagen || row.image || DEFAULT_IMAGE;
+  const extraImages = Array.isArray(meta.images)
+    ? meta.images.filter(u => typeof u === 'string' && u.trim() && u !== primaryImage && u !== DEFAULT_IMAGE).slice(0, 3)
+    : [];
+  const allImages = primaryImage && primaryImage !== DEFAULT_IMAGE
+    ? [primaryImage, ...extraImages]
+    : extraImages;
+
   return {
     id: Number(row.id),
     name: row.nombre || row.name || 'Producto',
-    price: Number(row.precio ?? row.price ?? 0),
+    price,
+    comparePrice,
+    stock,
     description,
     raw_description: row.descripcion || row.description || '',
     unit: row.unidad || row.unit || 'unidad',
-    image: row.imagen || row.image || DEFAULT_IMAGE,
+    image: primaryImage,
+    images: allImages,
     categoria: row.categoria || row.category || 'Varios',
     categoria_id: row.categoria_id || null,
     disponible: row.disponible ?? row.available ?? true,
@@ -201,6 +265,7 @@ const OPTIONAL_BUSINESS_COLUMNS = new Set(['business_type', 'catalog_design', 'h
 
 export async function updateBusiness(id, updates) {
   const payload = { ...updates };
+  let encodedFooterMessage = payload.footer_message !== undefined ? payload.footer_message : null;
 
   while (true) {
     const { data, error } = await getSupabase()
@@ -210,17 +275,39 @@ export async function updateBusiness(id, updates) {
       .select('id')
       .maybeSingle();
 
-    if (!error) return data;
+    if (!error) return data || { id };
 
     const missingColumn = [...OPTIONAL_BUSINESS_COLUMNS].find(column =>
       error.message?.includes(`'${column}'`)
       || error.message?.includes(`"${column}"`)
       || new RegExp(`\\bcolumn\\s+${column}\\b`, 'i').test(error.message || '')
     );
-    const isMissingColumn = ['PGRST204', '42703'].includes(error.code);
+    const isMissingColumn = ['PGRST204', '42703', 'PGRST200'].includes(error.code) || /column.*(?:not found|does not exist)/i.test(error.message || '');
 
     if (!isMissingColumn || !missingColumn || !OPTIONAL_BUSINESS_COLUMNS.has(missingColumn) || !(missingColumn in payload)) {
       throw error;
+    }
+
+    if (missingColumn === 'horario' && payload.horario) {
+      const scheduleTag = `<!--NEGU_SCHEDULE:${JSON.stringify(payload.horario)}-->`;
+      if (encodedFooterMessage === null) {
+        const { data: cur } = await getSupabase().from('negocios').select('footer_message').eq('id', id).maybeSingle();
+        encodedFooterMessage = cur?.footer_message || '';
+      }
+      encodedFooterMessage = encodedFooterMessage.replace(/<!--(?:NEGU|CAMLY)_SCHEDULE:[\s\S]*?-->/g, '').trim();
+      encodedFooterMessage = `${encodedFooterMessage} ${scheduleTag}`.trim();
+      payload.footer_message = encodedFooterMessage;
+    }
+
+    if (missingColumn === 'catalog_design' && payload.catalog_design) {
+      const designTag = `<!--NEGU_DESIGN:${JSON.stringify(payload.catalog_design)}-->`;
+      if (encodedFooterMessage === null) {
+        const { data: cur } = await getSupabase().from('negocios').select('footer_message').eq('id', id).maybeSingle();
+        encodedFooterMessage = cur?.footer_message || '';
+      }
+      encodedFooterMessage = encodedFooterMessage.replace(/<!--(?:NEGU|CAMLY)_DESIGN:[\s\S]*?-->/g, '').trim();
+      encodedFooterMessage = `${encodedFooterMessage} ${designTag}`.trim();
+      payload.footer_message = encodedFooterMessage;
     }
 
     delete payload[missingColumn];
@@ -294,6 +381,110 @@ export async function deleteProduct(id, negocioId = null) {
   if (negocioId) query = query.eq('negocio_id', negocioId);
   const { error } = await query;
   if (error) throw error;
+}
+
+/**
+ * Descuenta o repone stock de forma segura e idempotente al confirmar/cancelar un pedido.
+ * Solo afecta productos con control numérico de stock configurado (`stock !== null`).
+ */
+export async function adjustStockForOrder(order, products = [], businessId = null, direction = 'deduct') {
+  if (!order?.id || !businessId || !Array.isArray(products) || products.length === 0) {
+    return { changedCount: 0, totalUnits: 0 };
+  }
+
+  const ledgerKey = `negu_stock_ledger_${businessId}`;
+  let ledger = {};
+  try {
+    ledger = JSON.parse(localStorage.getItem(ledgerKey) || '{}') || {};
+  } catch {
+    ledger = {};
+  }
+
+  const orderKey = String(order.id);
+  const alreadyDeducted = ledger[orderKey] === 'deducted';
+
+  if (direction === 'deduct' && alreadyDeducted) {
+    return { changedCount: 0, totalUnits: 0 };
+  }
+  if (direction === 'restore' && !alreadyDeducted) {
+    return { changedCount: 0, totalUnits: 0 };
+  }
+
+  const rawItems = order.items || order.productos || [];
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
+    return { changedCount: 0, totalUnits: 0 };
+  }
+
+  // Agrupar cantidades por producto
+  const qtyByProductId = new Map();
+  for (const item of rawItems) {
+    const qty = Math.max(0, Math.floor(Number(item.cantidad ?? item.quantity ?? 1) || 0));
+    if (qty <= 0) continue;
+
+    const itemPid = item.id ?? item.productId ?? item.producto_id;
+    let matched = itemPid !== undefined && itemPid !== null
+      ? products.find(p => String(p.id) === String(itemPid))
+      : null;
+    if (!matched && (item.nombre || item.name)) {
+      const targetName = String(item.nombre || item.name).trim().toLowerCase();
+      matched = products.find(p => String(p.name || '').trim().toLowerCase() === targetName) || null;
+    }
+    if (!matched) continue;
+    if (matched.stock === null || matched.stock === undefined) continue;
+
+    qtyByProductId.set(matched.id, (qtyByProductId.get(matched.id) || 0) + qty);
+  }
+
+  if (qtyByProductId.size === 0) {
+    return { changedCount: 0, totalUnits: 0 };
+  }
+
+  let changedCount = 0;
+  let totalUnits = 0;
+
+  for (const [productId, qty] of qtyByProductId.entries()) {
+    const prod = products.find(p => p.id === productId);
+    if (!prod || prod.stock === null || prod.stock === undefined) continue;
+
+    const currentStock = Math.max(0, Math.floor(Number(prod.stock) || 0));
+    const nextStock = direction === 'deduct'
+      ? Math.max(0, currentStock - qty)
+      : currentStock + qty;
+
+    if (nextStock === currentStock) continue;
+
+    await updateProduct(
+      prod.id,
+      {
+        ...prod,
+        stock: nextStock,
+        disponible: nextStock > 0 ? (direction === 'restore' ? true : prod.disponible) : false,
+      },
+      businessId
+    );
+    changedCount += 1;
+    totalUnits += qty;
+  }
+
+  if (changedCount > 0) {
+    try {
+      if (direction === 'deduct') {
+        ledger[orderKey] = 'deducted';
+      } else {
+        delete ledger[orderKey];
+      }
+      // Mantener el registro ligero (últimos 300 pedidos)
+      const keys = Object.keys(ledger);
+      if (keys.length > 300) {
+        keys.slice(0, keys.length - 300).forEach(k => delete ledger[k]);
+      }
+      localStorage.setItem(ledgerKey, JSON.stringify(ledger));
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  return { changedCount, totalUnits };
 }
 
 // ── Orders ──

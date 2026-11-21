@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, memo } from 'react';
-import { Plus, Minus, X, PackageCheck, Check, Layers, ChevronDown } from 'lucide-react';
+import { Plus, Minus, X, PackageCheck, Check, Layers, ChevronDown, ChevronLeft, ChevronRight, Images } from 'lucide-react';
 import { formatMoney } from '../../lib/utils';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
 
@@ -21,6 +21,15 @@ const ProductCard = memo(function ProductCard({
 
   const [showModal, setShowModal] = useState(false);
   const [imgError, setImgError] = useState(!product.image);
+  const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+
+  const galleryImages = useMemo(() => {
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      return product.images.filter(Boolean);
+    }
+    return product.image ? [product.image] : [];
+  }, [product.images, product.image]);
+  const hasGallery = galleryImages.length > 1;
 
   useEffect(() => {
     if (!showModal) return;
@@ -36,6 +45,21 @@ const ProductCard = memo(function ProductCard({
   const hasPaidRequiredOptions = hasOptions && product.opciones.some(g =>
     g.requerido && Array.isArray(g.opciones) && g.opciones.some(o => Number(o?.precio) > 0)
   );
+
+  // Stock y descuento (respetando configuración de inventario del negocio)
+  const invCfg = business?.catalog_design?.inventory_config || {};
+  const lowStockThreshold = Math.max(1, Number(invCfg.lowStockThreshold) || 5);
+  const showLowStockBadge = invCfg.showLowStockBadge !== false;
+  const showDiscountBadge = invCfg.showDiscountBadge !== false;
+
+  const hasStockLimit = product.stock !== null && product.stock !== undefined && Number.isFinite(Number(product.stock));
+  const maxStock = hasStockLimit ? Math.max(0, Math.floor(Number(product.stock))) : Infinity;
+  const isOutOfStock = product.disponible === false || (hasStockLimit && maxStock <= 0);
+  const isLowStock = showLowStockBadge && hasStockLimit && maxStock > 0 && maxStock <= lowStockThreshold;
+  const comparePrice = Number(product.comparePrice) > Number(product.price) ? Number(product.comparePrice) : null;
+  const discountPercent = showDiscountBadge && comparePrice && Number(product.price) > 0
+    ? Math.round(((comparePrice - Number(product.price)) / comparePrice) * 100)
+    : 0;
 
   const getDefaultOptions = () => {
     const initial = {};
@@ -105,6 +129,7 @@ const ProductCard = memo(function ProductCard({
     setExpandedGroups(initializeExpandedGroups());
     setTempNote('');
     setModalQty(1);
+    setActivePhotoIdx(0);
     setShowModal(true);
   };
 
@@ -187,6 +212,14 @@ const ProductCard = memo(function ProductCard({
       addToast(storeClosedMessage || 'La tienda se encuentra temporalmente en pausa o cerrada.', 'warning');
       return;
     }
+    if (isOutOfStock) {
+      addToast('Este producto está agotado por el momento.', 'warning');
+      return;
+    }
+    if (hasStockLimit && totalProductQty >= maxStock) {
+      addToast(`Solo quedan ${maxStock} ${maxStock === 1 ? 'unidad disponible' : 'unidades disponibles'} de "${product.name}".`, 'warning');
+      return;
+    }
     if (hasOptions) {
       openCustomizationModal();
     } else {
@@ -198,6 +231,20 @@ const ProductCard = memo(function ProductCard({
   const handleConfirmCustomization = () => {
     if (!isStoreOpen) {
       addToast(storeClosedMessage || 'La tienda se encuentra temporalmente en pausa o cerrada.', 'warning');
+      return;
+    }
+    if (isOutOfStock) {
+      addToast('Este producto está agotado por el momento.', 'warning');
+      return;
+    }
+    if (hasStockLimit && totalProductQty + modalQty > maxStock) {
+      const remaining = Math.max(0, maxStock - totalProductQty);
+      addToast(
+        remaining > 0
+          ? `Solo puedes agregar ${remaining} ${remaining === 1 ? 'unidad más' : 'unidades más'} (stock: ${maxStock}).`
+          : `Ya agregaste el máximo disponible (${maxStock}) de "${product.name}".`,
+        'warning'
+      );
       return;
     }
 
@@ -284,24 +331,48 @@ const ProductCard = memo(function ProductCard({
             </div>
           )}
 
-          {/* Micro-tag legible cuando el producto tiene variantes o adicionales */}
-          {hasOptions && (
-            <div
-              className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm shadow-2xs"
-              title="Producto personalizable"
-            >
-              <Layers size={11} aria-hidden="true" />
-              <span>Opciones</span>
+          {/* Badges sobre imagen: Descuento y Opciones */}
+          <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
+            {discountPercent > 0 && (
+              <span className="inline-flex items-center rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-extrabold text-white shadow-xs tabular-nums">
+                -{discountPercent}%
+              </span>
+            )}
+            {hasOptions && (
+              <div
+                className="inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm shadow-2xs"
+                title="Producto personalizable"
+              >
+                <Layers size={11} aria-hidden="true" />
+                <span>Opciones</span>
+              </div>
+            )}
+          </div>
+
+          {/* Overlay si está sin stock */}
+          {isOutOfStock && (
+            <div className="absolute inset-0 bg-slate-950/45 backdrop-blur-[1px] flex items-center justify-center">
+              <span className="rounded-full bg-slate-950/90 px-3 py-1 text-xs font-bold text-white shadow-sm">
+                Agotado
+              </span>
             </div>
           )}
 
           {/* Quantity pill on image */}
-          {isSelected && (
+          {isSelected && !isOutOfStock && (
             <div 
               className="absolute right-2 top-2 flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-xs font-bold text-white shadow-xs"
               style={{ backgroundColor: brandColor }}
             >
               {totalProductQty}
+            </div>
+          )}
+
+          {/* Indicador discreto de galería múltiple */}
+          {hasGallery && !isOutOfStock && (
+            <div className="absolute right-2 bottom-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-xs tabular-nums">
+              <Images size={10} aria-hidden="true" />
+              <span>{galleryImages.length}</span>
             </div>
           )}
         </div>
@@ -320,16 +391,28 @@ const ProductCard = memo(function ProductCard({
           </div>
 
           <div className="mt-auto flex flex-col gap-2 border-t border-[#f0ede7] pt-2.5">
-            <div className="flex items-baseline gap-1 min-w-0">
-              {hasPaidRequiredOptions && (
-                <span className="text-[11px] font-medium text-slate-500 shrink-0">Desde</span>
-              )}
-              <span className="truncate text-sm font-extrabold tabular-nums text-slate-900 sm:text-base">
-                {formatMoney(product.price)}
-              </span>
-              {product.unit && product.unit.toLowerCase() !== 'unidad' && (
-                <span className="truncate text-[11px] font-medium text-slate-500">
-                  / {product.unit}
+            <div className="flex items-baseline justify-between gap-1.5 min-w-0">
+              <div className="flex items-baseline gap-1.5 min-w-0 flex-wrap">
+                {hasPaidRequiredOptions && (
+                  <span className="text-[11px] font-medium text-slate-500 shrink-0">Desde</span>
+                )}
+                <span className="truncate text-sm font-extrabold tabular-nums text-slate-900 sm:text-base">
+                  {formatMoney(product.price)}
+                </span>
+                {comparePrice && (
+                  <span className="truncate text-xs font-medium text-slate-400 line-through tabular-nums">
+                    {formatMoney(comparePrice)}
+                  </span>
+                )}
+                {product.unit && product.unit.toLowerCase() !== 'unidad' && (
+                  <span className="truncate text-[11px] font-medium text-slate-500">
+                    / {product.unit}
+                  </span>
+                )}
+              </div>
+              {isLowStock && !isOutOfStock && (
+                <span className="shrink-0 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md tabular-nums">
+                  {maxStock === 1 ? 'Última ud.' : `Quedan ${maxStock}`}
                 </span>
               )}
             </div>
@@ -340,8 +423,16 @@ const ProductCard = memo(function ProductCard({
                 onClick={openCustomizationModal}
                 className="flex h-10 min-h-[40px] w-full items-center justify-between rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:scale-95 px-3 text-xs font-semibold text-slate-700 transition-all shadow-2xs"
               >
-                <span>Ver plato</span>
+                <span>Ver detalle</span>
                 <ChevronDown size={14} className="text-slate-400 -rotate-90" />
+              </button>
+            ) : isOutOfStock ? (
+              <button
+                type="button"
+                disabled
+                className="flex h-10 min-h-[40px] w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-100 px-3 text-xs font-semibold text-slate-400 cursor-not-allowed"
+              >
+                Agotado
               </button>
             ) : !isStoreOpen ? (
               <button
@@ -382,10 +473,15 @@ const ProductCard = memo(function ProductCard({
                 </span>
                 <button
                   onClick={() => {
+                    if (hasStockLimit && totalProductQty >= maxStock) {
+                      addToast(`Solo quedan ${maxStock} ${maxStock === 1 ? 'unidad disponible' : 'unidades disponibles'} de "${product.name}".`, 'warning');
+                      return;
+                    }
                     if (hasOptions) openCustomizationModal();
                     else increment(bid, product.id);
                   }}
-                  className="flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-black/5 active:scale-95"
+                  disabled={hasStockLimit && totalProductQty >= maxStock}
+                  className="flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-black/5 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                   aria-label="Sumar una unidad o personalizar otra"
                 >
                   <Plus size={15} />
@@ -423,15 +519,60 @@ const ProductCard = memo(function ProductCard({
             {/* CONTENEDOR DESPLAZABLE ÚNICO (TODO HACE SCROLL SUAVE Y NATURAL) */}
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
 
-              {/* Hero Image del producto si existe */}
-              {!imgError && product.image ? (
-                <div className="relative aspect-[16/9] max-h-36 sm:max-h-44 w-full bg-[#f2eee7] overflow-hidden">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="h-full w-full object-cover"
-                    onError={() => setImgError(true)}
-                  />
+              {/* Galería / Hero Image del producto */}
+              {!imgError && galleryImages.length > 0 ? (
+                <div className="bg-[#f2eee7]">
+                  <div className="relative aspect-[16/10] max-h-56 sm:max-h-64 w-full overflow-hidden">
+                    <img
+                      src={galleryImages[activePhotoIdx] || galleryImages[0]}
+                      alt={`${product.name}${hasGallery ? ` (${activePhotoIdx + 1}/${galleryImages.length})` : ''}`}
+                      className="h-full w-full object-cover"
+                      onError={() => setImgError(true)}
+                    />
+                    {hasGallery && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setActivePhotoIdx(i => (i - 1 + galleryImages.length) % galleryImages.length)}
+                          className="absolute left-2.5 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 hover:bg-black/75 text-white backdrop-blur-xs cursor-pointer transition-colors"
+                          aria-label="Foto anterior"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActivePhotoIdx(i => (i + 1) % galleryImages.length)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 hover:bg-black/75 text-white backdrop-blur-xs cursor-pointer transition-colors"
+                          aria-label="Foto siguiente"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                        <span className="absolute bottom-2.5 right-3 rounded-full bg-black/65 px-2.5 py-0.5 text-[11px] font-bold text-white backdrop-blur-xs tabular-nums">
+                          {activePhotoIdx + 1} / {galleryImages.length}
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  {hasGallery && (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white border-b border-[#f0ede7] overflow-x-auto no-scrollbar">
+                      {galleryImages.map((src, idx) => (
+                        <button
+                          key={`${src}_${idx}`}
+                          type="button"
+                          onClick={() => setActivePhotoIdx(idx)}
+                          className={`w-12 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+                            idx === activePhotoIdx
+                              ? 'border-slate-900 opacity-100'
+                              : 'border-transparent opacity-60 hover:opacity-100'
+                          }`}
+                          aria-label={`Ver foto ${idx + 1}`}
+                        >
+                          <img src={src} alt={`${product.name} miniatura ${idx + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : null}
 
@@ -443,9 +584,16 @@ const ProductCard = memo(function ProductCard({
                       {product.name}
                     </h2>
                   </div>
-                  <span className="text-base sm:text-lg font-extrabold text-slate-900 shrink-0 tabular-nums">
-                    {formatMoney(product.price)}
-                  </span>
+                  <div className="text-right shrink-0">
+                    <span className="text-base sm:text-lg font-extrabold text-slate-900 tabular-nums block">
+                      {formatMoney(product.price)}
+                    </span>
+                    {comparePrice && (
+                      <span className="text-xs font-medium text-slate-400 line-through tabular-nums">
+                        {formatMoney(comparePrice)}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Descripción e ingredientes legible y sin recuadros pesados */}
@@ -679,7 +827,14 @@ const ProductCard = memo(function ProductCard({
                 </span>
                 <button
                   type="button"
-                  onClick={() => setModalQty(q => q + 1)}
+                  onClick={() => {
+                    const remaining = hasStockLimit ? Math.max(1, maxStock - totalProductQty) : Infinity;
+                    if (modalQty >= remaining) {
+                      addToast(`Solo hay ${maxStock} ${maxStock === 1 ? 'unidad disponible' : 'unidades disponibles'}.`, 'warning');
+                      return;
+                    }
+                    setModalQty(q => q + 1);
+                  }}
                   className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 hover:bg-black/5 active:scale-95 cursor-pointer"
                   aria-label="Aumentar cantidad"
                 >
@@ -687,7 +842,15 @@ const ProductCard = memo(function ProductCard({
                 </button>
               </div>
 
-              {!isStoreOpen ? (
+              {isOutOfStock ? (
+                <button
+                  type="button"
+                  disabled
+                  className="flex-1 py-2.5 px-4 text-xs font-bold rounded-xl bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shrink-0"
+                >
+                  Producto agotado
+                </button>
+              ) : !isStoreOpen ? (
                 <button
                   type="button"
                   disabled

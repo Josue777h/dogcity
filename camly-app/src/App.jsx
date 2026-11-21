@@ -15,21 +15,21 @@ function lazyWithRetry(factory) {
       try {
         return await factory();
       } catch (secondErr) {
-        if (!import.meta.env.DEV) {
-          let alreadyReloaded = false;
-          try {
-            alreadyReloaded = sessionStorage.getItem('negu_lazy_recovered') === '1';
-            if (!alreadyReloaded) {
-              sessionStorage.setItem('negu_lazy_recovered', '1');
-            }
-          } catch (storageErr) {
-            console.debug('sessionStorage no disponible:', storageErr);
-          }
+        let alreadyReloaded = false;
+        try {
+          alreadyReloaded = sessionStorage.getItem('negu_lazy_recovered') === '1';
           if (!alreadyReloaded) {
-            await clearClientCaches();
-            window.location.reload();
-            return new Promise(() => {});
+            sessionStorage.setItem('negu_lazy_recovered', '1');
           }
+        } catch (storageErr) {
+          console.debug('sessionStorage no disponible:', storageErr);
+        }
+        if (!alreadyReloaded) {
+          await clearClientCaches();
+          const url = new URL(window.location.href);
+          url.searchParams.set('_fresh', Date.now().toString());
+          window.location.replace(url.toString());
+          return new Promise(() => {});
         }
         throw secondErr || firstErr;
       }
@@ -78,6 +78,7 @@ const ProductsView = lazyWithRetry(() => import('./features/admin/views/Products
 const CategoriesView = lazyWithRetry(() => import('./features/admin/views/CategoriesView'));
 const DriversView = lazyWithRetry(() => import('./features/admin/views/DriversView'));
 const RevenueView = lazyWithRetry(() => import('./features/admin/views/RevenueView'));
+const CustomersView = lazyWithRetry(() => import('./features/admin/views/CustomersView'));
 const SettingsView = lazyWithRetry(() => import('./features/admin/views/SettingsView'));
 
 import { useBusinessStore } from './stores';
@@ -147,6 +148,8 @@ export default function App() {
             <Route path="drivers" element={<Navigate to="/admin/domiciliarios" replace />} />
             <Route path="ingresos" element={<RevenueView />} />
             <Route path="revenue" element={<Navigate to="/admin/ingresos" replace />} />
+            <Route path="clientes" element={<CustomersView />} />
+            <Route path="customers" element={<Navigate to="/admin/clientes" replace />} />
             <Route path="configuracion" element={<SettingsView />} />
             <Route path="settings" element={<Navigate to="/admin/configuracion" replace />} />
             {/* Fallback de ruta administrativa inválida */}
