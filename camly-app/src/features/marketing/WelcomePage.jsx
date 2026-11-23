@@ -26,13 +26,13 @@ export default function WelcomePage() {
       .maybeSingle()
       .then(({ data, error }) => {
         if (!active) return;
-        if (error) addToast('No pudimos cargar los datos de tu negocio.', 'error');
+        if (error) addToast('Error al cargar datos', 'error');
         if (data) setBusiness(data);
         setLookupDone(true);
       })
       .catch(() => {
         if (!active) return;
-        addToast('No pudimos cargar los datos de tu negocio.', 'error');
+        addToast('Error al cargar datos', 'error');
         setLookupDone(true);
       });
 

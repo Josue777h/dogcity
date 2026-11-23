@@ -208,7 +208,7 @@ export default function ResetPasswordPage() {
                     placeholder="Mínimo 8 caracteres"
                     className="min-h-11 pr-11"
                   />
-                  <button type="button" onClick={() => setShowPassword(value => !value)} className="absolute right-2.5 top-[34px] rounded p-1 text-slate-400 hover:text-slate-700" aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+                  <button type="button" onClick={() => setShowPassword(value => !value)} className="absolute right-2.5 top-[35px] cursor-pointer rounded p-1 text-slate-400 hover:text-slate-700" aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
                     {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                   </button>
                 </div>
@@ -225,7 +225,7 @@ export default function ResetPasswordPage() {
                     placeholder="Escríbela de nuevo"
                     className="min-h-11 pr-11"
                   />
-                  <button type="button" onClick={() => setShowConfirmPassword(value => !value)} className="absolute right-2.5 top-[34px] rounded p-1 text-slate-400 hover:text-slate-700" aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+                  <button type="button" onClick={() => setShowConfirmPassword(value => !value)} className="absolute right-2.5 top-[35px] cursor-pointer rounded p-1 text-slate-400 hover:text-slate-700" aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
                     {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                   </button>
                 </div>

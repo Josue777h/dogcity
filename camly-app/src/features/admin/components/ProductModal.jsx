@@ -162,11 +162,11 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
   const processFile = async (file) => {
     if (!file) return;
     if (!file.type?.startsWith('image/')) {
-      addToast('Selecciona un archivo de imagen válido', 'error');
+      addToast('Imagen inválida', 'error');
       return;
     }
     if (file.size > 12 * 1024 * 1024) {
-      addToast('La imagen supera el máximo de 12MB', 'error');
+      addToast('Máximo 12MB por imagen', 'error');
       return;
     }
     setUploading(true);
@@ -175,7 +175,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
       const fileName = `${businessId}/${Date.now()}-${baseName}.webp`;
       const url = await uploadImage(file, fileName);
       setFormData(prev => ({ ...prev, image: url }));
-      addToast('Imagen optimizada en WebP y subida', 'success');
+      addToast('Imagen subida', 'success');
     } catch (err) {
       console.error(err);
       addToast(err?.message || 'Error al subir imagen', 'error');
@@ -193,7 +193,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
     const currentExtras = Array.isArray(formData.images) ? formData.images : [];
     const remainingSlots = Math.max(0, 3 - currentExtras.length);
     if (remainingSlots <= 0) {
-      addToast('Máximo 4 fotos por producto (1 principal + 3 adicionales).', 'warning');
+      addToast('Máximo 4 fotos por producto', 'warning');
       return;
     }
     const toUpload = files.slice(0, remainingSlots);
@@ -219,7 +219,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
       }
     } catch (err) {
       console.error(err);
-      addToast(err?.message || 'Error al subir foto a la galería', 'error');
+      addToast(err?.message || 'Error al subir foto', 'error');
     } finally {
       setUploadingGallery(false);
     }
@@ -263,7 +263,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
     const cleanCompareDigits = String(formData.comparePrice ?? '').replace(/\D/g, '');
     const parsedCompare = cleanCompareDigits ? parseThousandsInput(cleanCompareDigits) : null;
     if (parsedCompare !== null && parsedCompare <= parsedPrice) {
-      addToast('El precio anterior debe ser mayor al precio de venta para mostrar descuento.', 'warning');
+      addToast('El precio anterior debe ser mayor', 'warning');
       return;
     }
 
@@ -692,7 +692,7 @@ export default function ProductModal({ product, businessId, onSave, onClose }) {
           businessId={businessId}
           onSave={(newOpciones) => {
             setFormData(prev => ({ ...prev, opciones: newOpciones }));
-            addToast('Toppings y opciones actualizados', 'success');
+            addToast('Opciones actualizadas', 'success');
           }}
         />
       )}

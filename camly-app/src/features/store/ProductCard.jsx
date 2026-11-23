@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, memo } from 'react';
-import { Plus, Minus, X, PackageCheck, Check, Layers, ChevronDown, ChevronLeft, ChevronRight, Images } from 'lucide-react';
+import { Plus, Minus, X, PackageCheck, Check, ChevronDown, ChevronLeft, ChevronRight, Images } from 'lucide-react';
 import { formatMoney } from '../../lib/utils';
 import { useCartStore, useBusinessStore, useToastStore } from '../../stores';
 
@@ -209,15 +209,15 @@ const ProductCard = memo(function ProductCard({
   const handleCardAdd = (e) => {
     e?.stopPropagation?.();
     if (!isStoreOpen) {
-      addToast(storeClosedMessage || 'La tienda se encuentra temporalmente en pausa o cerrada.', 'warning');
+      addToast(storeClosedMessage || 'Tienda cerrada', 'warning');
       return;
     }
     if (isOutOfStock) {
-      addToast('Este producto está agotado por el momento.', 'warning');
+      addToast('Producto agotado', 'warning');
       return;
     }
     if (hasStockLimit && totalProductQty >= maxStock) {
-      addToast(`Solo quedan ${maxStock} ${maxStock === 1 ? 'unidad disponible' : 'unidades disponibles'} de "${product.name}".`, 'warning');
+      addToast(`Solo quedan ${maxStock} uds.`, 'warning');
       return;
     }
     if (hasOptions) {
@@ -230,11 +230,11 @@ const ProductCard = memo(function ProductCard({
   // Confirmar y agregar desde el modal con validación estricta
   const handleConfirmCustomization = () => {
     if (!isStoreOpen) {
-      addToast(storeClosedMessage || 'La tienda se encuentra temporalmente en pausa o cerrada.', 'warning');
+      addToast(storeClosedMessage || 'Tienda cerrada', 'warning');
       return;
     }
     if (isOutOfStock) {
-      addToast('Este producto está agotado por el momento.', 'warning');
+      addToast('Producto agotado', 'warning');
       return;
     }
     if (hasStockLimit && totalProductQty + modalQty > maxStock) {
@@ -253,11 +253,11 @@ const ProductCard = memo(function ProductCard({
       for (const group of product.opciones) {
         const selections = selectedOptions[group.id] || [];
         if (group.requerido && selections.length === 0) {
-          addToast(`Debes elegir al menos una opción en "${group.titulo}"`, 'warning');
+          addToast(`Elige una opción en ${group.titulo}`, 'warning');
           return;
         }
         if (group.min_opciones && selections.length < Number(group.min_opciones)) {
-          addToast(`Debes elegir al menos ${group.min_opciones} opciones en "${group.titulo}"`, 'warning');
+          addToast(`Elige mínimo ${group.min_opciones} en ${group.titulo}`, 'warning');
           return;
         }
       }
@@ -331,23 +331,12 @@ const ProductCard = memo(function ProductCard({
             </div>
           )}
 
-          {/* Badges sobre imagen: Descuento y Opciones */}
-          <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
-            {discountPercent > 0 && (
-              <span className="inline-flex items-center rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-extrabold text-white shadow-xs tabular-nums">
-                -{discountPercent}%
-              </span>
-            )}
-            {hasOptions && (
-              <div
-                className="inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm shadow-2xs"
-                title="Producto personalizable"
-              >
-                <Layers size={11} aria-hidden="true" />
-                <span>Opciones</span>
-              </div>
-            )}
-          </div>
+          {/* Etiqueta compacta solo de descuento si aplica (sin tapar la foto con "Opciones") */}
+          {discountPercent > 0 && !isOutOfStock && (
+            <span className="absolute left-2 top-2 inline-flex items-center rounded-md bg-emerald-600/95 px-1.5 py-0.5 text-[10px] font-extrabold text-white shadow-xs tabular-nums">
+              -{discountPercent}%
+            </span>
+          )}
 
           {/* Overlay si está sin stock */}
           {isOutOfStock && (
@@ -474,7 +463,7 @@ const ProductCard = memo(function ProductCard({
                 <button
                   onClick={() => {
                     if (hasStockLimit && totalProductQty >= maxStock) {
-                      addToast(`Solo quedan ${maxStock} ${maxStock === 1 ? 'unidad disponible' : 'unidades disponibles'} de "${product.name}".`, 'warning');
+                      addToast(`Solo quedan ${maxStock} uds.`, 'warning');
                       return;
                     }
                     if (hasOptions) openCustomizationModal();
@@ -713,7 +702,7 @@ const ProductCard = memo(function ProductCard({
                                     key={opt.id}
                                     onClick={() => {
                                       if (isMaxReached) {
-                                        addToast(`Límite de ${maxLimit} opciones alcanzado en "${group.titulo}"`, 'warning');
+                                        addToast(`Máximo ${maxLimit} en ${group.titulo}`, 'warning');
                                         return;
                                       }
                                       if (isRadio) {
@@ -830,7 +819,7 @@ const ProductCard = memo(function ProductCard({
                   onClick={() => {
                     const remaining = hasStockLimit ? Math.max(1, maxStock - totalProductQty) : Infinity;
                     if (modalQty >= remaining) {
-                      addToast(`Solo hay ${maxStock} ${maxStock === 1 ? 'unidad disponible' : 'unidades disponibles'}.`, 'warning');
+                      addToast(`Solo quedan ${maxStock} uds.`, 'warning');
                       return;
                     }
                     setModalQty(q => q + 1);

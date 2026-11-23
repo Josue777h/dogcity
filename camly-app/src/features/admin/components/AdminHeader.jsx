@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Copy, ExternalLink, Menu, Zap, AlertTriangle, Check } from 'lucide-react';
-import { useToastStore, useBusinessStore, useAuthStore } from '../../../stores';
+import { useToastStore, useBusinessStore } from '../../../stores';
+import UserProfileMenu from './UserProfileMenu';
 
 const TAB_LABELS = {
   dashboard:      'Dashboard General',
@@ -42,22 +43,19 @@ const MOBILE_TAB_LABELS = {
   customers: 'Clientes',
 };
 
-export default function AdminHeader({ title, business, onOpenMenu }) {
+export default function AdminHeader({ title, business, onOpenMenu, onSignOut }) {
   const addToast  = useToastStore(s => s.addToast);
-  const session   = useAuthStore(s => s.session);
   const { isPro, isExpired, trialDaysLeft, subscription } = useBusinessStore();
   const [copied, setCopied] = useState(false);
 
   const storeUrl  = `${window.location.origin}/${business?.nombre || ''}`;
   const tabLabel  = TAB_LABELS[title] || title;
   const mobileTabLabel = MOBILE_TAB_LABELS[title] || tabLabel;
-  const userEmail = session?.user?.email || '';
-  const userInitial = userEmail.charAt(0).toUpperCase() || 'U';
 
   const copyLink = () => {
     navigator.clipboard.writeText(storeUrl);
     setCopied(true);
-    addToast('Enlace de la tienda copiado', 'success');
+    addToast('Enlace copiado', 'success');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -149,13 +147,8 @@ export default function AdminHeader({ title, business, onOpenMenu }) {
             <ExternalLink size={12} />
           </a>
 
-          {/* Avatar del usuario (Desktop/Tablet) */}
-          <div
-            className="hidden sm:flex w-9 h-9 rounded-full bg-brand text-white text-sm font-bold items-center justify-center shrink-0 select-none"
-            title={userEmail}
-          >
-            {userInitial}
-          </div>
+          {/* Menú y perfil del usuario (visible en móvil, tablet y PC) */}
+          <UserProfileMenu onSignOut={onSignOut} />
         </div>
       </div>
     </header>

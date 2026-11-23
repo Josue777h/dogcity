@@ -59,15 +59,15 @@ export default function RegisterPage() {
 
   const handleStep1Continue = () => {
     if (!form.ownerName.trim()) {
-      addToast('Escribe tu nombre para continuar.', 'warning');
+      addToast('Escribe tu nombre', 'warning');
       return;
     }
     if (!form.businessName.trim() || !normalizedSlug) {
-      addToast('Escribe un nombre válido para tu negocio.', 'warning');
+      addToast('Escribe el nombre del negocio', 'warning');
       return;
     }
     if (!isColombianMobile) {
-      addToast('Ingresa un celular colombiano de 10 dígitos que comience por 3.', 'warning');
+      addToast('Celular inválido (10 dígitos)', 'warning');
       return;
     }
     setStep(2);
@@ -80,7 +80,7 @@ export default function RegisterPage() {
       return;
     }
     if (!form.ownerName.trim() || !form.businessName.trim() || !isColombianMobile || !normalizedSlug || !form.email.trim() || !isPasswordValid || !termsAccepted || !privacyAccepted) {
-      addToast('Por favor completa todos los campos (contraseña mínimo 8 caracteres).', 'warning');
+      addToast('Completa todos los campos', 'warning');
       return;
     }
     setLoading(true);
@@ -110,7 +110,7 @@ export default function RegisterPage() {
         }
         setSession(res?.session);
         setBusiness(res?.negocio);
-        addToast('¡Cuenta y negocio creados con éxito!', 'success');
+        addToast('Tienda creada', 'success');
         navigate('/bienvenido');
       } else {
         try {
@@ -119,7 +119,7 @@ export default function RegisterPage() {
           // ignore storage access issues
         }
         setSession(null);
-        addToast('Te enviamos un enlace para confirmar tu correo.', 'success');
+        addToast('Revisa tu correo', 'success');
         navigate('/verificar-correo', {
           replace: true,
           state: { email: registrationPayload.email, registrationPayload },
@@ -198,7 +198,7 @@ export default function RegisterPage() {
                   placeholder="Ej: Burger House"
                   value={form.businessName}
                   onChange={set('businessName')}
-                  className="py-3 pl-5 pr-10"
+                  className="py-3 pr-10"
                   required
                 />
                 {form.businessName.trim().length >= 2 && (
@@ -283,7 +283,7 @@ export default function RegisterPage() {
                   placeholder="tu@correo.com"
                   value={form.email}
                   onChange={set('email')}
-                  className="py-3 pl-5 pr-10"
+                  className="py-3 pr-10"
                   required
                   autoComplete="email"
                 />
@@ -306,7 +306,7 @@ export default function RegisterPage() {
                   value={form.password}
                   onChange={set('password')}
                   minLength={8}
-                  className="py-3 pl-5 pr-10"
+                  className="py-3 pr-10"
                   required
                   autoComplete="new-password"
                 />

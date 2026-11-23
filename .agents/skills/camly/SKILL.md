@@ -2349,3 +2349,54 @@ Después adaptar.
 Después simplificar.
 
 Y solamente si es necesario, crear.
+
+
+---
+
+# 94. System Design & UI Architecture Rules (Anti-AI / Senior Product Quality)
+
+Actúa siempre como un Staff Product Designer y Senior Frontend Engineer (nivel Linear, Stripe, Vercel, Raycast). El objetivo en NEGU es construir una interfaz funcional, sobria, precisa y humana. Está **estrictamente prohibido** generar estética genérica de plantilla IA ("vibe coding").
+
+## 94.1 Color y Superficies
+* **Prohibido el "Dark Mode Neón":** Nunca usar fondos negros puros (`#000000`) combinados con gradientes púrpura/índigo (`#6366f1`), cian brillante o resplandores (`glow` / `drop-shadow` coloridos).
+* **Paleta Neutros + 1 Acento (Regla 60-30-10):**
+  * 60% fondo base neutro (Modo claro: `#FAFAFA` o `#F8F9FA`, nunca `#FFFFFF` en toda la pantalla; Modo oscuro: `#111113` o `#141416`).
+  * 30% superficies elevadas/paneles (`#FFFFFF` en modo claro; `#1A1A1D` en modo oscuro).
+  * 10% máximo para un único color de acento funcional reservado exclusivamente para acciones primarias y estados activos.
+* **Bordes sobre sombras:** Definir la jerarquía de contenedores mediante contraste sutil de superficie o bordes de `1px` de muy bajo contraste (`rgba(0,0,0,0.08)` en claro / `rgba(255,255,255,0.08)` en oscuro). Evitar `shadow-lg` o `shadow-xl` en tarjetas estáticas.
+* **Cero gradientes decorativos:** No aplicar gradientes en textos de encabezados ni en fondos de tarjetas.
+
+## 94.2 Tipografía y Jerarquía
+* **Fuentes con intención:** Combinar una sans-serif geométrica/humanista limpia para UI (`Geist`, `Plus Jakarta Sans`, `Instrument Sans` o `Inter` con tracking ajustado) y una monoespaciada (`Geist Mono` o `JetBrains Mono`) para IDs, códigos, métricas clave y timestamps.
+* **Números tabulares obligatorios:** Aplicar `tabular-nums` (`font-variant-numeric: tabular-nums`) en todas las tablas, precios, métricas, contadores y fechas para evitar desplazamientos horizontales y asegurar alineación vertical perfecta.
+* **Escala y contraste:**
+  * Títulos principales: peso semibold (`600`), `tracking-tight` (`-0.02em`), color de alto contraste.
+  * Texto secundario / metadatos: peso regular (`400`), color neutro apagado (`text-zinc-500` / `text-neutral-400`), nunca texto principal con opacidad reducida arbitraria.
+  * Limitar el ancho de bloques de texto largo a `65ch` máximo.
+
+## 94.3 Layout, Espaciado y Densidad
+* **Prohibido el abuso de "Bento Grids" y filas de 3 tarjetas:** No encerrar cada dato en una caja con borde e ícono arriba. Usar tarjetas (`Card`) únicamente cuando el bloque sea clicable o agrupe controles interactivos complejos.
+* **Separación por aire y divisores:** Para secciones informativas, usar espacio en blanco generoso y líneas divisoras horizontales de `1px` en lugar de cajas anidadas ("card-itis").
+* **Alineación estricta y ritmo de 4px/8px:** Todos los padding, gaps y márgenes deben ser múltiplos de 4px (`p-4`, `p-6`, `gap-2`, `gap-4`). Aplicar la ley de proximidad: elementos relacionados juntos (`4px–8px`), secciones distintas separadas (`24px–48px`).
+* **Alineación izquierda por defecto:** Alinear textos, encabezados y métricas a la izquierda. Reservar el centrado únicamente para estados vacíos o modales de confirmación breves.
+
+## 94.4 Iconografía y Contenido
+* **Una sola librería de iconos:** Usar exclusivamente `lucide-react` con grosor de trazo uniforme (`strokeWidth={1.5}` o `1.75`) y tamaño consistente (`16px` en botones/tablas, `20px` en navegación).
+* **Prohibido usar emojis en la UI:** Nunca usar emojis como reemplazo de iconos en botones, menús, badges o títulos de sección.
+* **Microcopy operativo, no de marketing:** Textos directos, concisos y orientados a la acción ("Crear producto", "Filtrar por estado", "Sin registros"). Mensajes flotantes (`toasts`) cortos de 2 a 5 palabras. Eliminar frases promocionales dentro de la app.
+
+## 94.5 Estados de Interacción y Arquitectura
+* **Implementar todos los estados de UI:**
+  * **Loading:** Usar *Skeleton loaders* que imiten la geometría del contenido final. Evitar spinners centrados bloqueando toda la pantalla.
+  * **Empty State:** Icono monocromático sutil, explicación de una línea y botón de acción primaria para crear el primer elemento.
+  * **Error:** Errores inline junto al campo afectado o banners contextuales accionables; nunca `alert()` nativo.
+* **Micro-interacciones táctiles:** Todo elemento interactivo debe tener `cursor-pointer`, `hover`, `focus-visible` (anillo limpio para teclado) y `active` (`active:scale-[0.98]`).
+* **Formularios y Modales:** Si un flujo tiene más de 4 campos o requiere contexto de la vista actual, usar panel lateral deslizante (`SettingsDrawer` en portal `document.body`) o vista dedicada en lugar de modal centrado.
+* **Tablas funcionales:** Encabezados `sticky`, alineación derecha para columnas numéricas, `truncate` para textos largos y acciones de fila discretas al hacer hover o menú contextual.
+
+## 94.6 Verificación previa obligatoria
+Antes de finalizar cualquier componente o pantalla, verificar:
+1. ¿Hay más de 2 niveles de cajas anidadas con borde? → Simplificar con divisores y padding.
+2. ¿Se usó algún gradiente o sombra de color neón? → Eliminar.
+3. ¿Todos los botones, inputs y celdas tienen estados `hover`, `disabled` y `focus-visible`? → Añadir.
+4. ¿El código es modular, semántico y usa variables de diseño consistentes en lugar de valores arbitrarios? → Refactorizar.

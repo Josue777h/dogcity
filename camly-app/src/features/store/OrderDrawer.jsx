@@ -288,12 +288,12 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
     const initialLat = Number.isFinite(bizLat) ? bizLat : 7.89391;
     const initialLng = Number.isFinite(bizLng) ? bizLng : -72.50782;
     updateLocationFromCoords(initialLat, initialLng, 'Pin en mapa');
-    addToast('Toca el mapa o arrastra el pin rojo hasta tu punto de entrega', 'info');
+    addToast('Marca tu punto en el mapa', 'info');
   }
 
   function requestGps() {
     if (typeof window === 'undefined' || !navigator?.geolocation) {
-      addToast('GPS no disponible en este dispositivo o navegador', 'error');
+      addToast('GPS no disponible', 'error');
       return;
     }
     setIsCalculating(true);
@@ -305,7 +305,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
               const { latitude, longitude } = pos.coords;
               if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
                 updateLocationFromCoords(latitude, longitude, 'GPS capturado');
-                addToast('Ubicación GPS capturada con éxito', 'success');
+                addToast('Ubicación capturada', 'success');
               } else {
                 addToast('Coordenadas GPS no válidas', 'warning');
               }
@@ -329,14 +329,14 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
       );
     } catch (e) {
       console.warn('Error al solicitar GPS:', e);
-      addToast('Error al iniciar el servicio GPS', 'error');
+      addToast('Error de GPS', 'error');
       setIsCalculating(false);
     }
   }
 
   function handleCopyAccount() {
     const val = (business?.pago_alias || business?.pago_banco || '').trim();
-    if (!val) { addToast('No hay datos bancarios configurados', 'warning'); return; }
+    if (!val) { addToast('Sin datos bancarios', 'warning'); return; }
     navigator.clipboard.writeText(val);
     setHasCopiedAccount(true);
     addToast('Número copiado', 'success');
@@ -351,19 +351,19 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
     if (!tableNumber && !customerPhone.trim()) { addToast('¿Cuál es tu teléfono?', 'warning'); return; }
     if (deliveryMethod === 'envio') {
       if (tipoDom === 'automatico' && !locationLink) {
-        addToast('Activa tu GPS o toca "Ubicar en mapa" para calcular el envío', 'warning');
+        addToast('Marca tu ubicación en el mapa', 'warning');
         openManualMapPicker();
         return;
       }
       if ((tipoDom === 'fijo' || tipoDom === 'manual') && !customerAddress.trim() && !locationLink) {
-        addToast('Escribe tu dirección o marca tu ubicación en el mapa', 'warning');
+        addToast('Indica tu dirección', 'warning');
         return;
       }
     }
     if (!paymentMethod)              { addToast('Selecciona la forma de pago', 'warning'); return; }
 
     if (!bid) {
-      addToast('No se identificó el negocio activo. Por favor recarga el catálogo.', 'error');
+      addToast('Recarga la página', 'error');
       return;
     }
 
@@ -643,7 +643,7 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                                       .filter(ci => String(ci.id) === String(item.id))
                                       .reduce((acc, ci) => acc + (ci.quantity || 0), 0);
                                     if (currentTotalForProduct >= maxStock) {
-                                      addToast(`Solo hay ${maxStock} ${maxStock === 1 ? 'unidad disponible' : 'unidades disponibles'} de "${item.name}".`, 'warning');
+                                      addToast(`Solo quedan ${maxStock} uds.`, 'warning');
                                       return;
                                     }
                                     increment(bid, item.cartItemId || item.id);

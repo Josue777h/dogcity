@@ -55,7 +55,7 @@ export default function ComanderoView() {
       } else {
         localStorage.setItem('negu_waiter_lock_active', 'true');
         setIsWaiterLocked(true);
-        addToast('Modo Mesero activado. El menú administrativo está protegido con tu PIN.', 'success');
+        addToast('Modo Mesero activado', 'success');
       }
     } catch {
       setPinInput('');
@@ -67,7 +67,7 @@ export default function ComanderoView() {
     if (e) e.preventDefault();
     const cleanPin = pinInput.replace(/\D/g, '').slice(0, 4);
     if (cleanPin.length < 4) {
-      addToast('El PIN debe tener 4 dígitos numéricos', 'warning');
+      addToast('El PIN debe tener 4 dígitos', 'warning');
       return;
     }
 
@@ -81,7 +81,7 @@ export default function ComanderoView() {
       setIsWaiterLocked(true);
       setPinModalMode(null);
       setPinInput('');
-      addToast('PIN creado y Modo Mesero activado', 'success');
+      addToast('PIN creado · Modo Mesero', 'success');
     } else if (pinModalMode === 'unlock') {
       const savedPin = localStorage.getItem(pinStorageKey) || '0000';
       if (cleanPin === savedPin) {
@@ -93,7 +93,7 @@ export default function ComanderoView() {
         setIsWaiterLocked(false);
         setPinModalMode(null);
         setPinInput('');
-        addToast('Panel de administración desbloqueado', 'success');
+        addToast('Panel desbloqueado', 'success');
       } else {
         addToast('PIN incorrecto', 'error');
         setPinInput('');
@@ -190,7 +190,7 @@ export default function ComanderoView() {
             return next;
           });
           playTableCallSound();
-          addToast(`Mesa #${mesa} solicita atención del mesero`, 'info');
+          addToast(`Mesa #${mesa} llama al mesero`, 'info');
         }
       } else if (data.type === 'RESOLVE_WAITER_CALL') {
         const mesa = String(data.mesa || '');
@@ -215,9 +215,9 @@ export default function ComanderoView() {
             });
           }
           if (st === 'LISTO_PARA_RECOGER') {
-            addToast(`Mesa #${mesa}: Pedido listo y marcado como En Mesa`, 'info');
+            addToast(`Mesa #${mesa} marcada En Mesa`, 'info');
           } else if (st === 'ENTREGADO') {
-            addToast(`Mesa #${mesa}: Cuenta finalizada y mesa liberada`, 'success');
+            addToast(`Mesa #${mesa} liberada`, 'success');
           }
           reloadOrders();
         }
@@ -515,7 +515,7 @@ export default function ComanderoView() {
 
     setEditingItemNote(null);
     setItemNoteText('');
-    addToast('Instrucción guardada para el plato', 'success');
+    addToast('Nota guardada', 'success');
   };
 
   // Modificar cantidad de un ítem en el ticket
@@ -559,7 +559,7 @@ export default function ComanderoView() {
   const handleLoadOrderToEdit = (order) => {
     if (!order) return;
     if (getMesaStatusInfo(order).isServed) {
-      addToast('Esta orden ya fue preparada y servida en mesa; no se puede modificar ni anexar más platos.', 'warning');
+      addToast('Orden ya servida, no editable', 'warning');
       return;
     }
     const rawItems = order.items || order.productos || [];
@@ -672,11 +672,11 @@ export default function ComanderoView() {
       return;
     }
     if (activeTicket.length === 0) {
-      addToast('Agrega al menos un plato o bebida a la comanda', 'warning');
+      addToast('Agrega al menos un producto', 'warning');
       return;
     }
     if (!business?.id) {
-      addToast('No se encontró la información del negocio', 'error');
+      addToast('Negocio no encontrado', 'error');
       return;
     }
 
@@ -729,7 +729,7 @@ export default function ComanderoView() {
           estado: 'preparando'
         };
 
-        addToast(`Orden #${String(editingOrderId).slice(-4).toUpperCase()} de Mesa #${selectedTable} modificada sin cambiar su número`, 'success');
+        addToast(`Orden de Mesa #${selectedTable} actualizada`, 'success');
       }
       // CASO 2: La mesa YA está ocupada con una orden activa -> Anexamos los nuevos platos a la MISMA orden activa
       else if (primaryActiveOrder) {
@@ -798,7 +798,7 @@ export default function ComanderoView() {
           addedItemsOnly: itemsPayload
         };
 
-        addToast(`Platos anexados a la Orden #${String(primaryActiveOrder.id).slice(-4).toUpperCase()} de Mesa #${selectedTable}`, 'success');
+        addToast(`Productos anexados a Mesa #${selectedTable}`, 'success');
       }
       // CASO 3: La mesa está libre -> Creamos la orden única de la mesa
       else {
@@ -834,7 +834,7 @@ export default function ComanderoView() {
 
         finalOrderId = orderId;
         finalOrderObj = { ...payload, id: orderId, created_at: new Date().toISOString() };
-        addToast(`Comanda de Mesa #${selectedTable} enviada a Cocina`, 'success');
+        addToast(`Comanda Mesa #${selectedTable} enviada`, 'success');
       }
 
       // Notificar sonoramente
@@ -888,7 +888,7 @@ export default function ComanderoView() {
     const target = orderToPrint || lastSentOrder;
     if (!target) return;
     if (!isWebBluetoothSupported()) {
-      addToast('Abriendo ventana de impresión del sistema (puedes elegir tu impresora Bluetooth vinculada)...', 'info');
+      addToast('Abriendo impresión...', 'info');
       handlePrintTicket(target, mode);
       return;
     }
@@ -900,7 +900,7 @@ export default function ComanderoView() {
       addToast(`${mode === 'kitchen' ? 'Comanda de cocina' : 'Cuenta'} enviada a "${printerName}"`, 'success');
     } catch (err) {
       if (err.name !== 'NotFoundError') {
-        addToast(err.message || 'No se pudo imprimir por Bluetooth', 'error');
+        addToast(err.message || 'Error al imprimir', 'error');
       }
     } finally {
       setPrintingBtOrderId(null);

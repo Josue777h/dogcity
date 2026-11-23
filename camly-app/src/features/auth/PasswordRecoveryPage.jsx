@@ -81,7 +81,7 @@ export default function PasswordRecoveryPage() {
                   onChange={event => { setEmail(event.target.value); setError(''); }}
                   placeholder="tu@correo.com"
                   iconLeft={<Mail size={16} />}
-                  className="min-h-11 pl-5"
+                  className="min-h-11"
                 />
                 {error && <p role="alert" className="rounded-xl bg-rose-50 px-3.5 py-3 text-sm leading-5 text-rose-700">{error}</p>}
                 <Button type="submit" fullWidth loading={loading} className="min-h-11">

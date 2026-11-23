@@ -68,13 +68,13 @@ function MerchantCancelModal({ isOpen, order, onClose, onConfirmed }) {
     e.preventDefault();
     const finalReason = selectedReason === 'Otro (especificar)' ? customReason.trim() : selectedReason;
     if (!finalReason) {
-      addToast('Por favor especifica el motivo de la cancelación', 'warning');
+      addToast('Indica el motivo', 'warning');
       return;
     }
     setLoading(true);
     try {
       await OrderService.merchantCancelOrder(order.id, finalReason);
-      addToast('Pedido cancelado correctamente', 'info');
+      addToast('Pedido cancelado', 'info');
       onConfirmed();
       onClose();
     } catch (err) {
@@ -544,7 +544,7 @@ function DeliveryConfirmPanel({ order, businessName, onConfirmed }) {
       const waUrl = `https://wa.me/${customerPhone}?text=${encodeURIComponent(whatsappText)}`;
       if (whatsappTab) whatsappTab.location.href = waUrl;
 
-      addToast('Cotización fijada y notificada por WhatsApp', 'success');
+      addToast('Cotización enviada', 'success');
       onConfirmed();
     } catch (err) {
       console.error(err);
@@ -667,7 +667,7 @@ export default function OrdersView(props) {
 
   const handlePrintBluetooth = async (order, mode = 'bill') => {
     if (!isWebBluetoothSupported()) {
-      addToast('Abriendo ventana de impresión del sistema (puedes elegir tu impresora Bluetooth vinculada)...', 'info');
+      addToast('Abriendo impresión...', 'info');
       printThermalReceipt(order, business, { mode });
       return;
     }
@@ -680,7 +680,7 @@ export default function OrdersView(props) {
     } catch (err) {
       console.warn('Bluetooth print error:', err);
       if (err.name !== 'NotFoundError') {
-        addToast(err.message || 'No se pudo conectar a la impresora Bluetooth', 'error');
+        addToast(err.message || 'Error de impresora Bluetooth', 'error');
       }
     } finally {
       setPrintingBluetoothId(null);
@@ -866,7 +866,7 @@ export default function OrdersView(props) {
   const handleNotifyCustomerDispatch = (order) => {
     const customerPhone = (order.telefono || '').replace(/\D/g, '');
     if (!customerPhone) {
-      addToast('El pedido no tiene teléfono registrado', 'warning');
+      addToast('Pedido sin teléfono', 'warning');
       return;
     }
     const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://negu.pro';
@@ -901,7 +901,7 @@ export default function OrdersView(props) {
 
     const currentRawStatus = String(targetOrder.estado || targetOrder.status || '').toLowerCase();
     if (currentRawStatus === 'cancelado') {
-      addToast('Esta orden fue cancelada y no admite cambios de estado', 'warning');
+      addToast('Orden cancelada', 'warning');
       return;
     }
 
@@ -982,10 +982,10 @@ export default function OrdersView(props) {
       }
 
       onUpdate();
-      addToast(isRevert ? 'Estado corregido correctamente' : 'Estado del pedido actualizado', 'success');
+      addToast(isRevert ? 'Estado corregido' : 'Estado actualizado', 'success');
     } catch (err) {
       console.error(err);
-      addToast(err?.message || 'No se pudo actualizar el estado del pedido', 'error');
+      addToast(err?.message || 'Error al actualizar estado', 'error');
     } finally {
       setUpdatingStatusOrderId(null);
     }
@@ -995,13 +995,13 @@ export default function OrdersView(props) {
     if (!orderToDelete) return;
     try {
       await deleteOrder(orderToDelete.id);
-      addToast('Pedido eliminado correctamente', 'success');
+      addToast('Pedido eliminado', 'success');
       setOrderToDelete(null);
       onUpdate();
       return true;
     } catch (err) {
       console.error(err);
-      addToast(err?.message || 'No se pudo eliminar el pedido. Revisa los permisos de Supabase.', 'error');
+      addToast(err?.message || 'Error al eliminar pedido', 'error');
       return false;
     }
   };

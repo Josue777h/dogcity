@@ -37,17 +37,17 @@ export default function ToastContainer() {
         return (
           <div
             key={toast.id}
-            className={`pointer-events-auto inline-flex max-w-[88vw] sm:max-w-xs items-center gap-2 px-3 py-1.5 rounded-full border shadow-md backdrop-blur-xs animate-[toast-in_0.2s_ease] ${cfg.style}`}
+            className={`pointer-events-auto inline-flex max-w-[92vw] sm:max-w-sm items-center gap-2 px-3.5 py-2 rounded-full border shadow-lg shadow-slate-950/15 backdrop-blur-md animate-[toast-in_0.2s_ease] ${cfg.style}`}
           >
-            <Icon size={13} className={`shrink-0 ${cfg.iconColor}`} />
-            <span className="truncate text-xs font-medium leading-tight">{toast.message}</span>
+            <Icon size={14} strokeWidth={2.2} className={`shrink-0 ${cfg.iconColor}`} />
+            <span className="truncate text-xs font-medium leading-snug">{toast.message}</span>
             <button
               type="button"
               onClick={() => removeToast(toast.id)}
               aria-label="Cerrar aviso"
               className="shrink-0 opacity-60 hover:opacity-100 transition-opacity ml-0.5 cursor-pointer"
             >
-              <X size={12} />
+              <X size={13} />
             </button>
           </div>
         );

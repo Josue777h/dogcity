@@ -155,7 +155,7 @@ export default function EmailVerificationPage() {
           writeStoredPendingRegistration(null);
           setSession(res.session);
           setBusiness(res.negocio);
-          addToast('¡Cuenta y negocio creados con éxito!', 'success');
+          addToast('Tienda creada', 'success');
           navigate('/bienvenido', { replace: true });
           return;
         }
@@ -172,7 +172,7 @@ export default function EmailVerificationPage() {
           setSentMessage(
             `Actualizamos tu correo a ${normalizedInputEmail} y te enviamos un nuevo enlace de confirmación. Revisa también Spam o Promociones.`
           );
-          addToast('Correo actualizado y enlace enviado', 'success');
+          addToast('Enlace enviado al correo', 'success');
         }
         return;
       }

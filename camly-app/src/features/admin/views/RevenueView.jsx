@@ -47,7 +47,7 @@ export default function RevenueView(props) {
     if (bizId) {
       localStorage.setItem(hiddenKey, JSON.stringify(updated));
     }
-    addToast('Registro ocultado de la tabla', 'info');
+    addToast('Registro ocultado', 'info');
   };
 
   const handleResetFilters = () => {
@@ -117,7 +117,7 @@ export default function RevenueView(props) {
     }
     const ok = exportOrdersToCSV(filteredOrders, business?.nombre_visible);
     if (ok) {
-      addToast('Reporte detallado de ventas exportado con éxito', 'success');
+      addToast('Reporte exportado', 'success');
     }
   };
 

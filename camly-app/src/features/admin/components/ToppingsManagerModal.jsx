@@ -159,12 +159,12 @@ export default function ToppingsManagerModal({ isOpen, onClose, opciones = [], o
 
   const handleSaveSingleGroupToLibrary = (group) => {
     if (!group.titulo?.trim()) {
-      addToast('Escribe un nombre para este grupo antes de guardarlo', 'warning');
+      addToast('Nombra el grupo primero', 'warning');
       return;
     }
     const validOptions = (group.opciones || []).filter(o => o.nombre && o.nombre.trim());
     if (validOptions.length === 0) {
-      addToast('Agrega al menos una opción con nombre en este grupo', 'warning');
+      addToast('Agrega al menos una opción', 'warning');
       return;
     }
 

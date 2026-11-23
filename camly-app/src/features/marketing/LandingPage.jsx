@@ -9,6 +9,7 @@ import storePreview from '../../assets/ejemplo.jpeg';
 import SEO from '../../components/common/SEO';
 import MarketingNavbar from './components/MarketingNavbar';
 import MarketingFooter from './components/MarketingFooter';
+import InteractiveHeroCanvas from './components/InteractiveHeroCanvas';
 import { Reveal, CountUp } from './components/MarketingUI';
 import { useInView } from './components/marketingMotion';
 
@@ -116,35 +117,25 @@ function ChatDemo() {
   );
   return (
     <div ref={ref} className="space-y-2.5">
-      {bubble(100, 'rounded-bl-md bg-white text-slate-700', <>Hola, quiero hacer un <strong>pedido desde el catálogo</strong></>)}
-      {bubble(900, 'ml-auto rounded-br-md bg-emerald-500 text-white', (
+      {bubble(100, 'rounded-bl-md bg-white text-slate-800', <>Hola buenas tardes, ¿me pasas el catálogo?</>)}
+      {bubble(850, 'ml-auto rounded-br-md bg-emerald-600 text-white', <>¡Hola! Claro, aquí puedes ver productos y pedir 👉 <span className="underline font-semibold">negu.pro/tienda</span></>)}
+      {bubble(1700, 'rounded-bl-md bg-white text-slate-800', (
         <>
-          <p className="font-bold">Pedido #1082 · Tienda Central</p>
-          <p className="mt-0.5 opacity-95">2 × Producto destacado — $48.000</p>
-          <p className="opacity-90">◦ Presentación: Grande · Opción elegida</p>
+          <p className="font-bold text-slate-950">Pedido #1082 · Tienda Central</p>
+          <p className="mt-0.5 text-slate-700">2 × Producto destacado — $48.000</p>
+          <p className="text-slate-500 text-[12px]">◦ Presentación: Grande · Opción elegida</p>
+          <p className="mt-1 text-[12px] font-medium text-emerald-700"><MapPin size={11} className="mr-1 inline" />Ubicación enviada · Transferencia</p>
         </>
       ))}
-      {bubble(1700, 'ml-auto rounded-br-md bg-emerald-500 text-white', <><MapPin size={12} className="mr-1 inline" />Ubicación enviada · Pago por Nequi</>)}
-      {bubble(2500, 'rounded-bl-md bg-white text-slate-700', <>¡Listo! Ya estamos preparando tu pedido ✅</>)}
+      {bubble(2600, 'ml-auto rounded-br-md bg-emerald-600 text-white', <>¡Recibido! Ya estamos preparando tu pedido ✅</>)}
     </div>
   );
 }
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState(0);
-  const [storeName, setStoreName] = useState('');
   const [audience, setAudience] = useState('cliente');
 
-  const storeSlug = storeName
-    .trim()
-    .toLocaleLowerCase('es-CO')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 35);
-
-  const registrationUrl = storeSlug ? `/registro?tienda=${encodeURIComponent(storeSlug)}` : '/registro';
   const activeAudience = AUDIENCE[audience];
 
   return (
@@ -158,24 +149,20 @@ export default function LandingPage() {
       <MarketingNavbar />
 
       {/* ═══════════ HERO ═══════════ */}
-      <section className="relative isolate overflow-hidden bg-slate-950 text-white">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-          <div className="mk-blob absolute -left-32 -top-32 h-[32rem] w-[32rem] rounded-full bg-sky-500/30 blur-3xl" />
-          <div className="mk-blob absolute -right-40 top-10 h-[28rem] w-[28rem] rounded-full bg-emerald-400/20 blur-3xl [animation-delay:-6s]" />
-          <div className="mk-blob absolute bottom-0 left-1/3 h-[24rem] w-[24rem] rounded-full bg-amber-400/15 blur-3xl [animation-delay:-11s]" />
-          <div className="mk-grid-bg absolute inset-0 [mask-image:radial-gradient(ellipse_at_top,black,transparent_75%)]" />
-        </div>
+      <section className="relative isolate overflow-hidden bg-[#070B14] text-white">
+        <InteractiveHeroCanvas />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-28 bg-gradient-to-t from-[#070B14] to-transparent" />
 
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-4 pb-16 pt-12 sm:px-6 sm:pt-16 lg:grid-cols-12 lg:gap-8 lg:pb-24 lg:pt-20">
           <div className="space-y-6 lg:col-span-7">
-            <span className="mk-pop inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-slate-200 backdrop-blur">
-              <Sparkles size={13} className="text-amber-300" />
-              Catálogo digital y pedidos por WhatsApp para cualquier negocio
-            </span>
+            <p className="mk-pop inline-flex items-center gap-2 text-xs font-semibold tracking-wide text-slate-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-sky-400" aria-hidden="true" />
+              Catálogo digital y pedidos por WhatsApp
+            </p>
 
             <h1 className="mk-title mk-pop text-[2.5rem] leading-[1.03] sm:text-6xl lg:text-[4.25rem] [--mk-delay:80ms]">
               Tu catálogo en línea,<br />
-              <span className="mk-text-gradient">pedidos directo</span><br />
+              <span className="text-sky-400">pedidos directo</span><br />
               a tu WhatsApp.
             </h1>
 
@@ -183,41 +170,30 @@ export default function LandingPage() {
               Tus clientes eligen productos, tallas, sabores o adicionales desde el celular, y tú recibes el pedido ordenado con ubicación y forma de pago. Sin comisiones por venta.
             </p>
 
-            <div className="mk-pop max-w-xl space-y-3 pt-1 [--mk-delay:240ms]">
-              <div className="flex flex-col gap-2 rounded-3xl border border-white/10 bg-white/[0.07] p-2 backdrop-blur sm:flex-row sm:items-center sm:rounded-full">
-                <label htmlFor="store-slug" className="sr-only">Nombre de tu negocio</label>
-                <div className="flex min-w-0 flex-1 items-center rounded-full bg-white px-4 focus-within:ring-2 focus-within:ring-cyan-300">
-                  <span className="shrink-0 py-3 text-sm font-medium text-slate-400">negu.pro/</span>
-                  <input
-                    id="store-slug"
-                    type="text"
-                    value={storeName}
-                    onChange={e => setStoreName(e.target.value)}
-                    placeholder="mi-negocio"
-                    className="min-w-0 flex-1 bg-transparent px-1 py-3 text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400"
-                  />
-                </div>
+            <div className="mk-pop space-y-3.5 pt-2 [--mk-delay:240ms]">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Link
-                  to={registrationUrl}
-                  className="group inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-cyan-400 px-6 py-3.5 text-sm font-bold text-slate-950 shadow-[0_8px_28px_-6px_rgba(34,211,238,0.6)] transition-all hover:bg-cyan-300 active:scale-95"
+                  to="/registro"
+                  className="group inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-bold text-slate-950 transition-all hover:bg-slate-100 active:scale-[0.98]"
                 >
-                  <span>Crear tienda gratis</span>
+                  <span>Crear mi catálogo</span>
                   <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                 </Link>
+                <a
+                  href="#como-funciona"
+                  className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.04] px-6 py-3.5 text-sm font-semibold text-slate-100 backdrop-blur-sm transition-colors hover:border-white/30 hover:bg-white/[0.08]"
+                >
+                  Cómo funciona
+                </a>
               </div>
-
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-2 text-xs text-slate-400">
-                <span className="inline-flex items-center gap-1"><Check size={13} className="text-emerald-400" /> 7 días gratis</span>
-                <span className="inline-flex items-center gap-1"><Check size={13} className="text-emerald-400" /> Sin tarjeta</span>
-                <span className="inline-flex items-center gap-1"><Check size={13} className="text-emerald-400" /> 0% comisiones</span>
-                <a href="#como-funciona" className="font-semibold text-slate-200 underline underline-offset-4 hover:text-white">Ver cómo funciona</a>
-              </div>
+              <p className="text-xs text-slate-400">
+                Empiezas gratis por 7 días. Sin tarjeta ni comisiones por venta.
+              </p>
             </div>
           </div>
 
           {/* Celular con tarjetas flotantes */}
           <div className="mk-pop relative flex justify-center lg:col-span-5 [--mk-delay:200ms]">
-            <div aria-hidden="true" className="absolute inset-x-6 top-10 h-[75%] rounded-full bg-gradient-to-b from-sky-400/40 to-emerald-400/20 blur-3xl" />
             <div className="mk-float-alt relative w-full max-w-[250px] sm:max-w-[290px]">
               <div className="rounded-[2.4rem] border border-white/15 bg-slate-900 p-2.5 shadow-2xl shadow-sky-900/50 ring-1 ring-white/10">
                 <div className="aspect-[9/16] overflow-hidden rounded-[1.9rem] bg-white">
@@ -304,12 +280,16 @@ export default function LandingPage() {
               const StepIcon = step.icon;
               return (
                 <Reveal as="li" key={step.num} delay={idx * 120} className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-7 transition-all duration-300 hover:-translate-y-1.5 hover:border-sky-300 hover:shadow-2xl hover:shadow-sky-900/10">
-                  <span aria-hidden="true" className="mk-title absolute -right-2 -top-4 text-[7rem] leading-none text-slate-100 transition-colors duration-300 group-hover:text-sky-100">{step.num}</span>
-                  <div className={`relative flex h-14 w-14 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110 ${step.tone}`}>
-                    <StepIcon size={26} />
+                  <div className="flex items-start justify-between gap-4">
+                    <div className={`flex h-14 w-14 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110 ${step.tone}`}>
+                      <StepIcon size={26} />
+                    </div>
+                    <span className="mk-title select-none text-3xl leading-none tabular-nums text-slate-300 transition-colors duration-300 group-hover:text-sky-600">
+                      {step.num}
+                    </span>
                   </div>
-                  <h3 className="mk-title relative mt-6 text-xl text-slate-950">{step.title}</h3>
-                  <p className="relative mt-2 text-sm leading-relaxed text-slate-600">{step.text}</p>
+                  <h3 className="mk-title mt-6 text-xl text-slate-950">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.text}</p>
                 </Reveal>
               );
             })}
@@ -420,19 +400,16 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════ PRECIO ═══════════ */}
-      <section id="precios" className="relative isolate overflow-hidden bg-slate-950 py-16 text-white sm:py-24">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-          <div className="mk-blob absolute left-1/2 top-0 h-96 w-[40rem] -translate-x-1/2 rounded-full bg-sky-500/25 blur-3xl" />
-          <div className="mk-grid-bg absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
-        </div>
+      <section id="precios" className="relative isolate overflow-hidden bg-[#070B14] py-16 text-white sm:py-24">
+        <InteractiveHeroCanvas />
         <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <Reveal className="mx-auto mb-10 max-w-2xl space-y-3 text-center">
-            <span className="inline-flex rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-bold text-cyan-300">Plan único</span>
+            <span className="inline-flex rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-bold text-sky-300">Plan único</span>
             <h2 className="mk-title text-3xl sm:text-5xl">Una sola tarifa, sin porcentajes por pedido</h2>
           </Reveal>
 
           <Reveal delay={100} className="mx-auto max-w-xl rounded-[2rem] bg-gradient-to-b from-white/15 to-white/[0.04] p-px">
-            <div className="rounded-[calc(2rem-1px)] bg-slate-900/95 p-6 backdrop-blur sm:p-9">
+            <div className="rounded-[calc(2rem-1px)] bg-slate-900/90 p-6 backdrop-blur sm:p-9">
               <div className="flex flex-col justify-between gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end">
                 <div>
                   <h3 className="mk-title text-2xl">Plan Completo</h3>
@@ -447,7 +424,7 @@ export default function LandingPage() {
               <ul className="mt-6 grid grid-cols-1 gap-3 text-sm text-slate-200 sm:grid-cols-2">
                 {PLAN_FEATURES.map(item => (
                   <li key={item} className="flex items-start gap-2.5">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-cyan-400/20 text-cyan-300"><Check size={12} strokeWidth={3} /></span>
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-400/20 text-sky-300"><Check size={12} strokeWidth={3} /></span>
                     <span>{item}</span>
                   </li>
                 ))}
@@ -456,7 +433,7 @@ export default function LandingPage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   to="/registro"
-                  className="group inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-cyan-400 px-6 py-3.5 text-sm font-bold text-slate-950 shadow-[0_8px_28px_-6px_rgba(34,211,238,0.55)] transition-all hover:-translate-y-0.5 hover:bg-cyan-300 active:scale-95"
+                  className="group inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-slate-950 transition-all hover:bg-slate-100 active:scale-[0.98]"
                 >
                   <span>Empezar 7 días gratis</span>
                   <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
@@ -520,19 +497,16 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════ CIERRE ═══════════ */}
-      <section className="relative isolate overflow-hidden bg-gradient-to-br from-sky-600 via-sky-700 to-cyan-700 py-16 text-white sm:py-24">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-          <div className="mk-blob absolute -left-20 top-0 h-72 w-72 rounded-full bg-cyan-300/30 blur-3xl" />
-          <div className="mk-blob absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-emerald-300/25 blur-3xl [animation-delay:-8s]" />
-        </div>
+      <section className="relative isolate overflow-hidden bg-[#070B14] py-16 text-white sm:py-24">
+        <InteractiveHeroCanvas />
         <Reveal className="mx-auto flex max-w-4xl flex-col items-center gap-6 px-4 text-center sm:px-6">
           <h2 className="mk-title text-3xl sm:text-5xl">Pon tu menú en línea hoy mismo</h2>
-          <p className="max-w-xl text-sm text-sky-100 sm:text-base">Crea tu cuenta en pocos minutos y pruébalo con tu negocio real durante 7 días sin costo.</p>
+          <p className="max-w-xl text-sm text-slate-300 sm:text-base">Crea tu cuenta en pocos minutos y pruébalo con tu negocio real durante 7 días sin costo.</p>
           <Link
             to="/registro"
-            className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-sky-800 shadow-2xl shadow-sky-950/30 transition-all hover:-translate-y-0.5 hover:bg-sky-50 active:scale-95 sm:w-auto sm:text-base"
+            className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-slate-950 transition-all hover:bg-slate-100 active:scale-[0.98] sm:w-auto sm:text-base"
           >
-            <span>Crear mi tienda gratis</span>
+            <span>Crear mi catálogo</span>
             <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
           </Link>
         </Reveal>

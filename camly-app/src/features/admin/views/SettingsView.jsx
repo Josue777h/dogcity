@@ -337,14 +337,14 @@ export default function SettingsView(props) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    addToast('¡Código QR descargado con éxito!', 'success');
+    addToast('QR descargado', 'success');
   };
 
   const handleCopyQrUrl = async () => {
     const url = getFullQrUrl();
     try {
       await navigator.clipboard.writeText(url);
-      addToast('¡Enlace copiado al portapapeles!', 'success');
+      addToast('Enlace copiado', 'success');
     } catch {
       addToast('No se pudo copiar el enlace', 'error');
     }
@@ -353,7 +353,7 @@ export default function SettingsView(props) {
   const handlePrintTableStand = () => {
     const printWindow = window.open('', '_blank', 'width=650,height=800');
     if (!printWindow) {
-      addToast('Permite ventanas emergentes para imprimir el hablador.', 'warning');
+      addToast('Permite ventanas emergentes', 'warning');
       return;
     }
     const storeName = formData.nombre_visible || business?.nombre || (kitchenEnabled ? 'Menú Digital' : 'Catálogo Digital');
@@ -443,16 +443,16 @@ export default function SettingsView(props) {
   const handleSaveWaiterPin = () => {
     const cleanPin = waiterPinDraft.replace(/\D/g, '').slice(0, 4);
     if (cleanPin.length !== 4) {
-      addToast('El PIN de mesero debe tener exactamente 4 dígitos numéricos.', 'warning');
+      addToast('El PIN debe tener 4 dígitos', 'warning');
       return;
     }
     try {
       localStorage.setItem(waiterPinKey, cleanPin);
       setPinRevision(r => r + 1);
       setWaiterPinDraft('');
-      addToast('PIN de Modo Mesero guardado en este dispositivo.', 'success');
+      addToast('PIN guardado', 'success');
     } catch {
-      addToast('No se pudo guardar el PIN en este navegador.', 'error');
+      addToast('Error al guardar PIN', 'error');
     }
   };
 
@@ -462,15 +462,15 @@ export default function SettingsView(props) {
       localStorage.removeItem('negu_waiter_lock_active');
       setPinRevision(r => r + 1);
       setWaiterPinDraft('');
-      addToast('PIN de Modo Mesero eliminado.', 'info');
+      addToast('PIN eliminado', 'info');
     } catch {
-      addToast('No se pudo eliminar el PIN.', 'error');
+      addToast('Error al eliminar PIN', 'error');
     }
   };
 
   const handleUseCurrentGps = () => {
     if (!navigator.geolocation) {
-      addToast('GPS no soportado en este navegador', 'error');
+      addToast('GPS no disponible', 'error');
       return;
     }
     setIsLocatingGps(true);
@@ -483,12 +483,12 @@ export default function SettingsView(props) {
           mapInstance.current.setView([lat, lng], 17);
           markerRef.current.setLatLng([lat, lng]);
         }
-        addToast('Ubicación fijada con éxito por GPS', 'success');
+        addToast('Ubicación fijada', 'success');
         setIsLocatingGps(false);
       },
       (err) => {
         console.warn('GPS error:', err);
-        addToast('No se pudo acceder al GPS. Asegúrate de dar permisos.', 'warning');
+        addToast('Activa permisos de GPS', 'warning');
         setIsLocatingGps(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -512,9 +512,9 @@ export default function SettingsView(props) {
       });
 
       if (nextManualState) {
-        addToast('¡Tienda reanudada! El catálogo ahora acepta pedidos.', 'success');
+        addToast('Tienda abierta', 'success');
       } else {
-        addToast('Tienda pausada. El catálogo ahora está en modo solo lectura.', 'warning');
+        addToast('Tienda pausada', 'warning');
       }
 
       // Sincronizar en tiempo real el store global
@@ -525,7 +525,7 @@ export default function SettingsView(props) {
       console.error('Error toggling store pause:', err);
       // Revertir en caso de falla
       setScheduleData(prev => ({ ...prev, abierto_manual: !nextManualState }));
-      addToast('Error al actualizar el estado de la tienda', 'error');
+      addToast('Error al cambiar estado', 'error');
     } finally {
       setIsUpdatingPause(false);
     }
@@ -587,7 +587,7 @@ export default function SettingsView(props) {
 
       await updateBusiness(business.id, payload);
       
-      addToast('Diseño y configuración guardados', 'success');
+      addToast('Cambios guardados', 'success');
       hasUnsavedChangesRef.current = false;
       setSavedSnapshot(currentSnapshot);
       onUpdate();
@@ -604,13 +604,13 @@ export default function SettingsView(props) {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      addToast('Selecciona un archivo de imagen para el logo', 'error');
+      addToast('Imagen inválida', 'error');
       e.target.value = '';
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      addToast('El logo no debe pesar más de 10MB', 'error');
+      addToast('Máximo 10MB para el logo', 'error');
       e.target.value = '';
       return;
     }
@@ -620,7 +620,7 @@ export default function SettingsView(props) {
       const path = `logos/${business.id}-${Date.now()}.webp`;
       const url = await uploadImage(file, path);
       setFormData(prev => ({ ...prev, logo_url: url }));
-      addToast('Logo optimizado en WebP y actualizado', 'success');
+      addToast('Logo actualizado', 'success');
     } catch (err) {
       console.error(err);
       addToast(err?.message || 'Error al subir el logo', 'error');
@@ -2198,7 +2198,7 @@ export default function SettingsView(props) {
                         });
                         return { ...prev, dias: newDias };
                       });
-                      addToast('Horario del Lunes replicado a toda la semana', 'success');
+                      addToast('Horario copiado a la semana', 'success');
                     }}
                     className="px-2.5 py-1 rounded-lg text-xs text-brand bg-brand/10 hover:bg-brand/15 border border-brand/20 font-semibold transition-colors cursor-pointer"
                   >

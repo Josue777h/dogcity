@@ -109,7 +109,7 @@ export default function DriversView(props) {
       fetchDrivers();
     } catch (err) {
       console.error(err);
-      addToast('No se pudo actualizar el estado del repartidor', 'error');
+      addToast('Error al actualizar estado', 'error');
     }
   };
 
@@ -124,7 +124,7 @@ export default function DriversView(props) {
       const { error } = await query;
       if (error) throw error;
       fetchDrivers();
-      addToast('Eliminado correctamente', 'info');
+      addToast('Repartidor eliminado', 'info');
     } catch (err) {
       console.error(err);
       addToast('Error al eliminar repartidor', 'error');

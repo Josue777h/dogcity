@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import {
   ShoppingCart, Search, Store, Clock, X, ChevronRight,
-  Phone, MessageCircle, Bell, Utensils, Truck, CreditCard
+  Bell, Utensils, Truck, CreditCard
 } from 'lucide-react';
 import { useBusinessStore, useCartStore, useToastStore } from '../../stores';
 import { fetchBusiness, fetchProducts, fetchSubscription, fetchCategories, emitTableCallEvent, subscribeToTableCalls } from '../../lib/supabase';
@@ -66,7 +66,7 @@ export default function StorePage() {
 
     emitTableCallEvent(bid, eventPayload);
 
-    addToast(`Mesero avisado para la Mesa #${mesaParam}. En breve se acercarán a atenderte.`, 'success');
+    addToast(`Mesero avisado (Mesa #${mesaParam})`, 'success');
   };
 
   useEffect(() => {
@@ -87,7 +87,7 @@ export default function StorePage() {
         } catch (err) {
           console.debug('localStorage no disponible:', err);
         }
-        addToast(`Mesa #${mesaParam} atendida por el mesero`, 'info');
+        addToast(`Mesa #${mesaParam} atendida`, 'info');
       }
     };
 
@@ -129,7 +129,7 @@ export default function StorePage() {
       } catch (err) {
         console.error('Store load error:', err);
         setError(err.message);
-        addToast('No pudimos conectar con la tienda', 'error');
+        addToast('Error de conexión', 'error');
       } finally {
         setLoading(false);
       }
@@ -194,26 +194,21 @@ export default function StorePage() {
     return minFee === 0 ? 'Envío por distancia' : `Envío desde ${formatMoney(minFee)}`;
   }, [business?.tipo_domicilio, business?.precio_domicilio, business?.domicilio_minimo]);
 
+  const [infoExpanded, setInfoExpanded] = useState(false);
+
   const metodosPago = business?.metodos_pago;
-  const pagoBanco = business?.pago_banco;
   const paymentSummary = useMemo(() => {
     const methods = Array.isArray(metodosPago) && metodosPago.length > 0
       ? metodosPago
       : ['efectivo', 'transferencia'];
-    const bankLabel = pagoBanco?.trim() || 'Transferencia';
     const labels = methods.map(m => {
       if (m === 'efectivo') return 'Efectivo';
-      if (m === 'transferencia') return bankLabel;
+      if (m === 'transferencia') return 'Transferencia';
       if (m === 'datafono') return 'Datáfono';
       return m;
     });
     return [...new Set(labels)].join(' · ');
-  }, [metodosPago, pagoBanco]);
-
-  const rawContactPhone = String(business?.whatsapp_contacto || business?.telefono || '').replace(/\D/g, '');
-  const formattedWhatsAppPhone = rawContactPhone.length === 10 && rawContactPhone.startsWith('3')
-    ? `57${rawContactPhone}`
-    : rawContactPhone;
+  }, [metodosPago]);
 
   const brandColor = business?.theme_color || '#0284C7';
 
@@ -475,58 +470,86 @@ export default function StorePage() {
         </nav>
       </header>
 
-      {/* Franja informativa: horario, domicilio, recogida y métodos de pago */}
+      {/* Franja informativa adaptable: compacta desplegable en móvil, inline completa en PC */}
       {!mesaParam && (
         <section
           aria-label="Información de envío, recogida y pagos"
           className="border-b border-[#e7e3db] bg-white/95"
         >
           <div className="fluid-container py-2">
-            <div className="flex flex-nowrap sm:flex-wrap items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar text-xs">
-              <span
-                className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium ${
-                  scheduleStatus.isOpen
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                    : 'border-amber-200 bg-amber-50 text-amber-900'
-                }`}
-              >
-                <Clock size={12} className="shrink-0" />
-                <span>{scheduleStatus.message}</span>
-              </span>
+            {/* Móvil: compacta con desplegable para evitar cortes */}
+            <div className="md:hidden">
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-semibold text-[11px] ${
+                      scheduleStatus.isOpen
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                        : 'border-amber-200 bg-amber-50 text-amber-900'
+                    }`}
+                  >
+                    <Clock size={11} className="shrink-0" />
+                    <span>{scheduleStatus.message}</span>
+                  </span>
+                </div>
 
-              <span
-                style={{
-                  backgroundColor: secondaryColor,
-                  borderColor: `color-mix(in srgb, ${brandColor} 20%, #cbd5e1)`,
-                }}
-                className="shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium text-slate-800"
-              >
-                <Truck size={12} className="shrink-0" style={{ color: brandColor }} />
-                <span>{deliverySummary}</span>
-              </span>
+                <button
+                  type="button"
+                  onClick={() => setInfoExpanded(prev => !prev)}
+                  aria-expanded={infoExpanded}
+                  className="shrink-0 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
+                >
+                  <span>{infoExpanded ? 'Ocultar info' : 'Envío y pagos'}</span>
+                  <span className={`inline-block transition-transform duration-200 ${infoExpanded ? 'rotate-180' : ''}`}>▾</span>
+                </button>
+              </div>
 
-              <span
-                style={{
-                  backgroundColor: secondaryColor,
-                  borderColor: `color-mix(in srgb, ${brandColor} 20%, #cbd5e1)`,
-                }}
-                className="shrink-0 inline-flex max-w-[240px] sm:max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium text-slate-800"
-                title={business.direccion ? `Recogida en tienda: ${business.direccion}` : 'Recogida en tienda disponible'}
-              >
-                <Store size={12} className="shrink-0 text-slate-500" />
-                <span className="truncate">
-                  Recogida en tienda{business.direccion ? ` · ${business.direccion}` : ''}
+              {infoExpanded && (
+                <div className="mt-2 pt-2 border-t border-slate-100 grid grid-cols-1 gap-2 text-xs animate-fade-in">
+                  <div className="flex items-start gap-2 text-slate-700">
+                    <Truck size={13} className="shrink-0 mt-0.5" style={{ color: brandColor }} />
+                    <span><strong className="font-semibold text-slate-900">Domicilio:</strong> {deliverySummary}</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-slate-700">
+                    <Store size={13} className="shrink-0 mt-0.5 text-slate-500" />
+                    <span className="break-words">
+                      <strong className="font-semibold text-slate-900">Recogida:</strong> {business.direccion || 'Disponible en tienda'}
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2 text-slate-700">
+                    <CreditCard size={13} className="shrink-0 mt-0.5 text-slate-500" />
+                    <span><strong className="font-semibold text-slate-900">Pagos:</strong> {paymentSummary}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* PC / Tablet: toda la información visible en una sola línea limpia */}
+            <div className="hidden md:flex items-center justify-between gap-4 text-xs text-slate-600">
+              <div className="flex items-center gap-3 min-w-0 flex-wrap">
+                <span
+                  className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-semibold text-[11px] ${
+                    scheduleStatus.isOpen
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                      : 'border-amber-200 bg-amber-50 text-amber-900'
+                  }`}
+                >
+                  <Clock size={11} className="shrink-0" />
+                  <span>{scheduleStatus.message}</span>
                 </span>
-              </span>
-
-              <span
-                style={{
-                  backgroundColor: secondaryColor,
-                  borderColor: `color-mix(in srgb, ${brandColor} 20%, #cbd5e1)`,
-                }}
-                className="shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium text-slate-800"
-              >
-                <CreditCard size={12} className="shrink-0 text-slate-500" />
+                <span className="inline-flex items-center gap-1.5 shrink-0">
+                  <Truck size={13} style={{ color: brandColor }} />
+                  <span>{deliverySummary}</span>
+                </span>
+                {business.direccion && (
+                  <span className="inline-flex items-center gap-1.5 min-w-0">
+                    <Store size={13} className="text-slate-400 shrink-0" />
+                    <span className="truncate max-w-[260px] lg:max-w-xs">{business.direccion}</span>
+                  </span>
+                )}
+              </div>
+              <span className="inline-flex items-center gap-1.5 shrink-0 text-slate-700 font-medium">
+                <CreditCard size={13} className="text-slate-400 shrink-0" />
                 <span>{paymentSummary}</span>
               </span>
             </div>
@@ -597,7 +620,7 @@ export default function StorePage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {visible.map((p) => (
                 <ProductCard
                   key={p.id}
@@ -607,27 +630,6 @@ export default function StorePage() {
                   isTableMode={Boolean(mesaParam)}
                 />
               ))}
-            </div>
-          )}
-
-          {/* Desktop help strip */}
-          {!mesaParam && (
-            <div className="mt-6 hidden items-center justify-between gap-4 rounded-xl border border-[#e4e1da] bg-white px-4 py-3 sm:flex">
-              <div className="flex items-center gap-2.5 text-xs text-slate-600">
-                <MessageCircle size={15} className="text-emerald-600 shrink-0" />
-                <span>Pedido directo a la tienda · Entrega o recogida según disponibilidad</span>
-              </div>
-              {formattedWhatsAppPhone && (
-                <a
-                  href={`https://wa.me/${formattedWhatsAppPhone}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
-                >
-                  <Phone size={13} />
-                  Preguntar
-                </a>
-              )}
             </div>
           )}
         </div>

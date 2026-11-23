@@ -85,7 +85,7 @@ export default function AdminPage() {
     setTimeout(() => {
       document.title = prevTitle;
     }, 8000);
-    addToast('¡Tienes un nuevo pedido entrante!', 'success');
+    addToast('Nuevo pedido recibido', 'success');
   };
 
   const lastCallNotifiedRef = useState({})[0];
@@ -108,7 +108,7 @@ export default function AdminPage() {
     setTimeout(() => {
       document.title = prevTitle;
     }, 6000);
-    addToast(`La Mesa #${strMesa} solicita atención del mesero`, 'info');
+    addToast(`Mesa #${strMesa} llama al mesero`, 'info');
   };
 
   useEffect(() => {
@@ -304,10 +304,10 @@ export default function AdminPage() {
       const refreshed = await fetchProducts(business.id);
       setProducts(refreshed);
       setGlobalProducts(refreshed);
-      addToast(product.disponible ? 'Producto pausado en el catálogo' : 'Producto disponible en el catálogo', 'success');
+      addToast(product.disponible ? 'Producto pausado' : 'Producto activado', 'success');
     } catch (err) {
       console.error(err);
-      addToast('No se pudo actualizar la disponibilidad', 'error');
+      addToast('Error al actualizar', 'error');
     }
   };
 
@@ -344,6 +344,7 @@ export default function AdminPage() {
             title={currentPathSegment} 
             business={business} 
             onOpenMenu={() => setIsMenuOpen(true)}
+            onSignOut={handleSignOut}
           />
         )}
 

@@ -26,8 +26,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (location.state?.email) {
-      if (location.state?.passwordUpdated) addToast('Contraseña actualizada. Inicia sesión con tu nueva contraseña.', 'success');
-      else addToast('Ingresa tu contraseña para continuar.', 'info');
+      if (location.state?.passwordUpdated) addToast('Contraseña actualizada', 'success');
+      else addToast('Ingresa tu contraseña', 'info');
     }
   }, [location.state, addToast]);
 
@@ -46,9 +46,9 @@ export default function LoginPage() {
       const msg = (err.message || '').toLowerCase();
       if (msg.includes('confirm') || msg.includes('not confirmed')) {
         setNeedsConfirmation(true);
-        addToast('Confirma tu correo para acceder a NEGU.', 'error');
+        addToast('Confirma tu correo primero', 'error');
       } else {
-        addToast('Correo o contraseña incorrectos.', 'error');
+        addToast('Credenciales incorrectas', 'error');
       }
     } finally {
       setLoading(false);
@@ -123,7 +123,7 @@ export default function LoginPage() {
                     placeholder="tu@correo.com"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="py-3 pl-5"
+                    className="py-3"
                     required
                     autoComplete="email"
                   />
@@ -144,7 +144,7 @@ export default function LoginPage() {
                     placeholder="Tu contraseña"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    className="py-3 pl-5 pr-10"
+                    className="py-3 pr-10"
                     required
                     autoComplete="current-password"
                   />

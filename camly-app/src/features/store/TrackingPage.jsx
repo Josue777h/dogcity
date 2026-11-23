@@ -221,7 +221,7 @@ export default function TrackingPage() {
     try {
       if (!isDemo) {
         if (!currentOrder?.id || !effectiveToken) {
-          addToast('No pudimos validar el token de tu pedido.', 'error');
+          addToast('Enlace de pedido inválido', 'error');
           return;
         }
         const result = await OrderService.customerAcceptQuote(currentOrder.id, effectiveToken);
@@ -243,7 +243,7 @@ export default function TrackingPage() {
       }));
     } catch (err) {
       console.error(err);
-      addToast(err.message || 'No fue posible confirmar la orden.', 'error');
+      addToast(err.message || 'No se pudo confirmar', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -255,7 +255,7 @@ export default function TrackingPage() {
     try {
       if (!isDemo) {
         if (!currentOrder?.id || !effectiveToken) {
-          addToast('No pudimos validar el token de tu pedido.', 'error');
+          addToast('Enlace de pedido inválido', 'error');
           return;
         }
         await OrderService.customerCancelOrder(currentOrder.id, effectiveToken, reason);
@@ -270,7 +270,7 @@ export default function TrackingPage() {
       setShowCancelModal(false);
     } catch (err) {
       console.error(err);
-      addToast(err.message || 'Error al cancelar la orden.', 'error');
+      addToast(err.message || 'Error al cancelar', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -282,7 +282,7 @@ export default function TrackingPage() {
     try {
       if (!isDemo) {
         if (!currentOrder?.id || !effectiveToken) {
-          addToast('No pudimos validar el token de tu pedido.', 'error');
+          addToast('Enlace de pedido inválido', 'error');
           return;
         }
         await OrderService.customerCancelOrder(
@@ -324,7 +324,7 @@ export default function TrackingPage() {
       let receiptUrl = '';
       if (!isDemo) {
         if (!currentOrder?.id || !effectiveToken) {
-          addToast('No pudimos validar el token de tu pedido.', 'error');
+          addToast('Enlace de pedido inválido', 'error');
           return;
         }
         const storagePath = await OrderService.uploadPaymentReceipt(currentOrder.id, effectiveToken, file);
@@ -341,7 +341,7 @@ export default function TrackingPage() {
       }));
     } catch (err) {
       console.error(err);
-      addToast(err?.message || 'Error al subir el comprobante. Por favor intenta de nuevo.', 'error');
+      addToast(err?.message || 'Error al subir comprobante', 'error');
     } finally {
       setReceiptUploading(false);
     }

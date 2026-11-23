@@ -125,7 +125,7 @@ export default function CategoriesView(props) {
       fetchCategoriasLocally();
     } catch (err) {
       console.error(err);
-      addToast('No se puede eliminar porque hay productos vinculados', 'error');
+      addToast('Tiene productos vinculados', 'error');
     } finally {
       setLoading(false);
     }
