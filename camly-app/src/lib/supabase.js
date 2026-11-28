@@ -160,7 +160,7 @@ export async function fetchCategories(negocioId) {
   if (!negocioId) return [];
   const { data, error } = await getSupabase()
     .from('categorias')
-    .select('*')
+    .select('id,nombre,negocio_id')
     .eq('negocio_id', negocioId)
     .order('nombre', { ascending: true });
   if (error) {
@@ -317,7 +317,7 @@ export async function updateBusiness(id, updates) {
 export async function fetchSubscription(negocioId) {
   const { data, error } = await getSupabase()
     .from('suscripciones')
-    .select('*')
+    .select('id,negocio_id,plan,estado,es_trial,fecha_inicio,fecha_fin,updated_at')
     .eq('negocio_id', negocioId)
     .single();
   

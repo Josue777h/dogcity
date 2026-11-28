@@ -313,7 +313,7 @@ export default function StorePage() {
       {/* ── Sticky header: logo, name, open/closed, search ── */}
       <header className="sticky top-0 z-[80] border-b border-[#e7e3db] bg-white pt-safe shadow-2xs w-full max-w-full">
         <div className="fluid-container py-2 sm:py-2.5">
-          <div className="flex items-center justify-between gap-2.5 sm:gap-4 min-w-0">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 min-w-0">
             
             {/* Izquierda: Marca (Logo + Nombre + Estado) */}
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -335,7 +335,7 @@ export default function StorePage() {
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <h1 className="truncate text-sm sm:text-base md:text-lg font-bold leading-tight text-slate-900">
+                  <h1 className="truncate min-w-0 text-sm sm:text-base md:text-lg font-bold leading-tight text-slate-900">
                     {business?.nombre_visible || 'Menú Digital'}
                   </h1>
                   <span
@@ -378,7 +378,7 @@ export default function StorePage() {
                   type="button"
                   onClick={handleCallWaiter}
                   disabled={waiterCalledCooldown > 0}
-                  className={`flex items-center gap-1.5 rounded-xl border px-3 sm:px-4 py-2 sm:py-2.5 transition-all text-xs sm:text-sm font-semibold shadow-2xs cursor-pointer ${
+                  className={`flex items-center gap-1.5 shrink-0 whitespace-nowrap rounded-xl border px-3 sm:px-4 py-2 sm:py-2.5 transition-all text-xs sm:text-sm font-semibold shadow-2xs cursor-pointer ${
                     waiterCalledCooldown > 0
                       ? 'bg-emerald-600 text-white border-emerald-600'
                       : 'bg-slate-900 text-white border-slate-900 hover:bg-slate-800 active:scale-95'
@@ -391,7 +391,7 @@ export default function StorePage() {
               ) : (
                 <button
                   onClick={() => setDrawerOpen(true)}
-                  className={`flex items-center gap-2 rounded-xl border px-3 sm:px-4 py-2 sm:py-2.5 transition-all text-xs sm:text-sm font-bold shadow-2xs cursor-pointer ${
+                  className={`flex items-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap rounded-xl border px-3 sm:px-4 py-2 sm:py-2.5 transition-all text-xs sm:text-sm font-bold shadow-2xs cursor-pointer ${
                     totalItems > 0
                       ? 'text-white border-transparent'
                       : 'border-[#e4e1da] bg-white text-slate-700 hover:bg-[#f7f6f2]'
@@ -399,7 +399,7 @@ export default function StorePage() {
                   style={totalItems > 0 ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
                   aria-label="Abrir pedido"
                 >
-                  <ShoppingCart size={16} />
+                  <ShoppingCart size={16} className="shrink-0" />
                   <span>
                     <span className="hidden sm:inline">Ver </span>Pedido
                     {totalItems > 0 ? ` (${totalItems})` : ''}
@@ -477,19 +477,19 @@ export default function StorePage() {
           className="border-b border-[#e7e3db] bg-white/95"
         >
           <div className="fluid-container py-2">
-            {/* Móvil: compacta con desplegable para evitar cortes */}
+            {/* Móvil: compacta con wrap limpio para < 380px sin solapamientos */}
             <div className="md:hidden">
-              <div className="flex items-center justify-between gap-2 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
                 <div className="flex items-center gap-2 min-w-0">
                   <span
-                    className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-semibold text-[11px] ${
+                    className={`inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-semibold text-[11px] ${
                       scheduleStatus.isOpen
                         ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
                         : 'border-amber-200 bg-amber-50 text-amber-900'
                     }`}
                   >
                     <Clock size={11} className="shrink-0" />
-                    <span>{scheduleStatus.message}</span>
+                    <span className="truncate">{scheduleStatus.message}</span>
                   </span>
                 </div>
 
@@ -497,7 +497,7 @@ export default function StorePage() {
                   type="button"
                   onClick={() => setInfoExpanded(prev => !prev)}
                   aria-expanded={infoExpanded}
-                  className="shrink-0 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
+                  className="shrink-0 whitespace-nowrap inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
                 >
                   <span>{infoExpanded ? 'Ocultar info' : 'Envío y pagos'}</span>
                   <span className={`inline-block transition-transform duration-200 ${infoExpanded ? 'rotate-180' : ''}`}>▾</span>

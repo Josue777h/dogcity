@@ -564,7 +564,13 @@ export function normalizeOrderStatus(status?: string | null): InternalOrderStatu
 /**
  * Obtiene los textos y etiquetas adaptadas al rubro del negocio
  */
-export function getStatusCopy(status?: string | null, businessType?: string | null, deliveryMethod?: string | null): StatusCopy {
+export function getStatusCopy(
+  status?: string | null,
+  businessType?: string | null,
+  deliveryMethodOrSeconds?: string | number | null
+): StatusCopy {
+  const deliveryMethod = typeof deliveryMethodOrSeconds === 'string' ? deliveryMethodOrSeconds : null;
+  const secondsRemaining = typeof deliveryMethodOrSeconds === 'number' ? deliveryMethodOrSeconds : null;
   const isMesa = deliveryMethod === 'mesa' || deliveryMethod === 'dine_in';
   const isPickup = !isMesa && (deliveryMethod === 'recogida' || deliveryMethod === 'pickup');
   const normType = normalizeBusinessType(businessType);
@@ -585,13 +591,17 @@ export function getStatusCopy(status?: string | null, businessType?: string | nu
       title: normType === 'food' ? 'En Cocina' : preparationCopy.title,
       subtitle: normType === 'food'
         ? 'Tu pedido se está preparando en cocina para recogerlo.'
-        : 'El comercio está preparando tu pedido para recogerlo.',
+        : 'Alistando y empacando tus artículos para recogerlos.',
       stepperDesc: normType === 'food' ? 'En cocina' : preparationCopy.stepperDesc,
     };
   }
   const normStatus = normalizedStatus;
   if (normStatus === 'LISTO_PARA_RECOGER') return PICKUP_READY_COPY;
-  return DICTIONARY[normType][normStatus] || DICTIONARY.general[normStatus] || DICTIONARY.general.NUEVO || PICKUP_READY_COPY;
+  const resolved = DICTIONARY[normType][normStatus] || DICTIONARY.general[normStatus] || DICTIONARY.general.NUEVO || PICKUP_READY_COPY;
+  if (secondsRemaining !== null && normStatus === 'CONFIRMADO_GRACIA') {
+    return { ...resolved, subtitle: resolved.graceBanner(secondsRemaining) };
+  }
+  return resolved;
 }
 
 /**
