@@ -222,12 +222,15 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
       ].filter(Boolean)
     });
 
-    if (!quotePending) {
-      sections.push({
-        title: 'Seguimiento en línea',
-        lines: ['Sigue el estado de tu pedido aquí:', trackingUrl]
-      });
-    }
+    sections.push({
+      title: 'Seguimiento en línea',
+      lines: [
+        quotePending
+          ? 'Consulta el valor del envío y el estado de tu pedido aquí:'
+          : 'Sigue el estado de tu pedido aquí:',
+        trackingUrl
+      ]
+    });
 
     const shortCode = String(orderId).slice(-6).toUpperCase();
     return formatWhatsAppMessage(
@@ -350,6 +353,11 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
     if (!customerName.trim())        { addToast(tableNumber ? '¿A nombre de quién llevamos la orden?' : '¿Cuál es tu nombre?', 'warning'); return; }
     if (!tableNumber && !customerPhone.trim()) { addToast('¿Cuál es tu teléfono?', 'warning'); return; }
     if (deliveryMethod === 'envio') {
+      const minOrder = Number(business?.catalog_design?.orders_config?.min_order_amount || 0);
+      if (minOrder > 0 && subtotal < minOrder) {
+        addToast(`Pedido mínimo: ${formatMoney(minOrder)}`, 'warning');
+        return;
+      }
       if (tipoDom === 'automatico' && !locationLink) {
         addToast('Marca tu ubicación en el mapa', 'warning');
         openManualMapPicker();
@@ -510,32 +518,27 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
 
         {/* Header */}
         <div
-          className="px-4 py-3 sm:px-5 sm:py-4 border-b flex items-center justify-between shrink-0"
-          style={{ borderColor: 'var(--color-border)' }}
+          className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-slate-200/80 bg-white/95 backdrop-blur-md flex items-center justify-between gap-2 shrink-0"
         >
-          <div className="flex items-center gap-2 sm:gap-2.5">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ backgroundColor: 'var(--color-brand)', color: '#fff' }}
-            >
-              <ShoppingBag size={16} />
-            </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-semibold" style={{ color: 'var(--color-text-1)' }}>
-                {tableNumber ? `Finalizar orden (Mesa ${tableNumber})` : 'Finalizar pedido'}
-              </h2>
-              <p className="text-[11px] sm:text-xs" style={{ color: 'var(--color-text-2)' }}>
-                {tableNumber ? 'Servicio directo a tu mesa' : 'Se enviará por WhatsApp'}
-              </p>
-            </div>
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold tracking-tight text-slate-950 truncate">
+              {tableNumber ? `Finalizar orden (Mesa ${tableNumber})` : 'Finalizar Pedido'}
+            </h2>
+            <p className="text-xs text-slate-500 tabular-nums truncate">
+              {selectedItems.length} {selectedItems.length === 1 ? 'producto' : 'productos'} · {formatMoney(subtotal)}
+            </p>
           </div>
-          <button onClick={handleClose} className="btn-ghost p-1.5 sm:p-2" aria-label="Cerrar">
-            <X size={18} />
+          <button
+            onClick={handleClose}
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors"
+            aria-label="Cerrar"
+          >
+            <X size={16} strokeWidth={1.75} />
           </button>
         </div>
 
-        {/* Scrollable content */}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5 sm:py-4 space-y-4 sm:space-y-5 hide-scrollbar">
+        {/* Scrollable content (Nordic #f9fafb canvas with crisp white cards) */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#f9fafb] px-4 py-4 sm:px-5 space-y-4 hide-scrollbar">
 
           {/* ── SUCCESS STATE ── */}
           {orderResult ? (
@@ -581,17 +584,14 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
           ) : (
             <>
               {/* ── ITEMS SUMMARY ── */}
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <p className="caps-label">Tu pedido</p>
-                  <span className="text-[11px] font-semibold tabular-nums" style={{ color: 'var(--color-text-3)' }}>
-                    {selectedItems.length} {selectedItems.length === 1 ? 'producto' : 'productos'}
+              <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold text-slate-900">Tu bolsa</p>
+                  <span className="text-xs font-medium tabular-nums text-slate-500">
+                    {selectedItems.length} {selectedItems.length === 1 ? 'artículo' : 'artículos'}
                   </span>
                 </div>
-                <div
-                  className="rounded-lg overflow-hidden border"
-                  style={{ borderColor: 'var(--color-border)' }}
-                >
+                <div>
                   {selectedItems.length === 0 ? (
                     <p className="p-4 text-sm text-center" style={{ color: 'var(--color-text-2)' }}>
                       El carrito está vacío
@@ -670,11 +670,16 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                 </div>
               </div>
 
-              {/* ── DELIVERY + DATA ── */}
-              <div>
-                <p className="caps-label mb-2">
-                  {tableNumber ? 'Servicio a la mesa' : 'Datos de entrega'}
-                </p>
+              {/* ── DELIVERY + DATA (Nordic numbered card 1) ── */}
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 space-y-3.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-950 text-xs font-semibold text-white tabular-nums">1</span>
+                    <h3 className="text-sm font-semibold text-slate-950 tracking-tight">
+                      {tableNumber ? 'Servicio a la mesa' : 'Tus Datos y Entrega'}
+                    </h3>
+                  </div>
+                </div>
                 <div className="space-y-3">
                   {/* Si es mesa, tarjeta exclusiva y elegante; si no, selector de envío / recogida */}
                   {tableNumber ? (
@@ -723,31 +728,31 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                                 setMapCoords(null);
                               }
                             }}
-                            className={`relative flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl border-2 text-center transition-all active:scale-95 cursor-pointer min-h-[82px] ${
+                            className={`relative flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-all active:scale-[0.98] cursor-pointer min-h-[78px] ${
                               isSelectedMethod
-                                ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 shadow-xs ring-1 ring-emerald-500/25'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                                ? 'border-slate-900 bg-slate-50/80 text-slate-950 ring-1 ring-slate-900/10'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50/50'
                             }`}
                           >
                             <span
-                              className={`absolute right-2 top-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                              className={`absolute right-2.5 top-2.5 w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
                                 isSelectedMethod
-                                  ? 'border-emerald-600 bg-emerald-600 text-white shadow-2xs'
+                                  ? 'border-slate-900 bg-slate-900 text-white'
                                   : 'border-slate-300 bg-white'
                               }`}
                             >
-                              {isSelectedMethod && <Check size={11} strokeWidth={3.5} />}
+                              {isSelectedMethod && <Check size={10} strokeWidth={3} />}
                             </span>
                             <m.icon
-                              size={22}
-                              strokeWidth={isSelectedMethod ? 2.2 : 1.75}
-                              className={isSelectedMethod ? 'text-emerald-700' : 'text-slate-500'}
+                              size={20}
+                              strokeWidth={1.75}
+                              className={isSelectedMethod ? 'text-slate-950' : 'text-slate-400'}
                             />
                             <div>
-                              <span className="block text-xs sm:text-sm font-bold leading-tight">
+                              <span className="block text-xs sm:text-sm font-semibold leading-tight">
                                 {m.label}
                               </span>
-                              <span className={`block text-[10px] mt-0.5 ${isSelectedMethod ? 'text-emerald-800 font-medium' : 'text-slate-400'}`}>
+                              <span className={`block text-[11px] mt-0.5 tabular-nums ${isSelectedMethod ? 'text-emerald-700 font-medium' : 'text-slate-400'}`}>
                                 {m.desc}
                               </span>
                             </div>
@@ -1001,10 +1006,16 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                 </div>
               </div>
 
-              {/* ── PAYMENT ── */}
-              <div>
-                <p className="caps-label mb-2">Forma de pago</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-3">
+              {/* ── PAYMENT (Nordic numbered card 2) ── */}
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-950 text-xs font-semibold text-white tabular-nums">2</span>
+                    <h3 className="text-sm font-semibold text-slate-950 tracking-tight">Forma de Pago</h3>
+                  </div>
+                  <span className="text-xs text-slate-400">Sin recargo</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {[
                     { id: 'efectivo', label: 'Efectivo', icon: Wallet, show: enabledPayments.includes('efectivo') },
                     { id: 'transferencia', label: 'Transferencia', icon: CreditCard, show: enabledPayments.includes('transferencia') },
@@ -1016,18 +1027,13 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                         key={m.id}
                         type="button"
                         onClick={() => setPaymentMethod(m.id)}
-                        className={`relative flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 text-sm transition-all active:scale-95 cursor-pointer ${
+                        className={`relative flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-xs sm:text-sm transition-all active:scale-[0.98] cursor-pointer ${
                           isSelectedPay
-                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-semibold shadow-sm'
-                            : 'border-slate-200 bg-white text-slate-600 font-medium hover:border-slate-300 hover:bg-slate-50'
+                            ? 'border-slate-900 bg-slate-50/80 text-slate-950 font-semibold ring-1 ring-slate-900/10'
+                            : 'border-slate-200 bg-white text-slate-600 font-medium hover:border-slate-300 hover:bg-slate-50/50'
                         }`}
                       >
-                        {isSelectedPay && (
-                          <span className="absolute right-2 top-2 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center">
-                            <Check size={10} strokeWidth={3} />
-                          </span>
-                        )}
-                        <m.icon size={19} strokeWidth={isSelectedPay ? 2.2 : 1.75} />
+                        <m.icon size={18} strokeWidth={1.75} className={isSelectedPay ? 'text-slate-950' : 'text-slate-400'} />
                         <span>{m.label}</span>
                       </button>
                     );
@@ -1134,8 +1140,8 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
               </div>
 
               {/* ── COMMENT ── */}
-              <div>
-                <label htmlFor="order-comments" className="caps-label mb-2 block">Comentarios (opcional)</label>
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
+                <label htmlFor="order-comments" className="text-xs font-semibold text-slate-700 mb-2 block">Comentarios (opcional)</label>
                 <textarea
                   id="order-comments"
                   value={cart.comment}
@@ -1211,12 +1217,12 @@ export default function OrderDrawer({ isOpen, onClose, scheduleStatus, tableNumb
                 </>
               )}
             </button>
-            <p className="text-center text-xs mt-2" style={{ color: 'var(--color-text-3)' }}>
+            <p className="text-center text-[11px] text-slate-400 mt-2">
               {scheduleStatus?.isOpen === false 
                 ? 'Podrás enviar tu pedido cuando el comercio abra nuevamente' 
                 : tableNumber
                   ? 'Se notificará al restaurante con tu orden y mesa'
-                  : 'Se abrirá WhatsApp con tu pedido listo'}
+                  : '0% comisiones · Contacto directo con el local'}
             </p>
           </div>
         )}

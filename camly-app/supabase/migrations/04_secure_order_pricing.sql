@@ -8,7 +8,7 @@ LANGUAGE plpgsql
 SET search_path = public, pg_temp
 AS $$
 DECLARE
-  v_delivery_type text := lower(coalesce(NEW.delivery_type, NEW.tipo_entrega, ''));
+  v_delivery_type text := lower(coalesce(NEW.delivery_type, NEW.entrega_metodo, ''));
   v_subtotal numeric := coalesce(NEW.subtotal_amount, NEW.total_amount, NEW.total, 0);
   v_delivery numeric := coalesce(NEW.delivery_fee, NEW.domicilio_costo, 0);
   v_expected_total numeric;

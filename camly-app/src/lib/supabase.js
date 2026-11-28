@@ -544,11 +544,10 @@ export async function saveOrder(rawPayload) {
       });
 
       const safeDeliveryCost = Math.max(0, Number(payload.domicilio_costo ?? payload.delivery_fee ?? 0));
-      payload.subtotal = verifiedSubtotal;
+      payload.subtotal_amount = verifiedSubtotal;
+      delete payload.subtotal;
       payload.total = verifiedSubtotal + safeDeliveryCost;
-      if ('total_amount' in payload) {
-        payload.total_amount = payload.total;
-      }
+      payload.total_amount = payload.total;
     }
   } catch (verifyErr) {
     console.warn('Advertencia verificando precios de orden:', verifyErr);

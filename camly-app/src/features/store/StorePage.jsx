@@ -291,7 +291,7 @@ export default function StorePage() {
 
   return (
     <div
-      style={{ ...fontStyle, backgroundColor: `color-mix(in srgb, ${secondaryColor} 55%, #f8fafc)` }}
+      style={{ ...fontStyle, backgroundColor: `color-mix(in srgb, ${secondaryColor} 28%, #f9fafb)` }}
       className="flex min-h-dvh flex-col text-slate-900 w-full max-w-full overflow-x-hidden"
     >
       <SEO
@@ -311,7 +311,7 @@ export default function StorePage() {
       />
 
       {/* ── Sticky header: logo, name, open/closed, search ── */}
-      <header className="sticky top-0 z-[80] border-b border-[#e7e3db] bg-white pt-safe shadow-2xs w-full max-w-full">
+      <header className="sticky top-0 z-[80] border-b border-slate-200/80 bg-white/85 backdrop-blur-md pt-safe w-full max-w-full">
         <div className="fluid-container py-2 sm:py-2.5">
           <div className="flex items-center justify-between gap-2 sm:gap-4 min-w-0">
             

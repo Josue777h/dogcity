@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-slate-50" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<meta content="mobile_stack" name="shell-type"/>
+<title>NEGU - Checkout</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    @layer base {
+      html, body {
+        width: 100vw;
+        min-height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 16px);
+      }
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 antialiased flex flex-col min-h-screen">
+<!-- Minimalist Top Navigation Header -->
+<header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200/80 pt-safe">
+<div class="h-14 px-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<button class="w-9 h-9 -ml-1.5 flex items-center justify-center rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition-all" onclick="history.back()" type="button">
+<span class="material-symbols-outlined text-[22px]">arrow_back</span>
+</button>
+<div>
+<h1 class="font-display font-semibold text-base text-slate-900 leading-tight">Finalizar Pedido</h1>
+<p class="text-xs text-slate-500">2 productos • $46.800 COP</p>
+</div>
+</div>
+<a class="text-xs font-medium text-emerald-700 hover:text-emerald-800 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-100" href="javascript:history.back()">
+        Ver bolsa
+      </a>
+</div>
+</header>
+<!-- Main Checkout Content -->
+<main class="flex-1 w-full max-w-lg mx-auto px-4 py-5 flex flex-col gap-6 pb-36">
+<!-- Step 1: Tus Datos -->
+<section class="bg-white rounded-2xl p-5 border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+<div class="flex items-center gap-2.5 mb-4 pb-3 border-b border-slate-100">
+<span class="w-6 h-6 rounded-full bg-slate-900 text-white font-medium text-xs flex items-center justify-center">1</span>
+<h2 class="font-display font-semibold text-slate-900 text-base">Tus Datos</h2>
+</div>
+<div class="space-y-4">
+<div>
+<label class="block text-xs font-medium text-slate-600 mb-1.5" for="cust-name">Nombre completo</label>
+<input class="w-full bg-white text-slate-900 text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-800 focus:ring-1 focus:ring-slate-800 outline-none transition-all placeholder:text-slate-400" id="cust-name" placeholder="Tu nombre y apellido" type="text" value="Camila Restrepo"/>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-600 mb-1.5" for="cust-phone">Teléfono celular / WhatsApp</label>
+<div class="flex items-center gap-2">
+<div class="h-[42px] px-3 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center gap-1.5 shrink-0 text-slate-700 text-sm font-medium">
+<span class="text-base leading-none">🇨🇴</span>
+<span>+57</span>
+</div>
+<input class="w-full bg-white text-slate-900 text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-800 focus:ring-1 focus:ring-slate-800 outline-none transition-all placeholder:text-slate-400" id="cust-phone" placeholder="300 123 4567" type="tel" value="314 892 0145"/>
+</div>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-600 mb-1.5" for="cust-address">Dirección o indicaciones breves</label>
+<input class="w-full bg-white text-slate-900 text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-slate-800 focus:ring-1 focus:ring-slate-800 outline-none transition-all placeholder:text-slate-400" id="cust-address" placeholder="Ej: Cra 15 # 80-25, Torre 2 Apto 301" type="text" value="Calle 85 # 14-20, Apto 402"/>
+</div>
+</div>
+</section>
+<!-- Step 2: Entrega -->
+<section class="bg-white rounded-2xl p-5 border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+<div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+<div class="flex items-center gap-2.5">
+<span class="w-6 h-6 rounded-full bg-slate-900 text-white font-medium text-xs flex items-center justify-center">2</span>
+<h2 class="font-display font-semibold text-slate-900 text-base">Entrega</h2>
+</div>
+<span class="text-xs text-slate-500 font-medium">Selecciona una</span>
+</div>
+<div class="space-y-2.5" id="delivery-options">
+<!-- Opcion 1: Estandar -->
+<label class="delivery-card relative flex items-start justify-between p-3.5 rounded-xl border border-slate-900 bg-slate-50/50 cursor-pointer transition-all">
+<div class="flex items-start gap-3">
+<input checked="" class="mt-0.5 w-4 h-4 text-slate-900 border-slate-300 focus:ring-0 focus:ring-offset-0" name="delivery" type="radio" value="standard"/>
+<div>
+<p class="text-sm font-semibold text-slate-900">Domicilio estándar</p>
+<p class="text-xs text-slate-500 mt-0.5">Cobertura urbana central (30 - 45 min)</p>
+</div>
+</div>
+<span class="text-sm font-semibold text-slate-900 shrink-0">$5.000</span>
+</label>
+<!-- Opcion 2: GPS Distancia -->
+<label class="delivery-card relative flex items-start justify-between p-3.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white cursor-pointer transition-all">
+<div class="flex items-start gap-3">
+<input class="mt-0.5 w-4 h-4 text-slate-900 border-slate-300 focus:ring-0 focus:ring-offset-0" name="delivery" type="radio" value="gps"/>
+<div>
+<p class="text-sm font-semibold text-slate-900">Domicilio por distancia GPS</p>
+<p class="text-xs text-slate-500 mt-0.5">Cálculo exacto de tarifa según kilómetros</p>
+</div>
+</div>
+<span class="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded shrink-0">Por calcular</span>
+</label>
+<!-- Opcion 3: Recoger en local -->
+<label class="delivery-card relative flex items-start justify-between p-3.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white cursor-pointer transition-all">
+<div class="flex items-start gap-3">
+<input class="mt-0.5 w-4 h-4 text-slate-900 border-slate-300 focus:ring-0 focus:ring-offset-0" name="delivery" type="radio" value="pickup"/>
+<div>
+<p class="text-sm font-semibold text-slate-900">Recoger en tienda</p>
+<p class="text-xs text-slate-500 mt-0.5">Cra 15 # 85-32 • Listo en 25 min</p>
+</div>
+</div>
+<span class="text-sm font-semibold text-emerald-700 shrink-0">Gratis ($0)</span>
+</label>
+</div>
+</section>
+<!-- Step 3: Forma de Pago -->
+<section class="bg-white rounded-2xl p-5 border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+<div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+<div class="flex items-center gap-2.5">
+<span class="w-6 h-6 rounded-full bg-slate-900 text-white font-medium text-xs flex items-center justify-center">3</span>
+<h2 class="font-display font-semibold text-slate-900 text-base">Forma de Pago</h2>
+</div>
+<span class="text-xs text-slate-500">Sin recargo</span>
+</div>
+<div class="grid grid-cols-3 gap-2.5" id="payment-options">
+<!-- Nequi -->
+<label class="payment-card flex flex-col p-3 rounded-xl border border-slate-900 bg-slate-50 cursor-pointer transition-all text-center">
+<input checked="" class="sr-only" name="payment" type="radio" value="nequi"/>
+<div class="w-8 h-8 mx-auto rounded-full bg-purple-50 text-purple-700 flex items-center justify-center mb-1.5 font-bold text-xs">
+            N
+          </div>
+<span class="text-xs font-semibold text-slate-900">Nequi</span>
+<span class="text-[11px] text-slate-500 mt-0.5">Transferencia</span>
+</label>
+<!-- Daviplata -->
+<label class="payment-card flex flex-col p-3 rounded-xl border border-slate-200 hover:border-slate-300 bg-white cursor-pointer transition-all text-center">
+<input class="sr-only" name="payment" type="radio" value="daviplata"/>
+<div class="w-8 h-8 mx-auto rounded-full bg-red-50 text-red-600 flex items-center justify-center mb-1.5 font-bold text-xs">
+            D
+          </div>
+<span class="text-xs font-semibold text-slate-900">Daviplata</span>
+<span class="text-[11px] text-slate-500 mt-0.5">Transferencia</span>
+</label>
+<!-- Efectivo -->
+<label class="payment-card flex flex-col p-3 rounded-xl border border-slate-200 hover:border-slate-300 bg-white cursor-pointer transition-all text-center">
+<input class="sr-only" name="payment" type="radio" value="efectivo"/>
+<div class="w-8 h-8 mx-auto rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mb-1.5">
+<span class="material-symbols-outlined text-[18px]">payments</span>
+</div>
+<span class="text-xs font-semibold text-slate-900">Efectivo</span>
+<span class="text-[11px] text-slate-500 mt-0.5">Al recibir</span>
+</label>
+</div>
+<!-- Compact Helper Info -->
+<div class="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-slate-400">info</span>
+          Número autorizado: <strong class="text-slate-900">310 123 4567</strong>
+</span>
+<button class="text-emerald-700 hover:text-emerald-800 font-medium" onclick="navigator.clipboard?.writeText('3101234567'); alert('Número copiado al portapapeles');" type="button">
+          Copiar
+        </button>
+</div>
+</section>
+<!-- Resumen Financiero -->
+<section class="bg-white rounded-2xl p-5 border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+<h3 class="font-display font-semibold text-slate-900 text-sm mb-3">Resumen de la orden</h3>
+<div class="space-y-2 text-sm">
+<div class="flex justify-between text-slate-600">
+<span>Subtotal (2 productos)</span>
+<span class="font-medium text-slate-900">$46.800 COP</span>
+</div>
+<div class="flex justify-between text-slate-600">
+<span>Costo de envío</span>
+<span class="font-medium text-slate-900" id="summary-shipping-val">$5.000 COP</span>
+</div>
+<div class="pt-3 mt-1 border-t border-slate-100 flex justify-between items-baseline">
+<div>
+<span class="text-sm font-semibold text-slate-900 block">Total a pagar</span>
+<span class="text-xs text-slate-500" id="summary-shipping-note">Incluye domicilio</span>
+</div>
+<span class="font-display font-bold text-lg text-slate-900" id="summary-total-val">$51.800 COP</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Sticky Bottom Checkout Action -->
+<footer class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 pt-3 pb-safe z-50">
+<div class="max-w-lg mx-auto flex flex-col gap-2">
+<button class="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99]" onclick="confirmOrder()" type="button">
+<span class="material-symbols-outlined text-[20px]">chat</span>
+<span id="cta-button-text">Confirmar pedido por WhatsApp • $51.800 COP</span>
+</button>
+<div class="flex items-center justify-center gap-1.5 text-center pb-1">
+<span class="material-symbols-outlined text-[14px] text-slate-400">verified_user</span>
+<p class="text-[11px] text-slate-500 font-medium">0% comisiones • Contacto directo con el local</p>
+</div>
+</div>
+</footer>
+<script>
+    const subtotal = 46800;
+    let shippingCost = 5000;
+    let shippingLabel = 'standard';
+    let paymentSelected = 'nequi';
+
+    const deliveryRadios = document.querySelectorAll('input[name="delivery"]');
+    const deliveryCards = document.querySelectorAll('.delivery-card');
+    const paymentRadios = document.querySelectorAll('input[name="payment"]');
+    const paymentCards = document.querySelectorAll('.payment-card');
+
+    const shippingValEl = document.getElementById('summary-shipping-val');
+    const shippingNoteEl = document.getElementById('summary-shipping-note');
+    const totalValEl = document.getElementById('summary-total-val');
+    const ctaTextEl = document.getElementById('cta-button-text');
+
+    function updateSummary() {
+      let total = subtotal;
+      if (shippingLabel === 'standard') {
+        shippingCost = 5000;
+        shippingValEl.textContent = '$5.000 COP';
+        shippingValEl.className = 'font-medium text-slate-900';
+        shippingNoteEl.textContent = 'Incluye domicilio';
+        total += shippingCost;
+      } else if (shippingLabel === 'gps') {
+        shippingCost = 0;
+        shippingValEl.textContent = 'Por definir (según KM)';
+        shippingValEl.className = 'font-medium text-amber-700';
+        shippingNoteEl.textContent = '+ costo final por distancia';
+      } else if (shippingLabel === 'pickup') {
+        shippingCost = 0;
+        shippingValEl.textContent = 'Gratis ($0)';
+        shippingValEl.className = 'font-medium text-emerald-700';
+        shippingNoteEl.textContent = 'Recogida en tienda';
+      }
+
+      const formattedTotal = '$' + total.toLocaleString('es-CO') + ' COP';
+      totalValEl.textContent = formattedTotal;
+      ctaTextEl.textContent = `Confirmar pedido por WhatsApp • ${formattedTotal}`;
+    }
+
+    deliveryRadios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        deliveryCards.forEach(card => {
+          card.classList.remove('border-slate-900', 'bg-slate-50/50');
+          card.classList.add('border-slate-200', 'bg-white');
+        });
+        const currentCard = e.target.closest('.delivery-card');
+        currentCard.classList.remove('border-slate-200', 'bg-white');
+        currentCard.classList.add('border-slate-900', 'bg-slate-50/50');
+
+        shippingLabel = e.target.value;
+        updateSummary();
+      });
+    });
+
+    paymentRadios.forEach(radio => {
+      radio.parentElement.addEventListener('click', () => {
+        paymentCards.forEach(card => {
+          card.classList.remove('border-slate-900', 'bg-slate-50');
+          card.classList.add('border-slate-200', 'bg-white');
+        });
+        radio.parentElement.classList.remove('border-slate-200', 'bg-white');
+        radio.parentElement.classList.add('border-slate-900', 'bg-slate-50');
+        radio.checked = true;
+        paymentSelected = radio.value;
+      });
+    });
+
+    function confirmOrder() {
+      const name = document.getElementById('cust-name').value || 'Cliente';
+      const address = document.getElementById('cust-address').value || 'Sin dirección especificada';
+      
+      const deliveryText = shippingLabel === 'standard' 
+        ? 'Domicilio estándar ($5.000 COP)' 
+        : (shippingLabel === 'gps' ? 'Domicilio por GPS (a convenir)' : 'Recoger en tienda');
+      
+      const paymentText = paymentSelected === 'nequi' 
+        ? 'Nequi' 
+        : (paymentSelected === 'daviplata' ? 'Daviplata' : 'Efectivo al recibir');
+
+      const total = subtotal + shippingCost;
+
+      let msg = `*¡Hola! Quiero confirmar mi pedido NEGU:*%0A%0A`;
+      msg += `👤 *Cliente:* ${encodeURIComponent(name)}%0A`;
+      msg += `📍 *Dirección/Indicaciones:* ${encodeURIComponent(address)}%0A%0A`;
+      msg += `📦 *Detalle (2 productos):*%0A`;
+      msg += `  • 1x Hamburguesa Especial ($28.000)%0A`;
+      msg += `  • 1x Papas Rústicas con Queso ($18.800)%0A%0A`;
+      msg += `🛵 *Entrega:* ${encodeURIComponent(deliveryText)}%0A`;
+      msg += `💳 *Método de Pago:* ${encodeURIComponent(paymentText)}%0A`;
+      msg += `💰 *Total:* $${total.toLocaleString('es-CO')} COP`;
+
+      window.location.href = `https://wa.me/573101234567?text=${msg}`;
+    }
+  </script>
+</body></html>

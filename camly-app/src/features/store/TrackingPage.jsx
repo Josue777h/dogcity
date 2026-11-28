@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useParams, Link } from 'react-router-dom';
 import {
-  Package, CheckCircle2, Clock, Truck,
+  CheckCircle2, Clock, Truck,
   AlertCircle, ArrowLeft, Store, MessageCircle,
-  MapPin, ShoppingCart, CreditCard, Lock,
+  MapPin, CreditCard,
   X, RotateCcw, Copy, Check, Upload,
   ExternalLink, Ban, Utensils
 } from 'lucide-react';
@@ -15,8 +15,6 @@ import { useToastStore } from '../../stores';
 import SEO from '../../components/common/SEO';
 import PageLoading from '../../components/common/PageLoading';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-
-const STEP_ICONS = [Clock, Package, Truck, CheckCircle2];
 
 const DEMO_ORDER = {
   id: 1042,
@@ -398,53 +396,56 @@ export default function TrackingPage() {
   const businessType = business?.business_type || 'general';
   const statusCopy = getStatusCopy(statusStr, businessType, deliveryMethod);
   const steps = getStepperSteps(businessType, deliveryMethod);
-  const stepIcons = deliveryMethod === 'mesa' ? [Utensils, Check, CheckCircle2] : deliveryMethod === 'pickup' ? [Clock, Package, Store, CheckCircle2] : STEP_ICONS;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-5 sm:py-8 px-4 sm:px-6">
+    <div className="min-h-dvh bg-[#f9fafb] pb-10">
       <SEO
         title="Rastreo de pedido | NEGU"
         description="Consulta el estado en vivo de tu comanda y entrega a domicilio."
         canonical="https://negu.pro/tracking"
         noindex={true}
       />
-      <div className="max-w-2xl mx-auto space-y-4 animate-fade-in-up">
 
-        {/* Barra superior de navegación */}
-        <div className="flex items-center justify-between gap-3 bg-white border border-gray-200/90 rounded-2xl p-3 sm:p-4 shadow-2xs">
-          <Link
-            to={business?.nombre ? `/${business.nombre}` : '/'}
-            className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-gray-700 hover:text-gray-950 transition-colors py-2 px-3 sm:px-4 rounded-xl border border-gray-200 hover:bg-gray-100/80 shadow-2xs"
-          >
-            <ArrowLeft size={16} />
-            <span>Volver a la tienda</span>
-          </Link>
-
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            {business?.logo_url ? (
-              <img
-                src={business.logo_url}
-                alt={`Logo de ${business?.nombre_visible || 'tienda'}`}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-contain shrink-0"
-              />
-            ) : (
-              <div
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white shrink-0 font-bold"
-                style={{ backgroundColor: brandColor }}
-              >
-                <Store size={20} />
-              </div>
-            )}
-            <div className="min-w-0 text-right sm:text-left">
-              <span className="text-xs sm:text-base font-bold text-gray-900 truncate block">
+      {/* Barra superior minimalista estilo Nordic Precision */}
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 backdrop-blur-md">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link
+              to={business?.nombre ? `/${business.nombre}` : '/'}
+              aria-label="Volver a la tienda"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-950 transition-colors"
+            >
+              <ArrowLeft size={16} strokeWidth={1.75} />
+            </Link>
+            <div className="min-w-0">
+              <p className="text-sm sm:text-base font-semibold tracking-tight text-slate-950 truncate tabular-nums">
+                Pedido #{shortOrderCode}
+              </p>
+              <p className="text-xs text-slate-500 truncate">
                 {business?.nombre_visible || 'Tienda'}
-              </span>
-              <span className="text-[10px] sm:text-xs text-gray-500 font-medium hidden sm:block">
-                Seguimiento en vivo
-              </span>
+              </p>
             </div>
           </div>
+
+          <span
+            className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+              isCancelled
+                ? 'bg-rose-50 text-rose-700'
+                : statusStr === 'ENTREGADO' || statusStr === 'entregado'
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : 'bg-emerald-50 text-emerald-700'
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${isCancelled ? 'bg-rose-500' : 'bg-emerald-500'}`}
+              aria-hidden="true"
+            />
+            <span>{isCancelled ? 'Cancelado' : statusCopy.badge || 'En curso'}</span>
+          </span>
         </div>
+      </header>
+
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-5 space-y-4 animate-fade-in-up">
 
         {/* ── 0. ESTADO COTIZACION_PENDIENTE: OCULTAR SEGUIMIENTO HASTA COTIZAR ── */}
         {isQuotePending && !isCancelled && (
@@ -627,78 +628,96 @@ export default function TrackingPage() {
           </div>
         )}
 
-        {/* ── TARJETA PRINCIPAL DE SEGUIMIENTO (STEPPER) ── */}
+        {/* ── TARJETA PRINCIPAL DE SEGUIMIENTO (TIMELINE VERTICAL NORDIC PRECISION) ── */}
         {!isCancelled && !isQuotePending && (
-          <div className="card p-5 sm:p-6 bg-white shadow-md border-slate-200/80 space-y-5">
-            <div className="text-center">
-              <p
-                style={{ color: brandColor }}
-                className="text-[11px] font-black uppercase tracking-wider mb-1"
-              >
-                Seguimiento en vivo
-              </p>
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-                {isQuoteSent && 'Cotización Lista para Confirmar'}
-                {isGraceWindow && 'Pedido Confirmado'}
-                {isCookingOrLater && (statusCopy.title || 'En Proceso')}
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 space-y-5">
+            <div className="flex items-center justify-between gap-2">
+              <h1 className="text-sm sm:text-base font-semibold tracking-tight text-slate-950">
+                Estado de la orden
               </h1>
-              <p className="text-xs text-slate-500 mt-0.5 font-mono">
-                Orden #{shortOrderCode}
-              </p>
+              <span className="text-xs text-slate-500">
+                Sincronizado en vivo
+              </span>
             </div>
 
-            {/* Stepper dinámico por rubro */}
-            <div className={`grid ${steps.length === 3 ? 'grid-cols-3' : 'grid-cols-4'} gap-2 pt-1`}>
+            {/* Timeline vertical limpio y escaneable */}
+            <ol className="relative space-y-5">
               {steps.map((step, i) => {
-                const isPassed = i <= currentStepIdx;
-                const isCurrent = i === currentStepIdx;
-                const StepIcon = stepIcons[i] || Package;
+                const isCompleted = i < currentStepIdx || (i === steps.length - 1 && currentStepIdx === steps.length - 1);
+                const isCurrent = i === currentStepIdx && !isCompleted;
+                const isLast = i === steps.length - 1;
                 return (
-                  <div key={step.id} className="flex flex-col items-center text-center">
-                    <div
-                      style={isPassed ? { backgroundColor: brandColor } : undefined}
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isPassed
-                        ? 'text-white shadow-xs'
-                        : 'bg-slate-100 text-slate-400'
+                  <li key={step.id} className="relative flex items-start gap-3.5">
+                    {!isLast && (
+                      <span
+                        aria-hidden="true"
+                        className={`absolute left-[11px] top-7 bottom-[-22px] w-px ${
+                          isCompleted ? 'bg-emerald-600/40' : 'bg-slate-200'
                         }`}
-                    >
-                      <StepIcon size={18} className={isCurrent ? 'animate-pulse' : ''} />
+                      />
+                    )}
+
+                    <div className="relative z-10 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+                      {isCompleted ? (
+                        <span
+                          style={{ backgroundColor: brandColor }}
+                          className="flex h-6 w-6 items-center justify-center rounded-full text-white"
+                        >
+                          <Check size={13} strokeWidth={2.5} />
+                        </span>
+                      ) : isCurrent ? (
+                        <span
+                          style={{ borderColor: brandColor }}
+                          className="flex h-6 w-6 items-center justify-center rounded-full border-2 bg-white"
+                        >
+                          <span
+                            style={{ backgroundColor: brandColor }}
+                            className="h-2 w-2 rounded-full"
+                          />
+                        </span>
+                      ) : (
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100">
+                          <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                        </span>
+                      )}
                     </div>
-                    <span className={`text-[11px] font-bold mt-2 ${isPassed ? 'text-slate-900' : 'text-slate-400'}`}>
-                      {step.label}
-                    </span>
-                    <span className="text-[10px] text-slate-400 hidden sm:block mt-0.5 leading-tight">
-                      {step.desc}
-                    </span>
-                  </div>
+
+                    <div className="min-w-0 flex-1 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className={`text-sm font-semibold leading-snug ${isCompleted || isCurrent ? 'text-slate-950' : 'text-slate-400'}`}>
+                          {step.label}
+                        </p>
+                        <p className={`text-xs mt-0.5 leading-snug ${isCompleted || isCurrent ? 'text-slate-500' : 'text-slate-400/80'}`}>
+                          {step.desc}
+                        </p>
+                      </div>
+                      <span
+                        className={`shrink-0 text-xs tabular-nums ${
+                          isCurrent
+                            ? 'font-medium text-emerald-700'
+                            : isCompleted
+                              ? 'text-slate-400'
+                              : 'text-slate-300'
+                        }`}
+                      >
+                        {isCurrent ? 'En curso' : isCompleted ? 'Listo' : 'Pendiente'}
+                      </span>
+                    </div>
+                  </li>
                 );
               })}
-            </div>
+            </ol>
 
-            {/* Banner de estado dinámico por rubro */}
-            <div
-              style={{
-                borderColor: `color-mix(in srgb, ${brandColor} 30%, #e2e8f0)`,
-                borderLeftColor: brandColor,
-                backgroundColor: `color-mix(in srgb, ${brandColor} 7%, white)`,
-              }}
-              className="p-3.5 rounded-xl border border-l-4 flex items-center gap-3 text-xs"
-            >
-              <div
-                style={{ backgroundColor: brandColor }}
-                className="w-8 h-8 rounded-lg text-white flex items-center justify-center shrink-0"
-              >
-                {deliveryMethod === 'mesa' ? <Utensils size={16} /> : deliveryMethod === 'pickup' ? <Store size={16} /> : <Truck size={16} />}
+            {/* Nota de estado actual */}
+            <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-3.5 py-3 flex items-start gap-2.5 text-xs text-slate-600">
+              <div className="mt-0.5 shrink-0 text-slate-500">
+                {deliveryMethod === 'mesa' ? <Utensils size={15} strokeWidth={1.75} /> : deliveryMethod === 'pickup' ? <Store size={15} strokeWidth={1.75} /> : <Truck size={15} strokeWidth={1.75} />}
               </div>
-              <div>
-                <p className="font-bold text-slate-900 leading-snug">
-                  {deliveryMethod === 'mesa'
-                    ? (currentStepIdx >= 2 ? '¡Tu orden ya fue entregada en tu mesa! Buen provecho.' : `${currentOrder.direccion || 'Servicio en Mesa'} · Preparando comanda para llevar a tu mesa.`)
-                    : statusCopy.subtitle
-                  }
-                </p>
-                <p className="text-slate-500 mt-0.5 text-[11px]">Sincronizado automáticamente en tiempo real.</p>
-              </div>
+              <p className="leading-relaxed">
+                {deliveryMethod === 'mesa'
+                  ? (currentStepIdx >= 2 ? 'Tu orden fue servida en tu mesa.' : `${currentOrder.direccion || 'Servicio en Mesa'} · Preparando comanda para llevar a tu mesa.`)
+                  : statusCopy.subtitle}
+              </p>
             </div>
 
             {deliveryMethod === 'pickup' && business?.direccion && (
@@ -711,25 +730,11 @@ export default function TrackingPage() {
               </div>
             )}
 
-            {/* ── 3. BLINDAJE CONTRA CANCELACIONES TARDÍAS (EN_PREPARACION O POSTERIOR) ── */}
-            {isCookingOrLater && (
-              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 space-y-2">
-                <p className="leading-snug flex items-start gap-1.5">
-                  <Lock size={14} className="text-slate-500 shrink-0 mt-0.5" />
-                  <span>{statusCopy.cancelLockedNotice}</span>
-                </p>
-                {supportPhone && (
-                  <a
-                    href={buildWhatsAppUrl(supportPhone, `Hola, tengo una consulta sobre mi Pedido #${shortOrderCode}.`)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-2xs transition-colors"
-                  >
-                    <MessageCircle size={14} />
-                    <span>WhatsApp directo al comercio</span>
-                  </a>
-                )}
-              </div>
+            {/* ── 3. AVISO DISCRETO CUANDO YA ESTÁ EN PREPARACIÓN ── */}
+            {isCookingOrLater && statusStr !== 'ENTREGADO' && statusStr !== 'entregado' && Boolean(statusCopy.cancelLockedNotice?.trim()) && (
+              <p className="text-xs text-slate-500 leading-relaxed pt-1 border-t border-slate-100">
+                {statusCopy.cancelLockedNotice}
+              </p>
             )}
           </div>
         )}
@@ -870,16 +875,13 @@ export default function TrackingPage() {
         )}
 
         {/* ── DETALLE DEL PEDIDO ── */}
-        <div className="card overflow-hidden bg-white shadow-sm border-gray-200/80">
-          <div className="px-5 py-3.5 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShoppingCart size={15} className="text-gray-500" />
-              <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                Productos pedidos
-              </h2>
-            </div>
-            <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
-              {items.length} items
+        <div className="rounded-2xl overflow-hidden bg-white border border-slate-200/80">
+          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+            <h2 className="text-sm font-semibold tracking-tight text-slate-950">
+              Resumen de productos
+            </h2>
+            <span className="text-xs text-slate-500 tabular-nums">
+              {items.length} {items.length === 1 ? 'artículo' : 'artículos'}
             </span>
           </div>
 
@@ -938,22 +940,21 @@ export default function TrackingPage() {
           </div>
         </div>
 
-        {/* ── SOPORTE POR WHATSAPP ── */}
+        {/* ── SOPORTE POR WHATSAPP (Estilo minimalista Nordic Precision) ── */}
         {supportPhone && !isQuotePending && (
-          <div className="card p-4 bg-white shadow-xs border-gray-200/80 flex items-center justify-between gap-3">
-            <div className="text-xs">
-              <p className="font-bold text-gray-900">¿Tienes dudas o necesitas ayuda?</p>
-              <p className="text-gray-500">Contacta a la tienda directamente.</p>
-            </div>
+          <div className="space-y-3 pt-1">
             <a
-              href={buildWhatsAppUrl(supportPhone, `Hola, estoy siguiendo mi Pedido #${shortOrderCode} y tengo una duda.`)}
+              href={buildWhatsAppUrl(supportPhone, `Hola, estoy siguiendo mi Pedido #${shortOrderCode} y tengo una consulta.`)}
               target="_blank"
               rel="noreferrer"
-              className="btn-whatsapp py-2 px-3 text-xs font-semibold shrink-0"
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-slate-200/90 bg-white px-4 py-3 text-xs sm:text-sm font-semibold text-slate-900 hover:bg-slate-50 transition-colors"
             >
-              <MessageCircle size={15} />
-              <span>Chat de soporte</span>
+              <MessageCircle size={16} strokeWidth={1.75} className="text-emerald-600" />
+              <span>Contactar comercio por WhatsApp</span>
             </a>
+            <p className="text-center text-[11px] text-slate-400">
+              Plataforma NEGU · Seguimiento en tiempo real
+            </p>
           </div>
         )}
 

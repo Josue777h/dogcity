@@ -1,17 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { 
   Save, User,
   Instagram, Facebook, Palette,
   CheckCircle2, CreditCard, Upload, Smartphone, Check,
   Music2, Wallet, Truck, Navigation, Search, Clock, Layers, KeyRound,
   ShoppingCart, Eye, Store, Utensils, Plus,
-  QrCode, Printer, Download, ExternalLink, Copy
+  QrCode, Printer, Download, ExternalLink, Copy, Zap
 } from 'lucide-react';
 import { updateBusiness, uploadImage } from '../../../lib/supabase';
-import { formatThousandsInput } from '../../../lib/utils';
+import { formatThousandsInput, formatMoney, printThermalReceipt } from '../../../lib/utils';
 import { BUSINESS_VERTICALS, getEnabledModules, getVerticalById, getVerticalForBusiness } from '../../../lib/modules';
-import { useToastStore, useAuthStore } from '../../../stores';
+import { useToastStore, useAuthStore, useBusinessStore } from '../../../stores';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 
 const CURATED_COLORS = [
@@ -148,8 +148,20 @@ export default function SettingsView(props) {
       outletCtx.loadData(session.user.id, false);
     }
   });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { isPro, isExpired, trialDaysLeft, subscription } = useBusinessStore();
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('perfil');
+  const validTabIds = ['perfil', 'marca', 'pedidos_cfg', 'logistica', 'pagos', 'horario', 'impresion', 'qr', 'redes', 'plan'];
+  const requestedTab = searchParams.get('tab');
+  const [manualTab, setManualTab] = useState('perfil');
+  const activeTab = requestedTab && validTabIds.includes(requestedTab) ? requestedTab : manualTab;
+
+  const selectSettingsTab = (tabId) => {
+    setManualTab(tabId);
+    if (searchParams.has('tab')) {
+      setSearchParams({}, { replace: true });
+    }
+  };
   const [bizSuggestions, setBizSuggestions] = useState([]);
   const [isSearchingBiz, setIsSearchingBiz] = useState(false);
   const [bizSearchQuery, setBizSearchQuery] = useState('');
@@ -720,35 +732,56 @@ export default function SettingsView(props) {
     );
   }
 
+  const settingsGroups = [
+    {
+      group: 'Negocio',
+      items: [
+        { id: 'perfil', label: 'General', icon: Store },
+        { id: 'marca', label: 'Apariencia', icon: Palette },
+        { id: 'horario', label: 'Horarios', icon: Clock },
+      ],
+    },
+    {
+      group: 'Operación',
+      items: [
+        { id: 'pedidos_cfg', label: 'Pedidos y Reglas', icon: ShoppingCart },
+        { id: 'logistica', label: 'Domicilios', icon: Truck },
+        { id: 'pagos', label: 'Pagos', icon: CreditCard },
+        { id: 'impresion', label: 'Impresión POS', icon: Printer },
+      ],
+    },
+    {
+      group: 'Canales y Cuenta',
+      items: [
+        { id: 'qr', label: 'Código QR', icon: QrCode },
+        { id: 'redes', label: 'Redes Sociales', icon: Instagram },
+        { id: 'plan', label: 'Plan y Facturación', icon: Zap },
+      ],
+    },
+  ];
+  const flatSettingsTabs = settingsGroups.flatMap(g => g.items);
+
   return (
-    <div className={`space-y-3 animate-fade-in-up ${hasUnsavedChanges && activeTab !== 'qr' ? 'pb-20 sm:pb-0' : ''}`}>
-      {/* Tabs Header — Deslizable en una sola fila en móvil, compacto en PC */}
+    <div className={`animate-fade-in-up ${hasUnsavedChanges && activeTab !== 'qr' && activeTab !== 'plan' ? 'pb-20 sm:pb-0' : ''}`}>
+      {/* Móvil / Tablet: Barra deslizable horizontal limpia */}
       <div
         role="tablist"
         aria-label="Secciones de configuración"
-        className="flex items-center gap-1.5 overflow-x-auto no-scrollbar lg:flex-wrap bg-white p-1.5 rounded-2xl border border-slate-200/90 shadow-2xs"
+        className="lg:hidden mb-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar bg-white p-1.5 rounded-2xl border border-slate-200/90"
       >
-        {[
-          { id: 'perfil', label: 'General', icon: User },
-          { id: 'marca', label: 'Diseño', icon: Palette },
-          { id: 'qr', label: 'Código QR', icon: QrCode },
-          { id: 'pagos', label: 'Pagos', icon: CreditCard },
-          { id: 'horario', label: 'Horarios', icon: Clock },
-          { id: 'logistica', label: 'Domicilios', icon: Truck },
-          { id: 'redes', label: 'Redes Sociales', icon: Instagram },
-        ].map(tab => (
+        {flatSettingsTabs.map(tab => (
           <button
             key={tab.id}
             type="button"
             role="tab"
-            id={`settings-tab-${tab.id}`}
+            id={`settings-tab-mobile-${tab.id}`}
             aria-selected={activeTab === tab.id}
             aria-controls="settings-active-panel"
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => selectSettingsTab(tab.id)}
             className={`shrink-0 whitespace-nowrap flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               activeTab === tab.id
-                ? 'bg-brand text-white shadow-2xs'
-                : 'bg-slate-50/80 border border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-50/80 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
             <tab.icon size={14} className="shrink-0" />
@@ -757,12 +790,50 @@ export default function SettingsView(props) {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
-        {activeTab !== 'qr' && (
+      {/* Escritorio (PC): Navegación lateral categorizada estilo SaaS profesional + Panel activo */}
+      <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start lg:gap-5">
+        <aside
+          role="tablist"
+          aria-label="Categorías de configuración"
+          className="hidden lg:block sticky top-4 rounded-2xl border border-slate-200/90 bg-white p-3 space-y-4"
+        >
+          {settingsGroups.map(section => (
+            <div key={section.group} className="space-y-1">
+              <p className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {section.group}
+              </p>
+              {section.items.map(tab => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    id={`settings-tab-${tab.id}`}
+                    aria-selected={isActive}
+                    aria-controls="settings-active-panel"
+                    onClick={() => selectSettingsTab(tab.id)}
+                    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer text-left ${
+                      isActive
+                        ? 'bg-slate-900 text-white'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                    }`}
+                  >
+                    <tab.icon size={15} strokeWidth={1.75} className="shrink-0" />
+                    <span className="truncate">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </aside>
+
+      <form onSubmit={handleSubmit} className="space-y-3 min-w-0">
+        {activeTab !== 'qr' && activeTab !== 'plan' && (
           <div className="sticky top-0 z-20 -mx-1 flex items-center justify-between gap-3 border-y border-slate-200 bg-white/95 px-3 py-2 backdrop-blur sm:mx-0 sm:rounded-xl sm:border sm:px-4">
-            <p className={`text-xs font-medium ${hasUnsavedChanges ? 'text-amber-700' : 'text-emerald-700'}`} aria-live="polite">{hasUnsavedChanges ? 'Tienes cambios sin guardar' : 'Configuración guardada'}</p>
-            <button type="submit" disabled={loading || !hasUnsavedChanges} className="btn-primary py-2 px-4 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50">
-              {loading ? <LoadingSpinner size={15} /> : <><Save size={15} /> Guardar</>}
+            <p className={`text-xs font-medium ${hasUnsavedChanges ? 'text-amber-700' : 'text-emerald-700'}`} aria-live="polite">{hasUnsavedChanges ? 'Tienes cambios sin guardar' : 'Configuración al día'}</p>
+            <button type="submit" disabled={loading || !hasUnsavedChanges} className="btn-primary py-2 px-4 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer">
+              {loading ? <LoadingSpinner size={15} /> : <><Save size={15} /> Guardar cambios</>}
             </button>
           </div>
         )}
@@ -2349,9 +2420,302 @@ export default function SettingsView(props) {
             </div>
           )}
 
+          {/* ── PEDIDOS Y REGLAS DE VENTA ── */}
+          {activeTab === 'pedidos_cfg' && (() => {
+            const ordCfg = designData.orders_config || {};
+            const invCfg = designData.inventory_config || {};
+            const updateOrdCfg = (patch) => setDesignData(prev => ({
+              ...prev,
+              orders_config: { ...(prev.orders_config || {}), ...patch },
+            }));
+            const updateInvCfg = (patch) => setDesignData(prev => ({
+              ...prev,
+              inventory_config: { ...(prev.inventory_config || {}), ...patch },
+            }));
+
+            return (
+              <div className="space-y-5 max-w-xl">
+                <div className="border-b border-slate-100 pb-3">
+                  <h3 className="text-sm font-semibold text-slate-950">Pedidos y Reglas de Venta</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Define condiciones mínimas de compra, tiempos estimados y control automático de inventario.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Pedido mínimo a domicilio
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={ordCfg.min_order_amount ? formatThousandsInput(String(ordCfg.min_order_amount)) : ''}
+                      onChange={(e) => {
+                        const raw = Number(String(e.target.value).replace(/\D/g, '') || 0);
+                        updateOrdCfg({ min_order_amount: raw });
+                      }}
+                      placeholder="0 (sin mínimo)"
+                      className="input-field text-xs tabular-nums"
+                    />
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Deja en 0 si aceptas domicilios de cualquier monto.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Tiempo estimado de entrega
+                    </label>
+                    <input
+                      type="text"
+                      value={ordCfg.estimated_prep_time || ''}
+                      onChange={(e) => updateOrdCfg({ estimated_prep_time: e.target.value })}
+                      placeholder="Ej: 30 - 45 min"
+                      className="input-field text-xs"
+                    />
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Referencia informativa para tus clientes.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                  <div className="rounded-xl border border-slate-200/80 p-3.5 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-slate-900">Descuento automático de inventario</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Resta unidades al pasar un pedido a preparación y las repone si se cancela.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={invCfg.autoDeductStock !== false}
+                      onClick={() => updateInvCfg({ autoDeductStock: invCfg.autoDeductStock === false })}
+                      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
+                        invCfg.autoDeductStock !== false ? 'bg-emerald-600' : 'bg-slate-200'
+                      }`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                        invCfg.autoDeductStock !== false ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                    </button>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200/80 p-3.5 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-slate-900">Ocultar productos agotados en la tienda</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Si está desactivado, se mostrarán marcados como "Agotado".
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={Boolean(invCfg.hideOutOfStock)}
+                      onClick={() => updateInvCfg({ hideOutOfStock: !invCfg.hideOutOfStock })}
+                      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
+                        invCfg.hideOutOfStock ? 'bg-emerald-600' : 'bg-slate-200'
+                      }`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                        invCfg.hideOutOfStock ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── IMPRESIÓN TÉRMICA POS ── */}
+          {activeTab === 'impresion' && (() => {
+            const thCfg = designData.thermal_config || {};
+            const paperWidth = thCfg.paper_width === '58mm' ? '58mm' : '80mm';
+            const updateThCfg = (patch) => setDesignData(prev => ({
+              ...prev,
+              thermal_config: { ...(prev.thermal_config || {}), ...patch },
+            }));
+
+            const handleTestPrint = () => {
+              const sampleOrder = {
+                id: 8492,
+                created_at: new Date().toISOString(),
+                nombre: 'Cliente de Prueba',
+                telefono: '300 123 4567',
+                direccion: 'Calle 85 #14-20',
+                entrega_metodo: 'envio',
+                pago_metodo: 'transferencia',
+                domicilio_costo: 5000,
+                subtotal_amount: 35000,
+                total_amount: 40000,
+                total: 40000,
+                items: [
+                  { nombre: 'Producto de ejemplo', cantidad: 1, precio: 35000, nota: 'Ticket de prueba POS' },
+                ],
+              };
+              printThermalReceipt(
+                sampleOrder,
+                {
+                  ...business,
+                  nombre_visible: formData.nombre_visible || business?.nombre_visible,
+                  telefono: formData.telefono || business?.telefono,
+                  catalog_design: { ...designData, thermal_config: thCfg },
+                },
+                { mode: 'bill' }
+              );
+            };
+
+            return (
+              <div className="space-y-5 max-w-xl">
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-950">Impresión Térmica POS</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Personaliza el formato de tus comandas de cocina y tirillas de cobro (USB / Wi-Fi / Bluetooth).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleTestPrint}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50 cursor-pointer"
+                  >
+                    <Printer size={14} strokeWidth={1.75} />
+                    <span>Imprimir prueba</span>
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-2">
+                    Ancho del rollo térmico
+                  </label>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {[
+                      { id: '80mm', title: '80 mm (Estándar POS)', desc: 'Impresoras de mostrador y caja' },
+                      { id: '58mm', title: '58 mm (Compacta)', desc: 'Impresoras portátiles Bluetooth' },
+                    ].map(opt => {
+                      const selected = paperWidth === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => updateThCfg({ paper_width: opt.id })}
+                          className={`rounded-xl border p-3 text-left transition-colors cursor-pointer ${
+                            selected
+                              ? 'border-slate-900 bg-slate-50 text-slate-950 ring-1 ring-slate-900/10'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                          }`}
+                        >
+                          <p className="text-xs font-bold">{opt.title}</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">{opt.desc}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      NIT o Identificación fiscal <span className="font-normal text-slate-400">(opcional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={thCfg.nit || ''}
+                      onChange={(e) => updateThCfg({ nit: e.target.value })}
+                      placeholder="Ej: 901.442.890-1"
+                      className="input-field text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Pie de página del recibo
+                    </label>
+                    <input
+                      type="text"
+                      value={thCfg.footer || ''}
+                      onChange={(e) => updateThCfg({ footer: e.target.value })}
+                      placeholder="¡Gracias por elegirnos!"
+                      className="input-field text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── PLAN Y FACTURACIÓN ── */}
+          {activeTab === 'plan' && (
+            <div className="space-y-5 max-w-xl">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-semibold text-slate-950">Plan y Suscripción</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Estado actual de tu cuenta en NEGU y acceso a renovación.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                      isExpired
+                        ? 'bg-rose-100 text-rose-800'
+                        : subscription?.estado === 'trial'
+                          ? 'bg-amber-100 text-amber-900'
+                          : 'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      <Zap size={11} />
+                      {isExpired
+                        ? 'Suscripción vencida'
+                        : subscription?.estado === 'trial'
+                          ? `Prueba gratuita · ${trialDaysLeft} días restantes`
+                          : isPro
+                            ? 'Plan Completo Activo'
+                            : 'Cuenta Activa'}
+                    </span>
+                    <h4 className="text-lg font-bold text-slate-950 mt-2">Plan Completo NEGU</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      0% de comisiones por pedido · Productos, pedidos, QR e impresión ilimitados.
+                    </p>
+                  </div>
+                  <div className="text-left sm:text-right">
+                    <p className="text-xl font-bold text-slate-950 tabular-nums">{formatMoney(60000)}</p>
+                    <p className="text-[11px] text-slate-500">COP / mes</p>
+                  </div>
+                </div>
+
+                {subscription?.fecha_fin && (
+                  <p className="text-xs text-slate-600 border-t border-slate-200/80 pt-3 tabular-nums">
+                    Fecha de corte / vencimiento:{' '}
+                    <strong className="text-slate-900">
+                      {new Date(subscription.fecha_fin).toLocaleDateString('es-CO', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </strong>
+                  </p>
+                )}
+
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new CustomEvent('open-billing-modal'))}
+                    className="inline-flex items-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 px-4 py-2.5 text-xs font-semibold text-white transition-colors cursor-pointer"
+                  >
+                    <CreditCard size={14} strokeWidth={1.75} />
+                    <span>Gestionar o renovar suscripción</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
 
-        {hasUnsavedChanges && activeTab !== 'qr' && (
+        {hasUnsavedChanges && activeTab !== 'qr' && activeTab !== 'plan' && (
           <div className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 pb-safe flex items-center justify-between gap-3 shadow-lg">
             <span className="text-xs font-semibold text-amber-700 truncate">
               Tienes cambios sin guardar
@@ -2366,6 +2730,7 @@ export default function SettingsView(props) {
           </div>
         )}
       </form>
+      </div>
     </div>
   );
 }

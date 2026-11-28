@@ -512,6 +512,10 @@ export function printThermalReceipt(order, business, options = {}) {
   const shortId = (order.id || '').toString().slice(-6).toUpperCase();
   const businessName = business?.nombre_visible || business?.nombre || 'Mi Negocio';
   const businessPhone = business?.telefono || '';
+  const thermalCfg = business?.catalog_design?.thermal_config || {};
+  const cssPaperWidth = thermalCfg.paper_width === '58mm' ? '52mm' : '76mm';
+  const businessNit = (thermalCfg.nit || '').trim();
+  const customTicketFooter = (thermalCfg.footer || '').trim();
 
   const rawItems = (options.itemsOverride && options.itemsOverride.length > 0)
     ? options.itemsOverride
@@ -611,7 +615,7 @@ export function printThermalReceipt(order, business, options = {}) {
           @page { margin: 0; size: auto; }
           body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Courier New", monospace;
-            width: 76mm;
+            width: ${cssPaperWidth};
             max-width: 100%;
             margin: 0 auto;
             padding: 10px;
@@ -715,6 +719,7 @@ export function printThermalReceipt(order, business, options = {}) {
         <div id="view-bill" style="display: ${mode === 'bill' ? 'block' : 'none'};">
           <div class="text-center">
             <div style="font-size: 15px; font-weight: 900; text-transform: uppercase;">${escapeHtml(businessName)}</div>
+            ${businessNit ? `<div style="font-size: 11px;">NIT: ${escapeHtml(businessNit)}</div>` : ''}
             ${businessPhone ? `<div style="font-size: 11px;">Tel: ${escapeHtml(businessPhone)}</div>` : ''}
             <div style="font-size: 11px; font-weight: 800; margin-top: 4px; padding: 2px 8px; border: 1px solid #000; display: inline-block; border-radius: 4px;">
               ${escapeHtml(locationLabel)}
@@ -776,7 +781,7 @@ export function printThermalReceipt(order, business, options = {}) {
 
           <div class="divider"></div>
           <div class="text-center" style="font-size: 10px; margin-top: 6px;">
-            Gracias por su compra en ${escapeHtml(businessName)}
+            ${customTicketFooter ? escapeHtml(customTicketFooter) : `Gracias por su compra en ${escapeHtml(businessName)}`}
           </div>
         </div>
 

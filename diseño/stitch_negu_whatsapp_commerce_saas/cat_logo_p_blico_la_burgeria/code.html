@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-[#FAFAFA]" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<meta content="mobile_tab" name="shell-type"/>
+<title>La Burgería Artesanal — NEGU</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: "#0F172A",
+            primary: "#006948",
+            "primary-dark": "#005238",
+            surface: "#FFFFFF",
+            subtle: "#F8FAFC",
+            border: "#E2E8F0",
+            muted: "#64748B",
+            text: "#0F172A"
+          },
+          fontFamily: {
+            sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+            display: ["Plus Jakarta Sans", "Inter", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    @layer base {
+      html, body {
+        width: 100vw;
+        min-height: 100%;
+        margin: 0;
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+      }
+      body {
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 16px);
+      }
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-[#FAFAFA] font-sans text-text flex flex-col min-h-screen">
+<!-- Header Sobrio, estilo Apple / Minimal Nordic -->
+<header class="fixed top-0 w-full z-30 bg-white/85 backdrop-blur-md border-b border-border/70 pt-safe">
+<div class="h-16 px-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-800 font-semibold text-sm">
+          LB
+        </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<h1 class="font-display font-semibold text-[15px] text-slate-900 tracking-tight">La Burgería Artesanal</h1>
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+</div>
+<span class="text-xs text-slate-500 font-normal">Abierto hasta las 10:00 pm</span>
+</div>
+</div>
+<!-- Selector de Modo de Entrega Minimalista -->
+<div class="flex items-center bg-slate-100/90 p-0.5 rounded-full text-xs font-medium text-slate-600 border border-slate-200/60">
+<button class="px-2.5 py-1 bg-white rounded-full text-slate-900 font-semibold shadow-xs transition-all" type="button">
+          Domicilio
+        </button>
+<button class="px-2.5 py-1 text-slate-500 hover:text-slate-800 transition-colors" type="button">
+          Recoger
+        </button>
+</div>
+</div>
+</header>
+<!-- Background Catalog Page (Visible under the sheet) -->
+<main class="flex-1 w-full pt-20 pb-24 px-4 max-w-md mx-auto">
+<!-- Clean Search Bar -->
+<div class="relative mt-2 mb-4">
+<span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[19px]">search</span>
+<input class="w-full h-11 pl-10 pr-4 bg-white rounded-xl border border-slate-200/80 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 transition-colors shadow-xs" placeholder="Buscar en la carta..." type="text" value="Doble Bacon"/>
+</div>
+<!-- Category Pill Filters (Subtle & Nordic) -->
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-3">
+<button class="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 text-white shrink-0">
+        Todos
+      </button>
+<button class="px-3.5 py-1.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50 shrink-0 transition-colors">
+        Hamburguesas
+      </button>
+<button class="px-3.5 py-1.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50 shrink-0 transition-colors">
+        Entradas
+      </button>
+<button class="px-3.5 py-1.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50 shrink-0 transition-colors">
+        Bebidas
+      </button>
+</div>
+<!-- Product Grid Preview (Clean cards) -->
+<div class="grid grid-cols-2 gap-3 pt-1">
+<div class="bg-white rounded-2xl p-3 border border-slate-200/70 shadow-xs flex flex-col justify-between">
+<div class="aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2 relative">
+<img class="w-full h-full object-cover" data-alt="Doble Bacon Cheddar Burger" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADjQd_5gzlOSA8ZPu8EHZmBbMhD3rBumQzFSSbAYROLjALmHlxe2VnmjPSanhE2wGj5rvf57r6LDpqEfImu1P41EvOr-GKaxsoDdzbDr1MO1xBr5UbFV9ltCJRUUfO9IPhCcSNUZk7ezHj95RA71ulTYkv0Cc8j4n9Lv_tH4NBz276ZV1Q4XpvBx3vgh0C62mmwO0-24F-DQKZHf7PGvT7J9MUn4kQ1vAowI7PgLk"/>
+</div>
+<div>
+<h3 class="font-display font-semibold text-sm text-slate-900 line-clamp-1">Doble Bacon Cheddar</h3>
+<p class="text-xs text-slate-500 line-clamp-1 mt-0.5">200g carne angus y queso</p>
+<div class="flex items-center justify-between mt-2 pt-1 border-t border-slate-100">
+<span class="text-xs font-semibold text-slate-900">$26.900</span>
+<span class="text-xs font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md">Configurar</span>
+</div>
+</div>
+</div>
+<div class="bg-white rounded-2xl p-3 border border-slate-200/70 shadow-xs flex flex-col justify-between opacity-75">
+<div class="aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2">
+<img class="w-full h-full object-cover" data-alt="Smash Clásica" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzdkxEDLH_4qgc9xsWKPjY1USZdKVueY1v00wZCYg1qmwYUg8J180s4VquW_jc_O6zS9ochCCRDyhSb_pGoLXYcGRt2h-UnV0X4up4kwUKR4SBU53xWJNLAX4zweZOZ0Q4NB1CzXciwoGjAqoH3ADf2R89z3O7CuLDuXaDwHmrpGTMC2R6KO9OEtcoFdNFfgdrzEcOtVbhzikbQGoWJbv-I3Ots9mUShDkXH5Uw5o"/>
+</div>
+<div>
+<h3 class="font-display font-semibold text-sm text-slate-900 line-clamp-1">Smash Clásica</h3>
+<p class="text-xs text-slate-500 line-clamp-1 mt-0.5">Carne smash crispy</p>
+<div class="flex items-center justify-between mt-2 pt-1 border-t border-slate-100">
+<span class="text-xs font-semibold text-slate-900">$19.900</span>
+<span class="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">Añadir</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- MODAL / SHEET ABIERTO: Ultra-limpio, elegante y sobrio (Apple / Minimal Nordic) -->
+<div class="fixed inset-0 z-50 flex flex-col justify-end bg-slate-900/35 backdrop-blur-[6px] transition-all duration-300" id="customizer-modal">
+<!-- Clickable backdrop scrim to dismiss -->
+<div class="flex-1 w-full" onclick="closeCustomizer()"></div>
+<!-- Sheet Card Container -->
+<div class="w-full max-w-lg mx-auto bg-white rounded-t-[28px] border-t border-slate-200/80 shadow-[0_-12px_40px_rgba(0,0,0,0.08)] flex flex-col max-h-[85vh] overflow-hidden">
+<!-- Minimal Header Handle & Title -->
+<div class="pt-3 pb-3 px-5 flex flex-col border-b border-slate-100">
+<div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-3"></div>
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<h2 class="font-display font-semibold text-[19px] text-slate-900 tracking-tight">Doble Bacon Cheddar</h2>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-[15px] font-semibold text-slate-900">$26.900 COP</span>
+<span class="text-xs text-slate-400">•</span>
+<span class="text-xs text-slate-500">200g carne angus seleccionada</span>
+</div>
+</div>
+<button aria-label="Cerrar modal" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200/70 text-slate-500 flex items-center justify-center transition-colors" onclick="closeCustomizer()" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<!-- Scrollable Customizer Content -->
+<div class="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+<!-- Group 1: Meat Doneness (Required) -->
+<section class="space-y-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<h3 class="text-xs font-semibold uppercase tracking-wider text-slate-800">Término de la carne</h3>
+<span class="text-[10px] font-semibold uppercase tracking-wide bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">Obligatorio</span>
+</div>
+<span class="text-xs text-slate-400">Elige 1</span>
+</div>
+<div class="space-y-1.5">
+<!-- Option 1 -->
+<label class="flex items-center justify-between p-3 rounded-xl border border-slate-200/70 bg-white hover:bg-slate-50/60 cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<input class="w-4 h-4 text-emerald-700 border-slate-300 focus:ring-0 focus:ring-offset-0" name="doneness" type="radio" value="medio"/>
+<span class="text-[13px] font-medium text-slate-800">Término Medio</span>
+</div>
+<span class="text-xs text-slate-400">Jugoso al centro</span>
+</label>
+<!-- Option 2 (Selected by default) -->
+<label class="flex items-center justify-between p-3 rounded-xl border-2 border-emerald-700/80 bg-emerald-50/20 cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<input checked="" class="w-4 h-4 text-emerald-700 border-emerald-700 focus:ring-0 focus:ring-offset-0" name="doneness" type="radio" value="tres_cuartos"/>
+<span class="text-[13px] font-semibold text-slate-900">Tres Cuartos</span>
+</div>
+<span class="text-[11px] font-medium text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">Recomendado</span>
+</label>
+<!-- Option 3 -->
+<label class="flex items-center justify-between p-3 rounded-xl border border-slate-200/70 bg-white hover:bg-slate-50/60 cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<input class="w-4 h-4 text-emerald-700 border-slate-300 focus:ring-0 focus:ring-offset-0" name="doneness" type="radio" value="bien_asada"/>
+<span class="text-[13px] font-medium text-slate-800">Bien Asada</span>
+</div>
+<span class="text-xs text-slate-400">Cocción completa</span>
+</label>
+</div>
+</section>
+<!-- Group 2: Add-on Toppings (Optional) -->
+<section class="space-y-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<h3 class="text-xs font-semibold uppercase tracking-wider text-slate-800">Toppings adicionales</h3>
+<span class="text-[10px] font-medium text-slate-500">Opcional</span>
+</div>
+<span class="text-xs text-slate-400">A tu gusto</span>
+</div>
+<div class="space-y-1.5">
+<!-- Bacon (Checked) -->
+<label class="flex items-center justify-between p-3 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50/60 cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<input checked="" class="w-4 h-4 rounded text-emerald-700 border-slate-300 focus:ring-0 focus:ring-offset-0" id="topping-bacon" onchange="calculateSubtotal()" type="checkbox"/>
+<span class="text-[13px] font-medium text-slate-900">Tocineta crujiente</span>
+</div>
+<span class="text-xs font-semibold text-slate-700">+ $3.500</span>
+</label>
+<!-- Queso Costeño -->
+<label class="flex items-center justify-between p-3 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50/60 cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<input class="w-4 h-4 rounded text-emerald-700 border-slate-300 focus:ring-0 focus:ring-offset-0" id="topping-cheese" onchange="calculateSubtotal()" type="checkbox"/>
+<span class="text-[13px] font-medium text-slate-900">Queso costeño asado</span>
+</div>
+<span class="text-xs font-semibold text-slate-700">+ $4.000</span>
+</label>
+<!-- Jalapeños -->
+<label class="flex items-center justify-between p-3 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50/60 cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<input class="w-4 h-4 rounded text-emerald-700 border-slate-300 focus:ring-0 focus:ring-offset-0" id="topping-jalapeno" onchange="calculateSubtotal()" type="checkbox"/>
+<span class="text-[13px] font-medium text-slate-900">Jalapeños encurtidos</span>
+</div>
+<span class="text-xs font-semibold text-slate-700">+ $2.000</span>
+</label>
+</div>
+</section>
+<!-- Kitchen Notes -->
+<section class="space-y-1.5 pb-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-slate-800" for="kitchen-notes">
+            Notas para la cocina
+          </label>
+<input class="w-full h-11 px-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-slate-400 transition-colors" id="kitchen-notes" placeholder="Ej: salsa aparte, sin cebolla..." type="text"/>
+</section>
+</div>
+<!-- Bottom Sticky Action Bar: Quantity & Clean Primary Action -->
+<div class="p-4 bg-white border-t border-slate-100 flex items-center gap-3 pb-safe">
+<!-- Quantity Selector (- 1 +) -->
+<div class="flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200/50">
+<button aria-label="Disminuir" class="w-9 h-9 rounded-lg bg-white text-slate-700 flex items-center justify-center font-medium text-base shadow-2xs hover:bg-slate-50 active:scale-95 transition-all" onclick="adjustQty(-1)" type="button">
+            -
+          </button>
+<span class="w-9 text-center font-display font-semibold text-sm text-slate-900" id="product-qty">1</span>
+<button aria-label="Aumentar" class="w-9 h-9 rounded-lg bg-white text-slate-700 flex items-center justify-center font-medium text-base shadow-2xs hover:bg-slate-50 active:scale-95 transition-all" onclick="adjustQty(1)" type="button">
+            +
+          </button>
+</div>
+<!-- High-Contrast Nordic Primary Button -->
+<button class="flex-1 h-11 bg-emerald-800 hover:bg-emerald-900 active:scale-[0.99] text-white rounded-xl font-medium text-sm flex items-center justify-between px-4 transition-all shadow-xs" onclick="confirmAddToCart()" type="button">
+<span>Agregar al pedido</span>
+<span class="font-semibold tracking-tight" id="modal-subtotal">$30.400 COP</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Bottom Navigation Bar: Sobria, sutil y moderna -->
+<nav class="fixed bottom-0 w-full z-40 pb-safe bg-white/90 backdrop-blur-md border-t border-slate-200/70" data-active-classes="text-slate-900 font-semibold">
+<div class="flex justify-around items-center h-14 max-w-md mx-auto px-4">
+<a aria-current="page" class="flex flex-col items-center justify-center gap-0.5 text-slate-900 font-semibold transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">storefront</span>
+<span class="text-[11px] tracking-tight">Catálogo</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-0.5 text-slate-400 hover:text-slate-700 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">receipt_long</span>
+<span class="text-[11px] tracking-tight">Pedidos</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-0.5 text-slate-400 hover:text-slate-700 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">local_offer</span>
+<span class="text-[11px] tracking-tight">Ofertas</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-0.5 text-slate-400 hover:text-slate-700 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">person</span>
+<span class="text-[11px] tracking-tight">Perfil</span>
+</a>
+</div>
+</nav>
+<!-- Modal Script Logic -->
+<script>
+    let currentQty = 1;
+    const basePrice = 26900;
+
+    function adjustQty(delta) {
+      currentQty = Math.max(1, currentQty + delta);
+      document.getElementById('product-qty').innerText = currentQty;
+      calculateSubtotal();
+    }
+
+    function calculateSubtotal() {
+      let extra = 0;
+      const bacon = document.getElementById('topping-bacon');
+      const cheese = document.getElementById('topping-cheese');
+      const jalapeno = document.getElementById('topping-jalapeno');
+
+      if (bacon && bacon.checked) extra += 3500;
+      if (cheese && cheese.checked) extra += 4000;
+      if (jalapeno && jalapeno.checked) extra += 2000;
+
+      const total = (basePrice + extra) * currentQty;
+      const formatted = '$' + total.toLocaleString('es-CO') + ' COP';
+      const subtotalEl = document.getElementById('modal-subtotal');
+      if (subtotalEl) {
+        subtotalEl.innerText = formatted;
+      }
+    }
+
+    function openCustomizer() {
+      const modal = document.getElementById('customizer-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeCustomizer() {
+      const modal = document.getElementById('customizer-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function confirmAddToCart() {
+      closeCustomizer();
+    }
+
+    // Run initial calculation
+    calculateSubtotal();
+  </script>
+</body></html>

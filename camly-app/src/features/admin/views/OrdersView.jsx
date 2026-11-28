@@ -18,6 +18,7 @@ import { getStatusCopy } from '../../../lib/status-labels';
 import { useBusinessStore, useToastStore } from '../../../stores';
 import { readMigratedLocalStorage } from '../../../lib/localStorage';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
+import ThermalReceiptSidebar from '../components/ThermalReceiptSidebar';
 
 const STATUS_TABS = [
   { id: 'all', label: 'Todos' },
@@ -1046,6 +1047,8 @@ export default function OrdersView(props) {
     window.open(`https://wa.me/${driver.telefono}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
+  const previewOrder = filteredOrders.find(o => o.id === expandedOrderId) || filteredOrders[0] || null;
+
   return (
     <div className="space-y-3 animate-fade-in-up">
       {/* Filter tabs & Sound toggle aligned in a single row without wasted space */}
@@ -1173,8 +1176,9 @@ export default function OrdersView(props) {
         </button>
       </div>
 
-      {/* Lista de pedidos */}
-      <div className="space-y-1.5">
+      {/* Vista dividida en PC: Lista de pedidos a la izquierda + Comanda Térmica en vivo a la derecha */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_310px] xl:grid-cols-[minmax(0,1fr)_336px] lg:items-start lg:gap-4">
+      <div className="space-y-1.5 min-w-0">
         {filteredOrders.map((order) => {
           const status = order.estado || order.status;
           const isMesa = isMesaOrder(order);
@@ -1639,6 +1643,9 @@ export default function OrdersView(props) {
             <p className="text-xs text-gray-500 mt-1">Los nuevos pedidos de tus clientes aparecerán aquí automáticamente.</p>
           </div>
         )}
+      </div>
+
+      <ThermalReceiptSidebar order={previewOrder} business={business} />
       </div>
 
       <ConfirmModal
